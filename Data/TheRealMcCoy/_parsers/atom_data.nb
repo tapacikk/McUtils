@@ -1,0 +1,192 @@
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[         0,          0]
+NotebookDataLength[      7861,        191]
+NotebookOptionsPosition[      7003,        165]
+NotebookOutlinePosition[      7340,        180]
+CellTagsIndexPosition[      7297,        177]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"atdat", "=", "\[IndentingNewLine]", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\<https://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl?ele=&\
+ascii=ascii2\>\"", ",", " ", "\[IndentingNewLine]", 
+     RowBox[{"{", 
+      RowBox[{"\"\<HTML\>\"", ",", " ", "\"\<XMLObject\>\""}], "}"}]}], 
+    "\[IndentingNewLine]", "]"}]}], ";"}]], "Input",
+ CellChangeTimes->{{3.7680579180467873`*^9, 3.7680579468008223`*^9}},
+ CellLabel->"In[56]:=",ExpressionUUID->"465e05d7-8246-4ee0-a7e9-1155e6ed887f"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"baseData", "=", "\[IndentingNewLine]", 
+   RowBox[{"StringCases", "[", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"StringSplit", "[", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"Cases", "[", 
+         RowBox[{"atdat", ",", " ", 
+          RowBox[{"s_String", "?", 
+           RowBox[{"(", 
+            RowBox[{"StringContainsQ", "[", "\"\<Atomic N\>\"", "]"}], 
+            ")"}]}], ",", " ", "Infinity"}], "]"}], "[", 
+        RowBox[{"[", "1", "]"}], "]"}], ",", "\[IndentingNewLine]", 
+       "\"\<\\n\\n\>\""}], "\[IndentingNewLine]", "]"}], ",", 
+     "\[IndentingNewLine]", 
+     RowBox[{"{", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"\"\<Atomic Number = \>\"", "~~", 
+         RowBox[{"n", ":", "NumberString"}]}], "\[RuleDelayed]", 
+        RowBox[{"(", "\[IndentingNewLine]", 
+         RowBox[{"\"\<Number\>\"", "->", 
+          RowBox[{"Floor", "[", 
+           RowBox[{"Internal`StringToDouble", "[", "n", "]"}], "]"}]}], 
+         "\[IndentingNewLine]", ")"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"\"\<Atomic Symbol = \>\"", "~~", 
+         RowBox[{"s", ":", 
+          RowBox[{"WordCharacter", ".."}]}]}], "\[RuleDelayed]", 
+        RowBox[{"(", "\[IndentingNewLine]", 
+         RowBox[{"\"\<Symbol\>\"", "->", "s"}], "\[IndentingNewLine]", 
+         ")"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"\"\<Mass Number = \>\"", "~~", 
+         RowBox[{"n", ":", "NumberString"}]}], "\[RuleDelayed]", 
+        RowBox[{"(", "\[IndentingNewLine]", 
+         RowBox[{"\"\<MassNumber\>\"", "->", 
+          RowBox[{"Floor", "[", 
+           RowBox[{"Internal`StringToDouble", "[", "n", "]"}], "]"}]}], 
+         "\[IndentingNewLine]", ")"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"\"\<Relative Atomic Mass = \>\"", "~~", 
+         RowBox[{"n", ":", "NumberString"}]}], "\[RuleDelayed]", 
+        RowBox[{"(", "\[IndentingNewLine]", 
+         RowBox[{"\"\<Mass\>\"", "->", 
+          RowBox[{"Internal`StringToDouble", "[", "n", "]"}]}], 
+         "\[IndentingNewLine]", ")"}]}], ",", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"\"\<Isotopic Composition = \>\"", "~~", 
+         RowBox[{"n", ":", 
+          RowBox[{"NumberString", "|", "\"\<\>\""}]}]}], "\[RuleDelayed]", 
+        RowBox[{"(", "\[IndentingNewLine]", 
+         RowBox[{
+         "\"\<IsotopeFraction\>\"", "\[Rule]", "\[IndentingNewLine]", 
+          RowBox[{"If", "[", 
+           RowBox[{
+            RowBox[{
+             RowBox[{"StringLength", "[", "n", "]"}], ">", "0"}], ",", 
+            "\[IndentingNewLine]", 
+            RowBox[{"Internal`StringToDouble", "[", "n", "]"}], ",", 
+            "\[IndentingNewLine]", "\"\<\>\""}], "\[IndentingNewLine]", 
+           "]"}]}], "\[IndentingNewLine]", ")"}]}], ",", 
+       "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"\"\<Standard Atomic Weight = \>\"", "~~", 
+         RowBox[{"s", ":", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{
+            "\"\<[\>\"", "|", "DigitCharacter", "|", "\"\<.\>\"", "|", 
+             "\"\<,\>\"", "|", "\"\<]\>\""}], ")"}], "..."}]}]}], 
+        "\[RuleDelayed]", 
+        RowBox[{"(", "\[IndentingNewLine]", 
+         RowBox[{"\"\<StandardAtomicWeights\>\"", "\[Rule]", 
+          RowBox[{"Flatten", "@", 
+           RowBox[{"List", "@", 
+            RowBox[{"{", 
+             RowBox[{"If", "[", 
+              RowBox[{
+               RowBox[{
+                RowBox[{"StringLength", "@", "s"}], ">", "0"}], ",", " ", 
+               RowBox[{"ImportString", "[", 
+                RowBox[{"s", ",", " ", "\"\<JSON\>\""}], "]"}], ",", " ", 
+               RowBox[{"{", "}"}]}], "]"}], "}"}]}]}]}], 
+         "\[IndentingNewLine]", ")"}]}]}], "\[IndentingNewLine]", "}"}]}], 
+    "\[IndentingNewLine]", "]"}]}], ";"}]], "Input",
+ CellChangeTimes->{{3.768057950081361*^9, 3.768058073967484*^9}, {
+  3.768058289672236*^9, 3.76805838938619*^9}, {3.768058563887862*^9, 
+  3.7680588170119343`*^9}},
+ CellLabel->"In[71]:=",ExpressionUUID->"6e2045e1-8881-4607-ab6a-f791dccbf1be"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"pythonAtomData", "=", "\[IndentingNewLine]", 
+   RowBox[{"ExportString", "[", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{
+      RowBox[{
+       RowBox[{"AssociationThread", "[", "\[IndentingNewLine]", 
+        RowBox[{
+         RowBox[{"Lookup", "[", 
+          RowBox[{"#", ",", " ", "\"\<Symbol\>\""}], "]"}], ",", 
+         "\[IndentingNewLine]", "#"}], "\[IndentingNewLine]", "]"}], "&"}], 
+      "@", 
+      RowBox[{"Map", "[", 
+       RowBox[{"Association", ",", " ", "baseData"}], "]"}]}], ",", 
+     "\[IndentingNewLine]", "\"\<JSON\>\"", ",", "\[IndentingNewLine]", 
+     RowBox[{"\"\<Compact\>\"", "\[Rule]", "True"}]}], "\[IndentingNewLine]", 
+    "]"}]}], ";"}]], "Input",
+ CellChangeTimes->{{3.768058820579282*^9, 3.7680589027376337`*^9}, {
+  3.768058960449999*^9, 3.768058968495981*^9}},
+ CellLabel->"In[76]:=",ExpressionUUID->"24b84e0b-86e3-4a3b-b809-50ee0f056ec2"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Export", "[", "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"FileNameJoin", "@", 
+    RowBox[{"{", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"ParentDirectory", "@", 
+       RowBox[{"NotebookDirectory", "[", "]"}]}], ",", " ", 
+      "\[IndentingNewLine]", "\"\<AtomData.py\>\""}], "\[IndentingNewLine]", 
+     "}"}]}], ",", "\[IndentingNewLine]", 
+   RowBox[{"\"\<raw_atom_data = \>\"", "<>", "pythonAtomData"}], ",", 
+   "\[IndentingNewLine]", "\"\<Text\>\""}], "\[IndentingNewLine]", 
+  "]"}]], "Input",
+ CellChangeTimes->{{3.768058970433784*^9, 3.768059013695183*^9}},
+ CellLabel->"In[79]:=",ExpressionUUID->"6ac738b3-cb88-4e3d-b6d8-451c5e4e98cd"],
+
+Cell[BoxData["\<\"/Users/Mark/Documents/UW/Research/Python/McUtils/Data/\
+TheRealMcCoy/AtomData.py\"\>"], "Output",
+ CellChangeTimes->{{3.7680589905853987`*^9, 3.76805901408636*^9}},
+ CellLabel->"Out[79]=",ExpressionUUID->"5ae659d0-cbb7-4023-a3a8-1ae14b58f112"]
+}, Open  ]]
+},
+WindowSize->{808, 755},
+WindowMargins->{{20, Automatic}, {Automatic, 44}},
+FrontEndVersion->"12.0 for Mac OS X x86 (64-bit) (April 8, 2019)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[400, 13, 535, 11, 115, "Input",ExpressionUUID->"465e05d7-8246-4ee0-a7e9-1155e6ed887f"],
+Cell[938, 26, 4151, 91, 682, "Input",ExpressionUUID->"6e2045e1-8881-4607-ab6a-f791dccbf1be"],
+Cell[5092, 119, 922, 20, 199, "Input",ExpressionUUID->"24b84e0b-86e3-4a3b-b809-50ee0f056ec2"],
+Cell[CellGroupData[{
+Cell[6039, 143, 684, 14, 178, "Input",ExpressionUUID->"6ac738b3-cb88-4e3d-b6d8-451c5e4e98cd"],
+Cell[6726, 159, 261, 3, 34, "Output",ExpressionUUID->"5ae659d0-cbb7-4023-a3a8-1ae14b58f112"]
+}, Open  ]]
+}
+]
+*)
+
