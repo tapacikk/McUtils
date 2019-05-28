@@ -17,7 +17,7 @@ class DataHandler:
                  data_pkg = default_data_package,
                  alternate_keys = None
                  ):
-        self.data = None # this'll be a dict where we store all our data
+        self._data = None # this'll be a dict where we store all our data
         self._dir = data_dir
         self._name = data_name
         self._key = data_key
@@ -31,8 +31,8 @@ class DataHandler:
         if not self._alts is None:
             extras = {}
             for k in self._alts:
-                extras.update({a[k]:a for a in self.data.items()}) #shouldn't increase memory bc mutable
-            self.data.update(extras)
+                extras.update({a[k]:a for a in self._data.items()}) #shouldn't increase memory bc mutable
+            self._data.update(extras)
     def load(self):
         # currently we only load python data
         env = {}
@@ -43,8 +43,13 @@ class DataHandler:
         else:
             exec_stmt = "import {}.{}".format(self._pkg, self._name)
         exec(exec_stmt, env, env)
-        self.data = env[self._key]
+        self._data = env[self._key]
         self._load_alts()
+    @property
+    def data(self):
+        if self._data is None:
+            self.load()
+        return self._data
     def __getitem__(self, key):
         return self.data[key]
     def __len__(self):
