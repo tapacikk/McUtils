@@ -21,7 +21,7 @@ class DataHandler:
         self._dir = data_dir
         self._name = data_name
         self._key = data_key
-        self._pkg = data_pkg,
+        self._pkg = data_pkg
         self._alts = alternate_keys
     @property
     def data_file(self): # in case other people want to load it...
@@ -30,18 +30,20 @@ class DataHandler:
         # assumes we have dict data, but this entire structure does that anyway
         if not self._alts is None:
             extras = {}
+            if isinstance(self._alts, str):
+                self._alts = (self._alts,)
             for k in self._alts:
-                extras.update({a[k]:a for a in self._data.items()}) #shouldn't increase memory bc mutable
+                extras.update({a[k]:a for a in self._data.values()}) #shouldn't increase memory bc mutable
             self._data.update(extras)
     def load(self):
         # currently we only load python data
         env = {}
         import sys
-        sys.path.insert(0, ) #name needs to be unique enough...
+        sys.path.insert(0, self._dir) #name needs to be unique enough...
         if self._pkg is None:
-            exec_stmt = "import " + self._name
+            exec_stmt = "from {0} import {1} as {1}".format(self._name, self._key)
         else:
-            exec_stmt = "import {}.{}".format(self._pkg, self._name)
+            exec_stmt = "from {0}.{1} import {2} as {2}".format(self._pkg, self._name, self._key)
         exec(exec_stmt, env, env)
         self._data = env[self._key]
         self._load_alts()
