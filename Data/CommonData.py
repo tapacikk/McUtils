@@ -15,7 +15,8 @@ class DataHandler:
                  data_key = default_data_key,
                  data_dir = default_data_dir,
                  data_pkg = default_data_package,
-                 alternate_keys = None
+                 alternate_keys = None,
+                 getter = None
                  ):
         self._data = None # this'll be a dict where we store all our data
         self._dir = data_dir
@@ -23,6 +24,7 @@ class DataHandler:
         self._key = data_key
         self._pkg = data_pkg
         self._alts = alternate_keys
+        self.getter = getter
     @property
     def data_file(self): # in case other people want to load it...
         return os.path.join(self._dir, self._name+".py")
@@ -53,7 +55,14 @@ class DataHandler:
             self.load()
         return self._data
     def __getitem__(self, key):
-        return self.data[key]
+        if self.getter is None:
+            if isinstance(key, tuple):
+                from functools import reduce
+                return reduce(lambda a,b: a[b], key, self.data)
+            else:
+                return self.data[key]
+        else:
+            return self.getter(self.data, key)
     def __len__(self):
         return len(self.data)
     def __iter__(self):
