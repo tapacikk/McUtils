@@ -200,9 +200,17 @@ GaussianLogComponents["MultipoleMoments"] = {
 #region DipoleMoments
 tag_start  = "Dipole moment ("
 tag_end    = "Quadrupole moment ("
+
+get_dips_pat = "X=\s+"+grp_p(num_p)+"\s+Y=\s+"+grp_p(num_p)+"\s+Z=\s+"+grp_p(num_p)
+get_dips_re = re.compile(get_dips_pat)
 def parser(moms):
     """Parses a multipole moments block"""
-    return moms
+    dippz = [ None ]*len(moms)
+    for i, dip in enumerate(moms):
+        grps = re.findall(get_dips_re, dip)[0]
+        dippz[i] = grps
+    dip_list = np.array(dippz, dtype=str)
+    return dip_list.astype("float64")
 mode       = "List"
 
 GaussianLogComponents["DipoleMoments"] = {
