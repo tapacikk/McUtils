@@ -160,7 +160,7 @@ class FiniteDifferenceFunction:
         # someday this should autodetect, but I don't really know how to do that...
         if mode != cls.IRREGULAR_GRID:
             ndd = gp.ndim
-            if ndd > 1:
+            if ndd > 1: # ugly but workable way to calculate mesh_spacings
                 ndd -= 1
                 indsss = np.array([
                     [
@@ -173,9 +173,7 @@ class FiniteDifferenceFunction:
                 ).T
                 mesh_spacings = np.diff(gp[tuple(indsss)])[::2]
             else:
-                mesh_spacings = np.array([
-                  gp[1] - gp[0]
-                ])
+                mesh_spacings = np.array([gp[1] - gp[0]])
             if dim > 1:
                 stencil = [n - o for n, o in zip(stencil, order)]
             return cls.RegularGridFunction(order, stencil, mesh_spacings = mesh_spacings, num_vals = num_vals)
