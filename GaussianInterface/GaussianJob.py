@@ -331,7 +331,7 @@ class GaussianJob:
             else:
                 constants_blocks = []
             for k,c in consts.items():
-                constants_blocks.append("  {:>6} = {:f}".format(k, c))
+                constants_blocks.append("  {:>6} = {:f} 0 0.".format(k, c))
 
             return variables_blocks + constants_blocks
 
@@ -340,7 +340,7 @@ class GaussianJob:
             variables = vars["vars"]
             consts = vars["consts"]
             if len(consts) + len(variables) > 0:
-                constants_blocks = [" Constants:"]
+                constants_blocks = [" Variables:"]
             else:
                 constants_blocks = []
             for k,c in variables.items():
@@ -495,7 +495,7 @@ class GaussianJob:
                             var = var_type + str(i+1)
                             subblock[1+j] = var
                             var_list.append(self.Constant(var, el))
-                    blocks[i] = "{:<20} {:<12} {:<12} {:<12}".format(*subblock)
+                    blocks[i] = "{:<20} 0 {:<12} {:<12} {:<12}".format(*subblock)
 
             var_map = self.prep_vars(var_list, self.vars)
             return blocks, var_map
