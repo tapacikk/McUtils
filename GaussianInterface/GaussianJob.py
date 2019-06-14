@@ -401,10 +401,13 @@ class GaussianJob:
                             if isinstance(num, float):
                                 num = np.ceil((num - start)/step)
                             var_map["vars"][var.name] = (start, num, step)
+                            del var_map["consts"][var.name]
                         elif isinstance(var, self.Constant):
                             var_map["consts"][var.name] = var.value
+                            del var_map["vars"][var.name]
                         else:
                             var_map["consts"][var[0]] = var[1]
+                            del var_map['vars'][var[0]]
             return var_map
 
         def prep_mol(self, mol):
