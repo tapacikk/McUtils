@@ -54,12 +54,11 @@ GaussianLogComponents["InputZMatrix"] = {
  # the region thing is just a PyCharm hack to collapse the boilerplate here... Could also have done 5000 files
 
 cartesian_coordinates_tags = (
-""" ---------------------------------------------------------------------
- Center     Atomic      Atomic             Coordinates (Angstroms)
- Number     Number       Type             X           Y           Z
- ---------------------------------------------------------------------""",
-""" ---------------------------------------------------------------------""",
-
+    """---------------------------------------------------------------------
+    Center     Atomic      Atomic             Coordinates (Angstroms)
+    Number     Number       Type             X           Y           Z
+    ---------------------------------------------------------------------""",
+    """ ---------------------------------------------------------------------""",
 )
 
 cartesian_re_c = re.compile(ws_p.join(["("+int_p+")"]*3)+ws_p+cart_p)
@@ -83,8 +82,34 @@ def cartesian_coordinates_parser(strs):
 
     return coords
 
+extra_cart_tags = (
+    '''Z-Matrix orientation:
+ ''',
+    '''Standard orientation:
+ ''',
+    '''Input orientation:
+ '''
+)
 GaussianLogComponents["CartesianCoordinates"] = {
     "tag_start" : cartesian_coordinates_tags[0],
+    "tag_end"   : cartesian_coordinates_tags[1],
+    "parser"   : cartesian_coordinates_parser,
+    "mode"     : "List"
+}
+GaussianLogComponents["ZMatCartesianCoordinates"] = {
+    "tag_start" : extra_cart_tags[0] + cartesian_coordinates_tags[0],
+    "tag_end"   : cartesian_coordinates_tags[1],
+    "parser"   : cartesian_coordinates_parser,
+    "mode"     : "List"
+}
+GaussianLogComponents["StandardCartesianCoordinates"] = {
+    "tag_start" : extra_cart_tags[1] + cartesian_coordinates_tags[0],
+    "tag_end"   : cartesian_coordinates_tags[1],
+    "parser"   : cartesian_coordinates_parser,
+    "mode"     : "List"
+}
+GaussianLogComponents["InputCartesianCoordinates"] = {
+    "tag_start" : extra_cart_tags[2] + cartesian_coordinates_tags[0],
     "tag_end"   : cartesian_coordinates_tags[1],
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"

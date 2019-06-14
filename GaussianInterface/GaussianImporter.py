@@ -180,7 +180,7 @@ class GaussianLogReader(FileStreamReader):
         # important for ensuring correctness of what we pull
         if isinstance(keys, str):
             keys = (keys,)
-        keys = sorted(keys, key = lambda k:self.default_ordering[k])
+        keys = sorted(keys, key = lambda k:self.default_ordering[k] if k in self.default_ordering else 0)
         res = { k:self.parse_key_block(**self.registered_components[k], num=num) for k in keys }
         return res
 
