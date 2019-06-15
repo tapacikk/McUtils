@@ -63,13 +63,23 @@ class FileStreamReader:
         :return: if header was found
         :rtype: bool
         """
-        enc_tag = tag.encode(self._encoding)
-        pos = self._stream.find(enc_tag)
-        if seek and pos > 0:
-            if skip_tag:
-                pos = pos + len(enc_tag)
-            self._stream.seek(pos)
+        if isinstance(tag, str):
+            tags = (tag,)
+        else:
+            tags = tag
+
+        pos = -1
+        for i, tag in enumerate(tags):
+            enc_tag = tag.encode(self._encoding)
+            pos = self._stream.find(enc_tag)
+            if seek and pos > 0:
+                if skip_tag:
+                    pos = pos + len(enc_tag)
+                self._stream.seek(pos)
+            elif pos < 0:
+                break
         return pos
+
     def get_tagged_block(self, tag_start, tag_end, block_size = 500):
         """Pulls the string between tag_start and tag_end
 

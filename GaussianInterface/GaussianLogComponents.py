@@ -53,20 +53,25 @@ GaussianLogComponents["InputZMatrix"] = {
 
  # the region thing is just a PyCharm hack to collapse the boilerplate here... Could also have done 5000 files
 
-cartesian_coordinates_tags = (
-    """---------------------------------------------------------------------
-    Center     Atomic      Atomic             Coordinates (Angstroms)
-    Number     Number       Type             X           Y           Z
-    ---------------------------------------------------------------------""",
-    """ ---------------------------------------------------------------------""",
-)
+cart_delim = """ --------------------------------------------------------------"""
+plain_cartesian_start_tags = (
+    """Center     Atomic      Atomic             Coordinates (Angstroms)""",
+    cart_delim
+    )
+cartesian_end_tag = cart_delim
 
 cartesian_re_c = re.compile(ws_p.join(["("+int_p+")"]*3)+ws_p+cart_p)
 def cartesian_coordinates_parser(strs):
     num_sets = len(strs)
     strit = iter(strs)
+    fucked_up = 0
+    for i,s in enumerate(strs):
+        if s.count("\n") < 14:
+            raise Exception("{} asd {}\n{}".format(i, len(strs), s))
+    
     if num_sets>0:
-        first = pull_xyz(next(strit), regex=cartesian_re_c)
+        xyz = next(strit)
+        first = pull_xyz(xyz, regex=cartesian_re_c)
         num_atoms = len(first[0])
         if num_sets>1:
             coord_array = np.zeros((num_sets, num_atoms, 3), dtype=np.float64)
@@ -82,35 +87,27 @@ def cartesian_coordinates_parser(strs):
 
     return coords
 
-extra_cart_tags = (
-    '''Z-Matrix orientation:
- ''',
-    '''Standard orientation:
- ''',
-    '''Input orientation:
- '''
-)
 GaussianLogComponents["CartesianCoordinates"] = {
-    "tag_start" : cartesian_coordinates_tags[0],
-    "tag_end"   : cartesian_coordinates_tags[1],
+    "tag_start" : plain_cartesian_start_tags,
+    "tag_end"   : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["ZMatCartesianCoordinates"] = {
-    "tag_start" : extra_cart_tags[0] + cartesian_coordinates_tags[0],
-    "tag_end"   : cartesian_coordinates_tags[1],
+    "tag_start" : ('''Z-Matrix orientation:''', cart_delim, cart_delim),
+    "tag_end"   : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["StandardCartesianCoordinates"] = {
-    "tag_start" : extra_cart_tags[1] + cartesian_coordinates_tags[0],
-    "tag_end"   : cartesian_coordinates_tags[1],
+    "tag_start" : ('''Standard orientation:''', cart_delim, cart_delim),
+    "tag_end"   : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["InputCartesianCoordinates"] = {
-    "tag_start" : extra_cart_tags[2] + cartesian_coordinates_tags[0],
-    "tag_end"   : cartesian_coordinates_tags[1],
+    "tag_start" : ('''Input orientation:''', cart_delim, cart_delim),
+    "tag_end"   : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
@@ -165,6 +162,32 @@ def parser(strs):
 mode       = "List"
 
 GaussianLogComponents["ZMatrices"] = {
+    "tag_start" : tag_start,
+    "tag_end"   : tag_end,
+    "parser"   : parser,
+    "mode"     : mode
+}
+
+#endregion
+
+########################################################################################################################
+#
+#                                           OptimizationParameters
+#
+
+#region OptimizationParameters
+
+tag_start  = "Optimization "
+tag_end    = """                        !
+ ------------------------------------------------------------------------
+"""
+def parser(pars):
+    """Parses a optimizatioon parameters block"""
+    did_opts = [ "Non-Optimized" not in par for par in pars]
+    return did_opts, pars
+mode       = "List"
+
+GaussianLogComponents["OptimizationParameters"] = {
     "tag_start" : tag_start,
     "tag_end"   : tag_end,
     "parser"   : parser,
