@@ -1,7 +1,10 @@
 """Provides a basic Plot object for working with"""
 
-class Graphics:
-    """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
+class GraphicsException(Exception):
+    pass
+
+from abc import *
+class GraphicsBase(metaclass=ABCMeta):
     def __init__(self,
                  *args,
                  figure = None,
@@ -17,8 +20,110 @@ class Graphics:
 
         self.figure = figure
         self.axes = axes
-
+        self._shown = False
         self.set_options(**opts)
+    @abstractmethod
+    def set_options(self, **opts):
+        """Sets options for the plot
+
+        :param opts:
+        :type opts:
+        :return:
+        :rtype:
+        """
+        pass
+
+    def __getattr__(self, item):
+        try:
+            meth = getattr(self.axes, item)
+        except AttributeError as e:
+            meth = getattr(self.figure, item)
+        return meth
+
+    class styled:
+        def __init__(self, *str, **opts):
+            self.str = str
+            self.opts = opts
+
+    def copy_axes(self):
+        """Copies the axes object
+
+        :return:
+        :rtype: matplotlib.axes.Axes
+        """
+        raise GraphicsException("{}.{} this hack doesn't work anymore".format(
+                                type(self).__name__,
+                                "copy_axes"
+                                ))
+
+        import pickle, io
+
+        buf = io.BytesIO()
+        pickle.dump(self.axes, buf)
+        buf.seek(0)
+        return pickle.load(buf)
+
+    def refresh(self):
+        """Refreshes the axes
+
+        :return:
+        :rtype:
+        """
+
+        self.axes = self.copy_axes()
+        self.figure = self.axes.figure
+
+        return self
+
+    def copy(self):
+        """Creates a copy of the object with new axes
+
+        :return:
+        :rtype:
+        """
+        from copy import copy
+
+        cp = copy(self)
+        cp.axes = self.copy_axes()
+        cp.figure = cp.axes
+
+    def show(self):
+        import matplotlib.pyplot as plt
+        if not self._shown:
+            self.figure.show()
+            plt.show()
+            self._shown = True
+        else:
+            self._shown = False
+            self.refresh().show()
+            #raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
+
+    ## useful shared bits
+    def _set_ticks(self, x, set_ticks = None, set_locator = None, set_minor_locator = None, **opts):
+        import matplotlib.ticker as ticks
+
+        if isinstance(x, self.styled): # name feels wrong here...
+            self._set_ticks(*x.str,
+                            set_ticks = set_ticks,
+                            set_locator = set_locator, set_minor_locator = set_minor_locator,
+                            **x.opts
+                            )
+        elif isinstance(x, ticks.Locator):
+            set_locator(x)
+        elif isinstance(x, (list, tuple)):
+            if len(x) == 2 and isinstance(x[0], (list, tuple)):
+                self.axes.set_xticks(*x, **opts)
+            elif len(x) == 2 and isinstance(x[0], ticks.Locator):
+                set_locator(x[0])
+                set_minor_locator(x[1])
+        elif isinstance(x, (float, int)):
+            set_ticks(ticks.MultipleLocator(x), **opts)
+        elif x is not None:
+            set_ticks(x, **opts)
+
+
+class Graphics(GraphicsBase):
+    """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
 
     def set_options(self,
                     axes_labels = None,
@@ -67,18 +172,6 @@ class Graphics:
             self.scale = self._scale
         else:
             self._scale = (axes.get_xscale(), axes.get_yscale())
-
-    def __getattr__(self, item):
-        try:
-            meth = getattr(self.axes, item)
-        except AttributeError as e:
-            meth = getattr(self.figure, item)
-        return meth
-
-    class styled:
-        def __init__(self, *str, **opts):
-            self.str = str
-            self.opts = opts
 
     # set plot label
     @property
@@ -162,29 +255,33 @@ class Graphics:
     @property
     def ticks(self):
         return self._ticks
+    def _set_xticks(self, x, **opts):
+        return self._set_ticks(x,
+                        set_ticks=self.axes.set_xticks,
+                        set_locator=self.axes.xaxis.set_major_locator,
+                        set_minor_locator=self.axes.xaxis.set_minor_locator,
+                        **opts
+                        )
+    def _set_yticks(self, y, **opts):
+        return self._set_ticks(y,
+                               set_ticks=self.axes.set_yticks,
+                               set_locator=self.axes.yaxis.set_major_locator,
+                               set_minor_locator=self.axes.yaxis.set_minor_locator,
+                               **opts
+                               )
     @ticks.setter
     def ticks(self, ticks):
+
         try:
             x, y = ticks
         except ValueError:
             x, y = ticks = (self._ticks[0], ticks)
 
         self._ticks = ticks
+        self._set_xticks(x)
+        self._set_yticks(y)
 
-        if isinstance(x, self.styled): # name feels wrong here...
-            self.axes.set_xticks(*x.str, **x.opts)
-        elif len(x) == 2 and not isinstance(x[0], (float, int)):
-            self.axes.set_xticks(*x)
-        elif x is not None:
-            self.axes.set_xticks(x)
-        if isinstance(y, self.styled):
-            self.axes.set_yticks(*y.str, **y.opts)
-        elif len(y) == 2 and not isinstance(y[0], (float, int)):
-            self.axes.set_yticks(*y)
-        elif y is not None:
-            self.axes.set_yticks(y)
-
-class Graphics3D:
+class Graphics3D(GraphicsBase):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
     def __init__(self, *args, figure = None, axes = None, **opts):
         from mpl_toolkits.mplot3d import Axes3D
@@ -248,18 +345,6 @@ class Graphics3D:
             self.scale = self._scale
         else:
             self._scale = (axes.get_xscale(), axes.get_yscale(), axes.get_zscale())
-
-    def __getattr__(self, item):
-        try:
-            meth = getattr(self.axes, item)
-        except AttributeError as e:
-            meth = getattr(self.figure, item)
-        return meth
-
-    class styled:
-        def __init__(self, *str, **opts):
-            self.str = str
-            self.opts = opts
 
     # set plot label
     @property
@@ -353,8 +438,30 @@ class Graphics3D:
     @property
     def ticks(self):
         return self._ticks
+    def _set_xticks(self, x, **opts):
+        return self._set_ticks(x,
+                               set_ticks=self.axes.set_xticks,
+                               set_locator=self.axes.xaxis.set_major_locator,
+                               set_minor_locator=self.axes.xaxis.set_minor_locator,
+                               **opts
+                               )
+    def _set_yticks(self, y, **opts):
+        return self._set_ticks(y,
+                               set_ticks=self.axes.set_yticks,
+                               set_locator=self.axes.yaxis.set_major_locator,
+                               set_minor_locator=self.axes.yaxis.set_minor_locator,
+                               **opts
+                               )
+    def _set_zticks(self, z, **opts):
+        return self._set_ticks(z,
+                               set_ticks=self.axes.set_zticks,
+                               set_locator=self.axes.zaxis.set_major_locator,
+                               set_minor_locator=self.axes.zaxis.set_minor_locator,
+                               **opts
+                               )
     @ticks.setter
     def ticks(self, ticks):
+
         try:
             x, y, z = ticks
         except ValueError:
@@ -362,21 +469,6 @@ class Graphics3D:
 
         self._ticks = ticks
 
-        if isinstance(x, self.styled): # name feels wrong here...
-            self.axes.set_xticks(*x.str, **x.opts)
-        elif len(x) == 2 and not isinstance(x[0], (float, int)):
-            self.axes.set_xticks(*x)
-        elif x is not None:
-            self.axes.set_xticks(x)
-        if isinstance(y, self.styled):
-            self.axes.set_yticks(*y.str, **y.opts)
-        elif len(y) == 2 and not isinstance(y[0], (float, int)):
-            self.axes.set_yticks(*y)
-        elif y is not None:
-            self.axes.set_yticks(y)
-        if isinstance(z, self.styled):
-            self.axes.set_Zticks(*z.str, **z.opts)
-        elif len(z) == 2 and not isinstance(z[0], (float, int)):
-            self.axes.set_yticks(*z)
-        elif z is not None:
-            self.axes.set_yticks(z)
+        self._set_xticks(x)
+        self._set_yticks(y)
+        self._set_zticks(z)
