@@ -305,13 +305,13 @@ class GaussianJob:
                 variables_blocks = []
             for k,c in variables.items():
                 if c[1] is None:
-                    variables_blocks.append("  {:>6} = {:<12f}".format(k, *c))
+                    variables_blocks.append("  {:>6} = {:>16.8f}".format(k, *c))
                 else:
-                    variables_blocks.append("  {:>6} = {:<12f} s {:<5.0f} {:<12f}".format(k, *c))
+                    variables_blocks.append("  {:>6} = {:>16.8f} s {:<5.0f} {:>16.8f}".format(k, *c))
 
             consts = vars["consts"]
             for k,c in consts.items():
-                variables_blocks.append("  {:>6} = {:<12f} f".format(k, c))
+                variables_blocks.append("  {:>6} = {:>16.8f} f".format(k, c))
 
             return variables_blocks
 
@@ -323,7 +323,7 @@ class GaussianJob:
             else:
                 variables_blocks = []
             for k,c in variables.items():
-                variables_blocks.append("  {:>6} = {:<12f} {:<5.0f} {:<12f}".format(k, *c))
+                variables_blocks.append("  {:>6} = {:>16.8f} {:<5.0f} {:>16.8f}".format(k, *c))
 
             consts = vars["consts"]
             if len(consts) > 0:
@@ -331,7 +331,7 @@ class GaussianJob:
             else:
                 constants_blocks = []
             for k,c in consts.items():
-                constants_blocks.append("  {:>6} = {:f} 0 0.".format(k, c))
+                constants_blocks.append("  {:>6} = {:>16.8f} 0 0.".format(k, c))
 
             return variables_blocks + constants_blocks
 
@@ -442,10 +442,12 @@ class GaussianJob:
             crd_type = self.get_coord_type(crds)
 
             var_list = []
-            blocks = [None]*len(crds)
+            blocks = [None]*len(ats)
             if crd_type == "zmat":
+                if len(crds[0]) > 0:
+                    crds = [ [] ] + list(crds)
                 for zz, a in zip(enumerate(crds), atoms):
-                    subblock = [None]*7 # need a new list per line...
+                    subblock = [""]*7 # need a new list per line...
                     i,l = zz
                     subblock[0] = a
                     for j,el in enumerate(l):
@@ -465,9 +467,11 @@ class GaussianJob:
             elif crd_type == "zmatspec":
                 # basically like zmat coords but we loop through two things at once
                 spec, crds = crds
+                if len(crds[0]) > 0:
+                    crds = [ [] ] + list(crds)
                 for i, csa in enumerate(zip(crds, spec, atoms)):
                     l, s, a = csa
-                    subblock = [None]*7 # need a new list per line...
+                    subblock = [""]*7 # need a new list per line...
                     subblock[0] = a
                     for j,e in enumerate(s):
                         subblock[1+2*j] = int(e)

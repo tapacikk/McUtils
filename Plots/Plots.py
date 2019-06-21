@@ -117,7 +117,7 @@ def _get_3D_plotdata(func, xrange, yrange):
 #
 #
 class Plot(Graphics):
-    def __init__(self, func, xrange, method = 'plot', **opts):
+    def __init__(self, func, xrange, method = 'plot', figure = None, axes = None, **opts):
         """Creates a 1D plot on 2D axes
 
         :param func: either a func to apply or an array of x-values
@@ -130,7 +130,7 @@ class Plot(Graphics):
         :type opts:
         """
 
-        super().__init__()
+        super().__init__(figure = figure, axes = axes)
         meth = getattr(self, method)
 
         xrange, fvalues = _get_2D_plotdata(func, xrange)
@@ -162,7 +162,7 @@ class HistogramPlot(Graphics):
 #
 class Plot2D(Graphics):
     """A base class for plots that are 3D but plotted on 2D Graphics"""
-    def __init__(self, func, xrange, yrange, method = 'contour', **opts):
+    def __init__(self, func, xrange, yrange, method = 'contour', figure = None, axes = None, **opts):
         """Creates a 3D plot on 2D axes
 
         :param func: either a func to apply or an array of x-values
@@ -177,7 +177,7 @@ class Plot2D(Graphics):
         :type opts:
         """
 
-        super().__init__()
+        super().__init__(figure = figure, axes = axes)
         meth = getattr(self, method)
 
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
@@ -209,7 +209,7 @@ class ListDensityPlot(ListPlot2D):
 #
 class Plot3D(Graphics3D):
     """A base class for 3D plots"""
-    def __init__(self, func, xrange, yrange, method = 'plot_surface', **opts):
+    def __init__(self, func, xrange, yrange, method = 'plot_surface', figure = None, axes = None, **opts):
         """Creates a 3D plot on 2D axes
 
         :param func: either a func to apply or an array of x-values
@@ -224,7 +224,7 @@ class Plot3D(Graphics3D):
         :type opts:
         """
 
-        super().__init__()
+        super().__init__(figure = figure, axes = axes)
         meth = getattr(self, method)
 
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)

@@ -15,6 +15,9 @@ class GraphicsBase(metaclass=ABCMeta):
 
         if figure is None:
             figure, axes = plt.subplots(*args) # yes axes is overwritten intentionally for now -- not sure how to "reparent" an Axes object
+        elif isinstance(figure, GraphicsBase):
+            axes = figure.axes
+            figure = figure.figure
         if axes is None:
             axes = figure.add_subplot(1, 1, 1)
 
@@ -289,6 +292,9 @@ class Graphics3D(GraphicsBase):
 
         if figure is None:
             figure, axes = plt.subplots(*args, projection='3d')
+        elif isinstance(figure, GraphicsBase):
+            axes = figure.axes
+            figure = figure.figure
 
         if axes is None:
             axes = axes = figure.add_subplot(1, 1, 1, projection='3d')
