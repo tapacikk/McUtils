@@ -265,6 +265,35 @@ GaussianLogComponents["DipoleMoments"] = {
 
 #endregion
 
+########################################################################################################################
+#
+#                                           OptimizedDipoleMoments
+#
+
+#region DipoleMoments
+tag_start  = " Dipole        ="
+tag_end    = " Optimization"
+
+get_optdips_pat = "Dipole\s+="+grp_p(num_p)+"\s*"+grp_p(num_p)+"\s*"+grp_p(num_p)
+get_optdips_re = re.compile(get_dips_pat)
+def parser(mom):
+    """Parses dipole block, but only saves the dipole of the optimized structure"""
+    grps = re.findall(get_dips_re, mom)[-1]
+    dip_list = [x.replace("D", "E") for x in grps]
+    dip_array = np.asarray(dip_list)
+    return dip_array.astype("float64")
+mode       = "List"
+parse_mode = "Single"
+
+GaussianLogComponents["DipoleMoments"] = {
+    "tag_start" : tag_start,
+    "tag_end"   : tag_end,
+    "parser"   : parser,
+    "mode"     : mode
+}
+
+#endregion
+
 #endregion
 
 ########################################################################################################################
