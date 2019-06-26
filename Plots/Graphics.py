@@ -9,22 +9,24 @@ class GraphicsBase(metaclass=ABCMeta):
                  *args,
                  figure = None,
                  axes = None,
+                 subplot_kw = {},
                  **opts
                  ):
+        self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
+        self._shown = False
+        self.set_options(**opts)
+    def _init_suplots(self, figure, axes, *args, **kw):
         import matplotlib.pyplot as plt
-
         if figure is None:
-            figure, axes = plt.subplots(*args) # yes axes is overwritten intentionally for now -- not sure how to "reparent" an Axes object
+            figure, axes = plt.subplots(*args, subplot_kw=kw)
+            # yes axes is overwritten intentionally for now -- not sure how to "reparent" an Axes object
         elif isinstance(figure, GraphicsBase):
             axes = figure.axes
             figure = figure.figure
         if axes is None:
             axes = figure.add_subplot(1, 1, 1)
 
-        self.figure = figure
-        self.axes = axes
-        self._shown = False
-        self.set_options(**opts)
+        return figure, axes
     @abstractmethod
     def set_options(self, **opts):
         """Sets options for the plot
@@ -286,12 +288,14 @@ class Graphics(GraphicsBase):
 
 class Graphics3D(GraphicsBase):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
-    def __init__(self, *args, figure = None, axes = None, **opts):
+
+    def _init_suplots(self, figure, axes, *args, **kw):
+
         from mpl_toolkits.mplot3d import Axes3D
         import matplotlib.pyplot as plt
 
         if figure is None:
-            figure, axes = plt.subplots(*args, projection='3d')
+            figure, axes = plt.subplots(*args, subplot_kw={"projection": '3d'})
         elif isinstance(figure, GraphicsBase):
             axes = figure.axes
             figure = figure.figure
@@ -299,10 +303,7 @@ class Graphics3D(GraphicsBase):
         if axes is None:
             axes = axes = figure.add_subplot(1, 1, 1, projection='3d')
 
-        self.figure = figure
-        self.axes = axes
-
-        self.set_options(**opts)
+        return figure, axes
 
     def set_options(self,
                     axes_labels = None,

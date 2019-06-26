@@ -234,8 +234,13 @@ class Plot3D(Graphics3D):
         self.set_options(**opts)
 class ListPlot3D(Plot3D):
     """Convenience class that handles the interpolation first"""
-    def __init__(self, griddata, **opts):
-        x, y, z = _interp2DData(griddata)
+    def __init__(self, griddata, interpolate = True, **opts):
+        if interpolate:
+            x, y, z = _interp2DData(griddata)
+        else:
+            x = griddata[:, 0]
+            y = griddata[:, 1]
+            z = griddata[:, 2]
         super().__init__(x, y, z, **opts)
 class ScatterPlot3D(Plot3D):
     def __init__(self, func, xrange, yrange, **opts):
@@ -246,3 +251,6 @@ class WireframePlot3D(Plot3D):
 class ContourPlot3D(Plot3D):
     def __init__(self, func, xrange, yrange, **opts):
         super().__init__(func, xrange, yrange, method = 'contourf', **opts)
+class ListTrisurfacePlot3D(ListPlot3D):
+    def __init__(self, griddata, **opts):
+        super().__init__(griddata, method = 'plot_trisurf', interpolate = False, **opts)
