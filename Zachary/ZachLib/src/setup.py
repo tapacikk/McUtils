@@ -1,16 +1,15 @@
 from distutils.core import setup, Extension
 import shutil, os, sys
-from ..config import CPotentialCompilerConfig as cpcc
+# from ..config import CPotentialCompilerConfig as cpcc
 
 lib_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src_dir=os.path.join(lib_dir, "src")
-libname="CPotentialLib"
+libname="ZachLib"
 
 def get_macros():
     macs = []
-    if cpcc["UseMPI"]:
-        macs.append(("USE_MPI", None))
-
+    # if cpcc["UseMPI"]:
+    #     macs.append(("USE_MPI", None))
     return macs
 
 def get_extension():
@@ -24,7 +23,7 @@ def setup_compile():
     return setup(
         name = 'CPotentialLib',
         version = '1.0',
-        description = 'A little library for hooking C potentials into python',
+        description = 'Performance critical parts of Zachary',
         ext_modules = [get_extension()],
         language = "c++"
     )

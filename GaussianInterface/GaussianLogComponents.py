@@ -64,11 +64,6 @@ cartesian_re_c = re.compile(ws_p.join(["("+int_p+")"]*3)+ws_p+cart_p)
 def cartesian_coordinates_parser(strs):
     num_sets = len(strs)
     strit = iter(strs)
-    fucked_up = 0
-    for i,s in enumerate(strs):
-        if s.count("\n") < 14:
-            raise Exception("{} asd {}\n{}".format(i, len(strs), s))
-    
     if num_sets>0:
         xyz = next(strit)
         first = pull_xyz(xyz, regex=cartesian_re_c)

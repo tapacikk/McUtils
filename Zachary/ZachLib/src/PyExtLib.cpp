@@ -13,27 +13,6 @@ Py_buffer _GetDataBuffer(PyObject *data) {
     return view;
 }
 
-//template<typename T>
-//T *_GetDataBufferArray(Py_buffer *view) {
-
-//    T *c_data;
-//    if ( view == NULL ) return NULL;
-//    c_data = (T *) view->buf;
-//    if (c_data == NULL) {
-//        PyBuffer_Release(view);
-//    }
-//    return c_data;
-
-//}
-
-//template<typename T>
-//T *_GetDataArray(PyObject *data) {
-//    Py_buffer view = _GetDataBuffer(data);
-//    T *array = _GetDataBufferArray<T>(&view);
-//    CHECKNULL(array);
-//    return array;
-//}
-
 void _CopyDataBuffer(PyObject *data, void *buff, long len, int dsize) {
 
     Py_buffer view_obj = _GetDataBuffer(data);
@@ -42,19 +21,52 @@ void _CopyDataBuffer(PyObject *data, void *buff, long len, int dsize) {
 
 }
 
-//template<typename T>
-//void _CopyDataBuffer(PyObject *data, void *buff, long len) {
-//    _CopyDataBuffer(data, buff, len, sizeof(T));
-//}
+/****************************** STRING HANDLING **********************************/
+#if PY_MAJOR_VERSION == 3
+const char *_GetString( PyObject* s, const char *enc, const char *err, PyObject *pyStr) {
+    pyStr = PyUnicode_AsEncodedString(s, enc, err);
+    if (pyStr == NULL) return NULL;
+    const char *strExcType =  PyBytes_AsString(pyStr);
+//    Py_XDECREF(pyStr);
+    return strExcType;
+}
+const char *_GetString( PyObject* s, PyObject *pyStr) {
+    // unfortunately we need to pass the second pyStr so we can XDECREF it later
+    return _GetString( s, "utf-8", "strict", pyStr); // utf-8 is safe since it contains ASCII fully
+    }
 
-//template<typename T>
-//void _SetDataBuffer(PyObject *data, void *buff) {
+const char *_Repr(PyObject *o, PyObject *repr) {
+    PyObject *tmp = PyObject_Repr(o);
+    PyObject *enc = PyUnicode_AsEncodedString(tmp, "utf-8", "strict");
+    if ( enc == NULL) {
+        Py_XDECREF(tmp);
+        return NULL;
+    }
+    const char *str =  PyBytes_AsString(enc);
+    Py_XDECREF(enc);
+    Py_XDECREF(tmp);
 
-//    Py_buffer view_obj = _GetDataBuffer(data);
-//    Py_buffer *view = &view_obj;
-//    view->buf = (T *) buff;
+    return str;
+}
 
-//}
+#else
+const char *_GetString( PyObject* s ) {
+    return PyString_AsString(s);
+}
+const char *_GetString( PyObject* s, PyObject *pyStr ) {
+    // just to unify the 2/3 interface
+    return _GetString( s );
+    }
+const char *_Repr(PyObject *o) {
+    PyObject *tmp = PyObject_Repr(o);
+    const char *str = _GetString(o);
+    Py_XDECREF(tmp);
+    return str;
+}
+const char *_Repr(PyObject *o, PyObject *repr) {
+    return _Repr( o );
+}
+#endif
 
 int _DebugPrint(int level, const char *fmt, ...) {
     if (level <= _DEBUG_LEVEL) {
@@ -74,19 +86,6 @@ int _DebugPrint(int level, const char *fmt, ...) {
 int _DebugMessage(int level, const char *msg) {
     return _DebugPrint(level, "%s", msg);
 }
-const char *_Repr(PyObject *o, PyObject *repr) {
-    PyObject *tmp = PyObject_Repr(o);
-    PyObject *enc = PyUnicode_AsEncodedString(tmp, "utf-8", "strict");
-    if ( enc == NULL) {
-        Py_XDECREF(tmp);
-        return NULL;
-    }
-    const char *str =  PyBytes_AsString(enc);
-    Py_XDECREF(enc);
-    Py_XDECREF(tmp);
-
-    return str;
-}
 int _DebugPrintObject(int lvl, PyObject *o){
     PyObject *repr = NULL;
     const char * buff=_Repr(o, repr);
@@ -94,6 +93,29 @@ int _DebugPrintObject(int lvl, PyObject *o){
     Py_XDECREF(repr);
     return res;
 }
+
+/******************************** CAPSULE FILLING ****************************************/
+
+PyObject *_WrapPointer( void *ptr, const char* name) {
+    PyObject *link_cap = PyCapsule_New(ptr, name, NULL);
+//    _DebugPrint(4, "Attaching pointer (%p) to capsule (%s)", ptr, name);
+    if (link_cap == NULL) {
+        PyErr_SetString(PyExc_TypeError, "couldn't create capsule object");
+        return NULL;
+    } else if (!PyCapsule_IsValid(link_cap, name)) {
+        PyErr_SetString(PyExc_ValueError, "couldn't add pointer to invalid capsule object");
+        Py_XDECREF(link_cap);
+        return NULL;
+    }
+    return link_cap;
+}
+
+// is this even useful...
+//void *_ExtractPointer( PyObject *link_cap, const char* name ) {
+//    return PyCapsule_GetPointer(link_cap, name);
+//}
+
+/******************************** NUMPY MANIPULATION *************************************/
 
 PyObject *_ArrayAsType(PyObject *array, const char *type) {
 
@@ -169,4 +191,33 @@ PyObject *_CreateArray(int depth, int *dims, const char *ctor) {
     return _CreateArray(depth, dims, ctor, "float64");
 }
 
+/**************************** NUMPY TO C++ ****************************************/
 
+std::vector<long> _GetNumpyShape(PyObject* ndarray) {
+    PyObject *shp = PyObject_GetAttrString(ndarray, "shape");
+    int nums = PyObject_Length(shp);
+//    CHECKCLEAN(nums, shp);
+    std::vector<long> shape(nums);
+    PyObject *iter = PyObject_GetIter(shp);
+    PyObject *item; int i = 0; long n;
+    while ( (item = PyIter_Next(iter)) ) {
+        n = PyLong_AsLong(item);
+        Py_XDECREF(item);
+        if (PyErr_Occurred()) { break; }
+        shape[i++] = n;
+    };
+
+    Py_XDECREF(shp);
+
+    return shape;
+
+};
+
+/***** MISC *****/
+// might be worth writing this kinda thing in general...
+size_t _idx2D(int i, int j, int n, int m) {
+    return m * i + j;
+}
+size_t _idx3D(int i, int j, int k, int n, int m, int l) {
+    return m * l * i + l * j + k;
+}

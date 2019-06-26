@@ -1,2 +1,2 @@
 
-from .lib import *
+from .coeffuncs import *

@@ -1,13 +1,13 @@
 import os, sys
 
 lib_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, lib_dir)
 try:
-    sys.path.insert(0, lib_dir)
-    from ZachLib import *
+    from .ZachLib import *
 except ImportError:
-    from .setup import failed
-    if failed:
+    from .src.setup import load
+    if load() is None:
         raise
-    from ZachLib import *
+    from .ZachLib import *
 finally:
     sys.path.pop(0)

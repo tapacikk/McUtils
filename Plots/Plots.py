@@ -79,7 +79,7 @@ def _interp2DData(gpts, **opts):
     mesh = np.array((xmesh, ymesh)).T
     vals = griddata(gpts[:, (0, 1)], gpts[:, 2], mesh, **opts)
 
-    return xmesh, ymesh, vals
+    return xmesh, ymesh, vals.T
 def _get_2D_plotdata(func, xrange):
     if not callable(func):
         fvalues = xrange
@@ -194,10 +194,11 @@ class ListPlot2D(Plot2D):
     """Convenience class that handles the interpolation first"""
     def __init__(self, griddata, **opts):
         x, y, z = _interp2DData(griddata)
+        # print(x.shape, y.shape, z.shape)
         super().__init__(x, y, z, **opts)
 class ListContourPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
-        super().__init__(griddata, method='contour', **opts)
+        super().__init__(griddata, method='contourf', **opts)
 class ListDensityPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
         super().__init__(griddata, method='pcolormesh', **opts)
