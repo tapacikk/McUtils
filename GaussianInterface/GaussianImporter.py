@@ -106,7 +106,7 @@ class FileStreamReader:
 
         # implict None return if no block found
 
-    def parse_key_block(self, tag_start=None, tag_end=None, mode=None, parser = None, num = None, **ignore):
+    def parse_key_block(self, tag_start=None, tag_end=None, mode="Single", parser = None, parse_mode = "List", num = None, **ignore):
         """
 
         :param key: registered key pattern to pull from Gaussian
@@ -138,23 +138,33 @@ class FileStreamReader:
                 # but this is probably good enough
                 if isinstance(num, int):
                     blocks = [None]*num
+                    if parser is None:
+                        parser = lambda a:a
+
+                    i = 0 # protective
                     for i in range(num):
                         block = self.get_tagged_block(tag_start, tag_end)
                         if block is None:
                             break
+                        if parse_mode != "List":
+                            block = parser(block)
                         blocks[i] = block
-                    if parser is None:
-                        parser = lambda a:a
-                    blocks = parser(blocks[:i+1])
+
+                    if parse_mode == "List":
+                        blocks = parser(blocks[:i+1])
                 else:
                     blocks = []
                     block = self.get_tagged_block(tag_start, tag_end)
-                    while block is not None:
-                        blocks.append(block)
-                        block = self.get_tagged_block(tag_start, tag_end)
                     if parser is None:
                         parser = lambda a:a
-                    blocks = parser(blocks)
+                    while block is not None:
+                        if parse_mode != "List":
+                            block = parser(block)
+                        blocks.append(block)
+                        block = self.get_tagged_block(tag_start, tag_end)
+
+                    if parse_mode == "List":
+                        blocks = parser(blocks)
                 return blocks
         else:
             block = self.get_tagged_block(tag_start, tag_end)
