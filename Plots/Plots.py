@@ -88,6 +88,8 @@ def _get_2D_plotdata(func, xrange):
         if len(xrange) == 3 and abs(xrange[2]) < abs(xrange[1] - xrange[0]):
             xrange = np.arange(*xrange)
             fvalues = _apply_f(func, xrange)
+        elif len(xrange) > 2:
+            fvalues = _apply_f(func, xrange)
         else:
             res = _semi_adaptive_sample_func(func, *xrange)
             xrange = res[0]
@@ -102,6 +104,9 @@ def _get_3D_plotdata(func, xrange, yrange):
         if len(xrange) == 3 and abs(xrange[2]) < abs(xrange[1] - xrange[0]):
             xrange = np.arange(*xrange)
             yrange = np.arange(*yrange)
+            xrange, yrange = mesh = np.meshgrid(xrange, yrange)
+            fvalues = _apply_f(func, mesh)
+        elif len(xrange) > 2 and len(yrange) > 2:
             xrange, yrange = mesh = np.meshgrid(xrange, yrange)
             fvalues = _apply_f(func, mesh)
         else:
