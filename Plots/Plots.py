@@ -268,6 +268,31 @@ class VerticalLinePlot(Graphics):
         ax = self.axes # type: matplotlib.axes.Axes
         fig.colorbar(self.graphics, **kw)
 
+
+class ArrayPlot(Graphics):
+    def __init__(self, array,
+                 plot_style = None, colorbar = None,
+                 figure=None, axes=None, subplot_kw = None,
+                 method = 'imshow',
+                 **opts
+                 ):
+        """Creates an array plot from the array
+        """
+        super().__init__(figure=figure, axes=axes, subplot_kw = subplot_kw)
+        meth = getattr(self, method)
+        if plot_style is None:
+            plot_style = {}
+        self.graphics = meth(array, **plot_style)
+        self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
+    def add_colorbar(self, **kw):
+        fig = self.figure # type: matplotlib.figure.Figure
+        ax = self.axes # type: matplotlib.axes.Axes
+        fig.colorbar(self.graphics, **kw)
+
 ######################################################################################################
 #
 #                                    3D Plots on 2D Axes
