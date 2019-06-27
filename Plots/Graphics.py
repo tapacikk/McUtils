@@ -1,4 +1,6 @@
 """Provides a basic Plot object for working with"""
+import matplotlib.figure
+import matplotlib.axes
 
 class GraphicsException(Exception):
     pass
@@ -16,15 +18,30 @@ class GraphicsBase(metaclass=ABCMeta):
         self._shown = False
         self.set_options(**opts)
     def _init_suplots(self, figure, axes, *args, **kw):
+        """Initializes the subplots for the Graphics object
+
+        :param figure:
+        :type figure:
+        :param axes:
+        :type axes:
+        :param args:
+        :type args:
+        :param kw:
+        :type kw:
+        :return: figure, axes
+        :rtype: matplotlib.figure.Figure, matplotlib.axes.Axes
+        """
         import matplotlib.pyplot as plt
+
         if figure is None:
             figure, axes = plt.subplots(*args, subplot_kw=kw)
             # yes axes is overwritten intentionally for now -- not sure how to "reparent" an Axes object
         elif isinstance(figure, GraphicsBase):
-            axes = figure.axes
-            figure = figure.figure
+            axes = figure.axes # type: matplotlib.axes.Axes
+            figure = figure.figure # type: matplotlib.figure.Figure
+
         if axes is None:
-            axes = figure.add_subplot(1, 1, 1)
+            axes = figure.add_subplot(1, 1, 1) # type: matplotlib.axes.Axes
 
         return figure, axes
     @abstractmethod

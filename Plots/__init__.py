@@ -1,3 +1,5 @@
 from .Graphics import Graphics, Graphics3D
-from .Plots import Plot, Plot2D, Plot3D, HistogramPlot, ListPlot2D, ListPlot3D, ScatterPlot, ScatterPlot3D, \
-    ContourPlot, ListContourPlot, ListDensityPlot, WireframePlot3D, ContourPlot3D, ListTrisurfacePlot3D
+from .Plots import Plot, ScatterPlot, ErrorBarPlot, ListErrorBarPlot, StickPlot, ListStickPlot, TriPlot, ListTriPlot, \
+    DataPlot, HistogramPlot, HistogramPlot2D, VerticalLinePlot, \
+    Plot2D, ListPlot2D, ContourPlot, ListContourPlot, ListDensityPlot, ListTriContourPlot, ListTriDensityPlot, ListTriPlot3D,\
+    Plot3D, ListPlot3D, ScatterPlot3D, WireframePlot3D, ContourPlot3D
