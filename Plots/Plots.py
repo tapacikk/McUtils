@@ -140,7 +140,13 @@ def _get_3D_plotdata(func, xrange, yrange):
 #
 #
 class Plot(Graphics):
-    def __init__(self, func, xrange, method = 'plot', figure = None, axes = None, plot_style = None, **opts):
+    def __init__(self, func, xrange,
+                 method = 'plot',
+                 figure = None, axes = None, subplot_kw = None,
+                 plot_style = None,
+                 colorbar = None,
+                 **opts
+                 ):
         """Creates a 1D plot on 2D axes
 
         :param func: either a func to apply or an array of x-values
@@ -153,7 +159,7 @@ class Plot(Graphics):
         :type opts:
         """
 
-        super().__init__(figure = figure, axes = axes)
+        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
         meth = getattr(self, method)
 
         xrange, fvalues = _get_2D_plotdata(func, xrange)
@@ -162,6 +168,10 @@ class Plot(Graphics):
             plot_style = {}
         self.graphics = meth(xrange, fvalues, **plot_style)
         self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
@@ -204,16 +214,25 @@ class ListTriPlot(TriPlot):
 #
 #
 class DataPlot(Graphics):
-    def __init__(self, data, plot_style = None, method = None, figure = None, axes = None, **opts):
+    def __init__(self, data,
+                 plot_style = None, method = None,
+                 figure = None, axes = None, subplot_kw = None,
+                 colorbar = None,
+                 **opts
+                 ):
         """Creates a plot of data
         """
 
-        super().__init__(figure = figure, axes = axes)
+        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
         meth = getattr(self, method)
         if plot_style is None:
             plot_style = {}
         self.graphics = meth(data, **plot_style)
         self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
@@ -226,16 +245,24 @@ class HistogramPlot2D(DataPlot):
         super().__init__(*args, method = 'hist2d', **kwargs)
 
 class VerticalLinePlot(Graphics):
-    def __init__(self, x, y = 1.0, plot_style = None, **opts):
+    def __init__(self, x, y = 1.0,
+                 plot_style = None, colorbar = None,
+                 figure=None, axes=None, subplot_kw = None,
+                 **opts
+                 ):
         """Creates a stickplot of data
         """
         if isinstance(y, (int, float)):
             y = [0, y]
-        super().__init__()
+        super().__init__(figure=figure, axes=axes, subplot_kw = subplot_kw)
         if plot_style is None:
             plot_style = {}
         self.graphics = self.axes.vlines(x, *y, **plot_style)
         self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
@@ -248,7 +275,11 @@ class VerticalLinePlot(Graphics):
 #
 class Plot2D(Graphics):
     """A base class for plots that are 3D but plotted on 2D Graphics"""
-    def __init__(self, func, xrange, yrange, method = 'contour', figure = None, axes = None, plot_style = None, **opts):
+    def __init__(self, func, xrange, yrange, plot_style = None,
+                 method = 'contour', colorbar = None,
+                 figure = None, axes = None, subplot_kw = None,
+                 **opts
+                 ):
         """Creates a 3D plot on 2D axes
 
         :param func: either a func to apply or an array of x-values
@@ -263,7 +294,7 @@ class Plot2D(Graphics):
         :type opts:
         """
 
-        super().__init__(figure = figure, axes = axes)
+        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
         meth = getattr(self, method)
 
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
@@ -272,6 +303,11 @@ class Plot2D(Graphics):
             plot_style = {}
         self.graphics = meth(xrange, yrange, fvalues, **plot_style)
         self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
+
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
@@ -312,7 +348,11 @@ class ListTriDensityPlot(ListPlot2D):
 #
 class Plot3D(Graphics3D):
     """A base class for 3D plots"""
-    def __init__(self, func, xrange, yrange, method = 'plot_surface', figure = None, axes = None, plot_style = None, **opts):
+    def __init__(self, func, xrange, yrange, plot_style = None,
+                 method = 'plot_surface', colorbar = None,
+                 figure = None, axes = None, subplot_kw = None,
+                 **opts
+                 ):
         """Creates a 3D plot on 2D axes
 
         :param func: either a func to apply or an array of x-values
@@ -327,7 +367,7 @@ class Plot3D(Graphics3D):
         :type opts:
         """
 
-        super().__init__(figure = figure, axes = axes)
+        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
         meth = getattr(self, method)
 
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
@@ -336,6 +376,10 @@ class Plot3D(Graphics3D):
             plot_style = {}
         self.graphics = meth(xrange, yrange, fvalues, **plot_style)
         self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes

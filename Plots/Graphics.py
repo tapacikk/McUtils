@@ -11,9 +11,11 @@ class GraphicsBase(metaclass=ABCMeta):
                  *args,
                  figure = None,
                  axes = None,
-                 subplot_kw = {},
+                 subplot_kw = None,
                  **opts
                  ):
+        if subplot_kw is None:
+            subplot_kw = {}
         self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
         self._shown = False
         self.set_options(**opts)
@@ -146,7 +148,31 @@ class GraphicsBase(metaclass=ABCMeta):
 
 class Graphics(GraphicsBase):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
-
+    def __init__(self, *args,
+                 figure = None,
+                 axes = None,
+                 subplot_kw = None,
+                 axes_labels = None,
+                 plot_label = None,
+                 plot_range = None,
+                 plot_legend = None,
+                 ticks = None,
+                 scale = None,
+                 **kwargs
+                 ):
+        super().__init__(
+            *args,
+            figure = figure,
+            axes = axes,
+            subplot_kw = subplot_kw,
+            axes_labels = axes_labels,
+            plot_label = plot_label,
+            plot_range = plot_range,
+            plot_legend = plot_legend,
+            ticks = ticks,
+            scale = scale,
+            **kwargs
+        )
     def set_options(self,
                     axes_labels = None,
                     plot_label = None,
@@ -305,6 +331,31 @@ class Graphics(GraphicsBase):
 
 class Graphics3D(GraphicsBase):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
+    def __init__(self, *args,
+                 figure = None,
+                 axes = None,
+                 subplot_kw = None,
+                 axes_labels = None,
+                 plot_label = None,
+                 plot_range = None,
+                 plot_legend = None,
+                 ticks = None,
+                 scale = None,
+                 **kwargs
+                 ):
+        super().__init__(
+            *args,
+            figure = figure,
+            axes = axes,
+            subplot_kw = subplot_kw,
+            axes_labels = axes_labels,
+            plot_label = plot_label,
+            plot_range = plot_range,
+            plot_legend = plot_legend,
+            ticks = ticks,
+            scale = scale,
+            **kwargs
+        )
 
     def _init_suplots(self, figure, axes, *args, **kw):
 
@@ -416,18 +467,20 @@ class Graphics3D(GraphicsBase):
             self.axes.set_xlabel(*xlab.str, **xlab.opts)
         else:
             self.axes.set_xlabel(xlab)
+
         if ylab is None:
             self.axes.set_ylabel("")
         elif isinstance(ylab, self.styled):
             self.axes.set_ylabel(*ylab.str, **ylab.opts)
         else:
             self.axes.set_ylabel(ylab)
+
         if zlab is None:
             self.axes.set_zlabel("")
         elif isinstance(zlab, self.styled):
-            self.axes.set_ylabel(*zlab.str, **zlab.opts)
+            self.axes.set_zlabel(*zlab.str, **zlab.opts)
         else:
-            self.axes.set_zlabel(ylab)
+            self.axes.set_zlabel(zlab)
 
     # set plot ranges
     @property
