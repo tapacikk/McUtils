@@ -34,6 +34,9 @@ class FiniteDifferenceFunction:
         self.mesh_spacings = mesh_spacings # in general we don't know this...
         self.num_vals = num_vals # in general we also don't know this...
     @property
+    def coefficients(self):
+        return self._coefficients
+    @property
     def gridtype(self):
         return self._gridtype
     @property
@@ -47,6 +50,8 @@ class FiniteDifferenceFunction:
         if self._function is None:
             self._function = self.get_FDF()
         return self._function
+    def __call__(self, *args, **kwargs):
+        return self.function(*args, **kwargs)
     @classmethod
     def RegularGridFunction(cls, n, accuracy = 4, stencil = None, end_point_precision = 4, dimension = None, **kw):
         """Constructs a finite-difference function that computes the nth derivative to a given accuracy order
@@ -68,8 +73,8 @@ class FiniteDifferenceFunction:
         """
 
         # Gotta make sure we have the right dimensions for our derivatives
-        if isinstance(n, int):
-            if not isinstance(dimension, int):
+        if isinstance(n, (int, np.integer)):
+            if not isinstance(dimension, (int, np.integer)):
                 dimension = 1
             n = [ n ] * dimension
         else:
@@ -77,9 +82,9 @@ class FiniteDifferenceFunction:
 
         # we're gonna try to force our derivatives to either use a set number of points (stencil) or
         # to have a certain order in the derivatives (accuracy)
-        if isinstance(accuracy, int):
+        if isinstance(accuracy, (int, np.integer)):
             accuracy = [ accuracy ] * dimension
-        if isinstance(stencil, int) or stencil is None:
+        if isinstance(stencil, (int, np.integer)) or stencil is None:
             stencil = [ stencil ] * dimension
 
         coeff_list = [ None ] * dimension
@@ -87,9 +92,9 @@ class FiniteDifferenceFunction:
         for i, m in enumerate(n):
             if m > 0:
                 if stencil[i] is None:
-                    sten = m + accuracy[i]
+                    sten = m + accuracy[i] - 1
                 else:
-                    sten = stencil[i]
+                    sten = stencil[i] - 1
                 outer_stencil = sten + end_point_precision
                 lefthand_coeffs = cls._even_grid_coeffs(m, 0, outer_stencil)
                 centered_coeffs = cls._even_grid_coeffs(m, np.math.ceil(sten / 2), sten)
@@ -188,11 +193,11 @@ class FiniteDifferenceFunction:
         gp = np.asarray(grid)
 
         dim = max(len(grid.shape) - 1, 1)
-        if dim > 1 and isinstance(order, int):
+        if dim > 1 and isinstance(order, (int, np.integer)):
             order = (order,) * dim
         if stencil is None:
             if dim > 1:
-                if isinstance(accuracy, int):
+                if isinstance(accuracy, (int, np.integer)):
                     accuracy = [ accuracy ] * dim
                 stencil = [o + a for o, a in zip(order, accuracy)]
             else:
@@ -219,28 +224,28 @@ class FiniteDifferenceFunction:
 
     def _clean_coeffs(self, cfs):
         cf1 = cfs[0]
-        if isinstance(cf1, (int, float)):
+        if isinstance(cf1, (int, float, np.integer, np.float)):
             cfs = [ [ cfs ] ]
         return cfs
     def _clean_widths(self, ws):
 
-        if isinstance(ws, (int, float)):
+        if isinstance(ws, (int, float, np.integer, np.float)):
             ws = ( (int(ws), int(ws)) )
         else:
             w2s = [ None ] * len(ws)
             for i,w in enumerate(ws):
-                if isinstance(w, (int, float)):
+                if isinstance(w, (int, float, np.integer, np.float)):
                     w2s[i] = (int(w), int(w))
-                elif isinstance(w[0], (int, float)):
+                elif isinstance(w[0], (int, float, np.integer, np.float)):
                     w2s[i] = (int(w[0]), int(w[1]))
                 elif w is not None:
                     w2s[i] = self._clean_widths(w)
             ws = tuple(w2s)
         return ws
     def _clean_order(self, order):
-        if not isinstance(order, int):
+        if not isinstance(order, (int, np.integer)):
             try:
-                isinst = all((isinstance(o, int) for o in order))
+                isinst = all((isinstance(o, (int, np.integer)) for o in order))
             except:
                 isinst = False
             if not isinst:
@@ -289,7 +294,7 @@ class FiniteDifferenceFunction:
         # otherwise we need to be general about it
         if not num_vals is None:
             ndim = len(coeffs)
-            if len(coeffs) > 1 and isinstance(num_vals, int):
+            if len(coeffs) > 1 and isinstance(num_vals, (int, np.integer)):
                 num_vals = [num_vals]*ndim
             if mesh_spacings is None:
                 mmm = [ None ]*ndim
@@ -308,7 +313,7 @@ class FiniteDifferenceFunction:
                     raise FiniteDifferenceError("{} object has no 'mesh_spacings' bound so one needs to be passed".format(cls.__name__))
                 try:
                     len(h)
-                except IndexError:
+                except (IndexError, TypeError):
                     h = [h]*len(coeffs)
                 meshy = h
                 num_vals = f_vals.shape
