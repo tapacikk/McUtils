@@ -337,7 +337,7 @@ class FiniteDifferenceFunction:
         else:
             mats = None
 
-        def FDF(f_vals, h = None, mats = None, default_mats = mats, default_h = mesh_spacings):
+        def FDF(f_vals, h = None, mats = None, default_mats = mats, default_h = mesh_spacings, axis = 0):
             "Calculates a finite difference"
             if mats is None:
                 mats = default_mats
@@ -345,13 +345,13 @@ class FiniteDifferenceFunction:
                 if h is None:
                     h = default_h
                 new_mats = cls._even_grid_matrices(f_vals.shape, h, coeffs, orders)
-                vavoom = cls._apply_fdm(new_mats, f_vals)
+                vavoom = cls._apply_fdm(new_mats, f_vals, axis = axis)
             else:
                 if h is not None:
                     if isinstance(h, (int, np.integer, float, np.float)):
                         h = [ h ] * len(mats)
                     mats = [ ms * m if m is not None else m for ms, m in zip(h, mats) ]
-                vavoom = cls._apply_fdm(mats, f_vals)
+                vavoom = cls._apply_fdm(mats, f_vals, axis = axis)
             return vavoom
 
         return FDF
@@ -469,7 +469,7 @@ class FiniteDifferenceFunction:
             mmm = strided(b[n2:], shape=(n1, n2), strides=(-s,s))
         return mmm
     @staticmethod
-    def _apply_fdm(mats, vals):
+    def _apply_fdm(mats, vals, axis = 0):
 
         dim = len(mats) if isinstance(mats, (tuple, list)) else 1 # we use a non-numpy type as our flag we got more than one
         val_dim = len(vals.shape)
@@ -477,15 +477,19 @@ class FiniteDifferenceFunction:
             if val_dim == 1:
                 vals = np.dot(mats, vals)
             elif val_dim == 2:
+                if axis == 1:
+                    mats = mats.T
                 vals = np.matmul(mats, vals)
             else:
-                vals = np.tensordot(mats, vals, axes=((1), (0)))
+                vals = np.tensordot(mats, vals, axes=((1), (axis)))
         # elif dim == 2 and val_dim == 2:
         #     # this is an easy common case so we'll do it directly
         #     vals = np.matmul(mats[1], np.matmul(mats[0], vals).T).T
         else:
-            # we'll assume dimension one is the slowest changing index, dimension 2 is the next slowest, etc.
-            for i, m in enumerate(mats):
+            # by default we'll assume dimension one is the slowest changing index, dimension 2 is the next slowest, etc.
+            if isinstance(axis, (int, np.integer)):
+                axis = axis + np.arange(len(mats))
+            for i, m in zip(axis, mats):
                 if m is not None:
                     # print(i, m.shape, vals.shape)
                     vals = np.tensordot(m, vals, axes=((1), (i)))

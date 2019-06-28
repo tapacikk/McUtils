@@ -1,4 +1,4 @@
-from .Graphics import Graphics, Graphics3D
+from .Graphics import Graphics, Graphics3D, GraphicsGrid
 import numpy as np
 import matplotlib.figure
 import matplotlib.axes
@@ -292,6 +292,49 @@ class ArrayPlot(Graphics):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
         fig.colorbar(self.graphics, **kw)
+
+class TensorPlot(GraphicsGrid):
+    def __init__(self, tensor,
+                 nrows = None, ncols = None,
+                 plot_style = None, colorbar = None,
+                 figure=None, axes=None, subplot_kw = None,
+                 method = 'imshow',
+                 **opts
+                 ):
+        from operator import mul
+        from functools import reduce
+        tensor_shape = tensor.shape
+        total_dim = reduce(mul, tensor_shape[:-2], 1)
+        if nrows is None or ncols is None:
+            if len(tensor_shape) == 4: # best case
+                nrows, ncols = tensor_shape[:2]
+            else:
+                if nrows is not None:
+                    ncols = total_dim // nrows
+                elif ncols is not None:
+                    nrows = total_dim // ncols
+                else:
+                    ncols = 5
+                    nrows = total_dim // ncols
+        super().__init__(nrows=nrows, ncols=ncols,
+                         figure = figure,
+                         axes = axes,
+                         subplot_kw = subplot_kw
+                         )
+
+        tensor = tensor.reshape((total_dim,) + tensor_shape[-2:])
+        for i in range(nrows):
+            for j in range(ncols):
+                graphics = self.axes[i, j]
+                self.axes[i, j] = ArrayPlot(
+                    tensor[nrows * i + j],
+                    figure = graphics,
+                    plot_style = plot_style,
+                    colorbar = colorbar,
+                    method=method,
+                    **opts
+                )
+
 
 ######################################################################################################
 #

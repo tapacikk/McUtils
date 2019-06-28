@@ -145,7 +145,6 @@ class GraphicsBase(metaclass=ABCMeta):
         elif x is not None:
             set_ticks(x, **opts)
 
-
 class Graphics(GraphicsBase):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
     def __init__(self, *args,
@@ -180,6 +179,7 @@ class Graphics(GraphicsBase):
                     plot_legend = None,
                     ticks = None,
                     scale = None,
+                    ticks_style = None,
                     **ignored
                     ):
 
@@ -220,6 +220,13 @@ class Graphics(GraphicsBase):
             self.scale = self._scale
         else:
             self._scale = (axes.get_xscale(), axes.get_yscale())
+
+        self._ticks_style = ticks_style
+        if ticks_style is not None:
+            self.ticks_style = ticks_style
+        else:
+            self._ticks_style = (None,)*2
+
 
     # set plot label
     @property
@@ -328,6 +335,26 @@ class Graphics(GraphicsBase):
         self._ticks = ticks
         self._set_xticks(x)
         self._set_yticks(y)
+    @property
+    def ticks_style(self):
+        return self._ticks_style
+    @ticks_style.setter
+    def ticks_style(self, ticks_style):
+        try:
+            x, y = ticks_style
+        except ValueError:
+            x, y = ticks_style = (self._ticks_style[0], ticks_style)
+        self._ticks_style = ticks_style
+        if x is not None:
+            self.axes.tick_params(
+                axis='x',
+                **x
+            )
+        if y is not None:
+            self.axes.tick_params(
+                axis='y',
+                **y
+            )
 
 class Graphics3D(GraphicsBase):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
@@ -341,6 +368,7 @@ class Graphics3D(GraphicsBase):
                  plot_legend = None,
                  ticks = None,
                  scale = None,
+                 ticks_style = None,
                  **kwargs
                  ):
         super().__init__(
@@ -354,6 +382,7 @@ class Graphics3D(GraphicsBase):
             plot_legend = plot_legend,
             ticks = ticks,
             scale = scale,
+            ticks_style = None,
             **kwargs
         )
 
@@ -380,6 +409,7 @@ class Graphics3D(GraphicsBase):
                     plot_legend = None,
                     ticks = None,
                     scale = None,
+                    ticks_style = None,
                     **ignored
                     ):
 
@@ -414,6 +444,11 @@ class Graphics3D(GraphicsBase):
             self.ticks = self._ticks
         else:
             self._ticks = (axes.get_xticks(), axes.get_yticks(), axes.get_zticks())
+        self._ticks_style = ticks_style
+        if ticks_style is not None:
+            self.ticks_style = ticks_style
+        else:
+            self._ticks_style = (None,)*3
 
         self._scale = scale
         if self._scale is not None:
@@ -549,3 +584,96 @@ class Graphics3D(GraphicsBase):
         self._set_xticks(x)
         self._set_yticks(y)
         self._set_zticks(z)
+    @property
+    def ticks_style(self):
+        return self._ticks_style
+    @ticks_style.setter
+    def ticks_style(self, ticks_style):
+        try:
+            x, y, z = ticks_style
+        except ValueError:
+            x, y, z = ticks_style = (self._ticks_style[0], self._ticks_style[1], ticks_style)
+        self._ticks_style = ticks_style
+        if x is not None:
+            self.axes.tick_params(
+                axis='x',
+                **x
+            )
+        if y is not None:
+            self.axes.tick_params(
+                axis='y',
+                **y
+            )
+        if z is not None:
+            self.axes.tick_params(
+                axis='z',
+                **z
+            )
+
+class GraphicsGrid:
+    def __init__(self,
+                 *args,
+                 nrows = 2, ncols = 2,
+                 graphics_class = Graphics,
+                 figure = None,
+                 axes = None,
+                 subplot_kw = None,
+                 **opts
+                 ):
+        self.figure, self.axes = self._init_suplots(
+            nrows, ncols,
+            figure, axes,
+            graphics_class,
+            *args,
+            subplot_kw = subplot_kw,
+            **opts
+        )
+        self.shape = (nrows, ncols)
+    def _init_suplots(self, nrows, ncols, figure, axes, graphics_class, *args, subplot_kw = None, **kw):
+        """Initializes the subplots for the Graphics object
+
+        :param figure:
+        :type figure:
+        :param axes:
+        :type axes:
+        :param args:
+        :type args:
+        :param kw:
+        :type kw:
+        :return: figure, axes
+        :rtype: matplotlib.figure.Figure, matplotlib.axes.Axes
+        """
+        import matplotlib.pyplot as plt
+
+        if figure is None:
+            if subplot_kw is None:
+                subplot_kw = {}
+            figure, axes = plt.subplots(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw)
+            if isinstance(axes, matplotlib.axes.Axes):
+                axes = [ [axes] ]
+            for i in range(nrows):
+                for j in range(ncols):
+                    axes[i][j] = graphics_class(figure = figure, axes = axes[i][j], **kw)
+        elif isinstance(figure, GraphicsGrid):
+            axes = figure.axes # type: matplotlib.axes.Axes
+            figure = figure.figure # type: matplotlib.figure.Figure
+
+        if axes is None:
+            axes = [
+                graphics_class(
+                    figure.add_subplot(nrows, ncols, i),
+                    **kw
+                ) for i in range(nrows * ncols)
+            ]
+
+        return figure, axes
+    def __getitem__(self, item):
+        try:
+            i, j = item
+        except ValueError:
+            return self.axes[i]
+        else:
+            return self.axes[i][j]
+
+    def show(self):
+        self.axes[0][0].show()
