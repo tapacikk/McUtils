@@ -20,6 +20,35 @@ class GraphicsPrimitive(metaclass=abc.ABCMeta):
         """
         pass
 
+class Disk(GraphicsPrimitive):
+    def __init__(self, position, radius, **opts):
+        self.pos = position
+        self.rad = (100*radius)**2
+        self.opts = opts
+    def plot(self, graphics, *args, zdir = None, **kwargs):
+        import numpy as np
+
+        pt = np.array([self.pos]).T
+        kw = dict(self.opts, s = [ self.rad ], edgecolors = [ [.95]*3 +[.5] ], **kwargs)
+        s = graphics.scatter(*pt, **kw)
+
+        return s
+
+class Line(GraphicsPrimitive):
+    def __init__(self, pos1, pos2, radius, **opts):
+        self.pos1 = pos1
+        self.pos2 = pos2
+        self.rad = 72*radius # this can't be configured nearly as cleanly as the circle stuff...
+        self.opts = opts
+    def plot(self, graphics, *args, **kwargs):
+        import numpy as np
+        pos = np.array([self.pos1, self.pos2]).T
+
+        kw = dict(self.opts, linewidth = self.rad, **kwargs)
+        line = graphics.plot(*pos, **kw)
+
+        return line
+
 class Sphere(GraphicsPrimitive):
     def __init__(self, position, radius, sphere_points = 48, **opts):
         self.pos = position
