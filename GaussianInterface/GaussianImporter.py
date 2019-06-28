@@ -301,11 +301,11 @@ class GaussianFChkReader(FileStreamReader):
         if byte_count is not None:
 
             block_str = self.read(byte_count)
-            if dtype == int:
-                value = np.fromstring(block_str, np.int8)
-            elif dtype == float:
+            if dtype in {int, float}:
                 block_str = io.StringIO(block_str.decode(self._encoding).replace("\n", "")) # flatten it out
                 value = np.loadtxt(block_str)
+                if dtype == int:
+                    value = value.astype(np.int64)
             else:
                 value = block_str
 

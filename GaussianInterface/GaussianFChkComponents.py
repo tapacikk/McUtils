@@ -15,6 +15,20 @@ FormattedCheckpointComponents = { } # we'll register on this bit by bit
 
 ########################################################################################################################
 #
+#                                          Int Atom Types
+#
+
+#region IInt Atom Types
+
+def get_names(atom_ints):
+    from ..Data import AtomData
+    return [ AtomData[x, "Symbol"] for x in atom_ints ]
+FormattedCheckpointComponents["Int Atom Types"] = get_names
+
+#endregion
+
+########################################################################################################################
+#
 #                                          Current cartesian coordinates
 #
 
