@@ -1,3 +1,7 @@
+"""
+Defines a symbolic representation of a Gaussian job for batch generation
+"""
+
 import os, numpy as np
 from collections import OrderedDict, namedtuple
 from ..Data import AtomData

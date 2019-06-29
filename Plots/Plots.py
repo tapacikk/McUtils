@@ -1,3 +1,7 @@
+"""
+Provides various types of plots and plotting utilities
+"""
+
 from .Graphics import Graphics, Graphics3D, GraphicsGrid
 import numpy as np
 import matplotlib.figure

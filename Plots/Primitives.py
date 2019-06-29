@@ -1,7 +1,8 @@
 """
 Graphics primitives module
-Provides stuff like Circle, Sphere, etc. and lets them figure out how to plot themselves
+Provides stuff like Disk, Sphere, etc. and lets them figure out how to plot themselves
 """
+
 import abc
 
 class GraphicsPrimitive(metaclass=abc.ABCMeta):

@@ -1,3 +1,7 @@
+"""
+A plotting framework that builds off of matplotlib, but potentially could use a different backend
+"""
+
 from .Graphics import Graphics, Graphics3D, GraphicsGrid
 from .Plots import Plot, ScatterPlot, ErrorBarPlot, ListErrorBarPlot, StickPlot, ListStickPlot, TriPlot, ListTriPlot, \
     DataPlot, HistogramPlot, HistogramPlot2D, VerticalLinePlot, ArrayPlot, TensorPlot, \

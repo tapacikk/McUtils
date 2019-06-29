@@ -2,7 +2,7 @@
 
 """
 
-from .ParserUtils import *
+from ..Parsers.ParserUtils import *
 
 ########################################################################################################################
 #
@@ -28,8 +28,7 @@ GaussianLogComponents = { } # we'll register on this bit by bit
 
 #region InputZMatrix
 tag_start  = "Z-matrix:"
-tag_end    = """     
- 
+tag_end    = """ 
 """
 def parser(zmat):
     return zmat

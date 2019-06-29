@@ -1,5 +1,5 @@
-"""Provides a general, convenient FiniteDifferenceFunction class to handle all of our difference FD imps
-
+"""
+Provides a general, convenient FiniteDifferenceFunction class to handle all of our difference FD imps
 """
 import numpy as np
 

@@ -1,4 +1,6 @@
-"""Provides a basic Plot object for working with"""
+"""
+Provides Graphics base classes that can be extended upon
+"""
 import matplotlib.figure
 import matplotlib.axes
 

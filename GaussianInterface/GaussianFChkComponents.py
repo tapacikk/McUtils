@@ -1,6 +1,6 @@
 """Defines components of an .fchk file that are already known and parseable"""
 
-from .ParserUtils import *
+from ..Parsers.ParserUtils import *
 from .FChkDerivatives import *
 
 ########################################################################################################################

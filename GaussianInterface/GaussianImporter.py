@@ -1,5 +1,5 @@
-"""Implements an importer from a Gaussian log file
-
+"""
+Implements an importer for Gaussian output formats
 """
 
 import numpy as np, re, math, io

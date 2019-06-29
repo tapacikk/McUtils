@@ -1,5 +1,5 @@
-"""Defines common data handler
-
+"""
+Defines a common data handler
 """
 import os, sys
 
