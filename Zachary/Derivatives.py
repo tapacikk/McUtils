@@ -120,7 +120,6 @@ class FiniteDifferenceDerivative:
 
             displacements = np.zeros(displacement_shape)
             base_roll = tuple(np.arange(len(stencil_widths)))
-            print(base_roll)
 
             coord = np.unique(coord, axis=0)
 
@@ -142,7 +141,7 @@ class FiniteDifferenceDerivative:
                 # I'm imposing some assumptions on the form of this for the moment, but we can relax those later...
 
                 displacements[idx] = to_set
-                
+
             # then we broadcast *this* up to the total number of walkers we have
             full_target_shape = (len(coords), ) + displacement_shape
             coords_expanded = np.expand_dims(coords, 1)
@@ -163,7 +162,6 @@ class FiniteDifferenceDerivative:
             try:
                 fdf = self._fdfs[dorder]
             except KeyError:
-                # print(coord, dorder)
                 fdf = FiniteDifferenceFunction.RegularGridFunction(
                         dorder,
                         end_point_precision = 0,
@@ -219,7 +217,7 @@ class FiniteDifferenceDerivative:
             # fvals is for _all_ of the configurations so we need to reshape it based on the out_shape
             # we want it to be shaped such that we have the fvals for each configuration in an array
             # for this we'll finally make use of the out_shape parameter
-            o_shape = (1,) if isinstance(out_shape, (int, np.integer)) else len(out_shape)
+            o_shape = (1,) if isinstance(out_shape, (int, np.integer)) else out_shape
             if len(fvals.shape) < 2 + len(o_shape): # is this the right heuristic...?
                 fvals = fvals.reshape(fvals.shape + (1,)* ( 2 + len(o_shape) - len(fvals.shape) ) )
             # we use this to flatten our system so that all of our potentially n-D fvals are linearized
@@ -230,10 +228,13 @@ class FiniteDifferenceDerivative:
 
             # now we potentially filter out some coords...
             if coordinates is not None:
-                fvals = fvals[:, coordinates]
+                fvals = fvals[..., coordinates]
+
+
 
             # finally we restructure this into a tensor of the appropriate dimension for feeding into the FD code
-            fvals = fvals.reshape((len(function_values), ) + stencil_widths + fvals.shape[-1:])
+            fvals_shape = (len(function_values), ) + stencil_widths + fvals.shape[-1:]
+            fvals = fvals.reshape(fvals_shape)
 
             h = [ self._get_diff(c, disp) for c in coord ]
 
@@ -358,7 +359,8 @@ class FiniteDifferenceDerivative:
             coord_shape = self.in_shape
             to_gen = range(np.product(coord_shape))
 
-            to_gen = [ list(it.chain(idx, t)) for t in it.combinations(to_gen, order) ]
+            to_gen = [ list(it.chain(idx, np.array([t]).T)) for t in it.combinations(to_gen, order) ]
+
             return self.compute_derivatives(coords = to_gen)
             # would use a generator but I think I call len on it...
 
@@ -366,7 +368,11 @@ class FiniteDifferenceDerivative:
 
             to_gen = self._idx(idx[:-1])
             which = [ idx[-1] ]
-            return self.coordinate_derivs(to_gen, which)
+            derivs = self.coordinate_derivs(to_gen, which)
+            if self._flattend_dims is not None:
+                derivs = derivs.reshape(self._flattend_dims + derivs.shape[1:])
+
+            return derivs
 
         def __getitem__(self, item):
             # currently I only support tuples of indices
