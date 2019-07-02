@@ -386,7 +386,7 @@ class Plot2D(Graphics):
         fig.colorbar(self.graphics, **kw)
 class ContourPlot(Plot2D):
     def __init__(self, func, xrange, yrange, **opts):
-        super().__init__(func, xrange, yrange, method='contour', **opts)
+        super().__init__(func, xrange, yrange, method='contourf', **opts)
 class DensityPlot(Plot2D):
     def __init__(self, func, xrange, yrange, **opts):
         super().__init__(func, xrange, yrange, method='pcolormesh', **opts)

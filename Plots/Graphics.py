@@ -21,6 +21,12 @@ class GraphicsBase(metaclass=ABCMeta):
         self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
         self._shown = False
         self.set_options(**opts)
+
+    @staticmethod
+    def _subplot_init(*args, **kw):
+        import matplotlib.pyplot as plt
+
+        return plt.subplots(*args, **kw)
     def _init_suplots(self, figure, axes, *args, **kw):
         """Initializes the subplots for the Graphics object
 
@@ -35,10 +41,9 @@ class GraphicsBase(metaclass=ABCMeta):
         :return: figure, axes
         :rtype: matplotlib.figure.Figure, matplotlib.axes.Axes
         """
-        import matplotlib.pyplot as plt
 
         if figure is None:
-            figure, axes = plt.subplots(*args, subplot_kw=kw)
+            figure, axes = self._subplot_init(*args, **kw)
             # yes axes is overwritten intentionally for now -- not sure how to "reparent" an Axes object
         elif isinstance(figure, GraphicsBase):
             axes = figure.axes # type: matplotlib.axes.Axes
@@ -159,6 +164,7 @@ class Graphics(GraphicsBase):
                  plot_legend = None,
                  ticks = None,
                  scale = None,
+                 image_size = None,
                  **kwargs
                  ):
         super().__init__(
@@ -172,6 +178,7 @@ class Graphics(GraphicsBase):
             plot_legend = plot_legend,
             ticks = ticks,
             scale = scale,
+            image_size = image_size,
             **kwargs
         )
     def set_options(self,
@@ -182,6 +189,7 @@ class Graphics(GraphicsBase):
                     ticks = None,
                     scale = None,
                     ticks_style = None,
+                    image_size = None,
                     **ignored
                     ):
 
@@ -228,6 +236,12 @@ class Graphics(GraphicsBase):
             self.ticks_style = ticks_style
         else:
             self._ticks_style = (None,)*2
+
+        self._image_size = image_size
+        if image_size is not None:
+            self.image_size = image_size
+        else:
+            self._image_size = tuple( s/72. for s in self.get_size_inches() )
 
 
     # set plot label
@@ -358,6 +372,44 @@ class Graphics(GraphicsBase):
                 **y
             )
 
+
+    # set size
+    @property
+    def image_size(self):
+        return self._image_size
+    @image_size.setter
+    def image_size(self, wh):
+        try:
+            w, h = wh
+        except ValueError:
+            try:
+                ar = self._image_size[1] / self._image_size[0]
+            except TypeError:
+                ar = 1
+            w, h = wh = (wh, ar*wh)
+
+
+        if w is not None or h is not None:
+            if w is None:
+                w = self._image_size[0]
+            if h is None:
+                h = self._image_size[1]
+
+            if w > 72:
+                wi = w/72
+            else:
+                wi = w
+                w = 72 * w
+
+            if h > 72:
+                hi = h/72
+            else:
+                hi = h
+                h = 72 * h
+
+            self._image_size = (w, h)
+            self.figure.set_size_inches(wi, hi)
+
 class Graphics3D(GraphicsBase):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
     def __init__(self, *args,
@@ -371,8 +423,10 @@ class Graphics3D(GraphicsBase):
                  ticks = None,
                  scale = None,
                  ticks_style = None,
+                 image_size = None,
                  **kwargs
                  ):
+
         super().__init__(
             *args,
             figure = figure,
@@ -384,17 +438,26 @@ class Graphics3D(GraphicsBase):
             plot_legend = plot_legend,
             ticks = ticks,
             scale = scale,
-            ticks_style = None,
+            ticks_style = ticks_style,
+            image_size = image_size,
             **kwargs
         )
 
-    def _init_suplots(self, figure, axes, *args, **kw):
-
+    @staticmethod
+    def _subplot_init(*args, **kw):
         from mpl_toolkits.mplot3d import Axes3D
         import matplotlib.pyplot as plt
 
+        subplot_kw = {"projection": '3d'}
+        if 'subplot_kw' in kw:
+            subplot_kw = dict(subplot_kw, **kw['subplot_kw'])
+            del kw['subplot_kw']
+        return plt.subplots(*args, subplot_kw=subplot_kw, **kw)
+
+    def _init_suplots(self, figure, axes, *args, **kw):
+
         if figure is None:
-            figure, axes = plt.subplots(*args, subplot_kw={"projection": '3d'})
+            figure, axes = self._subplot_init(*args, **kw)
         elif isinstance(figure, GraphicsBase):
             axes = figure.axes
             figure = figure.figure
@@ -412,6 +475,7 @@ class Graphics3D(GraphicsBase):
                     ticks = None,
                     scale = None,
                     ticks_style = None,
+                    image_size = None,
                     **ignored
                     ):
 
@@ -457,6 +521,12 @@ class Graphics3D(GraphicsBase):
             self.scale = self._scale
         else:
             self._scale = (axes.get_xscale(), axes.get_yscale(), axes.get_zscale())
+
+        self._image_size = image_size
+        if image_size is not None:
+            self.image_size = image_size
+        else:
+            self._image_size = tuple( s/72. for s in self.get_size_inches() )
 
     # set plot label
     @property
@@ -612,6 +682,43 @@ class Graphics3D(GraphicsBase):
                 **z
             )
 
+    # set size
+    @property
+    def image_size(self):
+        return self._image_size
+    @image_size.setter
+    def image_size(self, wh):
+        try:
+            w, h = wh
+        except ValueError:
+            try:
+                ar = self._image_size[1] / self._image_size[0]
+            except TypeError:
+                ar = 1
+            w, h = wh = (wh, ar*wh)
+
+
+        if w is not None or h is not None:
+            if w is None:
+                w = self._image_size[0]
+            if h is None:
+                h = self._image_size[1]
+
+            if w > 72:
+                wi = w/72
+            else:
+                wi = w
+                w = 72 * w
+
+            if h > 72:
+                hi = h/72
+            else:
+                hi = h
+                h = 72 * h
+
+            self._image_size = (w, h)
+            self.figure.set_size_inches(wi, hi)
+
 class GraphicsGrid:
     def __init__(self,
                  *args,
@@ -620,18 +727,34 @@ class GraphicsGrid:
                  figure = None,
                  axes = None,
                  subplot_kw = None,
+                 _subplot_init = None,
                  **opts
                  ):
+
         self.figure, self.axes = self._init_suplots(
             nrows, ncols,
             figure, axes,
             graphics_class,
             *args,
             subplot_kw = subplot_kw,
+            _subplot_init = graphics_class._subplot_init if _subplot_init is None else _subplot_init,
             **opts
         )
         self.shape = (nrows, ncols)
-    def _init_suplots(self, nrows, ncols, figure, axes, graphics_class, *args, subplot_kw = None, **kw):
+        self.set_options(**opts)
+
+    def set_options(self, image_size = None, **ignored):
+        self._image_size = image_size
+        if image_size is not None:
+            self.image_size = image_size
+        else:
+            self._image_size = tuple( s/72. for s in self.figure.get_size_inches() )
+
+    def _init_suplots(self, nrows, ncols, figure, axes, graphics_class, *args,
+                      subplot_kw = None, _subplot_init = None,
+                      fig_kw = None,
+                      **kw
+                      ):
         """Initializes the subplots for the Graphics object
 
         :param figure:
@@ -645,14 +768,18 @@ class GraphicsGrid:
         :return: figure, axes
         :rtype: matplotlib.figure.Figure, matplotlib.axes.Axes
         """
-        import matplotlib.pyplot as plt
 
         if figure is None:
             if subplot_kw is None:
                 subplot_kw = {}
-            figure, axes = plt.subplots(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw)
+            if fig_kw is None:
+                fig_kw = {}
+            figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, **fig_kw)
+
             if isinstance(axes, matplotlib.axes.Axes):
                 axes = [ [axes] ]
+            elif isinstance(axes[0], matplotlib.axes.Axes):
+                axes = [ axes ]
             for i in range(nrows):
                 for j in range(ncols):
                     axes[i][j] = graphics_class(figure = figure, axes = axes[i][j], **kw)
@@ -676,6 +803,43 @@ class GraphicsGrid:
             return self.axes[i]
         else:
             return self.axes[i][j]
+
+    # set size
+    @property
+    def image_size(self):
+        return self._image_size
+    @image_size.setter
+    def image_size(self, wh):
+        try:
+            w, h = wh
+        except ValueError:
+            try:
+                ar = self._image_size[1] / self._image_size[0]
+            except TypeError:
+                ar = 1
+            w, h = wh = (wh, ar*wh)
+
+
+        if w is not None or h is not None:
+            if w is None:
+                w = self._image_size[0]
+            if h is None:
+                h = self._image_size[1]
+
+            if w > 72:
+                wi = w/72
+            else:
+                wi = w
+                w = 72 * w
+
+            if h > 72:
+                hi = h/72
+            else:
+                hi = h
+                h = 72 * h
+
+            self._image_size = (w, h)
+            self.figure.set_size_inches(wi, hi)
 
     def show(self):
         self.axes[0][0].show()

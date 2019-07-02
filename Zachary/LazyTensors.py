@@ -80,7 +80,7 @@ class Tensor:
 #
 #                                           TensorOps
 #
-class TensorOp(metaclass=ABCMeta, Tensor):
+class TensorOp(Tensor):
     """A lazy representation of tensor operations to save memory"""
     def __init__(self, a, b):
         # if isinstance(a, Tensor):
@@ -89,10 +89,11 @@ class TensorOp(metaclass=ABCMeta, Tensor):
         #     a = b._a
         self._a = a
         self._b = b
-    @abstractmethod
+
     def op(self, a, b):
-        pass
-    @abstractmethod
+        raise NotImplementedError(
+            "{}: {} not implemented until a subclass does it".format(type(self.__name__), 'op')
+        )
     def get_shape(self, a, b):
         return a.shape
     @property
@@ -141,6 +142,7 @@ class TensorMul(TensorOp):
     def __getitem__(self, i):
         return type(self)(self._a[i], self._b)
 class TensorDot(TensorOp):
+    """Represents a tensor contraction across the main axis only"""
     def get_shape(self, a, b):
         return a.shape[:-1] + b.shape[1:]
     def op(self, a, b):
@@ -152,17 +154,65 @@ class TensorDot(TensorOp):
         return np.tensordot(a, b)
     def __getitem__(self, i):
         return type(self)(self._a[i], self._b)
+########################################################################################################################
+#
+#                                           TensorDerivative
+#
+class TensorDerivative(Tensor):
+    def __init__(self, tensor):
+        ...
 
 ########################################################################################################################
 #
-#                                           SparseTensor
+#                                           LazyOperatorTensor
 #
-class SparseTensor(Tensor):
+class LazyOperatorTensor(Tensor):
+    """A super-lazy tensor that represents the elements of an operator """
+
+    def __init__(self, operator, shape, memoization = True):
+        if memoization is True:
+            memoization = {}
+        self.memoization = isinstance(memoization, dict)
+        if self.memoization:
+            a = memoization
+        else:
+            a = None
+
+        self.operator = operator
+        super().__init__(a, shape=shape)
 
     @property
     def array(self):
-        raise NotImplementedError("You don't want to cast a sparse high dimensional tensor to a dense form...")
+        import itertools as it
+
+        base = np.full(self.shape, None, dtype=object)
+        mem = self._a
+        try:
+            self._a = None
+            _cast = False
+            for idx in it.product(range(x) for x in self.shape):
+                res = self._get_element(idx)
+                if not _cast:
+                    if isinstance(res, (int, float, np.integer, np.float)):
+                        base = np.zeros(base, dtype=type(res))
+                    _cast = True
+
+                base[idx] = res
+        finally:
+            self._a = mem
+
+        return base
+
+    def _get_element(self, indices):
+        if self._a is not None:
+            try:
+                res = self._a[indices]
+            except (KeyError, IndexError):
+                res = self.operator(indices)
+                self._a[indices] = res
+            return res
+        else:
+            return self.operator(indices)
 
     def __getitem__(self, item):
-        from functools import reduce
-        return reduce(lambda a, i: a[i], item, self._a)
+        return self._get_element(item)
