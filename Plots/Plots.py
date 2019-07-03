@@ -68,13 +68,17 @@ def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts = 50, max_refine
 def _interp2DData(gpts, **opts):
     from scipy.interpolate import griddata
 
-    x = gpts[:, 0]
-    y = gpts[:, 1]
+    x = np.sort(gpts[:, 0])
+    y = np.sort(gpts[:, 1])
 
-    xmin = np.min(x); xmax = np.max(x); xh = np.min(np.abs(np.diff(x)))
-    ymin = np.min(y); ymax = np.max(y); yh = np.min(np.abs(np.diff(y)))
-
-    xmesh = np.arange(xmin, xmax, xh); ymesh = np.arange(ymin, ymax, yh)
+    xmin = np.min(x); xmax = np.max(x)
+    #xdiffs = np.abs(np.diff(x)); xh = np.amin(xdiffs[np.nonzero(xdiffs)])
+    xpts = 100
+    ymin = np.min(y); ymax = np.max(y)
+    #ydiffs = np.abs(np.diff(y)); yh = np.amin(ydiffs[np.nonzero(ydiffs)])
+    ypts = 100
+    
+    xmesh = np.linspace(xmin, xmax, xpts); ymesh = np.linspace(ymin, ymax, ypts)
     xmesh, ymesh = np.meshgrid(xmesh, ymesh)
     mesh = np.array((xmesh, ymesh)).T
     vals = griddata(gpts[:, (0, 1)], gpts[:, 2], mesh, **opts)
@@ -140,7 +144,7 @@ class Plot(Graphics):
 
         xrange, fvalues = _get_2D_plotdata(func, xrange)
 
-        meth(xrange, fvalues, **opts)
+        self.graphics = meth(xrange, fvalues, **opts)
         self.set_options(**opts)
 class ScatterPlot(Plot):
     def __init__(self, *args, **kwargs):
@@ -187,7 +191,7 @@ class Plot2D(Graphics):
 
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
 
-        meth(xrange, yrange, fvalues, **opts)
+        self.graphics = meth(xrange, yrange, fvalues, **opts)
         self.set_options(**opts)
 class ContourPlot(Plot2D):
     def __init__(self, func, xrange, yrange, **opts):
@@ -197,8 +201,13 @@ class DensityPlot(Plot2D):
         super().__init__(func, xrange, yrange, method='pcolormesh', **opts)
 class ListPlot2D(Plot2D):
     """Convenience class that handles the interpolation first"""
-    def __init__(self, griddata, **opts):
-        x, y, z = _interp2DData(griddata)
+    def __init__(self, griddata, interpolate = True, **opts):
+        if interpolate:
+            x, y, z = _interp2DData(griddata)
+        else:
+            x = griddata[:, 0]
+            y = griddata[:, 1]
+            z = griddata[:, 2]
         # print(x.shape, y.shape, z.shape)
         super().__init__(x, y, z, **opts)
 class ListContourPlot(ListPlot2D):
@@ -207,6 +216,9 @@ class ListContourPlot(ListPlot2D):
 class ListDensityPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
         super().__init__(griddata, method='pcolormesh', **opts)
+class ListTrisurfaceContourPlot(ListPlot2D):
+    def __init__(self, griddata, **opts):
+        super().__init__(griddata, method = 'tricontourf', interpolate = False, **opts)
 
 ######################################################################################################
 #
@@ -235,7 +247,7 @@ class Plot3D(Graphics3D):
 
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
 
-        meth(xrange, yrange, fvalues, **opts)
+        self.graphics = meth(xrange, yrange, fvalues, **opts)
         self.set_options(**opts)
 class ListPlot3D(Plot3D):
     """Convenience class that handles the interpolation first"""
