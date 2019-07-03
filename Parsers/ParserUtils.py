@@ -130,7 +130,11 @@ def process_zzzz(i, g, atom_types, index_array, coord_array, num_header=1):
     elif g_num == num_header+2:
         atom_types[i] = g[:-2]
         # make atom refs to insert into array
-        ref = np.array(g[-2:-1], dtype=np.str).astype(np.int8)
+        try:
+            ref = np.array(g[-2:-1], dtype=np.str).astype(np.int8)
+        except:
+            print(i, g)
+            raise
         ref = np.concatenate((ref, np.zeros((2,), dtype=np.int8)))
         coord = np.array(g[-1:], dtype=np.str).astype(np.float64)
         coord = np.concatenate((coord, np.zeros((2,), dtype=np.float64)))

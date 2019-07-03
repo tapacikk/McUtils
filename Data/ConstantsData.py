@@ -1,4 +1,6 @@
-
+"""
+Provides constants data and conversions between units and unit systems
+"""
 from .CommonData import DataHandler
 from collections import OrderedDict, deque
 

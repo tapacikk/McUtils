@@ -1,4 +1,6 @@
-
+"""
+Lazy class for holding force constants and higher derivative tensors pulled from the Gaussian log file
+"""
 import numpy as np, scipy.sparse as sparse
 
 class FchkForceConstants:

@@ -1,6 +1,6 @@
 """Defines components of an .fchk file that are already known and parseable"""
 
-from .ParserUtils import *
+from ..Parsers.ParserUtils import *
 from .FChkDerivatives import *
 
 ########################################################################################################################
@@ -12,6 +12,20 @@ FormattedCheckpointComponents = { } # we'll register on this bit by bit
 # each registration should look like:
 
 # FormattedCheckpointComponents["Name"] = parser
+
+########################################################################################################################
+#
+#                                          Int Atom Types
+#
+
+#region IInt Atom Types
+
+def get_names(atom_ints):
+    from ..Data import AtomData
+    return [ AtomData[x, "Symbol"] for x in atom_ints ]
+FormattedCheckpointComponents["Int Atom Types"] = get_names
+
+#endregion
 
 ########################################################################################################################
 #

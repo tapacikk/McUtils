@@ -1,11 +1,18 @@
-from .Graphics import Graphics, Graphics3D
+"""
+Provides various types of plots and plotting utilities
+"""
+
+from .Graphics import Graphics, Graphics3D, GraphicsGrid
 import numpy as np
+import matplotlib.figure
+import matplotlib.axes
 
 ######################################################################################################
 #
 #                                    'adaptive' function sampling
 #
 #
+#region function application
 def _apply_f(f, grid):
     try:
         vals = f(grid)
@@ -59,12 +66,14 @@ def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts = 50, max_refine
         vals = _apply_f(f, grid)
 
     return grid, vals, npts, refines
+#endregion
 
 ######################################################################################################
 #
 #                                    Plot data methods
 #
 #
+#region plot data prep
 def _interp2DData(gpts, **opts):
     from scipy.interpolate import griddata
 
@@ -72,13 +81,22 @@ def _interp2DData(gpts, **opts):
     y = np.sort(gpts[:, 1])
 
     xmin = np.min(x); xmax = np.max(x)
-    #xdiffs = np.abs(np.diff(x)); xh = np.amin(xdiffs[np.nonzero(xdiffs)])
-    xpts = 100
+
+    xdiffs = np.abs(np.diff(x)); xh = np.min(xdiffs[np.nonzero(xdiffs)])
     ymin = np.min(y); ymax = np.max(y)
-    #ydiffs = np.abs(np.diff(y)); yh = np.amin(ydiffs[np.nonzero(ydiffs)])
-    ypts = 100
-    
-    xmesh = np.linspace(xmin, xmax, xpts); ymesh = np.linspace(ymin, ymax, ypts)
+    ydiffs = np.abs(np.diff(y)); yh = np.min(xdiffs[np.nonzero(ydiffs)])
+
+    num_x = (xmin - xmax) / xh
+    if 5 > num_x or num_x < 10000: # don't want to get too wild
+        num_x = 100 # okay but let's get a little wild
+    num_y = (ymin - ymax) / yh
+    if 5 > num_y or num_y < 10000: # don't want to get too wild
+        num_y = 100 # okay but let's get a little wild
+
+    # import sys
+    # print(num_x, num_y, file = sys.stderr)
+
+    xmesh = np.linspace(xmin, xmax, num_x); ymesh = np.linspace(ymin, ymax, num_y)
     xmesh, ymesh = np.meshgrid(xmesh, ymesh)
     mesh = np.array((xmesh, ymesh)).T
     vals = griddata(gpts[:, (0, 1)], gpts[:, 2], mesh, **opts)
@@ -119,6 +137,7 @@ def _get_3D_plotdata(func, xrange, yrange):
             fvalues = res[1]
 
     return xrange, yrange, fvalues
+#endregion
 
 ######################################################################################################
 #
@@ -126,7 +145,13 @@ def _get_3D_plotdata(func, xrange, yrange):
 #
 #
 class Plot(Graphics):
-    def __init__(self, func, xrange, method = 'plot', figure = None, axes = None, **opts):
+    def __init__(self, func, xrange,
+                 method = 'plot',
+                 figure = None, axes = None, subplot_kw = None,
+                 plot_style = None,
+                 colorbar = None,
+                 **opts
+                 ):
         """Creates a 1D plot on 2D axes
 
         :param func: either a func to apply or an array of x-values
@@ -139,30 +164,182 @@ class Plot(Graphics):
         :type opts:
         """
 
-        super().__init__(figure = figure, axes = axes)
+        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
         meth = getattr(self, method)
 
         xrange, fvalues = _get_2D_plotdata(func, xrange)
 
-        self.graphics = meth(xrange, fvalues, **opts)
+        if plot_style is None:
+            plot_style = {}
+        self.graphics = meth(xrange, fvalues, **plot_style)
         self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
+    def add_colorbar(self, **kw):
+        fig = self.figure # type: matplotlib.figure.Figure
+        ax = self.axes # type: matplotlib.axes.Axes
+        fig.colorbar(self.graphics, **kw)
 class ScatterPlot(Plot):
     def __init__(self, *args, **kwargs):
-        kwargs['method'] = 'scatter'
-        super().__init__(*args, **kwargs)
-class HistogramPlot(Graphics):
-    def __init__(self, data, **opts):
-        """Creates a histogram of data
+        super().__init__(*args, method = "scatter", **kwargs)
+class ListScatterPlot(ScatterPlot):
+    def __init__(self, griddata, **opts):
+        super().__init__(griddata[:, 0], griddata[:, 1], **opts)
+class ErrorBarPlot(Plot):
+    """A Plot object that plots error bars"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, method = "errorbar", **kwargs)
+class ListErrorBarPlot(ErrorBarPlot):
+    """A Plot that pulls the errorbar data from a list"""
+    def __init__(self, griddata, **opts):
+        super().__init__(griddata[:, 0], griddata[:, 1], **opts)
+class StickPlot(Plot):
+    """A Plot object that plots sticks"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, method = "stem", **kwargs)
+class ListStickPlot(StickPlot):
+    """A Plot object that plots sticks from a list"""
+    def __init__(self, griddata, **opts):
+        super().__init__(griddata[:, 0], griddata[:, 1], **opts)
+class TriPlot(Plot):
+    """A Plot object that plots a triangulation bars"""
+    def __init__(self, *args, **opts):
+        super().__init__(args, method = 'triplot', **opts)
+class ListTriPlot(TriPlot):
+    """A Plot that pulls the triangulation data from a list"""
+    def __init__(self, griddata, **opts):
+        super().__init__(griddata[:, 0], griddata[:, 1], **opts)
 
-        :param data: data to histogram out
-        :type data:
-        :param opts:
-        :type opts:
+
+######################################################################################################
+#
+#                                    Pure Data Plots on 2D Axes
+#
+#
+class DataPlot(Graphics):
+    def __init__(self, data,
+                 plot_style = None, method = None,
+                 figure = None, axes = None, subplot_kw = None,
+                 colorbar = None,
+                 **opts
+                 ):
+        """Creates a plot of data
         """
 
-        super().__init__()
-        self.axes.hist(data, **opts)
+        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
+        meth = getattr(self, method)
+        if plot_style is None:
+            plot_style = {}
+        self.graphics = meth(data, **plot_style)
         self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
+    def add_colorbar(self, **kw):
+        fig = self.figure # type: matplotlib.figure.Figure
+        ax = self.axes # type: matplotlib.axes.Axes
+        fig.colorbar(self.graphics, **kw)
+class HistogramPlot(DataPlot):
+    def __init__(*args, **kwargs):
+        super().__init__(*args, method = 'hist', **kwargs)
+class HistogramPlot2D(DataPlot):
+    def __init__(*args, **kwargs):
+        super().__init__(*args, method = 'hist2d', **kwargs)
+
+class VerticalLinePlot(Graphics):
+    def __init__(self, x, y = 1.0,
+                 plot_style = None, colorbar = None,
+                 figure=None, axes=None, subplot_kw = None,
+                 **opts
+                 ):
+        """Creates a stickplot of data
+        """
+        if isinstance(y, (int, float)):
+            y = [0, y]
+        super().__init__(figure=figure, axes=axes, subplot_kw = subplot_kw)
+        if plot_style is None:
+            plot_style = {}
+        self.graphics = self.axes.vlines(x, *y, **plot_style)
+        self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
+    def add_colorbar(self, **kw):
+        fig = self.figure # type: matplotlib.figure.Figure
+        ax = self.axes # type: matplotlib.axes.Axes
+        fig.colorbar(self.graphics, **kw)
+
+
+class ArrayPlot(Graphics):
+    def __init__(self, array,
+                 plot_style = None, colorbar = None,
+                 figure=None, axes=None, subplot_kw = None,
+                 method = 'imshow',
+                 **opts
+                 ):
+        """Creates an array plot from the array
+        """
+        super().__init__(figure=figure, axes=axes, subplot_kw = subplot_kw)
+        meth = getattr(self, method)
+        if plot_style is None:
+            plot_style = {}
+        self.graphics = meth(array, **plot_style)
+        self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
+    def add_colorbar(self, **kw):
+        fig = self.figure # type: matplotlib.figure.Figure
+        ax = self.axes # type: matplotlib.axes.Axes
+        fig.colorbar(self.graphics, **kw)
+
+class TensorPlot(GraphicsGrid):
+    def __init__(self, tensor,
+                 nrows = None, ncols = None,
+                 plot_style = None, colorbar = None,
+                 figure=None, axes=None, subplot_kw = None,
+                 method = 'imshow',
+                 **opts
+                 ):
+        from operator import mul
+        from functools import reduce
+        tensor_shape = tensor.shape
+        total_dim = reduce(mul, tensor_shape[:-2], 1)
+        if nrows is None or ncols is None:
+            if len(tensor_shape) == 4: # best case
+                nrows, ncols = tensor_shape[:2]
+            else:
+                if nrows is not None:
+                    ncols = total_dim // nrows
+                elif ncols is not None:
+                    nrows = total_dim // ncols
+                else:
+                    ncols = 5
+                    nrows = total_dim // ncols
+        super().__init__(nrows=nrows, ncols=ncols,
+                         figure = figure,
+                         axes = axes,
+                         subplot_kw = subplot_kw
+                         )
+
+        tensor = tensor.reshape((total_dim,) + tensor_shape[-2:])
+        for i in range(nrows):
+            for j in range(ncols):
+                graphics = self.axes[i, j]
+                self.axes[i, j] = ArrayPlot(
+                    tensor[nrows * i + j],
+                    figure = graphics,
+                    plot_style = plot_style,
+                    colorbar = colorbar,
+                    method=method,
+                    **opts
+                )
+
 
 ######################################################################################################
 #
@@ -171,7 +348,11 @@ class HistogramPlot(Graphics):
 #
 class Plot2D(Graphics):
     """A base class for plots that are 3D but plotted on 2D Graphics"""
-    def __init__(self, func, xrange, yrange, method = 'contour', figure = None, axes = None, **opts):
+    def __init__(self, func, xrange, yrange, plot_style = None,
+                 method = 'contour', colorbar = None,
+                 figure = None, axes = None, subplot_kw = None,
+                 **opts
+                 ):
         """Creates a 3D plot on 2D axes
 
         :param func: either a func to apply or an array of x-values
@@ -186,16 +367,27 @@ class Plot2D(Graphics):
         :type opts:
         """
 
-        super().__init__(figure = figure, axes = axes)
+        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
         meth = getattr(self, method)
 
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
 
-        self.graphics = meth(xrange, yrange, fvalues, **opts)
+        if plot_style is None:
+            plot_style = {}
+        self.graphics = meth(xrange, yrange, fvalues, **plot_style)
         self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
+
+    def add_colorbar(self, **kw):
+        fig = self.figure # type: matplotlib.figure.Figure
+        ax = self.axes # type: matplotlib.axes.Axes
+        fig.colorbar(self.graphics, **kw)
 class ContourPlot(Plot2D):
     def __init__(self, func, xrange, yrange, **opts):
-        super().__init__(func, xrange, yrange, method='contour', **opts)
+        super().__init__(func, xrange, yrange, method='contourf', **opts)
 class DensityPlot(Plot2D):
     def __init__(self, func, xrange, yrange, **opts):
         super().__init__(func, xrange, yrange, method='pcolormesh', **opts)
@@ -208,7 +400,7 @@ class ListPlot2D(Plot2D):
             x = griddata[:, 0]
             y = griddata[:, 1]
             z = griddata[:, 2]
-        # print(x.shape, y.shape, z.shape)
+
         super().__init__(x, y, z, **opts)
 class ListContourPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
@@ -216,9 +408,12 @@ class ListContourPlot(ListPlot2D):
 class ListDensityPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
         super().__init__(griddata, method='pcolormesh', **opts)
-class ListTrisurfaceContourPlot(ListPlot2D):
+class ListTriContourPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
         super().__init__(griddata, method = 'tricontourf', interpolate = False, **opts)
+class ListTriDensityPlot(ListPlot2D):
+    def __init__(self, griddata, **opts):
+        super().__init__(griddata, method = 'tripcolor', interpolate = False, **opts)
 
 ######################################################################################################
 #
@@ -227,7 +422,11 @@ class ListTrisurfaceContourPlot(ListPlot2D):
 #
 class Plot3D(Graphics3D):
     """A base class for 3D plots"""
-    def __init__(self, func, xrange, yrange, method = 'plot_surface', figure = None, axes = None, **opts):
+    def __init__(self, func, xrange, yrange, plot_style = None,
+                 method = 'plot_surface', colorbar = None,
+                 figure = None, axes = None, subplot_kw = None,
+                 **opts
+                 ):
         """Creates a 3D plot on 2D axes
 
         :param func: either a func to apply or an array of x-values
@@ -242,13 +441,23 @@ class Plot3D(Graphics3D):
         :type opts:
         """
 
-        super().__init__(figure = figure, axes = axes)
+        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
         meth = getattr(self, method)
 
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
 
-        self.graphics = meth(xrange, yrange, fvalues, **opts)
+        if plot_style is None:
+            plot_style = {}
+        self.graphics = meth(xrange, yrange, fvalues, **plot_style)
         self.set_options(**opts)
+        if colorbar:
+            self.add_colorbar()
+        elif isinstance(colorbar, dict):
+            self.add_colorbar(**colorbar)
+    def add_colorbar(self, **kw):
+        fig = self.figure # type: matplotlib.figure.Figure
+        ax = self.axes # type: matplotlib.axes.Axes
+        fig.colorbar(self.graphics, **kw)
 class ListPlot3D(Plot3D):
     """Convenience class that handles the interpolation first"""
     def __init__(self, griddata, interpolate = True, **opts):
@@ -268,6 +477,6 @@ class WireframePlot3D(Plot3D):
 class ContourPlot3D(Plot3D):
     def __init__(self, func, xrange, yrange, **opts):
         super().__init__(func, xrange, yrange, method = 'contourf', **opts)
-class ListTrisurfacePlot3D(ListPlot3D):
+class ListTriPlot3D(ListPlot3D):
     def __init__(self, griddata, **opts):
         super().__init__(griddata, method = 'plot_trisurf', interpolate = False, **opts)
