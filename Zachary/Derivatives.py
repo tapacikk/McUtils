@@ -5,6 +5,10 @@ Experimental module that provides a FiniteDifferenceDerivative class that does f
 from .FiniteDifferenceFunction import FiniteDifferenceFunction
 import numpy as np, itertools as it
 
+__all__ = [
+    'FiniteDifferenceDerivative'
+]
+
 class FiniteDifferenceDerivative:
     """Provides derivatives for a function (scalar or vector valued)
     Can be indexed into or the entire tensor of derivatives may be requested

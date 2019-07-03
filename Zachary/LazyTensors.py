@@ -3,7 +3,14 @@ LazyTensors provides a small framework for symbolically working with Tensors
 """
 
 import numpy as np
-from abc import *
+import scipy.sparse as sp
+
+__all__ = [
+    'Tensor',
+    'TensorOp',
+    'LazyOperatorTensor',
+    'SparseTensor'
+]
 
 ########################################################################################################################
 #
@@ -33,6 +40,16 @@ class Tensor:
     @property
     def dim(self):
         return self.get_dim()
+
+    def add(self, other, **kw):
+        return TensorPlus(self, other, **kw)
+    def mul(self, other, **kw):
+        return TensorMul(self, other, **kw)
+    def dot(self, other, **kw):
+        return TensorDot(self, other, **kw)
+    def pow(self, other, **kw):
+        return TensorPow(self, other, **kw)
+
     def __mul__(self, other):
         if isinstance(other, float):
             return TensorMul(self, other)
@@ -82,13 +99,15 @@ class Tensor:
 #
 class TensorOp(Tensor):
     """A lazy representation of tensor operations to save memory"""
-    def __init__(self, a, b):
+    def __init__(self, a, b, axis = None):
         # if isinstance(a, Tensor):
         #     a = a._a
         # if isinstance(b, Tensor):
         #     a = b._a
         self._a = a
         self._b = b
+        self._axis = axis
+        self._kw = dict(axis = axis)
 
     def op(self, a, b):
         raise NotImplementedError(
@@ -151,16 +170,13 @@ class TensorDot(TensorOp):
             a = a.array
         if isinstance(b, Tensor):
             b = b.array
-        return np.tensordot(a, b)
+        if not self._axis is None:
+            contract = np.tensordot(a, b, axes = self._axis)
+        else:
+            contract =  np.tensordot(a, b, axes = 1)
+        return contract
     def __getitem__(self, i):
-        return type(self)(self._a[i], self._b)
-########################################################################################################################
-#
-#                                           TensorDerivative
-#
-class TensorDerivative(Tensor):
-    def __init__(self, tensor):
-        ...
+        return type(self)(self._a[i], self._b, **self._kw)
 
 ########################################################################################################################
 #
@@ -213,6 +229,73 @@ class LazyOperatorTensor(Tensor):
             return res
         else:
             return self.operator(indices)
+
+    def __getitem__(self, item):
+        return self._get_element(item)
+
+class SparseTensor(Tensor):
+    """
+    Tensor class that holds sparse tensors in its deepest levels
+    """
+
+    def __init__(self, a, shape = None):
+        self._shape = shape
+        self._non_sparse_shape = None
+        if shape is None:
+            shape = -1
+        super().__init__(a, shape = shape)
+
+    @property
+    def array(self):
+        return NotImplementedError("don't yet have the sparse to dense code written...")
+
+    @property
+    def shape(self):
+        if self._shape is None:
+            self._shape = self._get_shape()
+        return self._shape
+    @shape.setter
+    def shape(self, value):
+        pass
+
+    @property
+    def non_sparse_shape(self):
+        if self._non_sparse_shape is None:
+            self._get_shape()
+        return self._non_sparse_shape
+
+    def _get_shape(self):
+
+        non_sp = []
+        shape = []
+        elm = self._a
+        while not isinstance(elm, (sp.csr_matrix, sp.coo_matrix, sp.csc_matrix)):
+            try:
+                elm_2 = elm[0]
+            except IndexError:
+                break
+            else:
+                non_sp.append(len(elm))
+                elm = elm_2
+        else: # only catch if no break
+            shape = elm.shape
+
+        self._non_sparse_shape = tuple(non_sp)
+        return self._non_sparse_shape + tuple(shape)
+
+    def _get_element(self, i):
+        from functools import reduce
+
+        if isinstance(i, (int, np.int)):
+            return self._a[0]
+        elif len(i) > len(self.non_sparse_shape):
+            # minor efficiency from not doing all these python loops when it may be avoided
+
+            lnsp = len(self.non_sparse_shape)
+            main = reduce(lambda a,n:a[n], i[:lnsp], self._a)
+            return main[lnsp:]
+        else:
+            return reduce(lambda a,n:a[n], i, self._a)
 
     def __getitem__(self, item):
         return self._get_element(item)

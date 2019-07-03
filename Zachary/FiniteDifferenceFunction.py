@@ -3,6 +3,12 @@ Provides a general, convenient FiniteDifferenceFunction class to handle all of o
 """
 import numpy as np
 
+__all__ = [
+    'FiniteDifferenceFunction',
+    'FiniteDifferenceError',
+    'finite_difference'
+]
+
 ##########################################################################################
 #
 #                                    FiniteDifferenceFunction
