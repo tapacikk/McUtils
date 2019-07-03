@@ -266,19 +266,23 @@ class SparseTensor(Tensor):
 
     def _get_shape(self):
 
-        non_sp = []
-        shape = []
-        elm = self._a
-        while not isinstance(elm, (sp.csr_matrix, sp.coo_matrix, sp.csc_matrix)):
-            try:
-                elm_2 = elm[0]
-            except IndexError:
-                break
-            else:
-                non_sp.append(len(elm))
-                elm = elm_2
-        else: # only catch if no break
-            shape = elm.shape
+        if isinstance(self._a, np.ndarray):
+            non_sp = self._a.shape
+            shape = self._a.flatten()[0].shape
+        else:
+            non_sp = []
+            shape = []
+            elm = self._a
+            while not isinstance(elm, (sp.csr_matrix, sp.coo_matrix, sp.csc_matrix)):
+                try:
+                    elm_2 = elm[0]
+                except IndexError:
+                    break
+                else:
+                    non_sp.append(len(elm))
+                    elm = elm_2
+            else: # only catch if no break
+                shape = elm.shape
 
         self._non_sparse_shape = tuple(non_sp)
         return self._non_sparse_shape + tuple(shape)
@@ -290,12 +294,17 @@ class SparseTensor(Tensor):
             return self._a[0]
         elif len(i) > len(self.non_sparse_shape):
             # minor efficiency from not doing all these python loops when it may be avoided
-
             lnsp = len(self.non_sparse_shape)
-            main = reduce(lambda a,n:a[n], i[:lnsp], self._a)
+            if isinstance(self._a, np.ndarray):
+                main = self._a[i[:lnsp]]
+            else:
+                main = reduce(lambda a,n:a[n], i[:lnsp], self._a)
             return main[lnsp:]
         else:
-            return reduce(lambda a,n:a[n], i, self._a)
+            if isinstance(self._a, np.ndarray):
+                return self._a[i]
+            else:
+                return reduce(lambda a,n:a[n], i, self._a)
 
     def __getitem__(self, item):
         return self._get_element(item)
