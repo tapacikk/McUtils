@@ -331,7 +331,7 @@ class GaussianJob:
 
             consts = vars["consts"]
             if len(consts) > 0:
-                constants_blocks = [" Constants:"]
+                constants_blocks = []#[" Constants:"]
             else:
                 constants_blocks = []
             for k,c in consts.items():

@@ -3,6 +3,7 @@ Provides Graphics base classes that can be extended upon
 """
 import matplotlib.figure
 import matplotlib.axes
+from .Interactive import EventHandler
 
 class GraphicsException(Exception):
     pass
@@ -14,12 +15,17 @@ class GraphicsBase(metaclass=ABCMeta):
                  figure = None,
                  axes = None,
                  subplot_kw = None,
+                 event_handlers = None,
+                 parent = None,
                  **opts
                  ):
         if subplot_kw is None:
             subplot_kw = {}
         self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
+        self.event_handler = None
+        self.bind_event_handlers(event_handlers)
         self._shown = False
+        self.parent = parent
         self.set_options(**opts)
 
     @staticmethod
@@ -53,6 +59,14 @@ class GraphicsBase(metaclass=ABCMeta):
             axes = figure.add_subplot(1, 1, 1) # type: matplotlib.axes.Axes
 
         return figure, axes
+
+    def bind_event_handlers(self, handlers):
+        if isinstance(handlers, dict):
+            if self.event_handler is None:
+                self.event_handler = EventHandler(self, **handlers)
+            else:
+                self.event_handler.bind(**handlers)
+
     @abstractmethod
     def set_options(self, **opts):
         """Sets options for the plot
@@ -158,6 +172,7 @@ class Graphics(GraphicsBase):
                  figure = None,
                  axes = None,
                  subplot_kw = None,
+                 event_handlers = None,
                  axes_labels = None,
                  plot_label = None,
                  plot_range = None,
@@ -179,6 +194,7 @@ class Graphics(GraphicsBase):
             ticks = ticks,
             scale = scale,
             image_size = image_size,
+            event_handlers = event_handlers
             **kwargs
         )
     def set_options(self,
@@ -416,6 +432,7 @@ class Graphics3D(GraphicsBase):
                  figure = None,
                  axes = None,
                  subplot_kw = None,
+                 event_handlers = None,
                  axes_labels = None,
                  plot_label = None,
                  plot_range = None,
@@ -440,6 +457,7 @@ class Graphics3D(GraphicsBase):
             scale = scale,
             ticks_style = ticks_style,
             image_size = image_size,
+            event_handlers = event_handlers,
             **kwargs
         )
 
