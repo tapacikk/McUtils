@@ -440,7 +440,7 @@ class GaussianJob:
                 if main:
                     atoms[i] = AtomData[a, "Symbol"]
                 else:
-                    atoms[i] = "{}(Iso={})".format(AtomData[a, "Symbol"], AtomData[a, "MassNumber"])
+                    atoms[i] = "{}(Iso={})".format(AtomData[a, "ElementSymbol"], AtomData[a, "MassNumber"])
 
             # get molspec blocks based on type of coordinates that were fed in
             crd_type = self.get_coord_type(crds)
