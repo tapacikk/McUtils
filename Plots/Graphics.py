@@ -3,7 +3,6 @@ Provides Graphics base classes that can be extended upon
 """
 import matplotlib.figure
 import matplotlib.axes
-from .Interactive import EventHandler
 
 class GraphicsException(Exception):
     pass
@@ -61,6 +60,8 @@ class GraphicsBase(metaclass=ABCMeta):
         return figure, axes
 
     def bind_event_handlers(self, handlers):
+        from .Interactive import EventHandler
+
         if isinstance(handlers, dict):
             if self.event_handler is None:
                 self.event_handler = EventHandler(self, **handlers)

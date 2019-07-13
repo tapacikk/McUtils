@@ -193,6 +193,7 @@ class GaussianJob:
         job_types = dict(
             {
                 "SinglePoint": "SP",
+                "PartialOptimization" : "POpt",
                 "Optimization": "Opt",
                 "Frequency": "Freq",
                 "ReactionPath": "IRC",
@@ -201,7 +202,7 @@ class GaussianJob:
                 "BornOppenheimerDynamics": "BOMD",
                 "DensityMatrixDynamics": "AOMD"
             },
-            **{k:k for k in ["SP","Opt","Freq","IRC","IRCMax","Scan","Polar","ADMP", "BOMD","Force","Stable","Volume"]}
+            **{k:k for k in ["SP", "POpt", "Opt", "Freq", "IRC", "IRCMax", "Scan", "Polar", "ADMP", "BOMD", "Force", "Stable", "Volume"]}
         )
         basis_set_keys = ['mp2', "cc" "aug", "sto"] # common basis set specs...
         def __init__(self, job_type = None, basis_set = None, **kw):
@@ -277,11 +278,10 @@ class GaussianJob:
             blocks, vars = self.prep_mol(self.mol)
             if job_type == "Scan":
                 blocks.extend(self.format_scan_vars(vars))
-            elif job_type == "Opt":
+            elif job_type in {"Opt", "POpt"}:
                 blocks.extend(self.format_opt_vars(vars))
             else:
                 blocks.extend(self.format_const_vars(vars))
-
             return "\n".join(blocks)
         def format_charges(self):
             try:
@@ -416,11 +416,12 @@ class GaussianJob:
                             except KeyError:
                                 pass
                         else:
-                            var_map["consts"][var[0]] = var[1]
-                            try:
-                                del var_map['vars'][var[0]]
-                            except KeyError:
-                                pass
+                            if var[0] not in var_map["consts"]:
+                                var_map["consts"][var[0]] = var[1]
+                                try:
+                                    del var_map['vars'][var[0]]
+                                except KeyError:
+                                    pass
             return var_map
 
         def prep_mol(self, mol):
