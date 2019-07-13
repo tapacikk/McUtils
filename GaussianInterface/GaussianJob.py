@@ -276,6 +276,7 @@ class GaussianJob:
             }
         def format_molecule(self, job_type):
             blocks, vars = self.prep_mol(self.mol)
+
             if job_type == "Scan":
                 blocks.extend(self.format_scan_vars(vars))
             elif job_type in {"Opt", "POpt"}:
@@ -361,8 +362,8 @@ class GaussianJob:
             except AttributeError:
                 try:
                     spec, zms = crds # if we can't find it try to get the spec and coordinates for a zmat
-                    if not isinstance(spec[0], str):
-                        raise ValueError("Oops")
+                    # if not isinstance(spec[0], str):
+                    #     raise ValueError("Oops")
                 except ValueError:
                     dim0 = len(crds[0]) # if that doesn't work, then we just have a block of coordinates to work with
                     dimn1 = len(crds[-1]) # in that case we simply check lengths to see what we have
@@ -441,7 +442,7 @@ class GaussianJob:
                 if main:
                     atoms[i] = AtomData[a, "Symbol"]
                 else:
-                    atoms[i] = "{}(Iso={})".format(AtomData[a, "Symbol"], AtomData[a, "MassNumber"])
+                    atoms[i] = "{}(Iso={})".format(AtomData[a, "ElementSymbol"], AtomData[a, "MassNumber"])
 
             # get molspec blocks based on type of coordinates that were fed in
             crd_type = self.get_coord_type(crds)
@@ -474,19 +475,25 @@ class GaussianJob:
                 spec, crds = crds
                 if len(crds[0]) > 0:
                     crds = [ [] ] + list(crds)
+                    spec = [ [] ] + list(spec)
+
                 for i, csa in enumerate(zip(crds, spec, atoms)):
                     l, s, a = csa
                     subblock = [""]*7 # need a new list per line...
                     subblock[0] = a
                     for j,e in enumerate(s):
+                        if j == i:
+                            break
                         subblock[1+2*j] = int(e)
                     for j,el in enumerate(l):
+                        if j == i:
+                            break
                         if isinstance(el, str):
                             # strings get treated as literals
                             subblock[2+2*j] = el
                         else:
                             var_type = "dist" if j == 0 else "angle" if j == 1 else "dihed" if j == 2 else "??"
-                            var = var_type + str(i+1)
+                            var = var_type + str(i)
                             subblock[2+2*j] = var
                             var_list.append(self.Constant(var, el))
                     blocks[i] = "{:<20} {:<5} {:<12} {:<5} {:<12} {:<5} {:<12}".format(*subblock)

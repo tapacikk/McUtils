@@ -81,6 +81,7 @@ def _interp2DData(gpts, **opts):
     y = np.sort(gpts[:, 1])
 
     xmin = np.min(x); xmax = np.max(x)
+
     xdiffs = np.abs(np.diff(x)); xh = np.min(xdiffs[np.nonzero(xdiffs)])
     ymin = np.min(y); ymax = np.max(y)
     ydiffs = np.abs(np.diff(y)); yh = np.min(xdiffs[np.nonzero(ydiffs)])
@@ -399,6 +400,7 @@ class ListPlot2D(Plot2D):
             x = griddata[:, 0]
             y = griddata[:, 1]
             z = griddata[:, 2]
+
         super().__init__(x, y, z, **opts)
 class ListContourPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
