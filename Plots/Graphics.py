@@ -4,6 +4,8 @@ Provides Graphics base classes that can be extended upon
 import matplotlib.figure
 import matplotlib.axes
 
+__all__ = ["GraphicsBase", "Graphics", "Graphics3D", "GraphicsGrid"]
+
 class GraphicsException(Exception):
     pass
 
@@ -14,18 +16,18 @@ class GraphicsBase(metaclass=ABCMeta):
                  figure = None,
                  axes = None,
                  subplot_kw = None,
-                 event_handlers = None,
                  parent = None,
                  **opts
                  ):
         if subplot_kw is None:
             subplot_kw = {}
         self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
+        self.set_options(**opts)
+
         self.event_handler = None
-        self.bind_event_handlers(event_handlers)
         self._shown = False
         self.parent = parent
-        self.set_options(**opts)
+        self.animator = None
 
     @staticmethod
     def _subplot_init(*args, **kw):
@@ -59,17 +61,33 @@ class GraphicsBase(metaclass=ABCMeta):
 
         return figure, axes
 
-    def bind_event_handlers(self, handlers):
+    def bind_events(self, *handlers, **events):
         from .Interactive import EventHandler
 
+        if len(handlers) > 0 and isinstance(handlers[0], dict):
+            handlers = handlers[0]
+        elif len(handlers) == 0 or (len(handlers) > 0 and handlers[0] is not None):
+            handlers = dict(handlers)
         if isinstance(handlers, dict):
+            handlers = dict(handlers, **events)
             if self.event_handler is None:
                 self.event_handler = EventHandler(self, **handlers)
             else:
                 self.event_handler.bind(**handlers)
 
-    @abstractmethod
-    def set_options(self, **opts):
+    def animate(self, *args, **opts):
+        from .Interactive import Animator
+
+        if len(args) > 0 and args[0] is not None:
+            if self.animator is not None:
+                self.animator.stop()
+            self.animator = Animator(self, *args, **opts)
+
+    def set_options(self,
+                    event_handlers = None,
+                    animate = None,
+                    **opts
+                    ):
         """Sets options for the plot
 
         :param opts:
@@ -77,7 +95,8 @@ class GraphicsBase(metaclass=ABCMeta):
         :return:
         :rtype:
         """
-        pass
+        self.bind_events(event_handlers)
+        self.animate(animate)
 
     def __getattr__(self, item):
         try:
@@ -174,6 +193,7 @@ class Graphics(GraphicsBase):
                  axes = None,
                  subplot_kw = None,
                  event_handlers = None,
+                 animate = None,
                  axes_labels = None,
                  plot_label = None,
                  plot_range = None,
@@ -195,7 +215,8 @@ class Graphics(GraphicsBase):
             ticks = ticks,
             scale = scale,
             image_size = image_size,
-            event_handlers = event_handlers
+            event_handlers = event_handlers,
+            animate = animate,
             **kwargs
         )
     def set_options(self,
@@ -207,9 +228,10 @@ class Graphics(GraphicsBase):
                     scale = None,
                     ticks_style = None,
                     image_size = None,
-                    **ignored
+                    **parent_opts
                     ):
 
+        super().set_options(**parent_opts)
         axes = self.axes
 
         self._plot_label = plot_label
@@ -434,6 +456,7 @@ class Graphics3D(GraphicsBase):
                  axes = None,
                  subplot_kw = None,
                  event_handlers = None,
+                 animate = None,
                  axes_labels = None,
                  plot_label = None,
                  plot_range = None,
@@ -459,6 +482,7 @@ class Graphics3D(GraphicsBase):
             ticks_style = ticks_style,
             image_size = image_size,
             event_handlers = event_handlers,
+            animate = animate,
             **kwargs
         )
 
@@ -495,8 +519,10 @@ class Graphics3D(GraphicsBase):
                     scale = None,
                     ticks_style = None,
                     image_size = None,
-                    **ignored
+                    **parent_opts
                     ):
+
+        super().set_options(**parent_opts)
 
         axes = self.axes
 

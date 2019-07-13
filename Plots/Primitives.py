@@ -3,6 +3,10 @@ Graphics primitives module
 Provides stuff like Disk, Sphere, etc. and lets them figure out how to plot themselves
 """
 
+__all__ = [
+    "GraphicsPrimitive", "Sphere", "Cylinder", "Disk", "Line"
+]
+
 import abc
 
 class GraphicsPrimitive(metaclass=abc.ABCMeta):

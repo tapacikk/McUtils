@@ -7,6 +7,14 @@ import numpy as np
 import matplotlib.figure
 import matplotlib.axes
 
+__all__ = [
+    "Plot", "ScatterPlot", "ErrorBarPlot", "ListErrorBarPlot", "StickPlot", "ListStickPlot", "TriPlot", "ListTriPlot",
+    "DataPlot", "HistogramPlot", "HistogramPlot2D", "VerticalLinePlot", "ArrayPlot", "TensorPlot",
+    "Plot2D", "ListPlot2D", "ContourPlot", "DensityPlot", "ListContourPlot", "ListDensityPlot",
+    "ListTriContourPlot", "ListTriDensityPlot", "ListTriPlot3D",
+    "Plot3D", "ListPlot3D", "ScatterPlot3D", "WireframePlot3D", "ContourPlot3D"
+]
+
 ######################################################################################################
 #
 #                                    'adaptive' function sampling
@@ -165,10 +173,9 @@ class Plot(Graphics):
         """
 
         super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
-        meth = getattr(self, method)
+        self.method = meth = getattr(self, method)
 
         xrange, fvalues = _get_2D_plotdata(func, xrange)
-
         if plot_style is None:
             plot_style = {}
         self.graphics = meth(xrange, fvalues, **plot_style)
@@ -177,6 +184,12 @@ class Plot(Graphics):
             self.add_colorbar()
         elif isinstance(colorbar, dict):
             self.add_colorbar(**colorbar)
+
+    def plot(self, func, xrange, **plot_style):
+        xrange, fvalues = _get_2D_plotdata(func, xrange)
+        self.graphics = self.method(xrange, fvalues, **plot_style)
+        return self.graphics
+
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
@@ -229,15 +242,20 @@ class DataPlot(Graphics):
         """
 
         super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
-        meth = getattr(self, method)
+        self.method = meth = getattr(self, method)
         if plot_style is None:
             plot_style = {}
-        self.graphics = meth(data, **plot_style)
+        self.plot(data, **plot_style)
         self.set_options(**opts)
         if colorbar:
             self.add_colorbar()
         elif isinstance(colorbar, dict):
             self.add_colorbar(**colorbar)
+
+    def plot(self, data, **plot_style):
+        self.graphics = self.method(data, **plot_style)
+        return self.graphics
+
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
@@ -257,17 +275,23 @@ class VerticalLinePlot(Graphics):
                  ):
         """Creates a stickplot of data
         """
-        if isinstance(y, (int, float)):
-            y = [0, y]
+
         super().__init__(figure=figure, axes=axes, subplot_kw = subplot_kw)
+
         if plot_style is None:
             plot_style = {}
-        self.graphics = self.axes.vlines(x, *y, **plot_style)
+        self.plot(x, y, **plot_style)
         self.set_options(**opts)
         if colorbar:
             self.add_colorbar()
         elif isinstance(colorbar, dict):
             self.add_colorbar(**colorbar)
+    def plot(self, x, y = 1.0, **plot_style):
+        if isinstance(y, (int, float)):
+            y = [0, y]
+        self.graphics = self.axes.vlines(x, *y, **plot_style)
+        return self.graphics
+
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
@@ -284,15 +308,20 @@ class ArrayPlot(Graphics):
         """Creates an array plot from the array
         """
         super().__init__(figure=figure, axes=axes, subplot_kw = subplot_kw)
-        meth = getattr(self, method)
+        self.method = meth = getattr(self, method)
         if plot_style is None:
             plot_style = {}
-        self.graphics = meth(array, **plot_style)
+        self.plot(array, **plot_style)
         self.set_options(**opts)
         if colorbar:
             self.add_colorbar()
         elif isinstance(colorbar, dict):
             self.add_colorbar(**colorbar)
+
+    def plot(self, array, **plot_style):
+        self.graphics = self.method(array, **plot_style)
+        return self.graphics
+
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
@@ -368,19 +397,19 @@ class Plot2D(Graphics):
         """
 
         super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
-        meth = getattr(self, method)
-
-        xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
-
+        self.method = getattr(self, method)
         if plot_style is None:
             plot_style = {}
-        self.graphics = meth(xrange, yrange, fvalues, **plot_style)
+        self.plot(func, xrange, yrange, **plot_style)
         self.set_options(**opts)
         if colorbar:
             self.add_colorbar()
         elif isinstance(colorbar, dict):
             self.add_colorbar(**colorbar)
-
+    def plot(self, func, xrange, yrange, **plot_style):
+        xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
+        self.graphics = self.method(xrange, yrange, fvalues, **plot_style)
+        return self.graphics
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
@@ -394,6 +423,7 @@ class DensityPlot(Plot2D):
 class ListPlot2D(Plot2D):
     """Convenience class that handles the interpolation first"""
     def __init__(self, griddata, interpolate = True, **opts):
+        self.interpolate = interpolate
         if interpolate:
             x, y, z = _interp2DData(griddata)
         else:
@@ -402,6 +432,21 @@ class ListPlot2D(Plot2D):
             z = griddata[:, 2]
 
         super().__init__(x, y, z, **opts)
+
+    def plot(self, *griddata, interpolate = None, **plot_style):
+        if interpolate is None:
+            interpolate = self.interpolate
+        if len(griddata) == 3:
+            print("...")
+            x, y, z = griddata
+        elif interpolate:
+            x, y, z = _interp2DData(griddata[0])
+        else:
+            x = griddata[0][:, 0]
+            y = griddata[0][:, 1]
+            z = griddata[0][:, 2]
+        return super().plot(x, y, z, **plot_style)
+
 class ListContourPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
         super().__init__(griddata, method='contourf', **opts)
@@ -442,25 +487,28 @@ class Plot3D(Graphics3D):
         """
 
         super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
-        meth = getattr(self, method)
-
-        xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
-
+        self.method = getattr(self, method)
         if plot_style is None:
             plot_style = {}
-        self.graphics = meth(xrange, yrange, fvalues, **plot_style)
+        self.plot(func, xrange, yrange, **plot_style)
         self.set_options(**opts)
         if colorbar:
             self.add_colorbar()
         elif isinstance(colorbar, dict):
             self.add_colorbar(**colorbar)
+    def plot(self, func, xrange, yrange, **plot_style):
+        xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
+        self.graphics = self.method(xrange, yrange, fvalues, **plot_style)
+        return self.graphics
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
         fig.colorbar(self.graphics, **kw)
+
 class ListPlot3D(Plot3D):
     """Convenience class that handles the interpolation first"""
     def __init__(self, griddata, interpolate = True, **opts):
+        self.interpolate = interpolate
         if interpolate:
             x, y, z = _interp2DData(griddata)
         else:
@@ -468,6 +516,18 @@ class ListPlot3D(Plot3D):
             y = griddata[:, 1]
             z = griddata[:, 2]
         super().__init__(x, y, z, **opts)
+    def plot(self, *griddata, interpolate = None, **plot_style):
+        if interpolate is None:
+            interpolate = self.interpolate
+        if len(griddata) == 3:
+            x, y, z = griddata
+        elif interpolate:
+            x, y, z = _interp2DData(griddata[0])
+        else:
+            x = griddata[0][:, 0]
+            y = griddata[0][:, 1]
+            z = griddata[0][:, 2]
+        return super().plot(x, y, z, **plot_style)
 class ScatterPlot3D(Plot3D):
     def __init__(self, func, xrange, yrange, **opts):
         super().__init__(func, xrange, yrange, method = 'scatter', **opts)

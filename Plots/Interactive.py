@@ -1,7 +1,12 @@
 """
 Convenience classes for hooking into the matplotlib animation framework
 """
-from .Graphics import Graphics
+from .Graphics import GraphicsBase, Graphics
+
+__all__ = [
+    "EventHandler",
+    "Animator"
+]
 
 class EventHandler:
     def __init__(self,
@@ -117,17 +122,20 @@ class EventHandler:
             self.name = name
 
         def handle_event(self, event):
-            if self.filter is not None:
-                handle = self.filter(event)
-            else:
-                handle = True
-            if handle:
-                res = self.handler(event)
-                if (res is not False) and (res is not None or self.update):
-                    self.parent.figure.canvas.draw()
-            else:
-                res = None
+            res = None
+            if self.handler is not None:
+                if self.filter is not None:
+                    handle = self.filter(event)
+                else:
+                    handle = True
+                if handle:
+                    res = self.handler(event)
+                    if (res is not False) and (res is not None or self.update):
+                        self.parent.figure.canvas.draw()
             return res
+
+        def __call__(self, *args, **kwargs):
+            self.handle_event(*args, **kwargs)
 
     def ButtonPressedEvent(self, handler, **kw):
         kw = dict({'name' : 'ButtonPressed'}, **kw)
@@ -175,3 +183,70 @@ class EventHandler:
     def AxesLeaveEvent(self, handler, **kw):
         kw = dict({'name' : 'AxesLeave'}, **kw)
         return self.Event(self, handler, **kw)
+
+
+class Animator:
+    def __init__(self, figure, data_generator, plot_method = None, events = True, update = False, **anim_ops):
+
+        from matplotlib.animation import FuncAnimation
+        from matplotlib.figure import Figure
+        from functools import wraps
+
+        self.figure = figure
+        if isinstance(figure, Figure):
+            figure = Graphics(figure=figure, axes=figure)
+        self.data_generator = data_generator
+        self.plotter = self._get_plot_method(figure, plot_method)
+        self.update = update
+
+        @wraps(self.plotter)
+        def anim_func(frame, *args, self = self, **kwargs):
+            try:
+                if data_generator is not None:
+                    data = self.data_generator(frame, *args)
+                else:
+                    data = args
+            except (TypeError, ValueError):
+                self.plotter = self.data_generator
+                self.data_generator = None
+                data = args
+            if not self.update:
+                self.figure.clear()
+            self.plotter(self.figure, *data, **kwargs)
+        self._animation = FuncAnimation(figure.figure, anim_func, **anim_ops)
+        self._active = True
+
+        if events:
+            self.figure.bind_events(
+                on_click = lambda *e:self.toggle()
+            )
+
+    def _get_plot_method(self, figure, plot_method):
+        if plot_method is None:
+            plot_method = figure.plot
+            plot_method = lambda figure, *data, m = plot_method, **kwargs: m(*data)
+
+        return plot_method
+
+    @property
+    def active(self):
+        return self._active
+    @active.setter
+    def active(self, val):
+        if val:
+            self.start()
+        else:
+            self.stop()
+    def start(self):
+        if not self.active:
+            self._active = True
+            self._animation.event_source.start()
+    def stop(self):
+        if self.active:
+            self._active = False
+            self._animation.event_source.stop()
+    def toggle(self):
+        if self.active:
+            self.stop()
+        else:
+            self.start()
