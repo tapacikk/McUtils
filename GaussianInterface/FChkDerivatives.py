@@ -34,7 +34,7 @@ class FchkForceConstants:
         n = self.n
         full_array = np.zeros((3*n, 3*n))
         full_array[np.tril_indices_from(full_array)] = self.fcs
-        full_array = full_array + np.tril(full_array, 1).T
+        full_array = full_array + np.tril(full_array, -1).T
         return full_array
     @property
     def array(self):

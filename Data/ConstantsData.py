@@ -4,6 +4,9 @@ Provides constants data and conversions between units and unit systems
 from .CommonData import DataHandler
 from collections import OrderedDict, deque
 
+class ConversionError(Exception):
+    pass
+
 class UnitGraph:
     def __init__(self, stuff_to_update = ()):
         self._graph = {}
@@ -373,6 +376,8 @@ class UnitsDataHandler(DataHandler):
             conv = self._find_direct_conversion(src, targ)
             if conv is None:
                 conv = self._find_path_conversion(src, targ)
+            if conv is None:
+                raise ConversionError("Couldn't find conversion factor between units '{0[0]}' and '{1[0]}'".format(src, targ))
             convo *= conv
 
         return convo

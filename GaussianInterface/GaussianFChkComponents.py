@@ -104,18 +104,18 @@ def split_vib_e2(e2):
     l = len(e2)
     n = int(1 + np.sqrt(1 + l/9))
 
-    freq2 = e2[:n]
+    freq = e2[:n]
     red_m = e2[n:2*n]
     frc_const = e2[2*n:3*n]
     intense = e2[3*n:4*n]
 
     return {
-        "Frequencies"    : np.sign(freq2)*np.sqrt(np.abs(freq2)),
-        "ReduceMasses"   : red_m,
+        "Frequencies"    : freq,
+        "ReducedMasses"   : red_m,
         "ForceConstants" : frc_const,
         "Intensities"    : intense
     }
-FormattedCheckpointComponents["Vib-E2"] = split_vib_modes
+FormattedCheckpointComponents["Vib-E2"] = split_vib_e2
 
 #endregion
 
@@ -135,7 +135,7 @@ FormattedCheckpointCommonNames = {
     "Cartesian 3rd/4th derivatives" : "ForceDerivatives",
     "Vib-E2" : "VibrationalData",
     "Vib-Modes" : "VibrationalModes",
-    "Vib-AtMass" : "VibrationalMasses",
+    "Vib-AtMass" : "VibrationalAtomicMasses",
     "Real atomic weights" : "AtomicMasses"
 
 }
