@@ -69,6 +69,7 @@ class GJFOptFormatter:
 #
 #                                               GaussianJob
 #
+
 class GaussianJob:
     """A class that writes Gaussian .gjf files given a system and config/template options"""
 
@@ -310,13 +311,13 @@ class GaussianJob:
                 variables_blocks = []
             for k,c in variables.items():
                 if c[1] is None:
-                    variables_blocks.append("  {:>6} = {:>16.8f}".format(k, *c))
+                    variables_blocks.append("  {:>6} = {:>12.6f}".format(k, c[0]))
                 else:
-                    variables_blocks.append("  {:>6} = {:>16.8f} s {:<5.0f} {:>16.8f}".format(k, *c))
+                    variables_blocks.append("  {:>6} = {:>12.6f} s {:<5.0f} {:>12.6f}".format(k, *c))
 
             consts = vars["consts"]
             for k,c in consts.items():
-                variables_blocks.append("  {:>6} = {:>16.8f} f".format(k, c))
+                variables_blocks.append("  {:>6} = {:>12.6f} f".format(k, c))
 
             return variables_blocks
 
@@ -328,7 +329,7 @@ class GaussianJob:
             else:
                 variables_blocks = []
             for k,c in variables.items():
-                variables_blocks.append("  {:>6} = {:>16.8f} {:<5.0f} {:>16.8f}".format(k, *c))
+                variables_blocks.append("  {:>6} = {:>12.6f} {:<5.0f} {:>12.6f}".format(k, *c))
 
             consts = vars["consts"]
             if len(consts) > 0:
@@ -336,7 +337,7 @@ class GaussianJob:
             else:
                 constants_blocks = []
             for k,c in consts.items():
-                constants_blocks.append("  {:>6} = {:>16.8f} 0 0.".format(k, c))
+                constants_blocks.append("  {:>6} = {:>12.6f} {:<5.0f} {:>12.6f}".format(k, c, 0, 0))
 
             return variables_blocks + constants_blocks
 

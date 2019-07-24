@@ -19,6 +19,21 @@ class GraphicsBase(metaclass=ABCMeta):
                  parent = None,
                  **opts
                  ):
+        """
+
+        :param args:
+        :type args:
+        :param figure:
+        :type figure: matplotlib.figure.Figure | None
+        :param axes:
+        :type axes: matplotlib.axes.Axes | None
+        :param subplot_kw:
+        :type subplot_kw: dict | None
+        :param parent:
+        :type parent: GraphicsBase | None
+        :param opts:
+        :type opts:
+        """
         if subplot_kw is None:
             subplot_kw = {}
         self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
@@ -185,6 +200,12 @@ class GraphicsBase(metaclass=ABCMeta):
             set_ticks(ticks.MultipleLocator(x), **opts)
         elif x is not None:
             set_ticks(x, **opts)
+
+    def clear(self):
+        ax = self.axes # type: matplotlib.axes.Axes
+        all_things = ax.artists + ax.patches
+        for a in all_things:
+            a.remove()
 
 class Graphics(GraphicsBase):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""

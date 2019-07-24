@@ -184,9 +184,13 @@ class EventHandler:
         kw = dict({'name' : 'AxesLeave'}, **kw)
         return self.Event(self, handler, **kw)
 
-
 class Animator:
-    def __init__(self, figure, data_generator, plot_method = None, events = True, update = False, **anim_ops):
+    def __init__(self, figure, data_generator,
+                 plot_method = None,
+                 events = True,
+                 update = False,
+                 **anim_ops
+                 ):
 
         from matplotlib.animation import FuncAnimation
         from matplotlib.figure import Figure
@@ -194,10 +198,11 @@ class Animator:
 
         self.figure = figure
         if isinstance(figure, Figure):
-            figure = Graphics(figure=figure, axes=figure)
+            figure = Graphics(figure=figure, axes=figure.axes)
         self.data_generator = data_generator
         self.plotter = self._get_plot_method(figure, plot_method)
         self.update = update
+        self._prev_objects = None
 
         @wraps(self.plotter)
         def anim_func(frame, *args, self = self, **kwargs):
@@ -210,9 +215,20 @@ class Animator:
                 self.plotter = self.data_generator
                 self.data_generator = None
                 data = args
+
             if not self.update:
-                self.figure.clear()
-            self.plotter(self.figure, *data, **kwargs)
+                if self._prev_objects is None:
+                    self.figure.clear()
+                else:
+                    for o in self._prev_objects:
+                        o.remove()
+
+            if data is None:
+                self.plotter = self.data_generator
+                self.data_generator = None
+            else:
+                self._prev_objects = self.plotter(self.figure, *data, frame = frame, **kwargs)
+
         self._animation = FuncAnimation(figure.figure, anim_func, **anim_ops)
         self._active = True
 
@@ -250,3 +266,5 @@ class Animator:
             self.stop()
         else:
             self.start()
+    def show(self):
+        return self.figure.show()
