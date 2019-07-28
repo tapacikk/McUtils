@@ -9,6 +9,10 @@ __all__ = ["GraphicsBase", "Graphics", "Graphics3D", "GraphicsGrid"]
 class GraphicsException(Exception):
     pass
 
+########################################################################################################################
+#
+#                                               GraphicsBase
+#
 from abc import *
 class GraphicsBase(metaclass=ABCMeta):
     def __init__(self,
@@ -168,15 +172,18 @@ class GraphicsBase(metaclass=ABCMeta):
         cp.figure = cp.axes
 
     def show(self):
-        import matplotlib.pyplot as plt
-        if not self._shown:
+        if isinstance(self.figure, VTKWindow):
             self.figure.show()
-            plt.show()
-            self._shown = True
         else:
-            self._shown = False
-            self.refresh().show()
-            #raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
+            import matplotlib.pyplot as plt
+            if not self._shown:
+                self.figure.show()
+                plt.show()
+                self._shown = True
+            else:
+                self._shown = False
+                self.refresh().show()
+                #raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
 
     ## useful shared bits
     def _set_ticks(self, x, set_ticks = None, set_locator = None, set_minor_locator = None, **opts):
@@ -207,6 +214,11 @@ class GraphicsBase(metaclass=ABCMeta):
         for a in all_things:
             a.remove()
 
+
+########################################################################################################################
+#
+#                                               Graphics
+#
 class Graphics(GraphicsBase):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
     def __init__(self, *args,
@@ -222,6 +234,7 @@ class Graphics(GraphicsBase):
                  ticks = None,
                  scale = None,
                  image_size = None,
+                 background = 'white',
                  **kwargs
                  ):
         super().__init__(
@@ -238,6 +251,7 @@ class Graphics(GraphicsBase):
             image_size = image_size,
             event_handlers = event_handlers,
             animate = animate,
+            background = background,
             **kwargs
         )
     def set_options(self,
@@ -249,6 +263,7 @@ class Graphics(GraphicsBase):
                     scale = None,
                     ticks_style = None,
                     image_size = None,
+                    background = None,
                     **parent_opts
                     ):
 
@@ -303,6 +318,9 @@ class Graphics(GraphicsBase):
         else:
             self._image_size = tuple( s/72. for s in self.get_size_inches() )
 
+        self._background = background
+        if self._background is not None:
+            self.background = background
 
     # set plot label
     @property
@@ -470,6 +488,19 @@ class Graphics(GraphicsBase):
             self._image_size = (w, h)
             self.figure.set_size_inches(wi, hi)
 
+    # set size
+    @property
+    def background(self):
+        return self._background
+    @background.setter
+    def background(self, bg):
+        self._background = bg
+        self.axes.set_facecolor(bg)
+
+########################################################################################################################
+#
+#                                               Graphics3D
+#
 class Graphics3D(GraphicsBase):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
     def __init__(self, *args,
@@ -486,9 +517,12 @@ class Graphics3D(GraphicsBase):
                  scale = None,
                  ticks_style = None,
                  image_size = None,
+                 background = None,
+                 backend = 'matplotlib',
                  **kwargs
                  ):
 
+        self._backend = backend
         super().__init__(
             *args,
             figure = figure,
@@ -508,26 +542,46 @@ class Graphics3D(GraphicsBase):
         )
 
     @staticmethod
-    def _subplot_init(*args, **kw):
-        from mpl_toolkits.mplot3d import Axes3D
-        import matplotlib.pyplot as plt
+    def _subplot_init(*args, backend = 'MPL', **kw):
+        if backend =="VTK":
+            window = VTKWindow()
+            return window, window
+        else:
+            from mpl_toolkits.mplot3d import Axes3D
+            import matplotlib.pyplot as plt
 
-        subplot_kw = {"projection": '3d'}
-        if 'subplot_kw' in kw:
-            subplot_kw = dict(subplot_kw, **kw['subplot_kw'])
-            del kw['subplot_kw']
-        return plt.subplots(*args, subplot_kw=subplot_kw, **kw)
+            subplot_kw = {"projection": '3d'}
+            if 'subplot_kw' in kw:
+                subplot_kw = dict(subplot_kw, **kw['subplot_kw'])
+                del kw['subplot_kw']
+            return plt.subplots(*args, subplot_kw=subplot_kw, **kw)
 
     def _init_suplots(self, figure, axes, *args, **kw):
+        """matplotlib subplot instantiation
+
+        :param figure:
+        :type figure:
+        :param axes:
+        :type axes:
+        :param args:
+        :type args:
+        :param kw:
+        :type kw:
+        :return:
+        :rtype:
+        """
 
         if figure is None:
-            figure, axes = self._subplot_init(*args, **kw)
+            figure, axes = self._subplot_init(*args, backend = self._backend, **kw)
         elif isinstance(figure, GraphicsBase):
             axes = figure.axes
             figure = figure.figure
 
         if axes is None:
-            axes = axes = figure.add_subplot(1, 1, 1, projection='3d')
+            if self._backend == "VTK":
+                axes = figure
+            else:
+                axes = figure.add_subplot(1, 1, 1, projection='3d')
 
         return figure, axes
 
@@ -785,6 +839,19 @@ class Graphics3D(GraphicsBase):
             self._image_size = (w, h)
             self.figure.set_size_inches(wi, hi)
 
+    # set size
+    @property
+    def background(self):
+        return self._background
+    @background.setter
+    def background(self, bg):
+        self._background = bg
+        self.axes.set_facecolor(bg)
+
+########################################################################################################################
+#
+#                                               GraphicsGrid
+#
 class GraphicsGrid:
     def __init__(self,
                  *args,
@@ -909,3 +976,208 @@ class GraphicsGrid:
 
     def show(self):
         self.axes[0][0].show()
+
+
+########################################################################################################################
+#
+#                                               VTKWindow
+#
+class VTKAxes:
+    def __init__(self):
+        import vtk
+
+        self.actor = vtk.vtkCubeAxesActor()
+        self.actor.SetFlyModeToStaticEdges()
+
+
+
+    def set_camera(self, renderer):
+        self.actor.SetCamera(renderer.GetActiveCamera())
+
+class VTKWindow:
+    # this will take care of all of the low level communication with the window object
+
+    def __init__(self,
+                 title = None,
+                 legend = None,
+                 window = None,
+                 cube = None,
+                 use_axes = True,
+                 interactor = None,
+                 renderer = None
+                 ):
+        import vtk
+
+        self._window = vtk.vtkRenderWindow() if window is None else window
+        self._axes = VTKAxes() if cube is None else cube
+        self._objects = []
+        self._interactor = interactor
+        self._renderer = renderer
+        self._title = title
+        self._legend = None
+        self._size = [640, 480]
+        self._viewpoint = [5, 5, 5]
+        self._focus = [0, 0, 0]
+
+        self.use_axes = use_axes
+        if use_axes:
+            self.add_object(self._axes)
+
+    def add_object(self, thing):
+        self._objects.append(thing)
+        try:
+            actors = iter(thing.actor)
+        except TypeError:
+            actors = [thing.actor]
+
+        for actor in actors:
+            self.renderer.AddActor(actor)
+
+    @property
+    def window(self):
+        return self._window
+
+    @property
+    def interactor(self):
+        return self.setup_interactor()
+    def setup_interactor(self):
+        import vtk
+
+        if self._interactor is None:
+            self._interactor = vtk.vtkRenderWindowInteractor()
+            self._interactor.SetRenderWindow(self.window)
+
+        return self._interactor
+
+    @property
+    def renderer(self):
+        return self.setup_renderer()
+    def setup_renderer(self):
+        import vtk
+
+        if self._renderer is None:
+            self._renderer = vtk.vtkRenderer()
+            self.window.AddRenderer(self.renderer)
+
+        return self._renderer
+
+    def _not_imped_warning(self, method):
+        import warnings
+        warnings.warn("{} doesn't implement {} yet".format(type(self).__name__, method))
+
+    #MPL-like API
+    def set_size(self, w, h):
+        import math
+        self._size = [math.floor(w), math.floor(h)]
+        self.window.SetSize(*self._size)
+    def set_size_inches(self, wi, hi):
+        return self.set_size(wi * 72, hi * 72)
+    def get_size_inches(self):
+        w,h = self.window.GetSize()
+        return w/72, h/72
+
+    def get_title(self):
+        return self._title
+    def set_title(self, title):
+        self._title = title
+        return self.window.SetWindowTitle(title)
+
+    def get_xlim(self):
+        # self._not_imped_warning('get_xlim')
+        return self._axes.actor.GetXAxisRange()
+    def set_xlim(self, x):
+
+        return self._axes.actor.SetZAxisRange(*x)
+    def get_ylim(self):
+        # self._not_imped_warning('get_ylim')
+        return self._axes.actor.GetYAxisRange()
+    def set_ylim(self, y):
+        return self._axes.actor.SetYAxisRange(*y)
+    def get_zlim(self):
+        # self._not_imped_warning('get_zlim')
+        return self._axes.actor.GetZAxisRange()
+    def set_zlim(self, z):
+        return self._axes.actor.SetZAxisRange(*z)
+
+    def get_xlabel(self):
+        self._not_imped_warning('get_xlabel')
+        return None
+    def set_xlabel(self, lab):
+        self._not_imped_warning('set_xlabel')
+        return None
+    def get_ylabel(self):
+        self._not_imped_warning('get_ylabel')
+        return None
+    def set_ylabel(self, lab):
+        self._not_imped_warning('set_ylabel')
+        return None
+    def get_zlabel(self):
+        self._not_imped_warning('get_zlabel')
+        return None
+    def set_zlabel(self, lab):
+        self._not_imped_warning('set_zlabel')
+        return None
+
+    def get_xticks(self):
+        self._not_imped_warning('get_xticks')
+        return None
+    def set_xticks(self, lab):
+        self._not_imped_warning('set_xticks')
+        return None
+    def get_yticks(self):
+        self._not_imped_warning('get_yticks')
+        return None
+    def set_yticks(self, lab):
+        self._not_imped_warning('set_yticks')
+        return None
+    def get_zticks(self):
+        self._not_imped_warning('get_zticks')
+        return None
+    def set_zticks(self, lab):
+        self._not_imped_warning('set_zticks')
+        return None
+
+    def get_xscale(self):
+        self._not_imped_warning('get_xscale')
+        return None
+    def set_xscale(self, lab):
+        self._not_imped_warning('set_xscale')
+        return None
+    def get_yscale(self):
+        self._not_imped_warning('get_yscale')
+        return None
+    def set_yscale(self, lab):
+        self._not_imped_warning('set_yscale')
+        return None
+    def get_zscale(self):
+        self._not_imped_warning('get_zscale')
+        return None
+    def set_zscale(self, lab):
+        self._not_imped_warning('set_zscale')
+        return None
+
+    def get_legend(self):
+        return self._legend
+    def set_legend(self, l):
+        return self._not_imped_warning('set_legend')
+
+    def set_facecolor(self, bg):
+        import vtk
+        c = vtk.vtkNamedColors()
+        self.window.SetBackgroundColor(c.GetColor(bg))
+
+    def set_viewpoint(self, vp):
+        camera = self.renderer.GetActiveCamera()
+        camera.SetPosition(*vp)
+    def set_focalpoint(self, fp):
+        camera = self.renderer.GetActiveCamera()
+        camera.SetFocalPoint(*fp)
+
+    def show(self):
+        if self.use_axes:
+            self._axes.set_camera(self.renderer)
+        self.window.Render()
+        self.set_size(*self._size)
+        self.set_viewpoint(self._viewpoint)
+        self.set_focalpoint(self._focus)
+        self.interactor.Start()
