@@ -6,6 +6,8 @@ import os, numpy as np
 from collections import OrderedDict, namedtuple
 from ..Data import AtomData
 
+__all__ = [ "GaussianJob" ]
+
 ####################################################################################################################
 #
 #                                               GaussianJobException

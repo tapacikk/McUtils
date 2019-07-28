@@ -7,6 +7,8 @@ from mmap import mmap
 from .GaussianLogComponents import GaussianLogComponents, GaussianLogDefaults, GaussianLogOrdering
 from .GaussianFChkComponents import FormattedCheckpointComponents, FormattedCheckpointCommonNames
 
+__all__ = ["GaussianFChkReader", "GaussianLogReader"]
+
 ########################################################################################################################
 #
 #                                           FileStreamReader

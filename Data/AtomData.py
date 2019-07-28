@@ -3,7 +3,7 @@ Provides a class for handling a compiled set of atomic data
 """
 from .CommonData import DataHandler
 
-# this might become a singleton class at some point in the future...
+__all__ = [ "AtomData" ]
 
 class AtomDataHandler(DataHandler):
     def __init__(self):

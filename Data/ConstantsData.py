@@ -4,6 +4,8 @@ Provides constants data and conversions between units and unit systems
 from .CommonData import DataHandler
 from collections import OrderedDict, deque
 
+__all__ = [ "UnitsData" ]
+
 class ConversionError(Exception):
     pass
 
@@ -416,3 +418,5 @@ class UnitsDataHandler(DataHandler):
 
 
 UnitsData = UnitsDataHandler()
+UnitsData.__doc__ = """An instance of UnitsDataHandler that can be used for unit conversion and fundamental constant lookups"""
+UnitsData.__name__ = "UnitsData"

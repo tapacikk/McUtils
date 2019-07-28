@@ -3,6 +3,8 @@ Defines a common data handler
 """
 import os, sys
 
+__all__ = [ "DataHandler" ]
+
 default_data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 default_data_package = "TheRealMcCoy"
 default_data_key = "data"
@@ -12,12 +14,18 @@ class DataHandler:
     """
     def __init__(self,
                  data_name,
-                 data_key = default_data_key,
-                 data_dir = default_data_dir,
-                 data_pkg = default_data_package,
+                 data_key = None,
+                 data_dir = None,
+                 data_pkg = None,
                  alternate_keys = None,
                  getter = None
                  ):
+        if data_dir is None:
+            data_dir = default_data_dir
+        if data_key is None:
+            data_key = default_data_key
+        if data_pkg is None:
+            data_pkg = default_data_package
         self._data = None # this'll be a dict where we store all our data
         self._dir = data_dir
         self._name = data_name

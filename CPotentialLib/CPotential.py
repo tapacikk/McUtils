@@ -1,6 +1,7 @@
 """
 Provides a CPotential class that acts as a wrapper on CPotentialLib.so
 """
+__all__ = ["CPotential"]
 
 class CPotential:
     def __init__(self, pointer, mode="single"):
