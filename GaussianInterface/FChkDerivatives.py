@@ -3,11 +3,9 @@ Lazy class for holding force constants and higher derivative tensors pulled from
 """
 import numpy as np
 
-
 class FchkForceConstants:
     """Holder class for force constants coming out of an fchk file
     Allows us to construct the force constant matrix in lazy fashion if we want
-
     """
     def __init__(self, fcs):
         self.fcs = fcs
@@ -18,7 +16,6 @@ class FchkForceConstants:
 
     def _get_n(self):
         """
-
         :return:
         :rtype: int
         """
@@ -32,7 +29,6 @@ class FchkForceConstants:
 
     def _get_array(self):
         """Uses the computed n to make and symmetrize an appropriately formatted array from the lower-triangle data
-
         :return:
         :rtype: np.ndarray
         """
@@ -92,11 +88,9 @@ class FchkForceDerivatives:
     @property
     def fourth_derivs(self):
         return self._get_fourth_derivs()
-
     @staticmethod
     def _fill_3d_tensor(n, derivs):
         """Makes and fills a 3D tensor for our derivatives
-
         :param n:
         :type n:
         :param derivs:
@@ -119,35 +113,28 @@ class FchkForceDerivatives:
         inds2 = ( main_ind, sub_ind_2, sub_ind_1 ) # basically just taking a transpose
         full_array_1[inds2] = derivs
         return full_array_1
-
     def _get_third_deriv_array(self):
         """we make the appropriate 3D tensor from a bunch of 2D tensors
-
         :return:
         :rtype: np.ndarray
         """
         n = self.n
         derivs = self.third_derivs
         return self._fill_3d_tensor(n, derivs)
-
     @property
     def third_deriv_array(self):
         return self._get_third_deriv_array()
-
     def _get_fourth_deriv_array(self):
         """We'll make our array of fourth derivs exactly the same as the third
         admittedly this should be a 4D tensor, but we only have the diagonal elements so it's just 3D
-
         I should make it a 4D sparse matrix honestly... Apparently we won't need many terms in the 4D tensor so it might
         make sense to handle that bloop doop bloop in the schmoop
-
         :return:
         :rtype: np.ndarray
         """
         n = self.n
         derivs = self.fourth_derivs
         return self._fill_3d_tensor(n, derivs)
-
     @property
     def fourth_deriv_array(self):
         return self._get_fourth_deriv_array()

@@ -199,18 +199,22 @@ class GaussianJob:
                 "PartialOptimization" : "POpt",
                 "Optimization": "Opt",
                 "Frequency": "Freq",
+
                 "Optimization+Frequency": "POpt Freq",
+
                 "ReactionPath": "IRC",
                 "TransitionState": "IRCMax",
                 "WavefunctionStability": "Stable",
                 "BornOppenheimerDynamics": "BOMD",
                 "DensityMatrixDynamics": "AOMD"
             },
+
             **{k:k for k in ["SP", "POpt", "Opt", "Freq", "POpt Freq", "IRC", "IRCMax", "Scan",
                              "Polar", "ADMP", "BOMD", "Force", "Stable", "Volume"]}
 
         )
         basis_set_keys = ['mp2', "cc" "aug", "sto"] # common basis set specs...
+
 
         def __init__(self, job_type = None, basis_set = None, **kw):
             for k in kw:
@@ -226,7 +230,9 @@ class GaussianJob:
             if basis_set is None:
                 basis_set = "MP2/aug-cc-pvdz"
             self.job_type = self.job_types[job_type]
+
             if self.job_type != job_type and job_type in kw:  # this is what I get for allowing things like ReactionPath -_-
+
                 jtv = kw[job_type]
                 del kw[job_type]
                 kw[self.job_type] = jtv
@@ -288,8 +294,10 @@ class GaussianJob:
                 blocks.extend(self.format_scan_vars(vars))
             elif job_type in {"Opt", "POpt"}:
                 blocks.extend(self.format_opt_vars(vars))
+
             elif job_type == "POpt Freq":
                 blocks.extend(self.format_opt_vars(vars))
+
             else:
                 blocks.extend(self.format_const_vars(vars))
             return "\n".join(blocks)
