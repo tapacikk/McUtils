@@ -149,11 +149,22 @@ def _get_3D_plotdata(func, xrange, yrange):
 
 ######################################################################################################
 #
+#                                    Unified PlotBase class
+#
+#
+
+######################################################################################################
+#
 #                                    2D Plots on 2D Axes
 #
 #
 class Plot(Graphics):
-    def __init__(self, func, xrange,
+    """
+    The base plotting class to interface into matplotlib or (someday) VTK or another backend
+    Builds off of the Graphics system to make a unified and convenient interface to generating plots
+    """
+    def __init__(self,
+                 *params,
                  method = 'plot',
                  figure = None, axes = None, subplot_kw = None,
                  plot_style = None,
@@ -162,38 +173,54 @@ class Plot(Graphics):
                  ):
         """Creates a 1D plot on 2D axes
 
-        :param func: either a func to apply or an array of x-values
-        :type func:
-        :param xrange: either an xrange spec or an array of y-values
-        :type xrange:
-        :param method: the method to be used to plot the data
+        :param params: _empty_ or _x_, _y_ arrays or _function_, _xrange_
+        :type params:
+        :param plot_style: the plot styling options to be fed into the plot method
+        :type plot_style: dict | None
+        :param method: the method name as a string
         :type method: str
-        :param opts:
+        :param figure: the Graphics object on which to plot (None means make a new one)
+        :type figure: Graphics | None
+        :param axes: the axes on which to plot (used in constructing a Graphics, None means make a new one)
+        :type axes: None
+        :param subplot_kw: the keywords to pass on when initializing the plot
+        :type subplot_kw: dict | None
+        :param colorbar: whether to use a colorbar or what options to pass to the colorbar
+        :type colorbar: None | bool | dict
+        :param opts: options to be fed in when initializing the Graphics
         :type opts:
         """
 
         super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
-        self.method = meth = getattr(self, method)
+        self.method = getattr(self, method)
 
-        xrange, fvalues = _get_2D_plotdata(func, xrange)
+        # we're gonna set things up so that we can have delayed evaluation of the plotting.
+        # i.e. a Plot can be initialized but then do all its plotting later
         if plot_style is None:
             plot_style = {}
-        self.graphics = meth(xrange, fvalues, **plot_style)
-        self.set_options(**opts)
-        if colorbar:
-            self.add_colorbar()
-        elif isinstance(colorbar, dict):
-            self.add_colorbar(**colorbar)
+        self.plot_style = plot_style
+        self.opts = opts
+        self.colorbar = colorbar
 
+        if len(params) > 0:
+            self._initialize(*params)
+    def _initialize(self, *params, **plot_style):
+        self.plot(*params)
+        self.set_options(**self.opts)
+        if self.colorbar:
+            self.add_colorbar()
+        elif isinstance(self.colorbar, dict):
+            self.add_colorbar(**self.colorbar)
     def plot(self, func, xrange, **plot_style):
         xrange, fvalues = _get_2D_plotdata(func, xrange)
+        plot_style = dict(self.plot_style, **plot_style)
         self.graphics = self.method(xrange, fvalues, **plot_style)
         return self.graphics
-
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
         fig.colorbar(self.graphics, **kw)
+
 class ScatterPlot(Plot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, method = "scatter", **kwargs)
@@ -231,103 +258,92 @@ class ListTriPlot(TriPlot):
 #                                    Pure Data Plots on 2D Axes
 #
 #
-class DataPlot(Graphics):
-    def __init__(self, data,
+class DataPlot(Plot):
+    """
+    Makes a 2D plot of arbitrary data using a plot method that handles that data type
+    """
+    def __init__(self,
+                 *params,
                  plot_style = None, method = None,
                  figure = None, axes = None, subplot_kw = None,
                  colorbar = None,
                  **opts
                  ):
-        """Creates a plot of data
         """
-
-        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
-        self.method = meth = getattr(self, method)
-        if plot_style is None:
-            plot_style = {}
-        self.plot(data, **plot_style)
-        self.set_options(**opts)
-        if colorbar:
-            self.add_colorbar()
-        elif isinstance(colorbar, dict):
-            self.add_colorbar(**colorbar)
-
+        :param params: _empty_ or _data_
+        :type params:
+        :param plot_style: the plot styling options to be fed into the plot method
+        :type plot_style: dict | None
+        :param method: the method name as a string
+        :type method: str
+        :param figure: the Graphics object on which to plot (None means make a new one)
+        :type figure: Graphics | None
+        :param axes: the axes on which to plot (used in constructing a Graphics, None means make a new one)
+        :type axes: None
+        :param subplot_kw: the keywords to pass on when initializing the plot
+        :type subplot_kw: dict | None
+        :param colorbar: whether to use a colorbar or what options to pass to the colorbar
+        :type colorbar: None | bool | dict
+        :param opts: options to be fed in when initializing the Graphics
+        :type opts:
+        """
+        super().__init__(*params,
+                         plot_style = plot_style, method = method,
+                         colorbar = colorbar, figure = figure,
+                         axes = axes, subplot_kw = subplot_kw,
+                         **opts
+                         )
     def plot(self, data, **plot_style):
         self.graphics = self.method(data, **plot_style)
         return self.graphics
-
-    def add_colorbar(self, **kw):
-        fig = self.figure # type: matplotlib.figure.Figure
-        ax = self.axes # type: matplotlib.axes.Axes
-        fig.colorbar(self.graphics, **kw)
 class HistogramPlot(DataPlot):
+    """
+    Makes a Histogram of data
+    """
     def __init__(*args, **kwargs):
         super().__init__(*args, method = 'hist', **kwargs)
 class HistogramPlot2D(DataPlot):
+    """
+    Makes a 2D histogram of data
+    """
     def __init__(*args, **kwargs):
         super().__init__(*args, method = 'hist2d', **kwargs)
 
-class VerticalLinePlot(Graphics):
-    def __init__(self, x, y = 1.0,
-                 plot_style = None, colorbar = None,
-                 figure=None, axes=None, subplot_kw = None,
-                 **opts
-                 ):
-        """Creates a stickplot of data
-        """
-
-        super().__init__(figure=figure, axes=axes, subplot_kw = subplot_kw)
-
-        if plot_style is None:
-            plot_style = {}
-        self.plot(x, y, **plot_style)
-        self.set_options(**opts)
-        if colorbar:
-            self.add_colorbar()
-        elif isinstance(colorbar, dict):
-            self.add_colorbar(**colorbar)
+class VerticalLinePlot(Plot):
+    """
+    Plots a bunch of vertical lines
+    """
     def plot(self, x, y = 1.0, **plot_style):
         if isinstance(y, (int, float)):
             y = [0, y]
         self.graphics = self.axes.vlines(x, *y, **plot_style)
         return self.graphics
 
-    def add_colorbar(self, **kw):
-        fig = self.figure # type: matplotlib.figure.Figure
-        ax = self.axes # type: matplotlib.axes.Axes
-        fig.colorbar(self.graphics, **kw)
-
-
 class ArrayPlot(Graphics):
-    def __init__(self, array,
+    """
+    Plots an array as an image
+    """
+    def __init__(self, *params,
                  plot_style = None, colorbar = None,
                  figure=None, axes=None, subplot_kw = None,
                  method = 'imshow',
                  **opts
                  ):
-        """Creates an array plot from the array
-        """
-        super().__init__(figure=figure, axes=axes, subplot_kw = subplot_kw)
-        self.method = meth = getattr(self, method)
-        if plot_style is None:
-            plot_style = {}
-        self.plot(array, **plot_style)
-        self.set_options(**opts)
-        if colorbar:
-            self.add_colorbar()
-        elif isinstance(colorbar, dict):
-            self.add_colorbar(**colorbar)
+        super().__init__(*params,
+                         plot_style = plot_style, method = method,
+                         colorbar = colorbar, figure = figure,
+                         axes = axes, subplot_kw = subplot_kw,
+                         **opts
+                         )
 
     def plot(self, array, **plot_style):
         self.graphics = self.method(array, **plot_style)
         return self.graphics
 
-    def add_colorbar(self, **kw):
-        fig = self.figure # type: matplotlib.figure.Figure
-        ax = self.axes # type: matplotlib.axes.Axes
-        fig.colorbar(self.graphics, **kw)
-
 class TensorPlot(GraphicsGrid):
+    """
+    Plots slices of a tensor as a grid
+    """
     def __init__(self, tensor,
                  nrows = None, ncols = None,
                  plot_style = None, colorbar = None,
@@ -375,69 +391,100 @@ class TensorPlot(GraphicsGrid):
 #                                    3D Plots on 2D Axes
 #
 #
-class Plot2D(Graphics):
-    """A base class for plots that are 3D but plotted on 2D Graphics"""
-    def __init__(self, func, xrange, yrange, plot_style = None,
-                 method = 'contour', colorbar = None,
-                 figure = None, axes = None, subplot_kw = None,
+class Plot2D(Plot):
+    """
+    A base class for plots of 3D data but plotted on 2D axes
+    """
+    def __init__(self, *params,
+                 plot_style = None,
+                 method = 'contour',
+                 colorbar = None,
+                 figure = None,
+                 axes = None,
+                 subplot_kw = None,
                  **opts
                  ):
-        """Creates a 3D plot on 2D axes
-
-        :param func: either a func to apply or an array of x-values
-        :type func:
-        :param xrange: either an xrange spec or an array of y-values
-        :type xrange:
-        :param yrange: either a yrange spec or an array of z-values
-        :type yrange:
-        :param method: the method to be used to plot the data
+        """
+        :param params: either _empty_ or _x_, _y_, _z_ arrays or _function_, _xrange_, _yrange_
+        :type params:
+        :param plot_style: the plot styling options to be fed into the plot method
+        :type plot_style: dict | None
+        :param method: the method name as a string
         :type method: str
-        :param opts:
+        :param figure: the Graphics object on which to plot (None means make a new one)
+        :type figure: Graphics | None
+        :param axes: the axes on which to plot (used in constructing a Graphics, None means make a new one)
+        :type axes: None
+        :param subplot_kw: the keywords to pass on when initializing the plot
+        :type subplot_kw: dict | None
+        :param colorbar: whether to use a colorbar or what options to pass to the colorbar
+        :type colorbar: None | bool | dict
+        :param opts: options to be fed in when initializing the Graphics
         :type opts:
         """
-
-        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
-        self.method = getattr(self, method)
-        if plot_style is None:
-            plot_style = {}
-        self.plot(func, xrange, yrange, **plot_style)
-        self.set_options(**opts)
-        if colorbar:
-            self.add_colorbar()
-        elif isinstance(colorbar, dict):
-            self.add_colorbar(**colorbar)
+        super().__init__(*params,
+                         plot_style = plot_style, method = method,
+                         colorbar = colorbar, figure = figure,
+                         axes = axes, subplot_kw = subplot_kw,
+                         **opts
+                         )
     def plot(self, func, xrange, yrange, **plot_style):
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
         self.graphics = self.method(xrange, yrange, fvalues, **plot_style)
         return self.graphics
-    def add_colorbar(self, **kw):
-        fig = self.figure # type: matplotlib.figure.Figure
-        ax = self.axes # type: matplotlib.axes.Axes
-        fig.colorbar(self.graphics, **kw)
 class ContourPlot(Plot2D):
-    def __init__(self, func, xrange, yrange, **opts):
-        super().__init__(func, xrange, yrange, method='contourf', **opts)
+    def __init__(self, *params, **opts):
+        super().__init__(*params, method='contourf', **opts)
 class DensityPlot(Plot2D):
-    def __init__(self, func, xrange, yrange, **opts):
-        super().__init__(func, xrange, yrange, method='pcolormesh', **opts)
+    def __init__(self, *params, **opts):
+        super().__init__(*params, method='pcolormesh', **opts)
 class ListPlot2D(Plot2D):
-    """Convenience class that handles the interpolation first"""
-    def __init__(self, griddata, interpolate = True, **opts):
+    """
+    Convenience class that handles the interpolation first
+    """
+    def __init__(self,
+                 *params,
+                 plot_style = None,
+                 method = 'contour',
+                 colorbar = None,
+                 figure = None,
+                 axes = None,
+                 subplot_kw = None,
+                 interpolate = True,
+                 **opts
+                 ):
+        """
+        :param params: either _empty_ or and array of (_x_, _y_, _z_) points
+        :type params:
+        :param plot_style: the plot styling options to be fed into the plot method
+        :type plot_style: dict | None
+        :param method: the method name as a string
+        :type method: str
+        :param figure: the Graphics object on which to plot (None means make a new one)
+        :type figure: Graphics | None
+        :param axes: the axes on which to plot (used in constructing a Graphics, None means make a new one)
+        :type axes: None
+        :param subplot_kw: the keywords to pass on when initializing the plot
+        :type subplot_kw: dict | None
+        :param colorbar: whether to use a colorbar or what options to pass to the colorbar
+        :type colorbar: None | bool | dict
+        :param interpolate: whether to interpolate the data or not
+        :type interpolate: bool
+        :param opts: options to be fed in when initializing the Graphics
+        :type opts:
+        """
         self.interpolate = interpolate
-        if interpolate:
-            x, y, z = _interp2DData(griddata)
-        else:
-            x = griddata[:, 0]
-            y = griddata[:, 1]
-            z = griddata[:, 2]
-
-        super().__init__(x, y, z, **opts)
+        super().__init__(*params,
+                         plot_style = plot_style, method = method,
+                         colorbar = colorbar, figure = figure,
+                         axes = axes, subplot_kw = subplot_kw,
+                         **opts
+                         )
 
     def plot(self, *griddata, interpolate = None, **plot_style):
         if interpolate is None:
             interpolate = self.interpolate
         if len(griddata) == 3:
-            print("...")
             x, y, z = griddata
         elif interpolate:
             x, y, z = _interp2DData(griddata[0])
@@ -465,49 +512,129 @@ class ListTriDensityPlot(ListPlot2D):
 #                                    3D Plots on 3D Axes
 #
 #
-class Plot3D(Graphics3D):
+class Plot3D(Graphics3D): # basically a mimic of the Plot class but inheriting from Graphics3D
     """A base class for 3D plots"""
-    def __init__(self, func, xrange, yrange, plot_style = None,
+    def __init__(self, *params,
+                 plot_style = None,
                  method = 'plot_surface', colorbar = None,
                  figure = None, axes = None, subplot_kw = None,
                  **opts
                  ):
-        """Creates a 3D plot on 2D axes
-
-        :param func: either a func to apply or an array of x-values
-        :type func:
-        :param xrange: either an xrange spec or an array of y-values
-        :type xrange:
-        :param yrange: either a yrange spec or an array of z-values
-        :type yrange:
-        :param method: the method to be used to plot the data
+        """
+        :param params: either _empty_ or _x_, _y_, _z_ arrays or _function_, _xrange_, _yrange_
+        :type params:
+        :param plot_style: the plot styling options to be fed into the plot method
+        :type plot_style: dict | None
+        :param method: the method name as a string
         :type method: str
-        :param opts:
+        :param figure: the Graphics object on which to plot (None means make a new one)
+        :type figure: Graphics | None
+        :param axes: the axes on which to plot (used in constructing a Graphics, None means make a new one)
+        :type axes: None
+        :param subplot_kw: the keywords to pass on when initializing the plot
+        :type subplot_kw: dict | None
+        :param colorbar: whether to use a colorbar or what options to pass to the colorbar
+        :type colorbar: None | bool | dict
+        :param opts: options to be fed in when initializing the Graphics
         :type opts:
         """
 
         super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
         self.method = getattr(self, method)
+
+        # we're gonna set things up so that we can have delayed evaluation of the plotting.
+        # i.e. a Plot3D can be initialized but then do all its plotting later
         if plot_style is None:
             plot_style = {}
-        self.plot(func, xrange, yrange, **plot_style)
-        self.set_options(**opts)
-        if colorbar:
+        self.plot_style = plot_style
+        self.opts = opts
+        self.colorbar = colorbar
+
+        if len(params) > 0:
+            self._initialize(*params)
+
+    def _initialize(self, *params, **plot_style):
+        self.plot(*params, **plot_style)
+        self.set_options(**self.opts)
+        if self.colorbar:
             self.add_colorbar()
-        elif isinstance(colorbar, dict):
-            self.add_colorbar(**colorbar)
+        elif isinstance(self.colorbar, dict):
+            self.add_colorbar(**self.colorbar)
+
     def plot(self, func, xrange, yrange, **plot_style):
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
         self.graphics = self.method(xrange, yrange, fvalues, **plot_style)
         return self.graphics
+
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
         ax = self.axes # type: matplotlib.axes.Axes
         fig.colorbar(self.graphics, **kw)
 
+class ScatterPlot3D(Plot3D):
+    """
+    Creates a ScatterPlot of 3D data
+    """
+    def __init__(self, *params, **opts):
+        super().__init__(*params, method = 'scatter', **opts)
+class WireframePlot3D(Plot3D):
+    """
+    Creates a Wireframe mesh plot of 3D data
+    """
+    def __init__(self, *params, **opts):
+        super().__init__(*params, method = 'plot_wireframe', **opts)
+class ContourPlot3D(Plot3D):
+    """
+    Creates a 3D ContourPlot of 3D data
+    """
+    def __init__(self, *params, **opts):
+        super().__init__(*params, method = 'contourf', **opts)
+
 class ListPlot3D(Plot3D):
-    """Convenience class that handles the interpolation first"""
-    def __init__(self, griddata, interpolate = True, **opts):
+    """
+    Convenience 3D plotting class that handles the interpolation first
+    """
+    def __init__(self,
+                 *params,
+                 plot_style = None,
+                 method = 'contour',
+                 colorbar = None,
+                 figure = None,
+                 axes = None,
+                 subplot_kw = None,
+                 interpolate = True,
+                 **opts
+                 ):
+        """
+        :param params: either _empty_ or and array of (_x_, _y_, _z_) points
+        :type params:
+        :param plot_style: the plot styling options to be fed into the plot method
+        :type plot_style: dict | None
+        :param method: the method name as a string
+        :type method: str
+        :param figure: the Graphics object on which to plot (None means make a new one)
+        :type figure: Graphics | None
+        :param axes: the axes on which to plot (used in constructing a Graphics, None means make a new one)
+        :type axes: None
+        :param subplot_kw: the keywords to pass on when initializing the plot
+        :type subplot_kw: dict | None
+        :param colorbar: whether to use a colorbar or what options to pass to the colorbar
+        :type colorbar: None | bool | dict
+        :param interpolate: whether to interpolate the data or not
+        :type interpolate: bool
+        :param opts: options to be fed in when initializing the Graphics
+        :type opts:
+        """
+        self.interpolate = interpolate
+        super().__init__(*params,
+                         plot_style = plot_style, method = method,
+                         colorbar = colorbar, figure = figure,
+                         axes = axes, subplot_kw = subplot_kw,
+                         **opts
+                         )
+
+    def _initialize(self, *params, interpolate = True, **plot_style):
+        griddata, = params
         self.interpolate = interpolate
         if interpolate:
             x, y, z = _interp2DData(griddata)
@@ -515,7 +642,9 @@ class ListPlot3D(Plot3D):
             x = griddata[:, 0]
             y = griddata[:, 1]
             z = griddata[:, 2]
-        super().__init__(x, y, z, **opts)
+
+        super()._initialize(x, y, z, **plot_style)
+
     def plot(self, *griddata, interpolate = None, **plot_style):
         if interpolate is None:
             interpolate = self.interpolate
@@ -528,15 +657,10 @@ class ListPlot3D(Plot3D):
             y = griddata[0][:, 1]
             z = griddata[0][:, 2]
         return super().plot(x, y, z, **plot_style)
-class ScatterPlot3D(Plot3D):
-    def __init__(self, func, xrange, yrange, **opts):
-        super().__init__(func, xrange, yrange, method = 'scatter', **opts)
-class WireframePlot3D(Plot3D):
-    def __init__(self, func, xrange, yrange, **opts):
-        super().__init__(func, xrange, yrange, method = 'plot_wireframe', **opts)
-class ContourPlot3D(Plot3D):
-    def __init__(self, func, xrange, yrange, **opts):
-        super().__init__(func, xrange, yrange, method = 'contourf', **opts)
+
 class ListTriPlot3D(ListPlot3D):
-    def __init__(self, griddata, **opts):
-        super().__init__(griddata, method = 'plot_trisurf', interpolate = False, **opts)
+    """
+    Creates a triangulated surface plot in 3D
+    """
+    def __init__(self, *params, **opts):
+        super().__init__(*params, method = 'plot_trisurf', interpolate = False, **opts)
