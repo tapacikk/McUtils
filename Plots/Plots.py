@@ -163,6 +163,7 @@ class Plot(Graphics):
     The base plotting class to interface into matplotlib or (someday) VTK or another backend
     Builds off of the Graphics system to make a unified and convenient interface to generating plots
     """
+
     def __init__(self,
                  *params,
                  method = 'plot',
@@ -171,8 +172,7 @@ class Plot(Graphics):
                  colorbar = None,
                  **opts
                  ):
-        """Creates a 1D plot on 2D axes
-
+        """
         :param params: _empty_ or _x_, _y_ arrays or _function_, _xrange_
         :type params:
         :param plot_style: the plot styling options to be fed into the plot method
