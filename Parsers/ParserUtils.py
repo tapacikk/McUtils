@@ -63,13 +63,15 @@ def pull_xyz(txt, num_atoms = None, regex = acart_p_c):
     :rtype:
     """
     if num_atoms is None:
-        num_cur = 15 # probably more than we'll actually need...
+        num_cur = 50 # probably more than we'll actually need...
+
         atom_types = [None]*num_cur
         coord_array = np.zeros((num_cur, 3))
         for i, match in enumerate(re.finditer(regex, txt)):
             if i == num_cur:
                 atom_types.extend([None]*(2*num_cur))
-                coord_array = np.concatenate((coord_array, np.zeros((2*num_cur, 3))), axis=1)
+                coord_array = np.concatenate((coord_array, np.zeros((2*num_cur, 3))), axis=0)
+
             g = match.groups()
             atom_types[i] = g[:-3]
             coord_array[i] = np.array(g[-3:], dtype=np.str).astype(np.float64)
@@ -180,7 +182,8 @@ def pull_zmat(txt,
     """
 
     if num_atoms is None:
-        num_cur = 15 # probably more than we'll actually need...
+        num_cur = 50 # probably more than we'll actually need...
+
         atom_types = [None]*num_cur
         index_array = np.zeros((num_cur-1, 3))
         coord_array = np.zeros((num_cur-1, 3))
@@ -188,8 +191,13 @@ def pull_zmat(txt,
             if i == num_cur:
                 atom_types.extend([None]*(2*num_cur))
                 coord_array = np.concatenate(
-                    (coord_array, np.zeros((2*num_cur, 6))),
-                    axis=1
+                    (coord_array, np.zeros((2*num_cur, 3))),
+                    axis=0
+                )
+                index_array = np.concatenate(
+                    (index_array, np.zeros((2 * num_cur, 3))),
+                    axis=0
+
                 )
 
             g = match.groups()
