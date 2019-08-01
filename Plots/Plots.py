@@ -51,7 +51,7 @@ def _semi_adaptive_sample_func(f, xmin, xmax, npts = 150, max_refines = 10, der_
         vals = _apply_f(f, grid)
 
     return grid, vals, npts, refines
-def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts = 50, max_refines = 10, der_cut = 10^5):
+def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts = 15, max_refines = 10, der_cut = 10^5):
     from ..Zachary import finite_difference
 
     refines = 0
@@ -558,6 +558,7 @@ class Plot3D(Graphics3D): # basically a mimic of the Plot class but inheriting f
         self.plot_style = plot_style
         self.plot_opts = opts
         self.colorbar = colorbar
+        self._initialized = False
 
         if len(params) > 0:
             self.plot(*params)
