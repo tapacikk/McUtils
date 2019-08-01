@@ -430,6 +430,7 @@ class Plot2D(Plot):
                          )
     def plot(self, func, xrange, yrange, **plot_style):
         xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
+        plot_style = dict(self.plot_style, **plot_style)
         self.graphics = self.method(xrange, yrange, fvalues, **plot_style)
         return self.graphics
 class ContourPlot(Plot2D):

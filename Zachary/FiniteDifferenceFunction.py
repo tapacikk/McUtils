@@ -186,11 +186,8 @@ class FiniteDifferenceFunction:
     @classmethod
     def from_grid(cls, grid, order,
                   accuracy = 2, stencil = None, end_point_precision = 2, gridtype = REGULAR_GRID,
-<<<<<<< HEAD
                   axis = 0, **kwargs
-=======
-                  axis = 0
->>>>>>> 599fc6c4b775b6941067e3dad6bb61d2b0ef6c02
+
                   ):
         """Constructs a FiniteDifferenceFunction from a grid and order
 
@@ -239,18 +236,12 @@ class FiniteDifferenceFunction:
                                            end_point_precision = end_point_precision,
                                            mesh_spacings = mesh_spacings,
                                            shape = shape,
-<<<<<<< HEAD
                                            axis = axis,
                                            **kwargs
                                            )
         else:
             return cls.IrregularGridFunction(order, grid, stencil, shape = shape, **kwargs)
-=======
-                                           axis = axis
-                                           )
-        else:
-            return cls.IrregularGridFunction(order, grid, stencil, shape = shape)
->>>>>>> 599fc6c4b775b6941067e3dad6bb61d2b0ef6c02
+
 
     def _clean_coeffs(self, cfs):
         cf1 = cfs[0]

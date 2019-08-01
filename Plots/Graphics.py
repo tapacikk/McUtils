@@ -716,6 +716,7 @@ class Graphics3D(GraphicsBase):
     @property
     def plot_range(self):
         return self._plot_range
+
     @plot_range.setter
     def plot_range(self, ranges):
         try:
@@ -739,12 +740,13 @@ class Graphics3D(GraphicsBase):
         if isinstance(z, self.styled):
             self.axes.set_zlim(*z.str, **z.opts)
         elif z is not None:
-            self.axes.set_zlim(y)
+            self.axes.set_zlim(z)
 
     # set plot ranges
     @property
     def ticks(self):
         return self._ticks
+
     def _set_xticks(self, x, **opts):
         return self._set_ticks(x,
                                set_ticks=self.axes.set_xticks,
