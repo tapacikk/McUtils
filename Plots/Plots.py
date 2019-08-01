@@ -192,29 +192,38 @@ class Plot(Graphics):
         """
 
         super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
-        self.method = getattr(self, method)
+        self.method = getattr(self.axes, method)
 
         # we're gonna set things up so that we can have delayed evaluation of the plotting.
         # i.e. a Plot can be initialized but then do all its plotting later
         if plot_style is None:
             plot_style = {}
         self.plot_style = plot_style
-        self.opts = opts
+        self.plot_opts = opts
         self.colorbar = colorbar
+        self._initialized = False
 
         if len(params) > 0:
-            self._initialize(*params)
-    def _initialize(self, *params, **plot_style):
-        self.plot(*params)
-        self.set_options(**self.opts)
+            self.plot(*params)
+
+    def _initialize(self):
+        self.set_options(**self.plot_opts)
         if self.colorbar:
             self.add_colorbar()
         elif isinstance(self.colorbar, dict):
             self.add_colorbar(**self.colorbar)
-    def plot(self, func, xrange, **plot_style):
+
+    def _get_plot_data(self, func, xrange):
         xrange, fvalues = _get_2D_plotdata(func, xrange)
+        return xrange, fvalues
+    def _plot_data(self, *data, **plot_style):
+        return self.method(*self._get_plot_data(*data), **plot_style)
+
+    def plot(self, *params, **plot_style):
         plot_style = dict(self.plot_style, **plot_style)
-        self.graphics = self.method(xrange, fvalues, **plot_style)
+        self.graphics = self._plot_data(*params, **plot_style)
+        if not self._initialized:
+            self._initialize()
         return self.graphics
     def add_colorbar(self, **kw):
         fig = self.figure # type: matplotlib.figure.Figure
@@ -293,9 +302,9 @@ class DataPlot(Plot):
                          axes = axes, subplot_kw = subplot_kw,
                          **opts
                          )
-    def plot(self, data, **plot_style):
-        self.graphics = self.method(data, **plot_style)
-        return self.graphics
+    def _get_plot_data(self, data):
+        return data,
+
 class HistogramPlot(DataPlot):
     """
     Makes a Histogram of data
@@ -313,13 +322,17 @@ class VerticalLinePlot(Plot):
     """
     Plots a bunch of vertical lines
     """
-    def plot(self, x, y = 1.0, **plot_style):
+    def __init__(*args, **kwargs):
+        super().__init__(*args, method = 'vlines', **kwargs)
+    def _get_plot_data(self, x, y = 1.0):
         if isinstance(y, (int, float)):
             y = [0, y]
-        self.graphics = self.axes.vlines(x, *y, **plot_style)
-        return self.graphics
+        return (x, y)
+    def _plot_data(self, *data, **plot_style):
+        x, y = data
+        return self.method(x, *y, **plot_style)
 
-class ArrayPlot(Graphics):
+class ArrayPlot(DataPlot):
     """
     Plots an array as an image
     """
@@ -335,10 +348,6 @@ class ArrayPlot(Graphics):
                          axes = axes, subplot_kw = subplot_kw,
                          **opts
                          )
-
-    def plot(self, array, **plot_style):
-        self.graphics = self.method(array, **plot_style)
-        return self.graphics
 
 class TensorPlot(GraphicsGrid):
     """
@@ -428,11 +437,9 @@ class Plot2D(Plot):
                          axes = axes, subplot_kw = subplot_kw,
                          **opts
                          )
-    def plot(self, func, xrange, yrange, **plot_style):
-        xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
-        plot_style = dict(self.plot_style, **plot_style)
-        self.graphics = self.method(xrange, yrange, fvalues, **plot_style)
-        return self.graphics
+    def _get_plot_data(self, func, xrange, yrange):
+        return _get_3D_plotdata(func, xrange, yrange)
+
 class ContourPlot(Plot2D):
     def __init__(self, *params, **opts):
         super().__init__(*params, method='contourf', **opts)
@@ -482,7 +489,7 @@ class ListPlot2D(Plot2D):
                          **opts
                          )
 
-    def plot(self, *griddata, interpolate = None, **plot_style):
+    def _get_plot_data(self, *griddata, interpolate = None):
         if interpolate is None:
             interpolate = self.interpolate
         if len(griddata) == 3:
@@ -493,7 +500,8 @@ class ListPlot2D(Plot2D):
             x = griddata[0][:, 0]
             y = griddata[0][:, 1]
             z = griddata[0][:, 2]
-        return super().plot(x, y, z, **plot_style)
+
+        return (x, y, z)
 
 class ListContourPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
@@ -548,23 +556,28 @@ class Plot3D(Graphics3D): # basically a mimic of the Plot class but inheriting f
         if plot_style is None:
             plot_style = {}
         self.plot_style = plot_style
-        self.opts = opts
+        self.plot_opts = opts
         self.colorbar = colorbar
 
         if len(params) > 0:
-            self._initialize(*params)
+            self.plot(*params)
 
-    def _initialize(self, *params, **plot_style):
-        self.plot(*params, **plot_style)
-        self.set_options(**self.opts)
+    def _initialize(self):
+        self.set_options(**self.plot_opts)
         if self.colorbar:
             self.add_colorbar()
         elif isinstance(self.colorbar, dict):
             self.add_colorbar(**self.colorbar)
 
-    def plot(self, func, xrange, yrange, **plot_style):
-        xrange, yrange, fvalues = _get_3D_plotdata(func, xrange, yrange)
-        self.graphics = self.method(xrange, yrange, fvalues, **plot_style)
+    def _get_plot_data(self, func, xrange, yrange):
+        return _get_3D_plotdata(func, xrange, yrange)
+    def _plot_data(self, *data, **plot_style):
+        return self.method(*self._get_plot_data(*data), **plot_style)
+    def plot(self, *params, **plot_style):
+        plot_style = dict(self.plot_style, **plot_style)
+        self.graphics = self._plot_data(*params, **plot_style)
+        if not self._initialized:
+            self._initialize()
         return self.graphics
 
     def add_colorbar(self, **kw):
@@ -634,19 +647,7 @@ class ListPlot3D(Plot3D):
                          **opts
                          )
 
-    def _initialize(self, *params, interpolate = True, **plot_style):
-        griddata, = params
-        self.interpolate = interpolate
-        if interpolate:
-            x, y, z = _interp2DData(griddata)
-        else:
-            x = griddata[:, 0]
-            y = griddata[:, 1]
-            z = griddata[:, 2]
-
-        super()._initialize(x, y, z, **plot_style)
-
-    def plot(self, *griddata, interpolate = None, **plot_style):
+    def _get_plot_data(self, *griddata, interpolate = None):
         if interpolate is None:
             interpolate = self.interpolate
         if len(griddata) == 3:
@@ -657,7 +658,8 @@ class ListPlot3D(Plot3D):
             x = griddata[0][:, 0]
             y = griddata[0][:, 1]
             z = griddata[0][:, 2]
-        return super().plot(x, y, z, **plot_style)
+
+        return (x, y, z)
 
 class ListTriPlot3D(ListPlot3D):
     """

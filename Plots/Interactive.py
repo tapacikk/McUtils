@@ -101,11 +101,17 @@ class EventHandler:
         )
 
         self.bind(**self._handles)
-
     def bind(self, **handlers):
         self._handles.update(**handlers)
         for handle, handler in handlers.items():
             self.figure.canvas.mpl_connect(handle, handler)
+
+    @property
+    def handlers(self):
+        proc_handle = lambda h: self._handles[h].data if isinstance(self._handles[h], self.Event) else None
+        return {
+            h: proc_handle(h) for h in self._handles
+        }
 
     class Event:
         def __init__(self,
@@ -120,6 +126,17 @@ class EventHandler:
             self.parent = event_handler
             self.update = update,
             self.name = name
+
+        @property
+        def data(self):
+            return (
+                self.handler,
+                {
+                    'filter':self.filter,
+                    'update':self.update,
+                    'name':self.name
+                    }
+            )
 
         def handle_event(self, event):
             res = None
@@ -138,15 +155,35 @@ class EventHandler:
             self.handle_event(*args, **kwargs)
 
     def ButtonPressedEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         kw = dict({'name' : 'ButtonPressed'}, **kw)
         return self.Event(self, handler, **kw)
     def ButtonReleasedEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         kw = dict({'name' : 'ButtonReleased'}, **kw)
         return self.Event(self, handler, **kw)
     def DrawEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         kw = dict({'name' : 'Draw'}, **kw)
         return self.Event(self, handler, **kw)
     def KeyPressedEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         if isinstance(handler, dict):
             filt = lambda e, h=handler: e.key in h
             handler = lambda e, h = handler: h[e.key](e)
@@ -155,6 +192,11 @@ class EventHandler:
         kw = dict({'name' : 'KeyPressed', 'filter':filt}, **kw)
         return self.Event(self, handler, **kw)
     def KeyReleasedEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         if isinstance(handler, dict):
             filt = lambda e, h=handler: e.key in h
             handler = lambda e, h = handler: h[e.key](e)
@@ -163,24 +205,59 @@ class EventHandler:
         kw = dict({'name' : 'KeyReleased', 'filter':filt}, **kw)
         return self.Event(self, handler, **kw)
     def MoveEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         kw = dict({'name' : 'Move'}, **kw)
         return self.Event(self, handler, **kw)
     def SelectEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         kw = dict({'name' : 'Select'}, **kw)
         return self.Event(self, handler, **kw)
     def ScrollEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         kw = dict({'name' : 'Scroll'}, **kw)
         return self.Event(self, handler, **kw)
     def FigureEnterEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         kw = dict({'name' : 'FigureEnter'}, **kw)
         return self.Event(self, handler, **kw)
     def FigureLeaveEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         kw = dict({'name' : 'FigureLeave'}, **kw)
         return self.Event(self, handler, **kw)
     def AxesEnterEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         kw = dict({'name' : 'AxesEnter'}, **kw)
         return self.Event(self, handler, **kw)
     def AxesLeaveEvent(self, handler, **kw):
+        if isinstance(handler, tuple):
+            handler, pars = kw
+        else:
+            pars = {}
+        kw = dict(pars, **kw)
         kw = dict({'name' : 'AxesLeave'}, **kw)
         return self.Event(self, handler, **kw)
 
