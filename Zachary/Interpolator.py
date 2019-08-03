@@ -3,13 +3,16 @@ Sets up a general Interpolator class that looks like Mathematica's Interpolating
 """
 
 import numpy as np
-import scipy as sp
+import scipy.interpolate as interpolate
 from .Mesh import Mesh
 
 __all__ = [
     "Interpolator",
     "Extrapolator"
 ]
+
+class InterpolatorException(Exception):
+    pass
 
 class Interpolator:
     """
@@ -34,7 +37,7 @@ class Interpolator:
         :param interpolation_opts: the options to be fed into the interpolating_function
         :type interpolation_opts:
         """
-        self.grid = Mesh(grid) if not isinstance(grid, Mesh) else grid
+        self.grid = grid = Mesh(grid) if not isinstance(grid, Mesh) else grid
         self.vals = vals
         self.interpolator = self.get_interpolator(grid, vals, **interpolation_opts) if interpolation_function is None else interpolation_function
         self.extrapolator = self.get_extrapolator(grid) if extrapolator is None else extrapolator
@@ -45,7 +48,7 @@ class Interpolator:
         """Returns a function that can be called on grid points to interpolate them
 
         :param grid:
-        :type grid: np.ndarray
+        :type grid: Mesh
         :param vals:
         :type vals: np.ndarray
         :param opts:
@@ -53,7 +56,34 @@ class Interpolator:
         :return: interpolator
         :rtype: function
         """
-        ...
+        if grid.ndim == 1:
+            # 1D cases trivial with interp1D
+            # should maybe handle method...?
+            interpolator = interpolate.interp1d(grid, vals, **opts)
+        elif grid.mesh_type == Mesh.MeshType_Structured:
+            if grid.dimension == 2:
+                # structured potentially 2D
+                x, y = grid.gridpoints.T
+                v = vals.flatten()
+                # should add something for automatic method determination I think...
+                interpolator = interpolate.interp2d(x, y, v, **opts)
+            else:
+                interpolator = interpolate.RegularGridInterpolator(grid.gridpoints, vals.flatten(), **opts)
+        elif grid.mesh_type == Mesh.MeshType_Unstructured:
+            # for now we'll only use the RadialBasisFunction interpolator, but this may be extended in the future
+            interpolator = interpolate.Rbf(*grid.gridpoints.T, vals, **opts)
+        elif grid.mesh_type == Mesh.MeshType_SemiStructured:
+            # not sure what we want to do here... I'm thinking we can use some default
+            # extrapolator or the Rbf to extrapolate to a full grid then from there build a RegularGridInterpolator?
+            raise NotImplemented
+        else:
+            raise InterpolatorException("{}.{}: can't handle mesh_type '{}'".format(
+                cls.__name__,
+               'get_interpolator',
+                grid.mesh_type
+            ))
+
+        return interpolator
 
     @classmethod
     def get_extrapolator(cls, grid):

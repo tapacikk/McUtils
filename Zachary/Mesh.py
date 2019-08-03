@@ -62,6 +62,50 @@ class Mesh(np.ndarray):
             return [np.unique(m) for m in meshes]
         else:
             return None
+    @property
+    def dimension(self):
+        """Returns the dimension of the grid (not necessarily ndim)
+
+        :return:
+        :rtype: int
+        """
+        return self.shape[-1]
+    @property
+    def npoints(self):
+        """Returns the number of gridpoints in the mesh
+
+        :return:
+        :rtype: int
+        """
+        return self.get_npoints(self)
+    @classmethod
+    def get_npoints(cls, g):
+        """Returns the number of gridpoints in the grid
+
+        :param g:
+        :type g: np.ndarray
+        :return:
+        :rtype: int
+        """
+        return np.product(g.shape[:-1])
+    @property
+    def gridpoints(self):
+        """Returns the flattened set of gridpoints for a structured tensor grid and otherwise just returns the gridpoints
+
+        :return:
+        :rtype:
+        """
+        return self.get_gridpoints(self)
+    @classmethod
+    def get_gridpoints(cls, g):
+        """Returns the gridpoints in the grid
+
+        :param g:
+        :type g: np.ndarray
+        :return:
+        :rtype: int
+        """
+        return np.reshape(g, (cls.get_gridpoints(g), g.shape[-1]))
 
     @classmethod
     def get_mesh_type(cls, grid):
