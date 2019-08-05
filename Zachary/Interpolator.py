@@ -14,6 +14,11 @@ __all__ = [
 class InterpolatorException(Exception):
     pass
 
+######################################################################################################
+##
+##                                   Interpolator Class
+##
+######################################################################################################
 class Interpolator:
     """
     A general purpose that takes your data and just interpolates it without whining or making you do a pile of extra work
@@ -115,6 +120,51 @@ class Interpolator:
     def __call__(self, *args, **kwargs):
         self.apply(*args, **kwargs)
 
+
+    # we can define a bunch of non-standard interpolators here
+    @classmethod
+    def morse_interpolator(cls, grid, vals, order = 4):
+        """Fits data to an n-dimensional product-of-Morse oscillator potential
+
+        :param grid:
+        :type grid:
+        :param vals:
+        :type vals:
+        :param order:
+        :type order:
+        :return:
+        :rtype:
+        """
+        from scipy.optimize import curve_fit
+
+        def morse_basis(coordinates, r0, alpha):
+            ...
+
+        def full_fun(r0s, alphas):
+            ...
+
+        data_ranges = ...
+        subfits = ... # curve fit each individual morse_basis
+
+        params = curve_fit(full_fun, data_ranges, ...)
+
+        def morse_fit(gridpoints):
+            """Applies the fitted Morse potential to the data points
+
+            :param gridpoints:
+            :type gridpoints:
+            :return:
+            :rtype:
+            """
+            ...
+
+        return morse_fit
+
+######################################################################################################
+##
+##                                   Extrapolator Class
+##
+######################################################################################################
 class Extrapolator:
     """
     A general purpose that takes your data and just extrapolates it
