@@ -56,7 +56,7 @@ def _semi_adaptive_sample_func(f, xmin, xmax, npts=150, max_refines=10, der_cut=
     return grid, vals, npts, refines
 
 
-def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts=50, max_refines=10, der_cut=10 ^ 5):
+def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts=15, max_refines=10, der_cut=10 ^ 5):
     from ..Zachary import finite_difference
 
     refines = 0

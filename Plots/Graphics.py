@@ -571,7 +571,7 @@ class Graphics(GraphicsBase):
 #
 #                                               Graphics3D
 #
-class Graphics3D(GraphicsBase):
+class Graphics3D(Graphics):
     """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
     def __init__(self, *args,
                  figure=None,
