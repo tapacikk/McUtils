@@ -26,10 +26,12 @@ ws_p = ws_char_class+"*" # whitespace
 wsr_p = ws_char_class+"+" # real whitespace
 cart_p = ws_p.join([ grp_p(num_p) ]*3) # cartesian coordinate
 acart_p = "("+int_p+")"+ws_p+cart_p # atom coordinate as comes from a XYZ table
+aNcart_p = "("+name_p+")"+ws_p+cart_p # atom coordinate as comes from a XYZ table
 
 acart_p_c = re.compile(acart_p) # adds a little bit of a performance boost
+aNcart_p_c = re.compile(aNcart_p)
 cart_p_c = re.compile(cart_p)
-cart_str_c = re.compile(ws_p.join([ num_p ]*3))
+cart_str_c = re.compile(ws_p.join([ num_p ]*3)) # REAL REAL REAL
 def pull_coords(txt, regex = cart_p_c, coord_dim = 3):
     """Pulls just the Cartesian coordinates out of the string
 

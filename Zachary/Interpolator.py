@@ -11,8 +11,10 @@ __all__ = [
     "Extrapolator"
 ]
 
+
 class InterpolatorException(Exception):
     pass
+
 
 ######################################################################################################
 ##
@@ -26,8 +28,8 @@ class Interpolator:
     def __init__(self,
                  grid,
                  vals,
-                 interpolation_function = None,
-                 extrapolator = None,
+                 interpolation_function=None,
+                 extrapolator=None,
                  **interpolation_opts
                  ):
         """
@@ -46,7 +48,6 @@ class Interpolator:
         self.vals = vals
         self.interpolator = self.get_interpolator(grid, vals, **interpolation_opts) if interpolation_function is None else interpolation_function
         self.extrapolator = self.get_extrapolator(grid) if extrapolator is None else extrapolator
-
 
     @classmethod
     def get_interpolator(cls, grid, vals, **opts):
@@ -78,6 +79,7 @@ class Interpolator:
             # for now we'll only use the RadialBasisFunction interpolator, but this may be extended in the future
             interpolator = interpolate.Rbf(*grid.gridpoints.T, vals, **opts)
         elif grid.mesh_type == Mesh.MeshType_SemiStructured:
+            # 1d Cubic extrapolator to normal grid / 1d "fill" extrapolator (uses last data point to extend to regular grid)
             # not sure what we want to do here... I'm thinking we can use some default
             # extrapolator or the Rbf to extrapolate to a full grid then from there build a RegularGridInterpolator?
             raise NotImplemented
@@ -120,7 +122,6 @@ class Interpolator:
     def __call__(self, *args, **kwargs):
         self.apply(*args, **kwargs)
 
-
     # we can define a bunch of non-standard interpolators here
     @classmethod
     def morse_interpolator(cls, grid, vals, order = 4):
@@ -160,6 +161,48 @@ class Interpolator:
 
         return morse_fit
 
+    @classmethod
+    def regular_grid(cls, grid, vals, interp_kind='cubic', fillvalues=False, **kwargs):
+        """ creates a regular grid from a set of semistructured points. Only has 2D capabilities.
+        :param grid: a semistructured grid of points.
+        :type grid: np.ndarray (x, y)
+        :param vals: the values at the grid points.
+        :type vals: np.ndarray (z)
+        :param interp_kind: type of interpolation to do ('cubic' | 'linear' | 'nearest' | ...)
+        :type interp_kind: str
+        :param fillvalues: if true, outer edges are filled with last data point extending out.
+        :type fillvalues: bool
+        :param kwargs:
+        :return: square_grid: a structured grid of points (np.ndarray) (x, y)
+        :return: square_vals: the values at all the grid points (np.ndarray) (z)
+        """
+        x = grid[:, 0]
+        xvals = np.unique(x)
+        xyzz = np.column_stack((*grid, vals))
+        slices = [xyzz[x == xv] for xv in xvals]
+        maxx = max(len(slIce) for slIce in slices)
+        idx = np.argmax([len(slIce) for slIce in slices])
+        rnge = sorted(slices[idx][:, 1])
+        sgrid = np.empty((0, 3))
+        for slICE in slices:
+            slICE = slICE[slICE[:, 1].argsort()]
+            if len(slICE) < maxx:
+                xx = np.repeat(slICE[0, 0], maxx)
+                g = rnge
+                if fillvalues:
+                    f = interpolate.interp1d(slICE[:, 1], slICE[:, 2], kind=interp_kind,
+                                             fill_value=(slICE[0, 2], slICE[-1, 2]), bounds_error=False)
+                else:
+                    f = interpolate.interp1d(slICE[:, 1], slICE[:, 2], kind=interp_kind,
+                                             fill_value='extrapolate', bounds_error=False)
+                y_fit = f(g)
+                pice = np.column_stack((xx, g, y_fit))
+                sgrid = np.append(sgrid, pice, axis=0)
+            else:
+                sgrid = np.append(sgrid, slICE, axis=0)
+        square_grid = sgrid[:, :2]
+        square_vals = sgrid[:, 2]
+        return square_grid, square_vals
 ######################################################################################################
 ##
 ##                                   Extrapolator Class
