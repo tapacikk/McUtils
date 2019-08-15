@@ -162,8 +162,9 @@ class Interpolator:
         return morse_fit
 
     @classmethod
-    def regular_grid(cls, grid, vals, interp_kind='cubic', fillvalues=False, **kwargs):
-        """ creates a regular grid from a set of semistructured points. Only has 2D capabilities.
+    def regular_grid(cls, grid, vals, interp_kind='cubic', fillvalues=False, plot=False, **kwargs):
+        """ TODO: extend to also check y coordinates... maybe add param to do x, y, or both?
+        creates a regular grid from a set of semistructured points. Only has 2D capabilities.
         :param grid: a semistructured grid of points.
         :type grid: np.ndarray (x, y)
         :param vals: the values at the grid points.
@@ -171,11 +172,15 @@ class Interpolator:
         :param interp_kind: type of interpolation to do ('cubic' | 'linear' | 'nearest' | ...)
         :type interp_kind: str
         :param fillvalues: if true, outer edges are filled with last data point extending out.
+         Otherwise extrapolates according to interp_kind (default)
         :type fillvalues: bool
+        :param plot: if true, plots the extrapolated cuts for visualization purposes.
+        :type plot: bool
         :param kwargs:
         :return: square_grid: a structured grid of points (np.ndarray) (x, y)
         :return: square_vals: the values at all the grid points (np.ndarray) (z)
         """
+        import matplotlib.pyplot as plt
         x = grid[:, 0]
         xvals = np.unique(x)
         xyzz = np.column_stack((*grid, vals))
@@ -196,6 +201,11 @@ class Interpolator:
                     f = interpolate.interp1d(slICE[:, 1], slICE[:, 2], kind=interp_kind,
                                              fill_value='extrapolate', bounds_error=False)
                 y_fit = f(g)
+                if plot:
+                    plt.plot(g, y_fit, 'o')
+                    plt.show()
+                else:
+                    pass
                 pice = np.column_stack((xx, g, y_fit))
                 sgrid = np.append(sgrid, pice, axis=0)
             else:
@@ -230,7 +240,6 @@ class Extrapolator:
         self.extrap_warning = warning
         self.opts = opts
 
-
     def find_extrapolated_points(self, gps, vals):
         """
 
@@ -242,6 +251,33 @@ class Extrapolator:
         :rtype:
         """
         ...
+
+    def extrap2d(self, gps, vals, extrap_kind):
+        """ Takes a regular grid and creates a function for interpolation/extrapolation.
+        :param gps: x, y data
+        :type gps: ndarray
+        :param vals: z data
+        :type vals: ndarray
+        :param interp_kind: type of interpolation to do ('cubic' | 'linear' | 'nearest' | ...)
+        :type interp_kind: str
+        :param fillvalues: if true, outer edges are filled with last data point extending out.
+         Otherwise extrapolates according to interp_kind (default)
+        :type fillvalues: bool
+        :return: pf: function fit to grid points for evaluation.
+        :rtype: function
+        """
+        xx = np.unique(gps[:, 0])
+        yy = np.unique(gps[:, 1])
+        extrap_func = interpolate.interp2d(xx, yy, vals, kind=extrap_kind, fill_value=None)
+
+        def pf(grid=None, x=None, y=None, extrap=extrap_func):
+            if grid is not None:
+                x = np.unique(grid[:, 0])
+                y = np.unique(grid[:, 1])
+            pvs = extrap(x, y).T
+            return pvs.flatten()
+
+        return pf
 
     def apply(self, gps, vals):
         ...

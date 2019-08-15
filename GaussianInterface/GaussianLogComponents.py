@@ -8,7 +8,7 @@ from ..Parsers.ParserUtils import *
 #
 #                                           GaussianLogComponents
 #
-#region GaussianLogComponents
+# region GaussianLogComponents
 GaussianLogComponents = { } # we'll register on this bit by bit
 # each registration should look like:
 
@@ -26,7 +26,7 @@ GaussianLogComponents = { } # we'll register on this bit by bit
 #                                           InputZMatrix
 #
 
-#region InputZMatrix
+# region InputZMatrix
 tag_start  = "Z-matrix:"
 tag_end    = """ 
 """
@@ -41,14 +41,14 @@ GaussianLogComponents["InputZMatrix"] = {
     "mode"     : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           CartesianCoordinates
 #
 
-#region CartesianCoordinates
+# region CartesianCoordinates
 
  # the region thing is just a PyCharm hack to collapse the boilerplate here... Could also have done 5000 files
 
@@ -106,14 +106,14 @@ GaussianLogComponents["InputCartesianCoordinates"] = {
     "mode"     : "List"
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           ZMatrices
 #
 
-#region ZMatrices
+# region ZMatrices
 tag_start  = """Z-MATRIX (ANGSTROMS AND DEGREES)
    CD    Cent   Atom    N1       Length/X        N2       Alpha/Y        N3        Beta/Z          J
  ---------------------------------------------------------------------------------------------------"""
@@ -162,14 +162,14 @@ GaussianLogComponents["ZMatrices"] = {
     "mode"     : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           OptimizationParameters
 #
 
-#region OptimizationParameters
+# region OptimizationParameters
 
 tag_start  = "Optimization "
 tag_end    = """                        !
@@ -188,7 +188,7 @@ GaussianLogComponents["OptimizationParameters"] = {
     "mode"     : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
@@ -210,7 +210,7 @@ GaussianLogComponents["MullikenCharges"] = {
     "mode"     : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
@@ -232,19 +232,21 @@ GaussianLogComponents["MultipoleMoments"] = {
     "mode"     : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           DipoleMoments
 #
 
-#region DipoleMoments
+# region DipoleMoments
 tag_start  = "Dipole moment ("
 tag_end    = "Quadrupole moment ("
 
 get_dips_pat = "X=\s+"+grp_p(num_p)+"\s+Y=\s+"+grp_p(num_p)+"\s+Z=\s+"+grp_p(num_p)
 get_dips_re = re.compile(get_dips_pat)
+
+
 def parser(moms):
     """Parses a multipole moments block"""
     dippz = [ None ]*len(moms)
@@ -253,8 +255,9 @@ def parser(moms):
         dippz[i] = grps
     dip_list = np.array(dippz, dtype=str)
     return dip_list.astype("float64")
-mode       = "List"
 
+
+mode = "List"
 GaussianLogComponents["DipoleMoments"] = {
     "tag_start" : tag_start,
     "tag_end"   : tag_end,
@@ -262,14 +265,14 @@ GaussianLogComponents["DipoleMoments"] = {
     "mode"      : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           OptimizedDipoleMoments
 #
 
-#region DipoleMoments
+# region DipoleMoments
 tag_start  = " Dipole        ="
 tag_end    = " Optimization"
 
@@ -295,15 +298,43 @@ GaussianLogComponents["OptimizedDipoleMoments"] = {
     "parse_mode": parse_mode
 }
 
-#endregion
+# endregion
 
-#endregion
+########################################################################################################################
+#
+#                                           ScanEnergies
+#
+
+# region ScanEnergies
+
+tag_start  = """ Summary of the potential surface scan:
+   N     Roo12       Roh         SCF          MP2
+ ----  ---------  ---------  -----------  ----------- """
+tag_end    = """ ----  ---------  ---------  -----------  -----------
+
+ Leave"""
+def parser(pars):
+    """Parses the scan summary block"""
+    # Tomorrow problem
+    pass
+mode       = "List"
+
+GaussianLogComponents["OptimizationParameters"] = {
+    "tag_start" : tag_start,
+    "tag_end"   : tag_end,
+    "parser"   : parser,
+    "mode"     : mode
+}
+
+# endregion
+
+# endregion
 
 ########################################################################################################################
 #
 #                                           GaussianLogDefaults
 #
-#region GaussianLogDefaults
+# region GaussianLogDefaults
 GaussianLogDefaults = (
     "StartDateTime",
     "InputZMatrix",
@@ -312,13 +343,13 @@ GaussianLogDefaults = (
     "ComputerTimeElapsed",
     "EndDateTime"
 )
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           GaussianLogOrdering
 #
-#region GaussianLogOrdering
+# region GaussianLogOrdering
 # defines the ordering in a GaussianLog file
 glk = ( # this must be sorted by what appears when
     "StartDateTime",
@@ -346,4 +377,4 @@ glk = ( # this must be sorted by what appears when
 )
 GaussianLogOrdering = { k:i for i, k in enumerate(glk) }
 del glk
-#endregion
+# endregion
