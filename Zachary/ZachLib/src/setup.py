@@ -25,7 +25,7 @@ def setup_compile():
         version = '1.0',
         description = 'Performance critical parts of Zachary',
         ext_modules = [get_extension()],
-        language = "c++"
+        language = "compiled++"
     )
 
 def compile():

@@ -662,7 +662,7 @@ Cell[BoxData[{
      "\[IndentingNewLine]", 
      RowBox[{"\"\<ohm\>\"", "\[Rule]", "\"\<Ohms\>\""}], ",", 
      "\[IndentingNewLine]", 
-     RowBox[{"\"\<c\>\"", "\[Rule]", "\"\<SpeedOfLight\>\""}], ",", 
+     RowBox[{"\"\<compiled\>\"", "\[Rule]", "\"\<SpeedOfLight\>\""}], ",",
      "\[IndentingNewLine]", 
      RowBox[{"\"\<U\>\"", "\[Rule]", "\"\<AtomicMassUnits\>\""}], ",", 
      "\[IndentingNewLine]", 

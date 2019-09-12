@@ -26,7 +26,7 @@ def setup_compile():
         version = '1.0',
         description = 'A little library for hooking C potentials into python',
         ext_modules = [get_extension()],
-        language = "c++"
+        language = "compiled++"
     )
 
 def compile():

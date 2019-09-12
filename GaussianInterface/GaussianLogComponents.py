@@ -2,7 +2,7 @@
 
 """
 
-from ..Parsers.ParserUtils import *
+from ..Parsers import *
 
 ########################################################################################################################
 #
@@ -59,7 +59,8 @@ plain_cartesian_start_tags = (
     )
 cartesian_end_tag = cart_delim
 
-cartesian_re_c = re.compile(ws_p.join(["("+int_p+")"]*3)+ws_p+cart_p)
+# I'm gonna have to update this to work with the expanded Regex support...
+# cartesian_re_c = re.compile(ws_p.join(["("+int_p+")"]*3)+ws_p+cart_p)
 def cartesian_coordinates_parser(strs):
     num_sets = len(strs)
     strit = iter(strs)
@@ -119,17 +120,17 @@ tag_start  = """Z-MATRIX (ANGSTROMS AND DEGREES)
  ---------------------------------------------------------------------------------------------------"""
 tag_end    = " ---------------------------------------------------------------------"
 
-gaussian_zzz = op_p(posint_p) + opnb_p(wsr_p) + \
-                op_p(posint_p) + opnb_p(wsr_p) + \
-                grp_p(name_p+opnb_p(paren_p))
-for i in range(3):
-    gaussian_zzz += opnb_p( # optional non-binding
-        wsr_p + grp_p(posint_p) + # ref int
-        wsr_p + grp_p(num_p) + # z-mat value
-        opnb_p(paren_p) # ignore parens that Gaussian puts at the end
-    )
+# gaussian_zzz = op_p(posint_p) + opnb_p(wsr_p) + \
+#                 op_p(posint_p) + opnb_p(wsr_p) + \
+#                 grp_p(name_p+opnb_p(paren_p))
+# for i in range(3):
+#     gaussian_zzz += opnb_p( # optional non-binding
+#         wsr_p + grp_p(posint_p) + # ref int
+#         wsr_p + grp_p(num_p) + # z-mat value
+#         opnb_p(paren_p) # ignore parens that Gaussian puts at the end
+#     )
 # print(gaussian_zzz)
-gaussian_zzz_c = re.compile(gaussian_zzz)
+# gaussian_zzz_c = re.compile(gaussian_zzz)
 def parser(strs):
     num_sets = len(strs)
     strit = iter(strs)
@@ -243,16 +244,24 @@ GaussianLogComponents["MultipoleMoments"] = {
 tag_start  = "Dipole moment ("
 tag_end    = "Quadrupole moment ("
 
-get_dips_pat = "X=\s+"+grp_p(num_p)+"\s+Y=\s+"+grp_p(num_p)+"\s+Z=\s+"+grp_p(num_p)
-get_dips_re = re.compile(get_dips_pat)
+# get_dips_pat = "X=\s+"+grp_p(num_p)+"\s+Y=\s+"+grp_p(num_p)+"\s+Z=\s+"+grp_p(num_p)
+# get_dips_re = re.compile(get_dips_pat)
+
+dips_parser = StringParser(
+    RegexPattern(
+        (
+            "X=", Capturing(Number),
+            "Y=", Capturing(Number),
+            "Z=", Capturing(Number)
+        ),
+        joiner=Whitespace
+    )
+)
 def parser(moms):
     """Parses a multipole moments block"""
-    dippz = [ None ]*len(moms)
-    for i, dip in enumerate(moms):
-        grps = re.findall(get_dips_re, dip)[0]
-        dippz[i] = grps
-    dip_list = np.array(dippz, dtype=str)
-    return dip_list.astype("float64")
+    # print(repr(str(dips_parser.regex)), file=sys.stderr)
+    res = dips_parser.parse_iter("\n".join(moms))
+    return res.array
 mode       = "List"
 
 GaussianLogComponents["DipoleMoments"] = {
@@ -273,9 +282,9 @@ GaussianLogComponents["DipoleMoments"] = {
 tag_start  = " Dipole        ="
 tag_end    = " Optimization"
 
-dnum_p = num_p + "D" + int_p
-get_optdips_pat = "Dipole\s+="+"\s*"+grp_p(dnum_p)+"\s*"+grp_p(dnum_p)+"\s*"+grp_p(dnum_p)
-get_optdips_re = re.compile(get_optdips_pat)
+# dnum_p = num_p + "D" + int_p
+# get_optdips_pat = "Dipole\s+="+"\s*"+grp_p(dnum_p)+"\s*"+grp_p(dnum_p)+"\s*"+grp_p(dnum_p)
+# get_optdips_re = re.compile(get_optdips_pat)
 def parser(mom):
     """Parses dipole block, but only saves the dipole of the optimized structure"""
     mom = "Dipole  =" + mom
