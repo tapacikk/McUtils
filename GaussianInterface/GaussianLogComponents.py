@@ -9,16 +9,15 @@ from ..Parsers.ParserUtils import *
 #                                           GaussianLogComponents
 #
 # region GaussianLogComponents
-GaussianLogComponents = { } # we'll register on this bit by bit
+GaussianLogComponents = {}  # we'll register on this bit by bit
 # each registration should look like:
 
 # GaussianLogComponents["Name"] = {
 #     "description" : string, # used for docmenting what we have
-#     "tag_start"    : start_tag, # starting delimeter for a block
-#     "tag_end"      : end_tag, # ending delimiter for a block None means apply the parser upon tag_start
-#     "parser"      : parser, # function that'll parse the returned list of blocks (for "List") or single block (for "Single)
+#     "tag_start"   : start_tag, # starting delimeter for a block
+#     "tag_end"     : end_tag, # ending delimiter for a block None means apply the parser upon tag_start
+#     "parser"      : parser, # function that'll parse the returned list of blocks (for "List") or block (for "Single")
 #     "mode"        : mode # "List" or "Single"
-#
 # }
 
 ########################################################################################################################
@@ -27,16 +26,20 @@ GaussianLogComponents = { } # we'll register on this bit by bit
 #
 
 # region InputZMatrix
-tag_start  = "Z-matrix:"
-tag_end    = """ 
+tag_start = "Z-matrix:"
+tag_end   = """ 
 """
+
+
 def parser(zmat):
     return zmat
-mode       = "Single"
+
+
+mode = "Single"
 
 GaussianLogComponents["InputZMatrix"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
@@ -60,6 +63,8 @@ plain_cartesian_start_tags = (
 cartesian_end_tag = cart_delim
 
 cartesian_re_c = re.compile(ws_p.join(["("+int_p+")"]*3)+ws_p+cart_p)
+
+
 def cartesian_coordinates_parser(strs):
     num_sets = len(strs)
     strit = iter(strs)
@@ -81,27 +86,28 @@ def cartesian_coordinates_parser(strs):
 
     return coords
 
+
 GaussianLogComponents["CartesianCoordinates"] = {
-    "tag_start" : plain_cartesian_start_tags,
-    "tag_end"   : cartesian_end_tag,
+    "tag_start": plain_cartesian_start_tags,
+    "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["ZMatCartesianCoordinates"] = {
-    "tag_start" : ('''Z-Matrix orientation:''', cart_delim, cart_delim),
-    "tag_end"   : cartesian_end_tag,
+    "tag_start": ('''Z-Matrix orientation:''', cart_delim, cart_delim),
+    "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["StandardCartesianCoordinates"] = {
-    "tag_start" : ('''Standard orientation:''', cart_delim, cart_delim),
-    "tag_end"   : cartesian_end_tag,
+    "tag_start": ('''Standard orientation:''', cart_delim, cart_delim),
+    "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["InputCartesianCoordinates"] = {
-    "tag_start" : ('''Input orientation:''', cart_delim, cart_delim),
-    "tag_end"   : cartesian_end_tag,
+    "tag_start": ('''Input orientation:''', cart_delim, cart_delim),
+    "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
@@ -114,10 +120,10 @@ GaussianLogComponents["InputCartesianCoordinates"] = {
 #
 
 # region ZMatrices
-tag_start  = """Z-MATRIX (ANGSTROMS AND DEGREES)
+tag_start = """Z-MATRIX (ANGSTROMS AND DEGREES)
    CD    Cent   Atom    N1       Length/X        N2       Alpha/Y        N3        Beta/Z          J
  ---------------------------------------------------------------------------------------------------"""
-tag_end    = " ---------------------------------------------------------------------"
+tag_end   = " ---------------------------------------------------------------------"
 
 gaussian_zzz = op_p(posint_p) + opnb_p(wsr_p) + \
                 op_p(posint_p) + opnb_p(wsr_p) + \
@@ -130,6 +136,8 @@ for i in range(3):
     )
 # print(gaussian_zzz)
 gaussian_zzz_c = re.compile(gaussian_zzz)
+
+
 def parser(strs):
     num_sets = len(strs)
     strit = iter(strs)
@@ -153,11 +161,11 @@ def parser(strs):
         coords = None
 
     return coords
-mode       = "List"
+mode = "List"
 
 GaussianLogComponents["ZMatrices"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
@@ -175,15 +183,19 @@ tag_start  = "Optimization "
 tag_end    = """                        !
  ------------------------------------------------------------------------
 """
+
+
 def parser(pars):
     """Parses a optimizatioon parameters block"""
     did_opts = [ "Non-Optimized" not in par for par in pars]
     return did_opts, pars
-mode       = "List"
+
+
+mode = "List"
 
 GaussianLogComponents["OptimizationParameters"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
@@ -196,16 +208,18 @@ GaussianLogComponents["OptimizationParameters"] = {
 #
 
 #region MullikenCharges
-tag_start  = "Mulliken charges:"
-tag_end    = "Sum of Mulliken charges"
+tag_start = "Mulliken charges:"
+tag_end   = "Sum of Mulliken charges"
+
+
 def parser(charges):
     """Parses a Mulliken charges block"""
     return charges
-mode       = "List"
+mode = "List"
 
 GaussianLogComponents["MullikenCharges"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
@@ -220,14 +234,18 @@ GaussianLogComponents["MullikenCharges"] = {
 #region MultipoleMoments
 tag_start  = "Dipole moment ("
 tag_end    = " N-N="
+
+
 def parser(moms):
     """Parses a multipole moments block"""
     return moms
-mode       = "List"
+
+
+mode = "List"
 
 GaussianLogComponents["MultipoleMoments"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
@@ -279,6 +297,8 @@ tag_end    = " Optimization"
 dnum_p = num_p + "D" + int_p
 get_optdips_pat = "Dipole\s+="+"\s*"+grp_p(dnum_p)+"\s*"+grp_p(dnum_p)+"\s*"+grp_p(dnum_p)
 get_optdips_re = re.compile(get_optdips_pat)
+
+
 def parser(mom):
     """Parses dipole block, but only saves the dipole of the optimized structure"""
     mom = "Dipole  =" + mom
@@ -307,21 +327,117 @@ GaussianLogComponents["OptimizedDipoleMoments"] = {
 
 # region ScanEnergies
 
-tag_start  = """ Summary of the potential surface scan:
-   N     Roo12       Roh         SCF          MP2
- ----  ---------  ---------  -----------  ----------- """
-tag_end    = """ ----  ---------  ---------  -----------  -----------
+tag_start = """ Summary of the potential surface scan:"""
+tag_end = """ Leave Link  108"""
 
- Leave"""
+# Number = '(?:[\\+\\-])?\\d*\\.\\d+'
+# block_pattern = "\s*"+Number+"\s*"+Number+"\s*"+Number+"\s*"+Number+"\s*"+Number
+# block_re = re.compile(block_pattern)
+
+
 def parser(pars):
     """Parses the scan summary block"""
-    # Tomorrow problem
-    pass
-mode       = "List"
+    vals = np.array(pars)
+    return vals
 
-GaussianLogComponents["OptimizationParameters"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+
+mode = "Single"
+
+GaussianLogComponents["ScanEnergies"] = {
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
+    "parser"   : parser,
+    "mode"     : mode
+}
+
+# endregion
+
+########################################################################################################################
+#
+#                                           OptimizedScanEnergies
+#
+
+# region OptimizedScanEnergies
+
+tag_start = """ Summary of Optimized Potential Surface Scan"""
+tag_end = """ Largest change from initial coordinates is atom """
+
+
+def parser(pars):
+    """Parses the scan summary block and returns only the energies"""
+    import re
+    from collections import OrderedDict
+
+    # eigsPatternShit = RegexPattern(
+    #     ("Eigenvalues --", Capturing( Repeating(Number, suffix=Optional(Whitespace)) )),
+    #     joiner=Whitespace
+    # )
+
+    eigsPatternShit = '(?:Eigenvalues --)(?:(?!\\n)\\s)*((?:(?:[\\+\\-])?\\d*\\.\\d+(?:(?:(?!\\n)\\s)*)?)+)'
+
+    # coordsPatternShit = RegexPattern(
+    #     (
+    #         Capturing((ASCIILetter, Word), joiner=""),
+    #         Capturing(
+    #             Repeating(Number, suffix=Optional(Whitespace))
+    #         )
+    #     ),
+    #     prefix=Whitespace,
+    #     joiner=Whitespace
+    # )
+
+    coordsPatternShit = '(?:(?!\\n)\\s)*([a-zA-Z]\\w+)(?:(?!\\n)\\s)*((?:(?:[\\+\\-])?\\d*\\.\\d+(?:(?:(?!\\n)\\s)*)?)+)'
+
+    # full_pattern = Capturing(
+    #     (
+    #         eigsPatternShit,
+    #         Repeating(coordsPatternShit, suffix=Optional(Newline))
+    #     ),
+    #     joiner=Newline
+    # )
+
+    full_pattern = '((?:Eigenvalues --)(?:(?!\\n)\\s)*((?:(?:[\\+\\-])?\\d*\\.\\d+(?:(?:(?!\\n)\\s)*)?)+)\n(?:(?:(?!\\n)\\s)*([a-zA-Z]\\w+)(?:(?!\\n)\\s)*((?:(?:[\\+\\-])?\\d*\\.\\d+(?:(?:(?!\\n)\\s)*)?)+)(?:\n)?)+)'
+
+    # print(repr(str(Number)))
+
+    Number = '(?:[\\+\\-])?\\d*\\.\\d+'
+
+    numPattern = re.compile(Number)
+    eigsPattern = re.compile(eigsPatternShit)
+    full_patternPattern = re.compile(full_pattern)
+    coordsPatternShitPattern = re.compile(coordsPatternShit)
+
+    energies_array = []
+    coords = OrderedDict()
+
+    for match in re.finditer(full_patternPattern, pars):
+        block_text = match.groups(0)[0]
+        # pull the energies from a block
+        energies = re.search(eigsPattern, block_text).groups(0)[0]
+        energies = re.findall(numPattern, energies)
+        energies = np.array(energies, dtype=float)
+        energies_array.append(energies)
+
+        for coord_match in re.finditer(coordsPatternShitPattern, block_text):
+            name, coord = coord_match.groups()
+            coord = re.findall(numPattern, coord)
+            coord = np.array(coord, dtype=float)
+            if name not in coords:
+                coords[name] = []
+            coords[name].append(coord)
+
+    energies_array = np.concatenate(energies_array)
+    for k in coords:
+        coords[k] = np.concatenate(coords[k])
+
+    return energies_array, coords
+
+
+mode = "Single"
+
+GaussianLogComponents["OptimizedScanEnergies"] = {
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }

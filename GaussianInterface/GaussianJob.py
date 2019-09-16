@@ -353,7 +353,7 @@ class GaussianJob:
             else:
                 constants_blocks = []
             for k,c in consts.items():
-                constants_blocks.append("  {:>6} = {:>12.6f} {:<5.0f} {:>12.6f}".format(k, c, 0, 0))
+                constants_blocks.append("  {:>8} = {:>12.8f} {:<5.0f} {:>12.8f}".format(k, c, 0, 0))
 
             return variables_blocks + constants_blocks
 

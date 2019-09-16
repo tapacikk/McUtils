@@ -161,8 +161,7 @@ class Interpolator:
 
         return morse_fit
 
-    @classmethod
-    def regular_grid(cls, grid, vals, interp_kind='cubic', fillvalues=False, plot=False, **kwargs):
+    def regular_grid(self, interp_kind='cubic', fillvalues=False, plot=False, **kwargs):
         """ TODO: extend to also check y coordinates... maybe add param to do x, y, or both?
         creates a regular grid from a set of semistructured points. Only has 2D capabilities.
         :param grid: a semistructured grid of points.
@@ -181,9 +180,9 @@ class Interpolator:
         :return: square_vals: the values at all the grid points (np.ndarray) (z)
         """
         import matplotlib.pyplot as plt
-        x = grid[:, 0]
+        x = self.grid[:, 0]
         xvals = np.unique(x)
-        xyzz = np.column_stack((*grid, vals))
+        xyzz = np.column_stack((*self.grid, self.vals))
         slices = [xyzz[x == xv] for xv in xvals]
         maxx = max(len(slIce) for slIce in slices)
         idx = np.argmax([len(slIce) for slIce in slices])
