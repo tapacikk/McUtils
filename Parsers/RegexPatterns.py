@@ -441,7 +441,6 @@ class RegexPattern:
     def __getitem__(self, item):
         return self.child_map[item]
 
-
     ### Supporting the re mechanisms directly for convenience
     def match(self, txt):
         return re.match(self.compiled, txt)

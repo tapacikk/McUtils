@@ -203,7 +203,7 @@ class StructuredTypeArray:
     def shape(self):
         if self.is_simple:
             self._shape = list(self._array.shape)
-            self._shape[self.extension_axis] = self._filled_to
+            self._shape[self.extension_axis] = self._filled_to # this will mess up on things like (3,)...
             self._shape = tuple(self._shape)
         else:
             self._shape = [s.shape for s in self._array]
@@ -211,6 +211,16 @@ class StructuredTypeArray:
     @shape.setter
     def shape(self, s):
         self._shape = s
+    @property
+    def block_size(self):
+        if self.is_simple:
+            s = list(self.shape)
+            s[self.extension_axis] = 1 # this will mess up on things like (3,)...
+            self._block_size = np.product(s)
+        else:
+            self._block_size = sum([s.block_size for s in self._array])
+        return self._block_size
+
     @property
     def dtype(self):
         return self.stype.dtype
@@ -388,8 +398,61 @@ class StructuredTypeArray:
         :return:
         :rtype:
         """
+
         self[self.filled_to] = val
         # self._filled_to+=1 # handled automatically by a small bit of cleverness in the filling code
+
+
+    def extend(self, val, single = True):
+        """Adds the sequence val to the array
+
+        :param val:
+        :type val:
+        :param single: a flag that indicates whether val can be treated as a single object or if it needs to be reshapen when handling in non-simple case
+        :type single: bool
+        :return:
+        :rtype:
+        """
+
+        if self.is_simple:
+            if isinstance(val, StructuredTypeArray):
+                val = val.array
+            # check for shape mismatches so they may be corrected _before_ the insertion
+            axis = self.extension_axis
+            vs = val.shape
+            ss = self.shape
+            vs_a = vs[:axis] + vs[axis+1:]
+            ss_a = ss[:axis] + ss[axis+1:]
+            if vs_a != ss_a:
+                total_stuffs = np.product(vs)
+                my_stuffs = np.product(ss_a)
+                new_shape = ss[:axis] + (int(total_stuffs//my_stuffs),) + ss[axis+1:]
+                val = val.reshape(new_shape)
+
+            self._array = np.concatenate(
+                (
+                    self._array[:self._filled_to],
+                    val
+                ),
+                axis = axis
+            )
+            self._filled_to = self._array.shape[axis]
+        else:
+            # hmm... how to handle parse_all string array cases here?
+            # need some kind of flag that indicates that we val is misshapen?
+            if not single:
+                blocks = [b.block_size for b in self._array]
+                # we'll assume val is an np.ndarray for now since that's the most common case
+                # but this might not work in general...
+                gg = [ None ] * len(blocks)
+                sliced = 0
+                for i, b in enumerate(blocks):
+                    gg[i] = val[:, sliced:sliced+b]
+                    sliced += b
+                val = gg
+
+            for a, v in zip(self._array, val):
+                a.extend(v)
 
     def fill(self, array):
         """Sets the result array to be the passed array
@@ -403,6 +466,8 @@ class StructuredTypeArray:
             array = self.cast_to_array(array)
 
         if self._is_simple:
+            if isinstance(array, StructuredTypeArray):
+                array = array.array
             self._array = array
             self._filled_to = len(self._array)
         else:

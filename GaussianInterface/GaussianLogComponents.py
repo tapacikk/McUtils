@@ -131,6 +131,9 @@ tag_end    = " -----------------------------------------------------------------
 #     )
 # print(gaussian_zzz)
 # gaussian_zzz_c = re.compile(gaussian_zzz)
+
+
+
 def parser(strs):
     num_sets = len(strs)
     strit = iter(strs)
@@ -260,7 +263,7 @@ dips_parser = StringParser(
 def parser(moms):
     """Parses a multipole moments block"""
     # print(repr(str(dips_parser.regex)), file=sys.stderr)
-    res = dips_parser.parse_iter("\n".join(moms))
+    res = dips_parser.parse_all("\n".join(moms))
     return res.array
 mode       = "List"
 
