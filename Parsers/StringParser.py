@@ -65,7 +65,7 @@ class StringParser:
         # Probably want to extract the child block and feed that into parse_all...
         # might need to figure out some alternate manner for handling dtypes and block_handlers
         # in this case since I think the delegation to the parse_all might fuck stuff up...
-        if isinstance(regex, RegexPattern) and isinstance(regex.repetitions, tuple):
+        if isinstance(regex, RegexPattern) and regex.is_repeating:
             import copy
 
             iterable_regex = copy.copy(regex)
@@ -185,10 +185,80 @@ class StringParser:
 
         return res
 
+
+    def _split_match_groups(self, groups, res):
+        if len(groups[0]) == len(res):
+            # just need to transpose the groups, basically,
+            gg = groups.T
+        else:
+            blocks = [ r.block_size for r in res ]
+            gg = [ None ] * len(blocks)
+            sliced = 0
+            for i, b in enumerate(blocks):
+                if b == 1:
+                    gg[i] = groups[:, sliced]
+                else:
+                    gg[i] = groups[:, sliced:sliced+b]
+                sliced += b
+        return gg # groups should now be chunked into groups if it wasn't before
+
     def _handle_parse_match(self, match, res, block_handlers, append = False,
                             default_value = ""
                             ):
-        """Figures out how to handle a single match from the parser
+        """Figures out how to handle the matched data from the parser
+        In general the way we _want_ to do this is to basically do the most minimal amount of processing we can
+        and then use the efficient methods inside StructuredTypeArray to cast this to properly typed arrays
+
+        One issue is that we can end up with stuff that looks like:
+            [
+                [ group_a match_1, group_a match_2, group_b match_1, ... ]
+                ...
+            ]
+        where we need to first chop the data into group_a, group_b, ...
+
+        The type-calculus in RegexPattern and StructuredType can give us a "block size" for each subarray inside the
+        StructuredTypeArray which indicates how many elements it expects to see from the group
+
+        We use that to chop up the array as needed in these multi-match cases before trying to feed it into the
+        StructuredTypeArray
+
+        Complicating that, though, is that we sometimes need to do an extra layer of parsing on our matches
+
+        Imagine that we found every instance of Repeating(Capturing(Number), suffix=Optional(Whitespace))
+
+        This could give us something like
+            [
+                '-1232.123-234.345 3434.3434 10000000000',
+                '5',
+                '6'
+            ]
+
+        It would be hard to say what we should do with this, so we'll assume (possibly incorrectly) that we won't get a
+        ragged array. If we need to introduce raggedness we'll do it later
+
+        Even then, we could have
+            [
+                '-1232.123-234.345 3434.3434 10000000000',
+                '5         5       5         5',
+                '6         6       6         6'
+            ]
+
+        Here we'd need to go through line-by-line and apply the subparser of Number to each line to split it up
+
+        On the other hand, what if we matched Duplicated(Capturing(Number), 4, riffle=Optional(Whitespace))?
+
+        Then we'd have
+            [
+                ['-1232.123', '-234.345', '3434.3434', '10000000000'],
+                ['5',         '5',        '5',         '5'],
+                ['6',         '6',        '6',         '6']
+            ]
+
+        And here we wouldn't want to apply the subparser.
+
+        The only way we could determine the difference is by comparing the shape of the StructuredTypeArray to the
+        matched data. This means our block_handlers need to take the passed res array to figure their shit out too.
+
 
         :param match:
         :type match: re.Match | iterable[re.Match]
@@ -217,23 +287,26 @@ class StringParser:
             if isinstance(res, StructuredTypeArray):
                 if not single and not res.is_simple:
                     # means we need to split up the groups
-                    blocks = [ r.block_size for r in res.array ]
-                    gg = [ None ] * len(blocks)
-                    sliced = 0
-                    for i, b in enumerate(blocks):
-                        gg[i] = groups[:, sliced:sliced+b]
-                        sliced += b
-                    groups = gg # groups should now be chunked into groups if it wasn't before
+                    groups = self._split_match_groups(groups, res.array)
 
                 if block_handlers is not None:
-                    groups = [ b(g) if b is not None else g for b,g in zip(block_handlers, groups) ]
-
-                if single and append:
-                    res.append(groups)
-                elif append:
-                    res.extend(groups, single = single)
+                    # means we implicitly have groups inside res... so I guess we need to zip in res.array too?
+                    for b,a,g in zip(block_handlers, res.array, groups):
+                        if b is not None:
+                            g = b(g, array = a)
+                        if single and append:
+                            a.append(g)
+                        elif append:
+                            a.extend(g, single = single)
+                        else:
+                            a.fill(g)
                 else:
-                    res.fill(groups)
+                    if single and append:
+                        res.append(groups)
+                    elif append:
+                        res.extend(groups, single = single)
+                    else:
+                        res.fill(groups)
             else:
                 if isinstance(res, OrderedDict): # should I throw an error here...?
                     res_iter = res.items()
@@ -244,18 +317,12 @@ class StringParser:
                 # way to determine what the correct shape is I think...? Or maybe we can use the result shapes to determine this?
                 # let's try the latter
                 if not single:
-                    blocks = [ r.block_size for r in res ]
-                    gg = [ None ] * len(blocks)
-                    sliced = 0
-                    for i, b in enumerate(blocks):
-                        gg[i] = groups[:, sliced:sliced+b]
-                        sliced += b
-                    groups = gg # groups should now be chunked into groups if it wasn't before
+                    groups = self._split_match_groups(groups, res)
 
                 if block_handlers is not None and not isinstance(block_handlers, (dict, OrderedDict)):
                     for s, a, h in zip(groups, res_iter, block_handlers):
                         if h is not None:
-                            s = h[s]
+                            s = h(s, array = a)
                         if single and append:
                             a.append(s)
                         elif append:
@@ -288,35 +355,10 @@ class StringParser:
                 r = res[k]
                 if k in block_handlers:
                     handler = block_handlers[k]
-
-                    # a convenience syntax in case it's useful...
-                    if isinstance(handler, dict):
-                        handler = dict({'single_line':False, 'dtype':None, 'pattern':None}, **handler)
-                    elif isinstance(handler, RegexPattern):
-                        handler = {'single_line':True, 'dtype':None, 'pattern':handler}
-
-                    if isinstance(handler, dict):
-                        sl = handler['single_line']
-                        dt = handler['dtype']
-                        pt = handler['pattern']
-                        parser = self.parse_all if sl else self.parse
-                        if single:
-                            v = parser(v, pt, dtypes = dt)
-                        else:
-                            # means we can't parse directly from the groups array
-                            rr = None
-                            for l in v:
-                                if rr is None:
-                                    rr = parser(l)
-                                else:
-                                    rr.extend(parser(l))
-                            v = rr
-                    elif handler is not None:
-                        # print(k, handler, v)
-                        # print(v)
-                        v = handler(v) # we need to push the batch processing into the handler then...?
-                        # if isinstance(v, StructuredTypeArray):
-                        #     print(v.array[0].array)
+                    if handler is not None:
+                        v = handler(v, array = r)
+                        # we need to push the batch processing into the handler then...?
+                        # how can the handler know what to do with like arrays of stuff though?
 
                 else:
                     # unclear what we do in this case? By default we'll just not bother to handle it
@@ -325,13 +367,58 @@ class StringParser:
                 if append:
                     if handler is not None and isinstance(v, (StructuredTypeArray, np.ndarray)):
                         r.extend(v) # we'll assume the handler was smart?
-                    elif isinstance(v, np.ndarray):
+                    elif (not single) or isinstance(v, np.ndarray):
                         r.extend(v, single = single)
                     else:
                         r.append(v)
                 else:
                     # print(r, v)
                     r.fill(v)
+
+    @classmethod
+    def _get_regex_handler(cls, r):
+        # if we have a simple dtype we just parse out the whole thing, no need for parse_all
+        # otherwise if we have non-None repetitions we need parse_all
+        if r.dtype.is_simple and r.dtype.shape is None:
+            handler = None
+        else:
+            # if not r.dtype.is_simple:
+
+            # we should only ever end up here on Named and Capturing objects
+            # these will cause infinite recursion if we don't strip their Capturing status somehow
+            kids = r.children
+            if len(kids) == 1:
+                r = kids[0]
+            else:
+                # we gotta find a way to mess with r so parse works right...?
+                import copy
+                r = copy.copy(r)
+                r.pat = lambda p, *a, **k:p
+                r.capturing = False
+                r.invalidate_cache()
+
+            def handler(t, r=r, cls = cls, array = None):
+
+                if array is not None and array.can_cast(t):
+                    rr = t
+                elif isinstance(t, str):
+                    s = cls(r)
+                    rr = s.parse(t)
+                else:
+                    # we assume we got a list of strings...?
+                    rr = None
+                    s = cls(r)
+                    for l in t:
+                        if rr is None:
+                            rr = s.parse(l)
+                        else:
+                            r2 = s.parse(l)
+                            rr.extend(r2)
+                    # somehow this is working but I don't _really_ know how...?
+
+                return rr
+
+        return handler
 
     @classmethod
     def get_regex_block_handlers(cls, regex):
@@ -342,59 +429,31 @@ class StringParser:
         :return:
         :rtype:
         """
-        import itertools as it
-
         # I think it might make sense to allow a given regex to declare its _own_ parser that specifies how it
         # should be used in parse and parse_all. This can remain the default implementation, but that would allow
         # one to push the complexity of figuring out how to handle an object onto the object itself...
-            
-        handlers = regex.child_map
-        if len(handlers) > 0:
-            for k,r in tuple(handlers.items()): # we extract the full list first so we can go back and edit the handlers map
-                # if we have a simple dtype we just parse out the whole thing, no need for parse_all
-                # otherwise if we have non-None repetitions we need parse_all
-                if r.dtype.is_simple and r.dtype.shape is None:
-                    handler = None
-                elif r.dtype.is_simple:
-                    def handler(t, r=r, cls = cls):
-                        if isinstance(t, str):
-                            res = cls(r).parse(t) # this feels like overkill but I guess there isn't much else we can do?
-                            return res
-                        else:
-                            return t
-                else:
-                    # we'll assume this is named object where the first child is the relevant one
-                    # there's like a 4% chance this works well in general
-                    r = r.children[0]
-                    s = cls(r)
-                    def handler(t, r=r, s=s):
-                        if isinstance(t, str):
-                            rr = s.parse(t)
-                        else:
-                            rr = None
-                            for l in t:
-                                if rr is None:
-                                    rr = s.parse(l)
-                                else:
-                                    rr.extend(s.parse(l))
-                        return rr
-                handlers[k] = handler
 
-            if regex.key is not None:
-                handler = lambda t: t
-                handlers = OrderedDict(
-                    ((regex.key, handler),),
-                    **handlers
-                )
+        # since we handle repeating patterns by delegating to parse_all by default, these handlers will need to be the
+        # handlers for the child parse_all call instead of the basic parser from the first matched child, I think...
+        # ah actually more generally we need to make sure that for each captured block (i.e. what powers parser)
+        # we have a handler
+        # the basic assumption has generally been that all children will be relevant, but as things
+        # increase in complexity this assumption breaks down
+        # therefore the regex needs to remember itself which of its children are capturing and which aren't
+
+        handlers = regex.named_groups
+        if handlers is not None:
+            for k,r in tuple(handlers.items()): # we extract the full list first so we can go back and edit the handlers map
+                handlers[k] = cls._get_regex_handler(r)
         else:
             # handlers = None
             # if we have no named groups to work with we'll create a block handler for the capturing groups?
-
-            children = [ r for r in regex.children if r.dtype is not DisappearingType ]
-            handlers = [ None * len(children) ]
-            for i, r in enumerate(children):
-                handler = lambda t, r=r, s = cls(r): s.parse(t)
-                handlers[i] = handler
+            # print(repr(regex), regex.children)
+            handlers = regex.capturing_groups
+            if handlers is not None:
+                if isinstance(handlers, RegexPattern):
+                    handlers = [ handlers ]
+                handlers = [ cls._get_regex_handler(r) for r in handlers if r.dtype is not DisappearingType ]
 
         return handlers
     @classmethod
@@ -407,22 +466,18 @@ class StringParser:
         :rtype:
         """
 
-        dtypes = regex.child_map
-        if len(dtypes) > 0:
+        dtypes = regex.named_groups
+        if dtypes is not None:
             for k, r in tuple(dtypes.items()):
                 dtypes[k] = r.dtype
-
-            if regex.key is not None:
-                dtypes = OrderedDict(
-                    ((regex.key, regex.dtype),),
-                    **dtypes
-                )
-        else:
-            dtypes = regex.dtype
-
-            ### there is some question as to whether I might actually want to make it so the _children_ get parsed out...
-            # dtypes = regex.children
-            # dtypes = tuple(d.dtype for d in dtypes)
+        else:## there is some question as to whether I might actually want to make it so the _children_ get parsed out...
+            dtypes = regex.capturing_groups
+            if dtypes is not None:
+                if isinstance(dtypes, RegexPattern):
+                    dtypes = [dtypes]
+                dtypes = tuple(d.dtype for d in dtypes)
+            else:
+                dtypes = regex.dtype
 
         return dtypes
 

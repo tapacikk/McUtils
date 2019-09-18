@@ -30,6 +30,7 @@ __all__ = [
     "Whitespace",
     "Word",
     "WordCharacter",
+    "VariableName",
     "CartesianPoint",
     "IntXYZLine",
     "XYZLine",
@@ -62,7 +63,9 @@ class RegexPattern:
                  wrapper_function = None,
                  suffix = None, # often we need a start or end RegexPattern for the match, but we don't actually care the data in it
                  prefix = None,
-                 parser = None # a parser function we can use instead of the default StringParser parser
+                 parser = None, # a parser function we can use instead of the default StringParser parser
+                 capturing = False,
+                 allow_inner_captures = False # whether or not to multiple captures for a given pattern
                  ):
         """
         :param pat:
@@ -128,6 +131,13 @@ class RegexPattern:
         self._prefix = prefix
         self._suffix = suffix
         self.parser = parser
+
+        self.capturing = capturing
+        self.allow_inner_captures = allow_inner_captures
+        self._has_named_child = any((c._has_named_child or c.key is not None) for c in self._children)
+        # since I chose to let named groups take precedence over regular groups I guess I need to be cognizant of this...
+        self._has_capturing_child = any((c._has_capturing_child or c.capturing) for c in self._children)
+        self._capturing_groups = None
 
     @property
     def pat(self):
@@ -237,6 +247,66 @@ class RegexPattern:
             dt = StructuredType(dt)
 
         return dt
+    @property
+    def is_repeating(self):
+        return isinstance(self.repetitions, tuple)
+
+    def get_capturing_groups(self, allow_inners = None):
+        """
+        We walk down the tree to find the children with capturing groups in them and
+        then find the outermost RegexPattern for those unless allow_inners is on in which case we pull them all
+        """
+        groups = []
+        if allow_inners is None:
+            allow_inners = self.allow_inner_captures
+        for g in self._children:
+            if g.capturing:
+                groups.append(g)
+                if allow_inners and g._has_capturing_child:
+                    groups.extend(g.get_capturing_groups(allow_inners = True))
+            elif g._has_capturing_child:
+                groups.extend(g.get_capturing_groups(allow_inners = allow_inners))
+        return groups
+
+    @property
+    def capturing_groups(self):
+        """Returns the capturing children for the pattern
+
+        :return:
+        :rtype:
+        """
+
+        if not self.capturing and not self._has_capturing_child:
+            return None
+        elif not self.capturing:
+            # we walk down the tree at this point, finding the outer-most capturing groups in a flat structure
+            # I'd make it a tree but regex just returns captured stuff, it doesn't make a tree out of them
+            if self._capturing_groups is None:
+                self._capturing_groups = tuple(self.get_capturing_groups(allow_inners=self.allow_inner_captures))
+            return self._capturing_groups
+        else:
+            return self
+
+    @property
+    def named_groups(self):
+        """Returns the capturing children for the pattern
+
+        :return:
+        :rtype:
+        """
+
+        named = (self.key is not None)
+        if not named and not self._has_named_child:
+            return None
+        elif not named:
+            # we walk down the tree at this point, finding the outer-most capturing groups in a flat structure
+            # I'd make it a tree but regex just returns captured stuff, it doesn't make a tree out of them
+            groups = OrderedDict(
+                (g.key, g) for g in self.capturing_groups if g.key is not None
+            )
+            return groups
+        else:
+            return OrderedDict(((self.key, self), ) )
 
     # we want a Regex component to be reusable in lots of different Regexes without having to copy all of them
     # so we'll make it so that we can only walk _down_ a regex tree, and not worry about having to go back up
@@ -260,7 +330,7 @@ class RegexPattern:
         elif isinstance(op, str):
             return self.pat(op, *args, **kwargs)
         else:
-            return lambda p, wrap = op, prewrap = self.pat, a = args, kw = kwargs :prewrap(wrap(p, *a, **kw))
+            return lambda p, wrap = op, prewrap = self.pat, a = args, kw = kwargs: prewrap(wrap(p, *a, **kw))
 
     def wrap(self, *args, **kwargs):
         self._combine_args = args
@@ -272,25 +342,67 @@ class RegexPattern:
               joiner = None,
               prefix = None,
               suffix = None,
-              recompile = False
+              recompile = False,
+              no_captures = False
               ):
+        # might want to add a flag that checks if a block has already been wrapped in no-capture? That would cut down
+        # on regex length...
         if recompile or self._cached is None:
-            kids = [ c.build(recompile = recompile) for c in self._children ]
+            # this recompile rule might be excessive, but to be honest these compilations are so cheap it wouldn't even really
+            # matter if recompile were always True
+            recomp_captures = self.capturing and not self.allow_inner_captures
+            no_caps = no_captures or recomp_captures
+            kids = [
+                c.build(
+                    recompile = True if recompile else ('No Cache' if (c._has_capturing_child and recomp_captures) else False),
+                    no_captures = no_caps
+                ) for c in self._children
+            ]
+
             if joiner is None:
                 joiner = self.joiner
             if prefix is None:
                 prefix = self.prefix
             if suffix is None:
                 suffix = self.suffix
-            joiner = joiner.build() if isinstance(joiner, RegexPattern) else joiner if joiner is not None else ""
-            prefix = prefix.build() if isinstance(prefix, RegexPattern) else prefix if prefix is not None else ""
-            suffix = suffix.build() if isinstance(suffix, RegexPattern) else suffix if suffix is not None else ""
-            self._cached = self.combine(
-                #unclear whether I should be putting the prefix/suffix inside or outside this ._.
-                prefix + joiner.join(kids) + suffix,
-                *self._combine_args,
-                **self._combine_kwargs
-            )
+            joiner = joiner.build( no_captures = no_caps ) if isinstance(joiner, RegexPattern) else joiner if joiner is not None else ""
+            prefix = prefix.build( no_captures = no_caps ) if isinstance(prefix, RegexPattern) else prefix if prefix is not None else ""
+            suffix = suffix.build( no_captures = no_caps ) if isinstance(suffix, RegexPattern) else suffix if suffix is not None else ""
+
+            # the big question now is how do I figure out if a Capturing was applied...?
+            # I guess since I'm walking _down_ the tree I don't even need to check for that
+            # I can just check self.capturing... huh wow
+            if no_captures and self.capturing:
+                # I guess we temporarily make our pattern a non-capturing one...?
+                p = self.pat
+                try:
+                    self.pat = non_capturing
+                    comp = self.combine(
+                        #unclear whether I should be putting the prefix/suffix inside or outside this ._.
+                        prefix + joiner.join(kids) + suffix,
+                        *self._combine_args,
+                        **self._combine_kwargs
+                    )
+                finally:
+                    self.pat = p
+            else:
+                comp = self.combine(
+                    #unclear whether I should be putting the prefix/suffix inside or outside this ._.
+                    prefix + joiner.join(kids) + suffix,
+                    *self._combine_args,
+                    **self._combine_kwargs
+                )
+            if isinstance(comp, RegexPattern): # to be honest I don't know how we got here...?
+                comp = comp.build(
+                    recompile= True if recompile else ('No Cache' if (comp._has_capturing_child and recomp_captures) else False),
+                    no_captures = no_caps # is this right...?
+                )
+
+            if no_captures: # basically no_captures means operate in a not-quite-right world?
+                return comp
+
+            self._cached = comp
+
         return self._cached
     @property
     def compiled(self):
@@ -306,6 +418,8 @@ class RegexPattern:
     def add_child(self, child):
         self._children.append(child)
         self._child_map = None
+        self._has_capturing_child = self._has_capturing_child or (child.capturing or child._has_capturing_child)
+        self._has_named_child = self._has_named_child or (child._has_named_child or child.key is not None)
         self.invalidate_cache()
     def add_children(self, children):
         self._children.extend(children)
@@ -325,6 +439,7 @@ class RegexPattern:
         # which is a potential source of memory leaks... should I kill off the upwards propagation?
         self._cached = None
         self._comp = None
+        self._capturing_groups = None
         for p in self._parents:
             p.invalidate_cache()
 
@@ -385,6 +500,8 @@ class RegexPattern:
                  prefix = None,
                  multiline = None,
                  parser = None,
+                 capturing = None,
+                 allow_inner_captures = None,
                  **kwargs
                  ):
         """Wraps self around other
@@ -415,6 +532,10 @@ class RegexPattern:
             new._prefix = prefix
         if parser is not None:
             new.parser = parser
+        if capturing is not None:
+            new.capturing = capturing
+        if allow_inner_captures is not None:
+            new.allow_inner_captures = allow_inner_captures
 
         if isinstance(other, (tuple, list)):
             other = [ RegexPattern(o) if not isinstance(o, RegexPattern) else o for o in other ]
@@ -429,14 +550,15 @@ class RegexPattern:
         return new
 
     def __repr__(self):
-        return "{}('{}', children : <{}>, pattern : {})".format(
+        return "{}(key: {!r}, children : <{}>, pattern : {})".format(
             type(self).__name__,
-            self.name,
+            self.key,
             len(self._children),
             self._pat
         )
     def __str__(self):
-        return self.build()
+        wat = self.build()
+        return wat
 
     def __getitem__(self, item):
         return self.child_map[item]
@@ -457,10 +579,31 @@ class RegexPattern:
 #
 #
 def is_grouped(p):
-    return (p.startswith('(') and p.endswith(")")) or ( p.startswith("\\") and len(p) == 2)
+
+    # first we'll check if it's syntactically _probably_ grouped
+    starts_right = ends_right = p.startswith('(')
+    if starts_right:
+        ends_right = p.endswith(")")
+    all_is_well = starts_right and ends_right
+
+    if not all_is_well:
+        # we'll then check if we have a simple character escape
+        starts_right = all_is_well = p.startswith("\\")
+        if starts_right:
+            all_is_well = len(p) == 2 # indicates we
+
+    if not all_is_well:
+        # we'll try to check if we have a simple character class
+        starts_right = p.startswith('[')
+        if starts_right:
+            ends_right = p.endswith("]")
+            if starts_right and ends_right:
+                all_is_well = p.count('[') == 1 and p.count(']') == 1
+
+    return all_is_well
 def group(p):
     return r"("+p+r")"
-def non_capturing(p):
+def non_capturing(p, *a, **kw):
     return r"(?:"+p+r")"
 def optional(p):
     if not is_grouped(p):
@@ -499,7 +642,7 @@ def alternatives(p):
 
 # wrapper patterns
 grp_p = group # capturing group
-Capturing = RegexPattern(grp_p, "Capturing")
+Capturing = RegexPattern(grp_p, "Capturing", capturing=True)
 non_cap_p = non_capturing # non-capturing group
 NonCapturing = RegexPattern(non_cap_p, "NonCapturing", dtype=DisappearingType)
 
@@ -529,7 +672,8 @@ def wrap_name(self, n):
 Named = RegexPattern(
     named,
     "Named",
-    wrapper_function = lambda self, n: setattr(self, "key", n)
+    wrapper_function = lambda self, n: setattr(self, "key", n),
+    capturing=True
 )
 def wrap_duplicate_type(self, n, riffle = ""):
     dt = self._dtype
@@ -586,6 +730,8 @@ Whitespace = RegexPattern(ws_p, "Whitespace", dtype=str)
 
 WordCharacter = RegexPattern("\w", "WordCharacter", dtype=str)
 Word = RegexPattern("\w+", "Word", dtype=str)
+
+VariableName = RegexPattern((ASCIILetter, Word), joiner="", dtype=str)
 
 ascii_punc_char_class = r"\.,<>?/'\";:{}\[\]\+=\(\)\*&\^%$#@!~`"
 ASCIIPunctuation = RegexPattern(ascii_punc_char_class, "ASCIIPunctuation", dtype=str)
