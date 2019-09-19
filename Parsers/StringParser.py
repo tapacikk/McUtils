@@ -23,18 +23,6 @@ class StringParser:
     def __init__(self, regex):
         self.regex = regex
 
-    # The real goal is to be able to declare some complex regex with named chunks like:
-    #
-    #   RegularExpression(
-    #       Named(PositiveInteger, "Header") + Newline +
-    #       Named(Repeated(Any), "Comment") + Newline
-    #       Named(Repeating(Repeating(CartesianPoint, 3, 3) + Newline), "Atoms"),
-    #       "XYZ"
-    #   )
-    #
-    # and have StringParser be able to just _use_ it to get the appropriate data out of the file
-    # that might be a bit down the road but it's possible and definitely worth trying to do
-
     def parse(self,
               txt,
               regex = None,
@@ -69,24 +57,41 @@ class StringParser:
             import copy
 
             iterable_regex = copy.copy(regex)
-            iterable_regex.pat = lambda p:p
+            iterable_regex.pat = lambda p, *a, **kw: p # to unbind the Repeating capture screwups
             parser = type(self)(iterable_regex)
 
-            return parser.parse_all(txt)
+            res = parser.parse_all(txt)
 
-        if block_handlers is None and isinstance(regex, RegexPattern):
-            block_handlers = self.get_regex_block_handlers(regex)
-        if dtypes is None and isinstance(regex, RegexPattern):
-            dtypes = self.get_regex_dtypes(regex)
+        else:
+            if block_handlers is None and isinstance(regex, RegexPattern):
+                block_handlers = self.get_regex_block_handlers(regex)
+            if dtypes is None and isinstance(regex, RegexPattern):
+                dtypes = self.get_regex_dtypes(regex)
 
-        res = self._set_up_result_arrays(dtypes)
+            res = self._set_up_result_arrays(dtypes)
 
-        # if we're given a non-string regex we compile it
-        if isinstance(regex, RegexPattern):
-            regex = regex.compiled
+            # if we're given a non-string regex we compile it
+            if isinstance(regex, RegexPattern):
+                regex = regex.compiled
 
-        match = re.search(regex, txt)
-        self._handle_parse_match(match, res, block_handlers)
+            match = re.search(regex, txt)
+            self._handle_parse_match(match, res, block_handlers)
+
+        # one issue here is that by default this would return a list or some structured object like that
+        # sometimes we don't _want_ that list
+        # if we have something like Repeating(Capturing(Number), ...)
+        # we don't really want [ StructuredTypeArray(...) ] returned
+        # what we'd really like to get back is just the StructuredTypeArray
+        # now here's the question, is there a case where if we have [ StructuredTypeArray ]
+        # that we _wouldn't_ just want the array? My sense is no since StructuredType should simplify the
+        # singular type by default...?
+        # Or will this be unique to Repeating patterns?
+
+        # Eh, we'll assume this is mis-structured since we've taken a basic RegexPattern and
+        # then captured a repeating portion of it or some set of repeating parts of it but
+        # didn't bother to simplify to just that Capturing part of the RegexPattern...?
+        if not isinstance(res, (OrderedDict, StructuredTypeArray)) and len(res) == 1:
+            res = res[0]
 
         return res
 
@@ -166,6 +171,72 @@ class StringParser:
             self._handle_parse_match(match, res, block_handlers)
             yield res
 
+    #region RegexPattern data extractors
+    @classmethod
+    def get_regex_block_handlers(cls, regex):
+        """Uses the uncompiled RegexPattern to determine what blocks exist and what handlers they should use
+
+        :param regex:
+        :type regex: RegexPattern
+        :return:
+        :rtype:
+        """
+        # I think it might make sense to allow a given regex to declare its _own_ parser that specifies how it
+        # should be used in parse and parse_all. This can remain the default implementation, but that would allow
+        # one to push the complexity of figuring out how to handle an object onto the object itself...
+
+        # since we handle repeating patterns by delegating to parse_all by default, these handlers will need to be the
+        # handlers for the child parse_all call instead of the basic parser from the first matched child, I think...
+        # ah actually more generally we need to make sure that for each captured block (i.e. what powers parser)
+        # we have a handler
+        # the basic assumption has generally been that all children will be relevant, but as things
+        # increase in complexity this assumption breaks down
+        # therefore the regex needs to remember itself which of its children are capturing and which aren't
+
+        handlers = regex.named_groups
+        if handlers is not None:
+            for k,r in tuple(handlers.items()): # we extract the full list first so we can go back and edit the handlers map
+                handlers[k] = cls._get_regex_handler(r)
+        else:
+            # handlers = None
+            # if we have no named groups to work with we'll create a block handler for the capturing groups?
+            handlers = regex.capturing_groups
+            if handlers is not None:
+                if isinstance(handlers, RegexPattern):
+                    handlers = [ handlers ]
+                handlers = [ cls._get_regex_handler(r) for r in handlers if r.dtype is not DisappearingType ]
+
+        return handlers
+    @classmethod
+    def get_regex_dtypes(cls, regex):
+        """Uses the uncompiled RegexPattern to determine which StructuredTypes to return
+
+        :param regex:
+        :type regex: RegexPattern
+        :return:
+        :rtype:
+        """
+
+        dtypes = regex.named_groups
+        if dtypes is not None:
+            for k, r in tuple(dtypes.items()):
+                dtypes[k] = r.dtype
+        else:## there is some question as to whether I might actually want to make it so the _children_ get parsed out...
+            dtypes = regex.capturing_groups
+            if dtypes is not None:
+                if isinstance(dtypes, RegexPattern):
+                    dtypes = dtypes.dtype
+                else:
+                    dtypes = tuple(d.dtype for d in dtypes)
+
+            else:
+                dtypes = regex.dtype
+
+        return dtypes
+    #endregion
+
+    #region StructuredTypeArray interface
+
     def _set_up_result_arrays(self, dtypes):
         # we'll always force our dtypes and results to be a StructuredType and StructuredTypeArray
         # as these will force the results to be conformaing
@@ -185,7 +256,9 @@ class StringParser:
 
         return res
 
+    #endregion
 
+    #region Match Handler
     def _split_match_groups(self, groups, res):
         if len(groups[0]) == len(res):
             # just need to transpose the groups, basically,
@@ -283,8 +356,12 @@ class StringParser:
         gd = first_match.groupdict(default=default_value) if isinstance(res, OrderedDict) else []
         if len(gd) == 0:
             # we have no _named_ groups so we just pull everything and run with it
+
+            # one difficulty about this setup is that it makes vector data into a 2D array
+            # on the other hand I don't think there's anything else to be done here?
             groups = match.groups(default=default_value) if single else np.array([ m.groups(default=default_value) for m in match ], dtype=str)
             if isinstance(res, StructuredTypeArray):
+
                 if not single and not res.is_simple:
                     # means we need to split up the groups
                     groups = self._split_match_groups(groups, res.array)
@@ -300,6 +377,7 @@ class StringParser:
                             a.extend(g, single = single)
                         else:
                             a.fill(g)
+
                 else:
                     if single and append:
                         res.append(groups)
@@ -307,7 +385,7 @@ class StringParser:
                         res.extend(groups, single = single)
                     else:
                         res.fill(groups)
-            else:
+            else: # we have no named groups and our res is a non-singular object
                 if isinstance(res, OrderedDict): # should I throw an error here...?
                     res_iter = res.items()
                 else:
@@ -323,12 +401,14 @@ class StringParser:
                     for s, a, h in zip(groups, res_iter, block_handlers):
                         if h is not None:
                             s = h(s, array = a)
+
                         if single and append:
                             a.append(s)
                         elif append:
                             a.extend(s, single = single)
                         else:
                             a.fill(s)
+
                 else: # otherwise we just ignore the block_handlers I guess ???
                     for s, a in zip(groups, res_iter):
                         if single and append:
@@ -338,6 +418,7 @@ class StringParser:
                         else:
                             a.fill(s)
         else:
+            # we have named groups so we only use the data associated with them
             if block_handlers is None:
                 block_handlers = {}
             groups = gd if single else [ m.groupdict(default=default_value) for m in match ]
@@ -351,34 +432,34 @@ class StringParser:
                 )
 
             for k, v in groups.items():
-
                 r = res[k]
                 if k in block_handlers:
                     handler = block_handlers[k]
                     if handler is not None:
                         v = handler(v, array = r)
-                        # we need to push the batch processing into the handler then...?
-                        # how can the handler know what to do with like arrays of stuff though?
 
                 else:
                     # unclear what we do in this case? By default we'll just not bother to handle it
                     handler = None
 
                 if append:
-                    if handler is not None and isinstance(v, (StructuredTypeArray, np.ndarray)):
+                    if handler is not None:# and isinstance(v, (StructuredTypeArray, np.ndarray)):
                         r.extend(v) # we'll assume the handler was smart?
-                    elif (not single) or isinstance(v, np.ndarray):
+                    elif not single:
                         r.extend(v, single = single)
                     else:
                         r.append(v)
                 else:
-                    # print(r, v)
                     r.fill(v)
 
     @classmethod
     def _get_regex_handler(cls, r):
         # if we have a simple dtype we just parse out the whole thing, no need for parse_all
         # otherwise if we have non-None repetitions we need parse_all
+
+        if r.handler is not None:
+            return r.handler
+
         if r.dtype.is_simple and r.dtype.shape is None:
             handler = None
         else:
@@ -393,7 +474,7 @@ class StringParser:
                 # we gotta find a way to mess with r so parse works right...?
                 import copy
                 r = copy.copy(r)
-                r.pat = lambda p, *a, **k:p
+                r.pat = lambda p, *a, **k : p
                 r.capturing = False
                 r.invalidate_cache()
 
@@ -408,272 +489,129 @@ class StringParser:
                     # we assume we got a list of strings...?
                     rr = None
                     s = cls(r)
+                    # at some point this will be pushed into a parse_vector
+                    # function or something where we're more efficient
+                    # about how we do the parsing and data caching
                     for l in t:
+                        # we gotta basically go line-by-line and add our stuff in
+                        # the way we do this is by applying parse to each one of these things
+                        # then calling append to add all the data in
                         if rr is None:
                             rr = s.parse(l)
+                            # now that we have this object we need to basically add an axis to it
+                            # the raw thing will be lower-dimensional that we want I think
+                            # the way we handle that is then...? I guess hitting it all with an add_axis?
+                            if isinstance(rr, StructuredTypeArray):
+                                rr.add_axis()
+                            elif isinstance(rr, OrderedDict):
+                                for k in rr:
+                                    rr[k].add_axis()
+                            else:
+                                for r in rr:
+                                    r.add_axis()
+
                         else:
                             r2 = s.parse(l)
-                            rr.extend(r2)
-                    # somehow this is working but I don't _really_ know how...?
-
+                            # we might have an OrderedDict or we might have a list or we might have a StructuredArray
+                            # gotta make sure all of these cases are clean
+                            if isinstance(rr, StructuredTypeArray):
+                                rr.append(r2)
+                            elif isinstance(rr, OrderedDict):
+                                for k in rr:
+                                    rr[k].append(r2[k])
+                            else:
+                                for r1, r2 in zip(rr, r2):
+                                    r1.append(r2) # should I be using extend...?
                 return rr
 
         return handler
 
+    #endregion
+
+    #region HandlerMethods
     @classmethod
-    def get_regex_block_handlers(cls, regex):
-        """Uses the uncompiled RegexPattern to determine what blocks exist and what handlers they should use
+    def handler_method(cls, method):
+        """Turns a regular function into a handler method by adding in (and ignoring) the array argument
 
-        :param regex:
-        :type regex: RegexPattern
-        :return:
-        :rtype:
-        """
-        # I think it might make sense to allow a given regex to declare its _own_ parser that specifies how it
-        # should be used in parse and parse_all. This can remain the default implementation, but that would allow
-        # one to push the complexity of figuring out how to handle an object onto the object itself...
-
-        # since we handle repeating patterns by delegating to parse_all by default, these handlers will need to be the
-        # handlers for the child parse_all call instead of the basic parser from the first matched child, I think...
-        # ah actually more generally we need to make sure that for each captured block (i.e. what powers parser)
-        # we have a handler
-        # the basic assumption has generally been that all children will be relevant, but as things
-        # increase in complexity this assumption breaks down
-        # therefore the regex needs to remember itself which of its children are capturing and which aren't
-
-        handlers = regex.named_groups
-        if handlers is not None:
-            for k,r in tuple(handlers.items()): # we extract the full list first so we can go back and edit the handlers map
-                handlers[k] = cls._get_regex_handler(r)
-        else:
-            # handlers = None
-            # if we have no named groups to work with we'll create a block handler for the capturing groups?
-            # print(repr(regex), regex.children)
-            handlers = regex.capturing_groups
-            if handlers is not None:
-                if isinstance(handlers, RegexPattern):
-                    handlers = [ handlers ]
-                handlers = [ cls._get_regex_handler(r) for r in handlers if r.dtype is not DisappearingType ]
-
-        return handlers
-    @classmethod
-    def get_regex_dtypes(cls, regex):
-        """Uses the uncompiled RegexPattern to determine which StructuredTypes to return
-
-        :param regex:
-        :type regex: RegexPattern
+        :param method:
+        :type method:
         :return:
         :rtype:
         """
 
-        dtypes = regex.named_groups
-        if dtypes is not None:
-            for k, r in tuple(dtypes.items()):
-                dtypes[k] = r.dtype
-        else:## there is some question as to whether I might actually want to make it so the _children_ get parsed out...
-            dtypes = regex.capturing_groups
-            if dtypes is not None:
-                if isinstance(dtypes, RegexPattern):
-                    dtypes = [dtypes]
-                dtypes = tuple(d.dtype for d in dtypes)
+        def handler(data, method = method, array = None):
+            return method(data)
+
+        return handler
+
+    @classmethod
+    def to_array(cls,
+                 data,
+                 array = None,
+                 dtype = 'float',
+                 shape = None
+                 ):
+        """A method to take a string or iterable of strings and quickly dump it to a NumPy array of the right dtype (if it can be cast as one)
+
+        :param data:
+        :type data:
+        :param dtype:
+        :type dtype:
+        :return:
+        :rtype:
+        """
+        import io
+
+        if not isinstance(data, str):
+            data = '\n'.join((d.strip() for d in data))
+        arr = np.loadtxt(io.StringIO(data), dtype=dtype)
+        if shape is not None:
+            fudge_axis = [ i for i, s in enumerate(shape) if s is None]
+            if len(fudge_axis) == 0:
+                arr = arr.reshape(shape)
+            elif len(fudge_axis) == 1:
+                fudge_axis = fudge_axis[0]
+                num_els = np.product(arr.shape)
+                shoop = list(shape)
+                shoop[fudge_axis] = 1
+                num_not_on_axis = np.product(shoop)
+                if num_els % num_not_on_axis == 0:
+                    num_left = num_els // num_not_on_axis
+                    shoop[fudge_axis] = num_left
+                    arr = arr.reshape(shoop)
+                else:
+                    raise StringParserException("{}.{}: can't reshape array with shape '{}' to shape '{}' as number of elements is not divisible by block size".format(
+                        cls.__name__,
+                        'to_array',
+                        arr.shape,
+                        shape
+                    ))
             else:
-                dtypes = regex.dtype
+                raise StringParserException("{}.{}: can't reshape to shape '{}' with more than one indeterminate slot".format(
+                    cls.__name__,
+                    'to_array',
+                    shape
+                ))
 
-        return dtypes
-
-    ### Simple methods for pulling common data types out of strings
+        return arr
     @classmethod
-    def pull_coords(cls, txt, regex = CartesianPoint.compiled, coord_dim = 3):
-        """Pulls just the Cartesian coordinates out of the string
+    def array_handler(cls,
+                      array = None,
+                      dtype = 'float',
+                      shape = None
+                      ):
+        """Returns a handler that uses to_array
 
-        :param txt: some string that has Cartesians in it somewhere
-        :type txt:
-        :param regex: the Cartesian matching regex; can be swapped out for a different matcher
-        :type regex:
-        :param coord_dim: the dimension of the pulled coordinates (used to reshape)
-        :type coord_dim:
+        :param dtype:
+        :type dtype:
+        :param array:
+        :type array:
+        :param shape:
+        :type shape:
         :return:
         :rtype:
         """
-        coords = re.findall(regex, txt)
-        base_arr = np.array(coords, dtype=np.str).astype(dtype=np.float64)
-        if len(base_arr.shape) == 1:
-            num_els = base_arr.shape[0]
-            new_shape = (int(num_els/coord_dim), coord_dim) # for whatever weird reason this wasn't int...?
-            new_arr = np.reshape(base_arr, new_shape)
-        else:
-            new_arr = base_arr
-        return new_arr
-
-    @classmethod
-    def pull_xyz(cls, txt, num_atoms = None, regex = IntXYZLine.compiled):
-        """Pulls XYX-type coordinates out of a string
-
-        :param txt: XYZ string
-        :type txt: str
-        :param num_atoms: number of atoms if known
-        :type num_atoms: int
-        :return: atom types and coords
-        :rtype:
-        """
-
-        i = - 1
-        if num_atoms is None:
-            num_cur = 50 # probably more than we'll actually need...
-
-            atom_types = [None]*num_cur
-            coord_array = np.zeros((num_cur, 3))
-            for i, match in enumerate(re.finditer(regex, txt)):
-                if i == num_cur:
-                    atom_types.extend([None]*(2*num_cur))
-                    coord_array = np.concatenate((coord_array, np.zeros((2*num_cur, 3))), axis=0)
-
-                g = match.groups()
-                atom_types[i] = g[:-3]
-                coord_array[i] = np.array(g[-3:], dtype=np.str).astype(np.float64)
-
-        else:
-            atom_types = [None]*num_atoms
-            coord_array =  np.zeros((num_atoms, 3), dtype=np.float64)
-            parse_iter = re.finditer(regex, txt)
-            for i in range(num_atoms):
-                match = next(parse_iter)
-                g = match.groups()
-                atom_types[i] = g[:-3]
-                coord_array[i] = np.array(g[-3:], dtype=np.str).astype(np.float64)
-
-        if i == -1:
-            raise StringParserException("Pattern {} not found".format(regex))
-        atom_types = atom_types[:i+1]
-        coord_array = coord_array[:i+1]
-
-        return (atom_types, coord_array)
-
-    @classmethod
-    def pull_zmat_coords(cls, txt, regex = Number.compiled):
-        '''Pulls only the numeric coordinate parts out of a Z-matrix (drops ordering or types)
-
-        :param txt:
-        :type txt:
-        :param regex:
-        :type regex:
-        :return:
-        :rtype:
-        '''
-        coords = re.findall(regex, txt)
-        # print(txt)
-        # print(coords)
-        base_arr = np.array(coords, dtype=np.str).astype(dtype=np.float64)
-        num_els = base_arr.shape[0]
-        if num_els == 1:
-            base_arr = np.concatenate((base_arr, np.zeros((2,), dtype=np.float64)))
-            num_els = 3
-        elif num_els == 3:
-            base_arr = np.concatenate((base_arr, np.zeros((1,), dtype=np.float64)))
-            base_arr = np.insert(base_arr, 1, np.zeros((2,), dtype=np.float64))
-            num_els = 6
-        else:
-            base_arr = np.insert(base_arr, 3, np.zeros((1,), dtype=np.float64))
-            base_arr = np.insert(base_arr, 1, np.zeros((2,), dtype=np.float64))
-            num_els = num_els + 3
-
-        # print(base_arr)
-        coord_dim = 3
-        new_shape = (int(num_els/coord_dim), coord_dim)
-        new_arr = np.reshape(base_arr, new_shape)
-        return new_arr
-
-    @classmethod
-    def process_zzzz(cls, i, g, atom_types, index_array, coord_array, num_header=1):
-        g_num = len(g)
-        # print(g, g_num, num_header)
-        if g_num == num_header+0:
-            atom_types[i] = g
-        elif g_num == num_header+2:
-            atom_types[i] = g[:-2]
-            # make atom refs to insert into array
-            ref = np.array(g[-2:-1], dtype=np.str).astype(np.int8)
-            ref = np.concatenate((ref, np.zeros((2,), dtype=np.int8)))
-            coord = np.array(g[-1:], dtype=np.str).astype(np.float64)
-            coord = np.concatenate((coord, np.zeros((2,), dtype=np.float64)))
-            index_array[i-1] = ref
-            coord_array[i-1] = coord
-        elif g_num == num_header+4:
-            atom_types[i] = g[:-4]
-            # make atom refs to insert into array
-            ref = np.array(g[-4::2], dtype=np.str).astype(np.int8)
-            ref = np.concatenate((ref, np.zeros((1,), dtype=np.int8)))
-            coord = np.array(g[-3::2], dtype=np.str).astype(np.float64)
-            coord = np.concatenate((coord, np.zeros((1,), dtype=np.float64)))
-            index_array[i-1] = ref
-            coord_array[i-1] = coord
-        else:
-            atom_types[i] = g[:-6]
-            index_array[i-1] = np.array(g[-6::2], dtype=np.str).astype(np.int8)
-            coord_array[i-1] = np.array(g[-5::2], dtype=np.str).astype(np.float64)
-
-    @classmethod
-    def pull_zmat(cls,
-                  txt,
-                  num_atoms = None,
-                  regex = ZMatPattern.compiled,
-                  num_header = 1
-                  ):
-        """Pulls coordinates out of a zmatrix
-
-        :param txt:
-        :type txt:
-        :param num_atoms:
-        :type num_atoms: int | None
-        :param regex:
-        :type regex:
-        :return:
-        :rtype:
-        """
-
-        if num_atoms is None:
-            num_cur = 50 # probably more than we'll actually need...
-
-            atom_types = [None]*num_cur
-            index_array = np.zeros((num_cur-1, 3))
-            coord_array = np.zeros((num_cur-1, 3))
-            i = -1
-            for i, match in enumerate(re.finditer(regex, txt)):
-                if i == num_cur:
-                    atom_types.extend([None]*(2*num_cur))
-                    coord_array = np.concatenate(
-                        (coord_array, np.zeros((2*num_cur, 3))),
-                        axis=0
-                    )
-                    index_array = np.concatenate(
-                        (index_array, np.zeros((2 * num_cur, 3))),
-                        axis=0
-
-                    )
-
-                g = match.groups()
-                if i == 0:
-                    g = g[:-6]
-                elif i == 1:
-                    g = g[:-4]
-                elif i == 2:
-                    g = g[:-2]
-                # print(g)
-                cls.process_zzzz(i, g, atom_types, index_array, coord_array, num_header=num_header)
-            if i == -1:
-                raise StringParserException("Pattern {} not found".format(regex))
-            atom_types = atom_types[:i+1]
-            index_array = index_array[:i]
-            coord_array = coord_array[:i]
-
-        else:
-            atom_types = [None]*num_atoms
-            index_array = np.zeros((num_atoms-1, 3))
-            coord_array = np.zeros((num_atoms-1, 3))
-            parse_iter = re.finditer(regex, txt)
-            for i in range(num_atoms):
-                match = next(parse_iter)
-                g = match.groups()
-                cls.process_zzzz(i, g, atom_types, index_array, coord_array, num_header=num_header)
-
-        return (atom_types, index_array, coord_array)
+        def handler(data, array = array, dtype = dtype, shape = shape, cls=cls):
+            return cls.to_array(data, array = array, dtype = dtype, shape = shape)
+        return handler
+    #endregion

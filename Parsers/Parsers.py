@@ -19,7 +19,10 @@ XYZParser = StringParser(
                     RegexPattern(
                         (
                             Capturing(AtomName),
-                            Duplicated(Capturing(Number), 3, riffle = Whitespace, suffix=Optional(Whitespace))
+                            Capturing(
+                                Repeating(Capturing(Number), min = 3, max = 3, suffix=Optional(Whitespace)),
+                                handler= StringParser.array_handler(shape = (None, 3))
+                                )
                         ),
                         joiner=Whitespace
                     ),

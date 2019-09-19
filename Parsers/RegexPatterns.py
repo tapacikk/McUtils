@@ -64,6 +64,7 @@ class RegexPattern:
                  suffix = None, # often we need a start or end RegexPattern for the match, but we don't actually care the data in it
                  prefix = None,
                  parser = None, # a parser function we can use instead of the default StringParser parser
+                 handler = None, # a data handler for after capturing a block
                  capturing = False,
                  allow_inner_captures = False # whether or not to multiple captures for a given pattern
                  ):
@@ -131,6 +132,7 @@ class RegexPattern:
         self._prefix = prefix
         self._suffix = suffix
         self.parser = parser
+        self.handler = handler
 
         self.capturing = capturing
         self.allow_inner_captures = allow_inner_captures
@@ -221,10 +223,22 @@ class RegexPattern:
     def dtype(self):
         """Returns the StructuredType for the matched object
 
+        The basic thing we do is build the type from the contained child dtypes
+        The process effectively works like this:
+            If there's a single object, we use its dtype no matter what
+            Otherwise, we add together our type objects one by one, allowing the StructuredType to handle the calculus
+
+        After we've built our raw types, we compute the shape on top of these, using the assigned repetitions object
+        One thing I realize now I failed to do is to include the effects of sub-repetitions... only a single one will
+        ever get called.
+
         :return:
         :rtype: None | StructuredType
         """
         dt = self._dtype
+
+        # might be worth introducing some level of caching for this dtype so that we're not recomputing it
+        # over and over for recursive processes
         if dt is None and self.child_count > 0:
             subdts = [c.dtype for c in self._children]
             if len(subdts) == 1:
@@ -247,6 +261,7 @@ class RegexPattern:
             dt = StructuredType(dt)
 
         return dt
+
     @property
     def is_repeating(self):
         return isinstance(self.repetitions, tuple)
@@ -500,6 +515,7 @@ class RegexPattern:
                  prefix = None,
                  multiline = None,
                  parser = None,
+                 handler = None,
                  capturing = None,
                  allow_inner_captures = None,
                  **kwargs
@@ -532,6 +548,8 @@ class RegexPattern:
             new._prefix = prefix
         if parser is not None:
             new.parser = parser
+        if handler is not None:
+            new.handler = handler
         if capturing is not None:
             new.capturing = capturing
         if allow_inner_captures is not None:

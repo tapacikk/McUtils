@@ -98,6 +98,16 @@ class StructuredType:
                 return type(self)((self, other))
 
     def repeat(self, n = None, m = None):
+        """Returns a new version of the type, but with the appropriate shape for being repeated n-to-m times
+
+        :param n:
+        :type n:
+        :param m:
+        :type m:
+        :return:
+        :rtype:
+        """
+
         import copy
         new = copy.copy(self)
         if new.shape is None:
@@ -107,6 +117,20 @@ class StructuredType:
         else:
             new.shape = (None,) + new.shape # we won't handle things like between 10 and 20 elements for now
         return new
+
+    def extend_shape(self, base_shape):
+        """Extends the shape of the type such that base_shape precedes the existing shape
+
+        :param base_shape:
+        :type base_shape:
+        :return:
+        :rtype:
+        """
+        shape = self.shape
+        if self.shape is None:
+            self.shape = base_shape
+        else:
+            self.shape = base_shape + shape
 
     def _condense_types(self, base_types, shape):
         # what do I do about this existing shape...?
@@ -164,9 +188,14 @@ class StructuredTypeArray:
         """
         self._is_simple = stype.is_simple
         self._extend_along = None
+        self._dtype = None
         self.stype = stype
-        self._array = self.empty_array(num_elements)
+
         self._filled_to = 0
+
+        self._default_num_elements = num_elements
+        self._array = None
+        self._array = self.empty_array() # empty_array tries to use shape if possible
 
     @property
     def is_simple(self):
@@ -201,6 +230,8 @@ class StructuredTypeArray:
         self._extend_along = ax
     @property
     def shape(self):
+        if self._array is None:
+            return None
         if self.is_simple:
             if isinstance(self._array, np.ndarray):
                 self._shape = list(self._array.shape)
@@ -224,9 +255,30 @@ class StructuredTypeArray:
             self._block_size = sum([s.block_size for s in self._array])
         return self._block_size
 
+    def _get_complex_dtype(self):
+        shape = self.stype.shape
+        # Means we gotta do this recursively
+        # The shape should be fed back down to the object's children at this point
+        dt = [
+            StructuredType(s) if not isinstance(s, StructuredType) else s for s in self.stype.dtype
+        ]
+        if shape is not None:
+            # we have to take our shape and feed it back down to our children
+            # the mechanism for this will have to be to take each type in dt and stick our shape onto the
+            # front of the dtype's shape
+            import copy
+            dt = [ copy.copy(d) for d in dt ]
+            for d in dt:
+                d.extend_shape(shape)
+        return tuple(dt)
     @property
     def dtype(self):
-        return self.stype.dtype
+        if self._dtype is None:
+            if self.is_simple:
+                self._dtype = self.stype.dtype
+            else:
+                self._dtype = self._get_complex_dtype()
+        return self._dtype
     @property
     def array(self):
         if self.is_simple:
@@ -237,9 +289,18 @@ class StructuredTypeArray:
     @property
     def has_indeterminate_shape(self):
         if self.is_simple:
-            return self._filled_to == 0 and ( self.stype.shape is None or all(s is None for s in self.stype.shape) ) # eh we'll call this enough for now
+            indet = self._filled_to == 0
+            if indet and self.stype.shape is not None:
+                count_None = 0
+                for c in self.stype.shape:
+                    if c is None:
+                        count_None += 1
+                        if count_None > 1:
+                            break
+                indet = count_None > 1
+            return indet # eh we'll call this enough for now
         else:
-            return all(a.has_indeterminate_shape for a in self._array)
+            return any( a.has_indeterminate_shape for a in self._array )
 
     @property
     def filled_to(self):
@@ -250,23 +311,32 @@ class StructuredTypeArray:
     def __len__(self):
         return self._filled_to
 
-    def empty_array(self, num_elements = 50):
+    def empty_array(self, num_elements = None):
         """Creates empty arrays with (potentially) default elements
+
+        The shape handling rules operate like this:
+            if shape is None, we assume we'll initialize this as an array with a single element to be filled out
+            if shape is (None,) or (n,) we'll initialize this as an array with multiple elments to be filled out
+            otherwise we'll just take the specified shape
 
         :param num_elements:
         :type num_elements:
         :return:
         :rtype:
         """
+
         stype = self.stype
-        dt = stype.dtype
+        dt = self.dtype
+        shape = stype.shape if self.shape is None else self.shape
+        if num_elements is None:
+            num_elements = self._default_num_elements
         if stype.is_simple:
-            shape = stype.shape
             if shape is None:
+                # means we expect to have single object, not a vector of them
                 if stype.default is None:
-                    arr = np.empty((num_elements,), dtype=dt)
+                    arr = np.empty((1, ), dtype=dt)
                 else:
-                    arr = np.full((num_elements,), stype.default, dtype=dt)
+                    arr = np.full((1, ), stype.default, dtype=dt)
             else:
                 if any(x is None for x in shape):
                     # means we have an array of indeterminate size in that dimension
@@ -278,8 +348,6 @@ class StructuredTypeArray:
                     arr = np.full(shape, stype.default, dtype=dt)
             return arr
         else:
-            # means we gotta do this recursively and the shape doesn't even matter
-            dt = [StructuredType(s) if not isinstance(s, StructuredType) else s for s in dt]
             return tuple( StructuredTypeArray(s) for s in dt )
 
     def extend_array(self):
@@ -313,6 +381,7 @@ class StructuredTypeArray:
 
             if self._array.shape[0] == key:
                 self.extend_array()
+
             self._array[key] = value
             if isinstance(key, int) and key == self._filled_to:
                 self._filled_to += 1
@@ -377,10 +446,12 @@ class StructuredTypeArray:
             if self.has_indeterminate_shape:
                 import copy
                 self.stype = copy.copy(self.stype)
+
                 if self.stype.shape is None:
                     self.stype.shape = (None,)
                 else:
                     self.stype.shape += (None,)
+                    self._array = None
                     self._array = self.empty_array(50 if num_elements is None else num_elements)
 
             elif self.stype.shape is not None:
@@ -390,6 +461,7 @@ class StructuredTypeArray:
                 shape = self._array.shape # just broadcast the numpy array
                 if num_elements is None:
                     num_elements = 50 # hard coded for now but could be changed
+
                 new_shape_1 = shape[:which] + (1,) + shape[which:] # we gotta broadcast to the 1 first for some corner cases
                 self._array = np.broadcast_to(self._array, new_shape_1)
                 new_shape_2 = shape[:which] + (num_elements,) + shape[which:] # now we can fully broadcast
@@ -401,8 +473,13 @@ class StructuredTypeArray:
                     self.stype.shape = (None,)
                 else:
                     self.stype.shape = self.stype.shape[:which] + (None,) + self.stype.shape[which:]
+
+                if self._filled_to > 0:
+                    self._filled_to = 1 # we have one copy of our data already
+                else:
+                    self._filled_to = 0
+
         else:
-            # and if
             # we'll recursively add axes to the subarrays I think...
             # this might not be entirely in keeping with how a np.ndarray works but I think is acceptable
             for a in self._array:
@@ -476,15 +553,11 @@ class StructuredTypeArray:
         if self.is_simple:
             if isinstance(val, StructuredTypeArray):
                 val = val.array
-            elif not single and isinstance(val[0], StructuredTypeArray):
-                # means we just got a bunch of StructuredTypeArrays returned and now we need to
-                # remake them in to the appropriate shape
-                val = np.array([ v.array for v in val] )
 
             # we have a minor issue here, where we might not actually have any data in our array and in that case we
             # won't know what 'extend' means
             # in that case I think we would be safe enough delegating to 'fill'
-            if self.has_indeterminate_shape and len(self.shape) == len(val.shape):
+            if self.has_indeterminate_shape and len(self.shape) == len(val.shape if isinstance(val, np.ndarray) else val):
                 return self.fill(val)
 
             # now check for shape mismatches so they may be corrected _before_ the insertion
@@ -546,7 +619,12 @@ class StructuredTypeArray:
         if self._is_simple:
             # not sure why the array _wouldn't_ be an np.ndarray but there's a lot going on and I'm tired and don't
             # want to figure it out
-            self._array = array.astype(self.dtype) if isinstance(array, np.ndarray) else array
+            if isinstance(array, np.ndarray):
+                self._array = array.astype(self.dtype)
+                # now we can fux with our shapes?
+                # or maybe we just leave that be...?
+            else:
+                self._array = array
             self._filled_to = len(self._array)
         else:
             for arr, data in zip(self._array, array):
@@ -565,19 +643,25 @@ class StructuredTypeArray:
             if len(txt.strip()) == 0:
                 arr = np.array([], dtype=self.stype)
             else:
-                import io
-                arr = np.loadtxt(io.StringIO(txt), dtype=self.stype)
-                shape = np.array(self.shape)
-                if shape is not None:
-                    arr = arr.flatten()
-                    num_els = len(arr)
-                    # the number of elements that the length of the parsed out array must be divisible by
-                    num_not_along_axis = np.product(shape) / shape[self.extension_axis]
-                    if num_els % num_not_along_axis == 0:
-                        # means we can cleanly reshape it once we know the target shape
-                        shape[self.extension_axis] = num_els / num_not_along_axis
-                        arr = arr.reshape(shape)
-                    # should we raise an error if not?
+                try:
+                    # we'll try the base conversion first just assuming we got a number or whatever
+                    # and it managed to filter through the code to here
+                    arr = np.array([txt], dtype=self.stype)
+                except TypeError:
+                    import io
+                    arr = np.loadtxt(io.StringIO(txt), dtype=self.stype)
+                    shape = np.array(self.shape)
+                    axis = self.extension_axis
+                    if shape is not None and shape[axis] > 0: # make sure arr needs to be reshaped...
+                        arr = arr.flatten()
+                        num_els = len(arr)
+                        # the number of elements that the length of the parsed out array must be divisible by
+                        num_not_along_axis = np.product(shape) / shape[axis]
+                        if num_els % num_not_along_axis == 0:
+                            # means we can cleanly reshape it once we know the target shape
+                            shape[self.extension_axis] = num_els / num_not_along_axis
+                            arr = arr.reshape(shape)
+                        # should we raise an error if not?
 
         else: #we'll assume we got some block of strings since there's no reason to put a parser here...
             arr = [a.cast_to_array(t) for a, t in zip(self._array, txt)]
