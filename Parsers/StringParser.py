@@ -425,6 +425,7 @@ class StringParser:
             if single and (append or (append is 0)):
                 # print("pre-append:>", array)
                 # print("axis:", append)
+                # print("total axis:", append + array.append_depth)
                 # print(data)
                 if append is True:
                     append = 0

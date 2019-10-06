@@ -457,8 +457,8 @@ class StructuredTypeArray:
         :return:
         :rtype:
         """
-        indet = self.filled_to[axis]
-        if self.stype.shape is not None:
+        indet = self.filled_to[axis] == 0
+        if indet and self.stype.shape is not None:
             indet = self.stype.shape[axis] is None
         return indet
     @property
@@ -648,6 +648,7 @@ class StructuredTypeArray:
                         num_val = int(str(value.dtype).strip("<US|"))
                         if num_arr < num_val:
                             self._array = self._array.astype(value.dtype)
+                    # print(key, self._array.shape)
                     self._array[key] = value
                     fill=self.filled_to
                     self.filled_to = fill[:append_chops] + list(max(a, s) for a,s in zip(fill[append_chops:], value.shape))
@@ -851,9 +852,11 @@ class StructuredTypeArray:
         axis = axis + max(self.append_depth, 0)
         # print("real_axis:", axis)
         if self.is_simple:
-            self[tuple(self.filled_to[:axis+1])] = val
+            pos = tuple(self.filled_to[:axis+1])
+            # print(pos)
         else:
-            self[[tuple(f[:axis+1]) for f in self.filled_to]] = val
+            pos = [tuple(f[:axis+1]) for f in self.filled_to]
+        self[pos] = val
         # self._filled_to+=1 # handled automatically by a small bit of cleverness in the filling code
 
     def _get_casting_shape(self, val, axis = None):

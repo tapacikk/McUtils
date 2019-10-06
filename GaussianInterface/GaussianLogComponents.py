@@ -61,24 +61,38 @@ cartesian_end_tag = cart_delim
 
 # I'm gonna have to update this to work with the expanded Regex support...
 # cartesian_re_c = re.compile(ws_p.join(["("+int_p+")"]*3)+ws_p+cart_p)
+
+CartParser = StringParser(
+    Repeating(
+        (
+            Named(
+                Repeating(Capturing(PositiveInteger), min=3, max=3, prefix=Optional(Whitespace), suffix=Whitespace),
+                "GaussianStuff"
+            ),
+            Named(
+                Repeating(
+                    Capturing(Number),
+                    min = 3,
+                    max = 3,
+                    prefix=Optional(Whitespace),
+                    joiner = Whitespace
+                ),
+                "Coordinates"
+            )
+        ),
+        suffix = Optional(Newline)
+    )
+)
+
 def cartesian_coordinates_parser(strs):
-    num_sets = len(strs)
-    strit = iter(strs)
-    if num_sets>0:
-        xyz = next(strit)
-        first = pull_xyz(xyz, regex=cartesian_re_c)
-        num_atoms = len(first[0])
-        if num_sets>1:
-            coord_array = np.zeros((num_sets, num_atoms, 3), dtype=np.float64)
-            coord_array[0] = first[1]
-            for i, xyz in enumerate(strs):
-                if i>0:
-                    coord_array[i] = pull_coords(xyz)
-            coords = [first[0], coord_array]
-        else:
-            coords = [first[0], np.reshape(first[1], (1,) + first[1].shape)]
-    else:
-        coords = None
+    strss = "\n\n".join(strs)
+
+    parse = CartParser.parse_all(strss)
+
+    coords = (
+        parse["GaussianStuff", 0],
+        parse["Coordinates"].array
+    )
 
     return coords
 
@@ -120,45 +134,6 @@ tag_start  = """Z-MATRIX (ANGSTROMS AND DEGREES)
  ---------------------------------------------------------------------------------------------------"""
 tag_end    = " ---------------------------------------------------------------------"
 
-# gaussian_zzz = op_p(posint_p) + opnb_p(wsr_p) + \
-#                 op_p(posint_p) + opnb_p(wsr_p) + \
-#                 grp_p(name_p+opnb_p(paren_p))
-# for i in range(3):
-#     gaussian_zzz += opnb_p( # optional non-binding
-#         wsr_p + grp_p(posint_p) + # ref int
-#         wsr_p + grp_p(num_p) + # z-mat value
-#         opnb_p(paren_p) # ignore parens that Gaussian puts at the end
-#     )
-# print(gaussian_zzz)
-# gaussian_zzz_c = re.compile(gaussian_zzz)
-"""
-StructuredTypeArray(
-    shape=[[(0, 50, 2), (0, 50)], [[(0, 50, 50), (0, 50, 50)], (0, 50, 50)]],
-    dtype=(
-        StructuredType(
-            (
-                StructuredType(int, shape=(2,)),
-                StructuredType(str, shape=None)
-            ),
-            shape=(None,)
-        ),
-        StructuredType(
-            (
-                StructuredType(
-                    (
-                        StructuredType(int, shape=None),
-                        StructuredType(float, shape=None)
-                    ),
-                    shape=None
-                ),
-                StructuredType(int, shape=None)
-            ),
-            shape=(None, None)
-        )
-    )
-)
-"""
-
 ZMatParser = StringParser(
     Repeating(
         (
@@ -186,16 +161,20 @@ ZMatParser = StringParser(
                 "Coordinates"
             )
         ),
-        suffix = Optional(Newline)
+        suffix = Optional(RegexPattern((
+            Optional((Whitespace, PositiveInteger)),
+            Optional(Newline)
+        )))
     )
 )
 
 def parser(strs):
 
-    reg = ZMatParser.regex # type: RegexPattern
-
+    # reg = ZMatParser.regex # type: RegexPattern
+    # print(repr(str(reg)))
     strss = '\n\n'.join(strs)
 
+    # print(strs[0])
     # print(repr(str(ZMatParser.regex)))
     # a = (strs[0])
     # b = (ZMatParser.regex.search(strs[0]).group(0))
@@ -218,8 +197,6 @@ def parser(strs):
         fak["Coordinates", 0, 0],
         fak["Coordinates", 1]
         ]
-
-    raise Exception(coords)
 
     # num_sets = len(strs)
     # strit = iter(strs)

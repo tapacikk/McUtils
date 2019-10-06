@@ -692,12 +692,13 @@ def shortest(p, no_capture = False):
 def repeating(p, min = 1, max = None, no_capture = False):
     if not is_grouped(p):
         p = non_capturing(p)
-    if max is None and min is None:
-        base_pattern = p+"*"
-    elif min == 1:
-        base_pattern = p+"+"
-    elif max is None:
-        base_pattern = p +"{" + str(min) + ",}"
+    if max is None:
+        if min is None:
+            base_pattern = p+"*"
+        elif min == 1:
+            base_pattern = p+"+"
+        else:
+            base_pattern = p +"{" + str(min) + ",}"
     elif min == max:
         base_pattern = p +"{" + str(min) + "}"
     else:
