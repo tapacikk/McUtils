@@ -162,9 +162,16 @@ StructuredTypeArray(
 ZMatParser = StringParser(
     Repeating(
         (
-            Capturing(Repeating(Capturing(PositiveInteger), min=1, max=2, prefix=Optional(Whitespace), suffix=Whitespace)),
-            Capturing(AtomName, suffix=Whitespace),
-            Capturing(
+            Named(
+                Repeating(Capturing(PositiveInteger), min=1, max=2, prefix=Optional(Whitespace), suffix=Whitespace),
+                "GaussianInts"
+            ),
+            Named(
+                Capturing(AtomName),
+                "AtomNames",
+                suffix=Whitespace
+            ),
+            Named(
                 Repeating(
                     (
                         Capturing(PositiveInteger),
@@ -174,9 +181,9 @@ ZMatParser = StringParser(
                     min = None,
                     max = 3,
                     prefix=Optional(Whitespace),
-                    joiner = Whitespace,
-                    handler=StringParser.handler_method(print)
-                )
+                    joiner = Whitespace
+                ),
+                "Coordinates"
             )
         ),
         suffix = Optional(Newline)
@@ -186,36 +193,54 @@ ZMatParser = StringParser(
 def parser(strs):
 
     reg = ZMatParser.regex # type: RegexPattern
+
     strss = '\n\n'.join(strs)
 
     # print(repr(str(ZMatParser.regex)))
-    a = (strs[0])
-    b = (ZMatParser.regex.search(strs[0]).group(0))
+    # a = (strs[0])
+    # b = (ZMatParser.regex.search(strs[0]).group(0))
     # raise Exception('{!r}\n{}\n\n{}'.format(str(ZMatParser.regex), a, b))
     fak = ZMatParser.parse_all(strss)
-    print(strs[0])
-    raise Exception((fak, fak[2].array[0].array))
 
-    num_sets = len(strs)
-    strit = iter(strs)
-    if num_sets>0:
-        zm = next(strit)
-        # print(zm)
-        first = pull_zmat(zm, regex=gaussian_zzz_c, num_header=3)
-        # print(first)
-        num_atoms = len(first[0])
-        if num_sets>1:
-            index_array = first[1]
-            coord_array = np.zeros((num_sets, num_atoms-1, 3), dtype=np.float64)
-            coord_array[0] = first[2]
-            for i, zm in enumerate(strs):
-                if i>0:
-                    coord_array[i] = pull_zmat_coords(zm)
-            coords = [first[0], index_array, coord_array]
-        else:
-            coords = [first[0], first[1], np.reshape(first[2], (1,) + first[2].shape)]
-    else:
-        coords = None
+    # print("This is me", strs[0])
+    # print(fak._array[2]._array[0]._array)
+
+    # raise Exception((fak,
+    #                  fak["Coordinates", 1]
+    #                  )
+    #                 )
+
+    coords = [
+        (
+            fak["GaussianInts", 0],
+            fak["AtomNames", 0]
+        ),
+        fak["Coordinates", 0, 0],
+        fak["Coordinates", 1]
+        ]
+
+    raise Exception(coords)
+
+    # num_sets = len(strs)
+    # strit = iter(strs)
+    # if num_sets>0:
+    #     zm = next(strit)
+    #     # print(zm)
+    #     first = pull_zmat(zm, regex=gaussian_zzz_c, num_header=3)
+    #     # print(first)
+    #     num_atoms = len(first[0])
+    #     if num_sets>1:
+    #         index_array = first[1]
+    #         coord_array = np.zeros((num_sets, num_atoms-1, 3), dtype=np.float64)
+    #         coord_array[0] = first[2]
+    #         for i, zm in enumerate(strs):
+    #             if i>0:
+    #                 coord_array[i] = pull_zmat_coords(zm)
+    #         coords = [first[0], index_array, coord_array]
+    #     else:
+    #         coords = [first[0], first[1], np.reshape(first[2], (1,) + first[2].shape)]
+    # else:
+    #     coords = None
 
     return coords
 mode       = "List"

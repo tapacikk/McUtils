@@ -240,12 +240,19 @@ class RegexPattern:
         # might be worth introducing some level of caching for this dtype so that we're not recomputing it
         # over and over for recursive processes
         if dt is None and self.child_count > 0:
-            if self.capturing:
-                subdts = [ c.dtype for c in self._children ]
+            subdts = self.get_capturing_groups(allow_inners=False) # the recursive dtype computation will pick this up
+            if len(subdts) == 0:
+                subdts = self._children
+            named = OrderedDict((g.key, g) for g in subdts if g.key is not None)
+            if len(named) > 0:
+                subdts = OrderedDict((k, g.dtype) for k, g in named.items())
             else:
-                subdts = [ c.dtype for c in self._children if c.captures ]
+                subdts = [ g.dtype for g in subdts ]
+
             if len(subdts) == 0:
                 dt = StructuredType(str)
+            elif isinstance(subdts, OrderedDict):
+                dt = StructuredType(subdts)
             elif len(subdts) == 1:
                 dt = subdts[0] # singular type
                 if not isinstance(dt, StructuredType):
@@ -324,7 +331,7 @@ class RegexPattern:
 
     @property
     def named_groups(self):
-        """Returns the capturing children for the pattern
+        """Returns the named children for the pattern
 
         :return:
         :rtype:
@@ -334,11 +341,15 @@ class RegexPattern:
         if not named and not self.has_named_child:
             return None
         elif not named:
-            # we walk down the tree at this point, finding the outer-most capturing groups in a flat structure
+            # we walk down the tree at this point, finding the outer-most named capturing groups in a flat structure
             # I'd make it a tree but regex just returns captured stuff, it doesn't make a tree out of them
-            groups = OrderedDict(
-                (g.key, g) for g in self.capturing_groups if g.key is not None
-            )
+            caps = self.capturing_groups
+            if caps is None or caps is self:
+                groups = None
+            else:
+                groups = OrderedDict(
+                    (g.key, g) for g in caps if g.key is not None
+                )
             return groups
         else:
             return OrderedDict(((self.key, self), ) )

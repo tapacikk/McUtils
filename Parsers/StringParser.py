@@ -199,7 +199,8 @@ class StringParser:
     # we need to add some stuff to generalize out the parser, add some useful general methods
     # like the handling of blocks of unknown size / unknown numbers of atoms / efficient casting from string
     # to NumPy types
-    def parse_all(self, txt,
+    def parse_all(self,
+                  txt,
                   regex = None,
                   num_results = None,
                   block_handlers = None,
@@ -336,21 +337,22 @@ class StringParser:
         :rtype:
         """
 
-        dtypes = regex.named_groups
-        if dtypes is not None:
-            for k, r in tuple(dtypes.items()):
-                dtypes[k] = r.dtype
-        else:## there is some question as to whether I might actually want to make it so the _children_ get parsed out...
-            dtypes = regex.capturing_groups
-            if dtypes is not None:
-                if isinstance(dtypes, RegexPattern):
-                    dtypes = dtypes.dtype
-                else:
-                    dtypes = tuple(d.dtype for d in dtypes)
-
-            else:
-                dtypes = regex.dtype
-
+        dtypes = regex.dtype
+        # print(">"*50, dtypes)
+        # if dtypes is not None:
+        #     for k, r in tuple(dtypes.items()):
+        #         dtypes[k] = r.dtype
+        # else:## there is some question as to whether I might actually want to make it so the _children_ get parsed out...
+        #     dtypes = regex.capturing_groups
+        #     if dtypes is not None:
+        #         if isinstance(dtypes, RegexPattern):
+        #             dtypes = dtypes.dtype
+        #         else:
+        #             dtypes = tuple(d.dtype for d in dtypes)
+        #
+        #     else:
+        #         dtypes = regex.dtype
+        # print(dtypes, "<"*50, sep="\n")
         return dtypes
     #endregion
 
@@ -359,6 +361,13 @@ class StringParser:
     def _set_up_result_arrays(self, dtypes):
         # we'll always force our dtypes and results to be a StructuredType and StructuredTypeArray
         # as these will force the results to be conformaing
+        res = StructuredTypeArray(dtypes)
+        # print("="*50,
+        #       dtypes,
+        #       res.dict_like,
+        #       "="*50,
+        #       sep="\n"
+        #       )
         return StructuredTypeArray(dtypes)
 
     #endregion
@@ -367,11 +376,8 @@ class StringParser:
     def _split_match_groups(self, groups, handlers, res):
 
         if (handlers is None) or len(groups[0]) == len(handlers): # the is None clause might be unnecessary...
-            if len(groups[0]) == 1:
-                gg = np.array([groups])
-            else:
-                # just need to transpose the groups, basically,
-                gg = groups.T
+            # just need to transpose the groups, basically,
+            gg = groups.T
         elif len(groups[0]) < len(handlers):
             raise StringParserException(
                 "{}.{}: got {} block handlers but only {} matched elements".format(
@@ -392,6 +398,10 @@ class StringParser:
                 else:
                     gg[i] = groups[:, sliced:sliced+b]
                 sliced += b
+        # print(">"*50)
+        # print("Got in groups:", groups)
+        # print("Got out:", gg)
+        # print("<"*50)
         return gg # groups should now be chunked into groups if it wasn't before
 
     def _handle_insert_result(self, array, handler, data, single = True, append = False):
@@ -410,20 +420,17 @@ class StringParser:
         :type append: bool | iterable[int]
         """
         if handler is not None:
-            # the issue now is how to manage where we append...
-            # basically everytime we recurse with the _same_ array, we should be pushing
-            # this recursion is handled in our default handler, though, I guess, so maybe I should be thinking about it there...
             data = handler(data, array = array, append = append)
         if data is not None:
-            if single and (append or isinstance(append, int)):
-                print("pre-append:>", array)
-                print("axis:", append)
-                print(data)
+            if single and (append or (append is 0)):
+                # print("pre-append:>", array)
+                # print("axis:", append)
+                # print(data)
                 if append is True:
                     append = 0
                 array.append(data, axis = append)
-                print("<:post-append", array)
-            elif (append or isinstance(append, int)):
+                # print("<:post-append", array)
+            elif (append or (append is 0)):
                 # print("pre-extend:>", array)
                 if append is True:
                     append = 0
@@ -510,10 +517,6 @@ class StringParser:
         :rtype:
         """
 
-        # there are too many branches here
-        # they should really all be agglomerated back into the StructuredTypeArray handler
-        # by doing so we can simply slice into that and have a really clean mechanism to handle everything
-
         if hasattr(match, 'groupdict'):
             single_match = True
             if single is None:
@@ -529,6 +532,7 @@ class StringParser:
             # indicates we were fed a single group
 
         gd = first_match.groupdict(default=default_value) if res.dict_like else []
+        # print("WTF", first_match, first_match.groups())
         if len(gd) == 0:
             # we have no _named_ groups so we just pull everything and run with it
 
@@ -545,10 +549,10 @@ class StringParser:
                 groups = self._split_match_groups(groups, block_handlers, res.array)
 
             if block_handlers is None:
-                print("-"*10 + "No Handler" + "-"*10)
+                # print("-"*10 + "No Handler" + "-"*10)
                 self._handle_insert_result(res, None, groups, single = single, append = append)
             elif len(block_handlers) == 1:
-                print("-"*10 + "Single Handler" + "-"*10)
+                # print("-"*10 + "Single Handler" + "-"*10)
                 handler = block_handlers[0]
                 self._handle_insert_result(res, handler, groups[0], single = single, append = append)
             # elif len(block_handlers) > :
@@ -558,7 +562,8 @@ class StringParser:
             #         block_handlers
             #     ))
             else:
-                print("-"*10 + "Multiple Handlers" + "-"*10)
+                # print("-"*10 + "Multiple Handlers" + "-"*10)
+                # print(block_handlers, res, groups)
                 for b,a,g in zip(block_handlers, res.array, groups):
                     self._handle_insert_result(a, b, g, single = single, append = append)
 
@@ -566,7 +571,7 @@ class StringParser:
             # we have named groups so we only use the data associated with them
             if block_handlers is None:
                 block_handlers = {}
-            groups = gd if single else [ m.groupdict(default=default_value) for m in match ]
+            groups = gd if single_match else [ m.groupdict(default=default_value) for m in match ]
             # now we need to remerge the groupdicts by name if not single
             if not single_match:
                 groups = OrderedDict(
@@ -642,14 +647,7 @@ class StringParser:
                     rr = None
                     if len(t) > 0:
                         s = cls(r)
-                        if array is not None:
-                            append_depth = array.append_depth
-                        else:
-                            append_depth = 0
-                        if append is True or append is False:
-                            append = 0
-                        append = append + append_depth
-                        out_array = {'array':array, 'append':append + append_depth}
+                        out_array = {'array':array, 'append':append}
                         s.parse(t, out = out_array)
                 else:
                     # we assume we got a list of strings...?
@@ -671,13 +669,14 @@ class StringParser:
                         append_depth = array.append_depth
                         if append is True or append is False:
                             append = 0
-                        append = append + append_depth
                         out_array = {
                             'array':array,
-                            'append':append + append_depth
+                            'append':append
                         }
-                        array.filled_to[append] = 0
-                    # print(t, r)
+                        # print(append_depth, append + append_depth, array)
+                        app_depth = append + append_depth
+                        array.set_filling( 0, axis = app_depth)
+                    # print("????", t)
                     for i, l in enumerate(t):
                         # we gotta basically go line-by-line and add our stuff in
                         # the way we do this is by applying parse to each one of these things
@@ -686,8 +685,13 @@ class StringParser:
                             if len(l) == 0:
                                 array.append(None, axis = append)
                             else:
+                                # print(l)
                                 s.parse(l, dtypes=array.stype, out = out_array)
-                            array.filled_to[append] = i+1
+                            array.set_filling(i+1, axis = app_depth)
+                            # if array.is_simple:
+                            #     array.filled_to[app_depth] = i+1
+                            # else:
+                            #     print(l)
 
                         elif rr is None:
 
@@ -748,9 +752,11 @@ class StringParser:
                     if array is not None:
                         if append is True or append is False:
                             pass
-                        elif append > 0:
-                            array.filled_to[append-1] += 1
-
+                        else:
+                            array.append_depth -= 1
+                            app_depth = append + append_depth
+                            if app_depth > 0:
+                                array.increment_filling(axis=app_depth - 1)
 
                 return rr
 
@@ -769,15 +775,20 @@ class StringParser:
         :rtype:
         """
 
-        def handler(data, method = method, array = None):
+        def handler(data, method = method, array = None, append = False):
             return method(data)
 
         return handler
 
+    @staticmethod
+    def load_array(data, dtype = 'float'):
+        import io
+        return np.loadtxt(io.StringIO(data), dtype=dtype)
     @classmethod
     def to_array(cls,
                  data,
                  array = None,
+                 append = False,
                  dtype = 'float',
                  shape = None
                  ):
@@ -793,8 +804,18 @@ class StringParser:
         import io
 
         if not isinstance(data, str):
-            data = '\n'.join((d.strip() for d in data))
-        arr = np.loadtxt(io.StringIO(data), dtype=dtype)
+            if isinstance(data, np.ndarray) and data.ndim > 1:
+                # we need to load each chunk in turn...
+                def hold_me_closer_tiny_dancer(data, dtype = dtype, cls = cls):
+                    if data.ndim == 1:
+                        return cls.load_array('\n'.join((d.strip() for d in data)), dtype = dtype)
+                    else:
+                        return [ hold_me_closer_tiny_dancer(d) for d in data ]
+                arr = np.array(hold_me_closer_tiny_dancer(data))
+            else:
+                arr = cls.load_array('\n'.join((d.strip() for d in data)), dtype=dtype)
+        else:
+            arr = cls.load_array(data, dtype=dtype)
         if shape is not None:
             fudge_axis = [ i for i, s in enumerate(shape) if s is None]
             if len(fudge_axis) == 0:
@@ -827,6 +848,7 @@ class StringParser:
     @classmethod
     def array_handler(cls,
                       array = None,
+                      append = False,
                       dtype = 'float',
                       shape = None
                       ):
@@ -841,7 +863,7 @@ class StringParser:
         :return:
         :rtype:
         """
-        def handler(data, array = array, dtype = dtype, shape = shape, cls=cls):
-            return cls.to_array(data, array = array, dtype = dtype, shape = shape)
+        def handler(data, array = array, append = append, dtype = dtype, shape = shape, cls=cls):
+            return cls.to_array(data, array = array, append = append, dtype = dtype, shape = shape)
         return handler
     #endregion

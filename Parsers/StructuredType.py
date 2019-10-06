@@ -283,7 +283,7 @@ class StructuredTypeArray:
         self._default_num_elements = num_elements
         self._array = None
         self._array = self.empty_array() # empty_array tries to use shape if possible
-        self._append_depth = 0
+        self._append_depth = -1
 
     @property
     def is_simple(self):
@@ -357,7 +357,7 @@ class StructuredTypeArray:
         inc = d - self._append_depth
         self._append_depth = d
         if not self._is_simple:
-            for a in self._array:
+            for a in (self._array.values() if isinstance(self._array, OrderedDict) else self._array):
                 a.append_depth += inc
 
     def _invalidate_type_cache(self):
@@ -445,6 +445,9 @@ class StructuredTypeArray:
             return self._array[slices]
         else:
             return self._array
+    @property
+    def _subarrays(self):
+        return self._array.values() if isinstance(self._array, OrderedDict) else self._array
 
     def axis_shape_indeterminate(self, axis):
         """Tries to determine if an axis has had any data placed into it or otherwise been given a determined shape
@@ -458,7 +461,6 @@ class StructuredTypeArray:
         if self.stype.shape is not None:
             indet = self.stype.shape[axis] is None
         return indet
-
     @property
     def has_indeterminate_shape(self):
         """Tries to determine if the entire array has a determined shape
@@ -480,7 +482,7 @@ class StructuredTypeArray:
                 indet = count_None == len(self.filled_to) or count_None > 1
             return indet # eh we'll call this enough for now
         else:
-            return any( a.has_indeterminate_shape for a in self._array )
+            return any( a.has_indeterminate_shape for a in self._subarrays )
 
     @property
     def filled_to(self):
@@ -489,7 +491,7 @@ class StructuredTypeArray:
                 self._filled_to = [ 0 ] * len(self._array.shape)
             return self._filled_to
         else:
-            return [ s.filled_to for s in self._array ]
+            return [ s.filled_to for s in self._subarrays ]
     @filled_to.setter
     def filled_to(self, filling):
         if self._is_simple:
@@ -502,6 +504,25 @@ class StructuredTypeArray:
         else:
             # thread the setting
             ...
+    def set_filling(self, amt, axis = 0):
+        if self._is_simple:
+            if self._filled_to is None:
+                _ = self.filled_to # populates it
+            self._filled_to[axis] = amt
+        else:
+            # gotta propagate the filling down to the bottom axis
+            for a in self._subarrays:
+                a.set_filling(amt, axis = axis)
+    def increment_filling(self, inc = 1, axis = 0):
+        if self._is_simple:
+            if self._filled_to is None:
+                _ = self.filled_to # populates it
+            self._filled_to[axis] += inc
+        else:
+            # gotta propagate the filling down to the bottom axis
+            for a in self._subarrays:
+                a.increment_filling(inc = inc, axis = axis)
+
     def __len__(self):
         return len(self.array)
 
@@ -665,8 +686,8 @@ class StructuredTypeArray:
             for a, k, v in zip(self._array, key, value):
                 a[k] = v
     def __getitem__(self, item):
-        return self.get_part(item)
-    def get_part(self, item):
+        return self.get_part(item, use_full_array=False)
+    def get_part(self, item, use_full_array = True):
         """If simple, delegates to NumPy, otherwise tries to recursively get parts...?
         Unclear how slicing is best handled here.
 
@@ -675,8 +696,12 @@ class StructuredTypeArray:
         :return:
         :rtype:
         """
+        if use_full_array:
+            arr = self._array
+        else:
+            arr = self.array
         if self.is_simple:
-            return self._array[item]
+            return arr[item]
         else:
             if isinstance(item, tuple):
                 compound_index = True
@@ -685,15 +710,15 @@ class StructuredTypeArray:
                 compound_index = False
                 first_thingy = item
             if isinstance(first_thingy, slice) and compound_index:
-                bits = self._array[first_thingy]
+                bits = arr[first_thingy]
                 return [ b[item[1:]] for b in bits ]
             elif isinstance(first_thingy, slice):
                 raise NotImplemented("Not sure how I want to slice StructuredType objects yet")
             elif compound_index:
-                bit = self._array[first_thingy]
+                bit = arr[first_thingy]
                 return bit[item[1:]]
             else:
-                bit = self._array[first_thingy]
+                bit = arr[first_thingy]
                 return bit
 
     def add_axis(self, which = 0, num_elements = None, change_shape = True):
@@ -823,14 +848,16 @@ class StructuredTypeArray:
         :return:
         :rtype:
         """
+        axis = axis + max(self.append_depth, 0)
+        # print("real_axis:", axis)
         if self.is_simple:
             self[tuple(self.filled_to[:axis+1])] = val
         else:
             self[[tuple(f[:axis+1]) for f in self.filled_to]] = val
         # self._filled_to+=1 # handled automatically by a small bit of cleverness in the filling code
 
-    def _get_casting_shape(self, val):
-        axis = self.extension_axis
+    def _get_casting_shape(self, val, axis = None):
+        axis = self.extension_axis if axis is None else axis
         vs = val.shape
         ss = self.shape
         vs_a = vs[:axis] + vs[axis+1:]
@@ -852,7 +879,7 @@ class StructuredTypeArray:
             new_shape = vs
         return axis, my_stuffs, remaining_stuff, new_shape
 
-    def extend(self, val, single = True, prepend = False):
+    def extend(self, val, single = True, prepend = False, axis = None):
         """Adds the sequence val to the array
 
         :param val:
@@ -874,10 +901,12 @@ class StructuredTypeArray:
             if self.has_indeterminate_shape and len(self.shape) == len(val.shape if isinstance(val, np.ndarray) else val):
                 return self.fill(val)
 
-            # print("...?", self)
+
+            # print("...?", axis)
 
             # now check for shape mismatches so they may be corrected _before_ the insertion
-            axis, block_size, remainder, new_shape = self._get_casting_shape(val)
+            ax, block_size, remainder, new_shape = self._get_casting_shape(val, axis = axis)
+            # print(ax)
             malformed = remainder != int(remainder)
             if malformed:
                 if int(remainder) == 0:
@@ -887,7 +916,7 @@ class StructuredTypeArray:
                     num_els = len(val)
                     repeats = int(np.ceil(block_size/num_els))
                     val = np.tile(val, repeats)[:block_size]
-                    axis, block_size, remainder, new_shape = self._get_casting_shape(val)
+                    ax, block_size, remainder, new_shape = self._get_casting_shape(val)
                     malformed = remainder != int(remainder)
                 if malformed:
                     raise StructuredTypeArrayException("{}.{}: object with shape '{}' can't be used to extend array of shape '{}' along axis '{}'".format(
@@ -895,11 +924,11 @@ class StructuredTypeArray:
                         'extend',
                         val.shape,
                         self.shape,
-                        axis
+                        ax
                     ))
             val = val.reshape(new_shape).astype(self.dtype)
 
-            filling = self.filled_to[axis] # I should update this so it works for axis != 0 too...
+            filling = self.filled_to[ax] # I should update this so it works for axis != 0 too...
             # print(self._array.shape, val.shape, val)
             self._array = np.concatenate(
                 (
@@ -909,16 +938,16 @@ class StructuredTypeArray:
                     val,
                     self._array[:filling]
                 ),
-                axis = axis
+                axis = ax
             )
-            self.filled_to[axis] = self._array.shape[axis]
+            self.filled_to[ax] = self._array.shape[ax]
         else:
             if not single and isinstance(val, np.ndarray): # single alone might tell us we have an issue...
                 if len(val[0]) == len(self._array):
                     # just need to transpose the groups, basically,
                     gg = val.T
                 else:
-                    blocks = [b.block_size for b in self._array]
+                    blocks = [b.block_size for b in self._subarrays]
                     # we'll assume val is an np.ndarray for now since that's the most common case
                     # but this might not work in general...
                     gg = [ None ] * len(blocks)
@@ -931,29 +960,29 @@ class StructuredTypeArray:
                         sliced += b
                 val = gg
             for a, v in zip(self._array, val):
-                a.extend(v)
+                a.extend(v, axis = axis)
 
-    def fill_to(self, level, fill_value = None):
-        """Sets the filled_to parameter level of the array to level, optionally filling with a value
-
-        :param level:
-        :type level:
-        :param fill_value:
-        :type fill_value:
-        :return:
-        :rtype:
-        """
-
-        base_level = self.filled_to[0]
-        if level > base_level:
-            if self.is_simple:
-                self.filled_to[0] = level
-            else:
-                for a in self._array:
-                    a.fill_to(level, fill_value=fill_value)
-        # uh... what do about the fill_value?
-        if fill_value is not None:
-            raise NotImplementedError("I still haven't implemented fill_value yet ;_;")
+    # def fill_to(self, level, fill_value = None):
+    #     """Sets the filled_to parameter level of the array to level, optionally filling with a value
+    #
+    #     :param level:
+    #     :type level:
+    #     :param fill_value:
+    #     :type fill_value:
+    #     :return:
+    #     :rtype:
+    #     """
+    #
+    #     base_level = self.filled_to[0]
+    #     if level > base_level:
+    #         if self.is_simple:
+    #             self.filled_to[0] = level
+    #         else:
+    #             for a in self._subarrays:
+    #                 a.fill_to(level, fill_value=fill_value)
+    #     # uh... what do about the fill_value?
+    #     if fill_value is not None:
+    #         raise NotImplementedError("I still haven't implemented fill_value yet ;_;")
 
     def fill(self, array):
         """Sets the result array to be the passed array
