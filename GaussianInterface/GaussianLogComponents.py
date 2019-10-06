@@ -131,10 +131,71 @@ tag_end    = " -----------------------------------------------------------------
 #     )
 # print(gaussian_zzz)
 # gaussian_zzz_c = re.compile(gaussian_zzz)
+"""
+StructuredTypeArray(
+    shape=[[(0, 50, 2), (0, 50)], [[(0, 50, 50), (0, 50, 50)], (0, 50, 50)]],
+    dtype=(
+        StructuredType(
+            (
+                StructuredType(int, shape=(2,)),
+                StructuredType(str, shape=None)
+            ),
+            shape=(None,)
+        ),
+        StructuredType(
+            (
+                StructuredType(
+                    (
+                        StructuredType(int, shape=None),
+                        StructuredType(float, shape=None)
+                    ),
+                    shape=None
+                ),
+                StructuredType(int, shape=None)
+            ),
+            shape=(None, None)
+        )
+    )
+)
+"""
 
-
+ZMatParser = StringParser(
+    Repeating(
+        (
+            Capturing(Repeating(Capturing(PositiveInteger), min=1, max=2, prefix=Optional(Whitespace), suffix=Whitespace)),
+            Capturing(AtomName, suffix=Whitespace),
+            Capturing(
+                Repeating(
+                    (
+                        Capturing(PositiveInteger),
+                        Capturing(Number),
+                        Parenthesized(PositiveInteger, prefix=Whitespace)
+                    ),
+                    min = None,
+                    max = 3,
+                    prefix=Optional(Whitespace),
+                    joiner = Whitespace,
+                    handler=StringParser.handler_method(print)
+                )
+            )
+        ),
+        suffix = Optional(Newline)
+    )
+)
 
 def parser(strs):
+
+    reg = ZMatParser.regex # type: RegexPattern
+    strss = '\n\n'.join(strs)
+
+    # print(repr(str(ZMatParser.regex)))
+    a = (strs[0])
+    b = (ZMatParser.regex.search(strs[0]).group(0))
+    # raise Exception('{!r}\n{}\n\n{}'.format(str(ZMatParser.regex), a, b))
+    fak = ZMatParser.parse_all(strss)
+    print(strs[0])
+    raise Exception((fak, fak[2].array[0].array))
+
     num_sets = len(strs)
     strit = iter(strs)
     if num_sets>0:

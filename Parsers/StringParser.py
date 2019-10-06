@@ -15,6 +15,65 @@ __all__ = [
 class StringParserException(Exception):
     ...
 
+"""
+One thing that's really tough with this stuff is figuring out how to manage shapes as we move across the different parsers and recursion level
+
+We can use the RegexPattern to manage the original StructuredType -> this seems to be pretty reliable
+We can use that to create an initial StructuredTypeArray -> this seems to be pretty reliable
+Then if we call parse_all, we need to reshape that StructuredTypeArray so that it can take a vector of return values
+    -> I _think_ this works as it should
+Next, no matter which parser we use, we need to get out our match or matches -> this is, again, quite reliable
+At that point we need to figure out how many groups each subarray should have -> this seems to be broken
+
+
+"""
+
+"""
+StringParser Design:
+
+input: RegexPattern
+output: StructuredTypeArray or list or OrderedDict thereof
+
+Basic Idea:
+
+RegexPattern can track which of its children are tagged as Capturing and which are tagged as Named. These children in turn
+can keep track of their data type (dtype) and also the shape of the data that should come out of their matched groups.
+
+So once we've compiled down RegexPattern--making sure that only groups at the outer-most level capture when compiling--
+what we can do is use the python re module to find the various matched components. 
+
+At this point, we need to convert the matched strings into the appropriately formatted NumPy arrays. To handle this in 
+recursive fashion I created a StructuredTypeArray class that has two flavors, simple and compound, which respectively
+handle the direct communication with NumPy and the delegation and distribution of higher-order data to simpler arrays.
+
+So in our parsing process we need to create a StructuredTypeArray for the found dtype from the RegexPattern. This is 
+relatively straightforward. Next, we might be using parse_all which asks for a vector of results back. If this is the
+case we need to take our initial StructuredTypeArray and turn it into, in effect, a StructuredTypeArray vector. Rather
+than use an inefficient python list format, though, we call StructuredTypeArray.add_axis which broadcasts to a 
+higher-dimensional data format. It also changes up the stored StructuredType such that a new axis has been prepended to
+the shapes of each.
+
+Next we have to work with our matched data somehow. There are a few issues here, but probably the biggest one is that the
+number of matched groups doesn't need to line up with the number of blocks we want returned. This means that we might need to take our
+matched groups and use some 'block_size' that each StructuredTypeArray tracks to figure out how to split these groups up.
+
+Assuming that works well, we now apply the block handler for each declared Capturing block to the matched data string.
+For very simple data, this will be effectively doing nothing, so that the StructuredTypeArray can handle the cast to an
+np.ndarray. For compound types or more complex data we need to basically go match-by-match and apply the block parser.
+
+This is where the recursion occurs and where things can get messy. The default block handler for an np.ndarray calls 
+parse on a string. This means that parse will be called until the data can finally be put into a StructuredTypeArray
+format. On the other hand, the returned data needs to be consistent with the expected return type of the parent call.
+For that reason, the block handler passes in the return array, and the return array uses its stype when calling the 
+subparser. This means, though, that there could be an apparent shape mismatch if the data itself is ragged. To resolve
+that, StructuredTypeArray will pad lower-dimensional data into a higher-dimensional format when possible.
+
+A major complicating factor in all of this is how one manages Repeating patterns. Every Repeating pattern actually needs
+to be managed using parse_all and its own Capturing groups, after first finding the matches for the repeats. Since the 
+passed dtype for such a call is also a higher-dimensional object, the outer-most axis of the dtype needs to be dropped,
+then parse_all needs to be called on the child form. Managing this correctly inside a recursive process can be challenging.
+
+"""
 class StringParser:
     """
     A convenience class that makes it easy to pull blocks out of strings and whatnot
@@ -27,14 +86,21 @@ class StringParser:
               txt,
               regex = None,
               block_handlers = None,
-              dtypes = None
+              dtypes = None,
+              out = None
               ):
         """Finds a single match for the and applies parsers for the specified regex in txt
 
-        :param txt:
+        :param txt: a chunk of text to be matched
         :type txt: str
-        :param regex:
-        :type regex:
+        :param regex: the regex to match in _txt_
+        :type regex: RegexPattern
+        :param block_handlers: handlers for the matched blocks in _regex_ -- usually comes from _regex_
+        :type block_handlers: iterable[callable] | OrderedDict[str: callable]
+        :param dtypes: the types of the data that we expect to match -- usually comes from _regex_
+        :type dtypes: iterable[type | StructuredType] | OrderedDict[str: type | StructuredType]
+        :param out: where to place the parsed out data -- usually comes from _regex_
+        :type out: None | StructuredTypeArray | iterable[StructuredTypeArray] | OrderedDict[str: StructuredTypeArray]
         :return:
         :rtype:
         """
@@ -60,7 +126,25 @@ class StringParser:
             iterable_regex.pat = lambda p, *a, **kw: p # to unbind the Repeating capture screwups
             parser = type(self)(iterable_regex)
 
-            res = parser.parse_all(txt)
+            # ah fack how do we handle the dtypes passing?
+            # if dtypes was passed...I guess we gotta feed it through, right?
+            # Or well maybe not...? If it was passed it should be a _vector_ stype, right?
+            # So I guess we gotta strip the outer level of repeats...?
+            if out is None:
+                if isinstance(dtypes, StructuredType):
+                    dtypes = dtypes.drop_axis()
+                elif dtypes is not None:
+                    dtypes = [ d.drop_axis() for d in dtypes ]
+            else:
+                dtypes = None
+            if isinstance(out, (dict, OrderedDict)):
+                out = out.copy()
+                out['single'] = True
+            else:
+                out = {'array':out, 'single':True}
+
+            res = parser.parse_all(txt, dtypes = dtypes, out = out)
+
 
         else:
             if block_handlers is None and isinstance(regex, RegexPattern):
@@ -68,14 +152,31 @@ class StringParser:
             if dtypes is None and isinstance(regex, RegexPattern):
                 dtypes = self.get_regex_dtypes(regex)
 
-            res = self._set_up_result_arrays(dtypes)
+            if out is None:
+                res = self._set_up_result_arrays(dtypes)
+                append = False
+                single = None
+            elif isinstance(out, (dict, OrderedDict)):
+                res = out['array']
+                try:
+                    append = out['append']
+                except KeyError:
+                    append = False
+                try:
+                    single = out['single']
+                except KeyError:
+                    single = None
+            else:
+                res = out
+                append = False
+                single = None
 
             # if we're given a non-string regex we compile it
             if isinstance(regex, RegexPattern):
                 regex = regex.compiled
 
             match = re.search(regex, txt)
-            self._handle_parse_match(match, res, block_handlers)
+            self._handle_parse_match(match, res, block_handlers, append = append, single = single)
 
         # one issue here is that by default this would return a list or some structured object like that
         # sometimes we don't _want_ that list
@@ -102,7 +203,8 @@ class StringParser:
                   regex = None,
                   num_results = None,
                   block_handlers = None,
-                  dtypes = None
+                  dtypes = None,
+                  out = None
                   ):
 
         if regex is None:
@@ -113,15 +215,32 @@ class StringParser:
         if dtypes is None and isinstance(regex, RegexPattern):
             dtypes = self.get_regex_dtypes(regex)
 
-        res = self._set_up_result_arrays(dtypes)
-        if isinstance(res, StructuredTypeArray):
-            res.add_axis()
-        elif isinstance(res, (dict, OrderedDict)):
-            for r in res.values():
-                r.add_axis()
+        if out is None:
+            res = self._set_up_result_arrays(dtypes)
+            if isinstance(res, StructuredTypeArray):
+                res.add_axis()
+            elif isinstance(res, (dict, OrderedDict)):
+                for r in res.values():
+                    r.add_axis()
+            else:
+                for r in res:
+                    r.add_axis()
+            append = False
+            single = None
+        elif isinstance(out, (dict, OrderedDict)):
+            res = out['array']
+            try:
+                append = out['append']
+            except KeyError:
+                append = False
+            try:
+                single = out['single']
+            except KeyError:
+                single = None
         else:
-            for r in res:
-                r.add_axis()
+            res = out
+            append = False
+            single = None
 
         # if we're given a non-string regex we compile it
         if isinstance(regex, RegexPattern):
@@ -135,9 +254,9 @@ class StringParser:
             matches = list(match_iter)
 
         if len(matches)==0:
-            raise StringParserException("Pattern {} not found".format(regex))
+            raise StringParserException("Pattern {} not found in {}".format(regex, txt))
 
-        self._handle_parse_match(matches, res, block_handlers, append = True)
+        self._handle_parse_match(matches, res, block_handlers, append = append, single = single)
         #  we don't need to append since we've pushed the filling iteration into the StructuredArray
 
         return res
@@ -240,30 +359,30 @@ class StringParser:
     def _set_up_result_arrays(self, dtypes):
         # we'll always force our dtypes and results to be a StructuredType and StructuredTypeArray
         # as these will force the results to be conformaing
-        if isinstance(dtypes, type):
-            dtypes = StructuredType(dtypes)
-            res = StructuredTypeArray(dtypes) # type: StructuredTypeArray
-        elif isinstance(dtypes, (dict, OrderedDict)):
-            for k in dtypes.keys():
-                if not isinstance(dtypes[k], StructuredType):
-                    dtypes[k] = StructuredType(dtypes[k])
-            res = OrderedDict((k, StructuredTypeArray(d)) for k, d in dtypes.items()) # type: OrderedDict[str, StructuredTypeArray]
-        elif isinstance(dtypes, StructuredType):
-            res = StructuredTypeArray(dtypes)
-        else:
-            dtypes = [ dt if isinstance(dt, StructuredType) else StructuredType(dt) for dt in dtypes ]
-            res = [ StructuredTypeArray(d) for d in dtypes ] # type: list[StructuredTypeArray]
-
-        return res
+        return StructuredTypeArray(dtypes)
 
     #endregion
 
     #region Match Handler
-    def _split_match_groups(self, groups, res):
-        if len(groups[0]) == len(res):
-            # just need to transpose the groups, basically,
-            gg = groups.T
+    def _split_match_groups(self, groups, handlers, res):
+
+        if (handlers is None) or len(groups[0]) == len(handlers): # the is None clause might be unnecessary...
+            if len(groups[0]) == 1:
+                gg = np.array([groups])
+            else:
+                # just need to transpose the groups, basically,
+                gg = groups.T
+        elif len(groups[0]) < len(handlers):
+            raise StringParserException(
+                "{}.{}: got {} block handlers but only {} matched elements".format(
+                    type(self).__name__,
+                    '_split_match_groups',
+                    len(handlers),
+                    len(groups[0])
+                )
+            )
         else:
+            # we have _more_ groups than handlers so we need to chunk them up
             blocks = [ r.block_size for r in res ]
             gg = [ None ] * len(blocks)
             sliced = 0
@@ -275,7 +394,49 @@ class StringParser:
                 sliced += b
         return gg # groups should now be chunked into groups if it wasn't before
 
-    def _handle_parse_match(self, match, res, block_handlers, append = False,
+    def _handle_insert_result(self, array, handler, data, single = True, append = False):
+        """Handles the process of actually inserting the matches data/groups into array, applying any necessary
+        handler in the process
+
+        :param array: the array the data should be inserted into
+        :type array: StructuredTypeArray
+        :param handler: handler function for further processing of the matched data
+        :type handler: None | callable
+        :param data: matched data
+        :type data: iterable[str]
+        :param single: whether data should be treated as a single object (e.g. a subarray) or as multiple data objects
+        :type single: bool
+        :param append: whether the data should be appended or whether the array should entirely re-assign itself / which axes to assign to
+        :type append: bool | iterable[int]
+        """
+        if handler is not None:
+            # the issue now is how to manage where we append...
+            # basically everytime we recurse with the _same_ array, we should be pushing
+            # this recursion is handled in our default handler, though, I guess, so maybe I should be thinking about it there...
+            data = handler(data, array = array, append = append)
+        if data is not None:
+            if single and (append or isinstance(append, int)):
+                print("pre-append:>", array)
+                print("axis:", append)
+                print(data)
+                if append is True:
+                    append = 0
+                array.append(data, axis = append)
+                print("<:post-append", array)
+            elif (append or isinstance(append, int)):
+                # print("pre-extend:>", array)
+                if append is True:
+                    append = 0
+                array.extend(data, single = single, axis = append)
+                # print("<:post-extend", array)
+            else:
+                # print("pre-fill:>", array)
+                array.fill(data)
+                # print("<:post-fill", array)
+    def _handle_parse_match(self, match, res,
+                            block_handlers,
+                            append = False,
+                            single = None,
                             default_value = ""
                             ):
         """Figures out how to handle the matched data from the parser
@@ -333,6 +494,12 @@ class StringParser:
         matched data. This means our block_handlers need to take the passed res array to figure their shit out too.
 
 
+        :param append: whether to append the data or not
+        :type append:
+        :param single: whether the matched data should be treated like a singular object
+        :type single:
+        :param default_value:
+        :type default_value:
         :param match:
         :type match: re.Match | iterable[re.Match]
         :param res:
@@ -343,114 +510,81 @@ class StringParser:
         :rtype:
         """
 
+        # there are too many branches here
+        # they should really all be agglomerated back into the StructuredTypeArray handler
+        # by doing so we can simply slice into that and have a really clean mechanism to handle everything
+
         if hasattr(match, 'groupdict'):
-            single = True
+            single_match = True
+            if single is None:
+                single = single_match
             first_match = match # indicates we were fed a single match
         else:
-            single = False
+            single_match = False
+            if single is None:
+                single = single_match
             if len(match) == 0:
                 raise StringParserException("Can't handle series of matches if there are no matches")
             first_match = match[0] # indicates we were fed a series of matches
             # indicates we were fed a single group
 
-        gd = first_match.groupdict(default=default_value) if isinstance(res, OrderedDict) else []
+        gd = first_match.groupdict(default=default_value) if res.dict_like else []
         if len(gd) == 0:
             # we have no _named_ groups so we just pull everything and run with it
 
             # one difficulty about this setup is that it makes vector data into a 2D array
             # on the other hand I don't think there's anything else to be done here?
-            groups = match.groups(default=default_value) if single else np.array([ m.groups(default=default_value) for m in match ], dtype=str)
-            if isinstance(res, StructuredTypeArray):
+            groups = match.groups(default=default_value) if (single_match) else np.array([ m.groups(default=default_value) for m in match ], dtype=str)
 
-                if not single and not res.is_simple:
-                    # means we need to split up the groups
-                    groups = self._split_match_groups(groups, res.array)
+            # from here we might need to be a bit clever, actually...
+            # the number of groups should align with the number of block_handlers, of course, which _should_ be connected
+            # to what res looks like
 
-                if block_handlers is not None:
-                    # means we implicitly have groups inside res... so I guess we need to zip in res.array too?
-                    for b,a,g in zip(block_handlers, res.array, groups):
-                        if b is not None:
-                            g = b(g, array = a)
-                        if single and append:
-                            a.append(g)
-                        elif append:
-                            a.extend(g, single = single)
-                        else:
-                            a.fill(g)
+            if not single_match:# and not res.is_simple:
+                # means we need to split up the groups
+                groups = self._split_match_groups(groups, block_handlers, res.array)
 
-                else:
-                    if single and append:
-                        res.append(groups)
-                    elif append:
-                        res.extend(groups, single = single)
-                    else:
-                        res.fill(groups)
-            else: # we have no named groups and our res is a non-singular object
-                if isinstance(res, OrderedDict): # should I throw an error here...?
-                    res_iter = res.items()
-                else:
-                    res_iter = res
-                # we thread through the results and groups
-                # if we aren't in the single match regime we need to iterate through results individually since there's no
-                # way to determine what the correct shape is I think...? Or maybe we can use the result shapes to determine this?
-                # let's try the latter
-                if not single:
-                    groups = self._split_match_groups(groups, res)
+            if block_handlers is None:
+                print("-"*10 + "No Handler" + "-"*10)
+                self._handle_insert_result(res, None, groups, single = single, append = append)
+            elif len(block_handlers) == 1:
+                print("-"*10 + "Single Handler" + "-"*10)
+                handler = block_handlers[0]
+                self._handle_insert_result(res, handler, groups[0], single = single, append = append)
+            # elif len(block_handlers) > :
+            #     raise StringParserException("{}.{}: got multiple block_handlers {} but expected a singular dtype".format(
+            #         type(self).__name__,
+            #         '_handle_parse_match',
+            #         block_handlers
+            #     ))
+            else:
+                print("-"*10 + "Multiple Handlers" + "-"*10)
+                for b,a,g in zip(block_handlers, res.array, groups):
+                    self._handle_insert_result(a, b, g, single = single, append = append)
 
-                if block_handlers is not None and not isinstance(block_handlers, (dict, OrderedDict)):
-                    for s, a, h in zip(groups, res_iter, block_handlers):
-                        if h is not None:
-                            s = h(s, array = a)
-
-                        if single and append:
-                            a.append(s)
-                        elif append:
-                            a.extend(s, single = single)
-                        else:
-                            a.fill(s)
-
-                else: # otherwise we just ignore the block_handlers I guess ???
-                    for s, a in zip(groups, res_iter):
-                        if single and append:
-                            a.append(s)
-                        elif append:
-                            a.extend(s, single = single)
-                        else:
-                            a.fill(s)
         else:
             # we have named groups so we only use the data associated with them
             if block_handlers is None:
                 block_handlers = {}
             groups = gd if single else [ m.groupdict(default=default_value) for m in match ]
             # now we need to remerge the groupdicts by name if not single
-            if not single:
+            if not single_match:
                 groups = OrderedDict(
                     (
                         k,
                         np.array([ g[k] for g in groups ], dtype=str)
-                     ) for k in groups[0]
+                    ) for k in groups[0]
                 )
 
             for k, v in groups.items():
                 r = res[k]
                 if k in block_handlers:
                     handler = block_handlers[k]
-                    if handler is not None:
-                        v = handler(v, array = r)
-
                 else:
                     # unclear what we do in this case? By default we'll just not bother to handle it
                     handler = None
 
-                if append:
-                    if handler is not None:# and isinstance(v, (StructuredTypeArray, np.ndarray)):
-                        r.extend(v) # we'll assume the handler was smart?
-                    elif not single:
-                        r.extend(v, single = single)
-                    else:
-                        r.append(v)
-                else:
-                    r.fill(v)
+                self._handle_insert_result(r, handler, v, single = single, append = append)
 
     @classmethod
     def _get_regex_handler(cls, r):
@@ -467,61 +601,157 @@ class StringParser:
 
             # we should only ever end up here on Named and Capturing objects
             # these will cause infinite recursion if we don't strip their Capturing status somehow
-            kids = r.children
-            if len(kids) == 1:
-                r = kids[0]
-            else:
-                # we gotta find a way to mess with r so parse works right...?
-                import copy
-                r = copy.copy(r)
-                r.pat = lambda p, *a, **k : p
-                r.capturing = False
-                r.invalidate_cache()
+            import copy
+            r = copy.copy(r)
+            r.capturing = False
+            r.key = None
+            r.invalidate_cache()
 
-            def handler(t, r=r, cls = cls, array = None):
+            # kids = r.named_groups
+            # if kids is None:
+            #     kids = r.capturing_groups
+            # else:
+            #     kids = list(kids.values())
+            #     if kids[0] is r:
+            #         kids = r.capturing_groups
+            #
+            # if len(kids) == 0:
+            #     raise StringParserException("Can't create a block handler if there won't be a match...?")
+            # elif len(kids) == 1:
+            #     r = kids[0]
+
+            def handler(t, r=r, cls = cls, array = None, append = False):
+                """A default handler for a regex pattern, constructed to be flexible and to recurse cleanly
+                If you lots of data, you might want to hook in your own handler
+
+                :param t: text to parse
+                :type t: str | iterable[str] | iterable[iterable[str]]
+                :param r: the regex pattern we're subparsing with with
+                :type r: RegexPattern
+                :param cls: the StringParser class this comes from
+                :type cls: type
+                :param array: the results array passed through for shape determination and stuff
+                :type array: StructuredTypeArray
+                :return:
+                :rtype:
+                """
 
                 if array is not None and array.can_cast(t):
                     rr = t
                 elif isinstance(t, str):
-                    s = cls(r)
-                    rr = s.parse(t)
+                    rr = None
+                    if len(t) > 0:
+                        s = cls(r)
+                        if array is not None:
+                            append_depth = array.append_depth
+                        else:
+                            append_depth = 0
+                        if append is True or append is False:
+                            append = 0
+                        append = append + append_depth
+                        out_array = {'array':array, 'append':append + append_depth}
+                        s.parse(t, out = out_array)
                 else:
                     # we assume we got a list of strings...?
                     rr = None
+                    skipped_rows = 0 # needed to handle Optional patterns...
                     s = cls(r)
                     # at some point this will be pushed into a parse_vector
                     # function or something where we're more efficient
                     # about how we do the parsing and data caching
-                    for l in t:
+
+                    if array is not None:
+                        # One thing that needs to happen here is that the code needs some indicator that the
+                        # append depth level of the array needs to be incremented
+                        # Unfortunately we also need some way to manage this such that the changes won't lead to
+                        # depth blow-up
+                        # Like I think it'd be good for people to be able to specify the append level to the array
+                        # but we don't want the incremented append level to propagate back to here somehow...
+                        array.append_depth += 1
+                        append_depth = array.append_depth
+                        if append is True or append is False:
+                            append = 0
+                        append = append + append_depth
+                        out_array = {
+                            'array':array,
+                            'append':append + append_depth
+                        }
+                        array.filled_to[append] = 0
+                    # print(t, r)
+                    for i, l in enumerate(t):
                         # we gotta basically go line-by-line and add our stuff in
                         # the way we do this is by applying parse to each one of these things
                         # then calling append to add all the data in
-                        if rr is None:
+                        if array is not None:
+                            if len(l) == 0:
+                                array.append(None, axis = append)
+                            else:
+                                s.parse(l, dtypes=array.stype, out = out_array)
+                            array.filled_to[append] = i+1
+
+                        elif rr is None:
+
+                            if len(l) == 0:
+                                # nothing to do here, basically a 'None' return
+                                skipped_rows += 1
+                                continue
+
                             rr = s.parse(l)
+                            if skipped_rows > 0:
+                                def add_skips(r, skipped = skipped_rows):
+                                    a = r.array
+                                    if isinstance(a, np.ndarray):
+                                        r.extend(a[:skipped], prepend = True)
+                                    else:
+                                        for a2 in a:
+                                            add_skips(a2)
+                            else:
+                                add_skips = lambda p:None
+
                             # now that we have this object we need to basically add an axis to it
                             # the raw thing will be lower-dimensional that we want I think
                             # the way we handle that is then...? I guess hitting it all with an add_axis?
                             if isinstance(rr, StructuredTypeArray):
                                 rr.add_axis()
+                                add_skips(rr)
                             elif isinstance(rr, OrderedDict):
                                 for k in rr:
                                     rr[k].add_axis()
+                                    add_skips(rr[k])
                             else:
                                 for r in rr:
                                     r.add_axis()
+                                    add_skips(r)
 
                         else:
-                            r2 = s.parse(l)
+                            if len(l) == 0:
+                                r2 = None
+                            else:
+                                r2 = s.parse(l)
                             # we might have an OrderedDict or we might have a list or we might have a StructuredArray
                             # gotta make sure all of these cases are clean
                             if isinstance(rr, StructuredTypeArray):
+                                # print("y tho :>>", rr)
+                                # print(r2)
                                 rr.append(r2)
+                                # print(rr)
+                                # print("<<: y tho")
                             elif isinstance(rr, OrderedDict):
                                 for k in rr:
                                     rr[k].append(r2[k])
                             else:
                                 for r1, r2 in zip(rr, r2):
                                     r1.append(r2) # should I be using extend...?
+
+                    # gotta do some shape management because otherwise the array never knows how many times we iterated
+                    # through here...
+                    if array is not None:
+                        if append is True or append is False:
+                            pass
+                        elif append > 0:
+                            array.filled_to[append-1] += 1
+
+
                 return rr
 
         return handler
