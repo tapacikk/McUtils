@@ -170,25 +170,8 @@ ZMatParser = StringParser(
 
 def parser(strs):
 
-    # reg = ZMatParser.regex # type: RegexPattern
-    # print(repr(str(reg)))
     strss = '\n\n'.join(strs)
-
-    # print(strs[0])
-    # print(repr(str(ZMatParser.regex)))
-    # a = (strs[0])
-    # b = (ZMatParser.regex.search(strs[0]).group(0))
-    # raise Exception('{!r}\n{}\n\n{}'.format(str(ZMatParser.regex), a, b))
     fak = ZMatParser.parse_all(strss)
-
-    # print("This is me", strs[0])
-    # print(fak._array[2]._array[0]._array)
-
-    # raise Exception((fak,
-    #                  fak["Coordinates", 1]
-    #                  )
-    #                 )
-
     coords = [
         (
             fak["GaussianInts", 0],
@@ -197,27 +180,6 @@ def parser(strs):
         fak["Coordinates", 0, 0],
         fak["Coordinates", 1]
         ]
-
-    # num_sets = len(strs)
-    # strit = iter(strs)
-    # if num_sets>0:
-    #     zm = next(strit)
-    #     # print(zm)
-    #     first = pull_zmat(zm, regex=gaussian_zzz_c, num_header=3)
-    #     # print(first)
-    #     num_atoms = len(first[0])
-    #     if num_sets>1:
-    #         index_array = first[1]
-    #         coord_array = np.zeros((num_sets, num_atoms-1, 3), dtype=np.float64)
-    #         coord_array[0] = first[2]
-    #         for i, zm in enumerate(strs):
-    #             if i>0:
-    #                 coord_array[i] = pull_zmat_coords(zm)
-    #         coords = [first[0], index_array, coord_array]
-    #     else:
-    #         coords = [first[0], first[1], np.reshape(first[2], (1,) + first[2].shape)]
-    # else:
-    #     coords = None
 
     return coords
 mode       = "List"
@@ -351,10 +313,29 @@ tag_end    = " Optimization"
 # dnum_p = num_p + "D" + int_p
 # get_optdips_pat = "Dipole\s+="+"\s*"+grp_p(dnum_p)+"\s*"+grp_p(dnum_p)+"\s*"+grp_p(dnum_p)
 # get_optdips_re = re.compile(get_optdips_pat)
+
+DNumberPattern = RegexPattern((Number, "D", PositiveInteger), dtype = str)
+OptimizedDipolesParser = StringParser(
+    RegexPattern(
+        (
+            "Dipole", "=",
+            Repeating(
+                Capturing(DNumberPattern),
+                min=3,
+                max=3,
+                suffix=Optional(Whitespace)
+            )
+        ),
+        joiner=Whitespace
+    )
+)
+
 def parser(mom):
     """Parses dipole block, but only saves the dipole of the optimized structure"""
+    import numpy as np
+
     mom = "Dipole  =" + mom
-    grps = re.findall(get_optdips_re, mom)
+    grps = OptimizedDipolesParser.parse_all(mom)
     grp = grps[-1]
     dip_list = [x.replace("D", "E") for x in grp]
     dip_array = np.asarray(dip_list)
