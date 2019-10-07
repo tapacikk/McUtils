@@ -8,17 +8,16 @@ from ..Parsers import *
 #
 #                                           GaussianLogComponents
 #
-#region GaussianLogComponents
-GaussianLogComponents = { } # we'll register on this bit by bit
+# region GaussianLogComponents
+GaussianLogComponents = {}  # we'll register on this bit by bit
 # each registration should look like:
 
 # GaussianLogComponents["Name"] = {
 #     "description" : string, # used for docmenting what we have
-#     "tag_start"    : start_tag, # starting delimeter for a block
-#     "tag_end"      : end_tag, # ending delimiter for a block None means apply the parser upon tag_start
-#     "parser"      : parser, # function that'll parse the returned list of blocks (for "List") or single block (for "Single)
+#     "tag_start"   : start_tag, # starting delimeter for a block
+#     "tag_end"     : end_tag, # ending delimiter for a block None means apply the parser upon tag_start
+#     "parser"      : parser, # function that'll parse the returned list of blocks (for "List") or block (for "Single")
 #     "mode"        : mode # "List" or "Single"
-#
 # }
 
 ########################################################################################################################
@@ -26,29 +25,33 @@ GaussianLogComponents = { } # we'll register on this bit by bit
 #                                           InputZMatrix
 #
 
-#region InputZMatrix
-tag_start  = "Z-matrix:"
-tag_end    = """ 
+# region InputZMatrix
+tag_start = "Z-matrix:"
+tag_end   = """ 
 """
+
+
 def parser(zmat):
     return zmat
-mode       = "Single"
+
+
+mode = "Single"
 
 GaussianLogComponents["InputZMatrix"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           CartesianCoordinates
 #
 
-#region CartesianCoordinates
+# region CartesianCoordinates
 
  # the region thing is just a PyCharm hack to collapse the boilerplate here... Could also have done 5000 files
 
@@ -96,43 +99,44 @@ def cartesian_coordinates_parser(strs):
 
     return coords
 
+
 GaussianLogComponents["CartesianCoordinates"] = {
-    "tag_start" : plain_cartesian_start_tags,
-    "tag_end"   : cartesian_end_tag,
+    "tag_start": plain_cartesian_start_tags,
+    "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["ZMatCartesianCoordinates"] = {
-    "tag_start" : ('''Z-Matrix orientation:''', cart_delim, cart_delim),
-    "tag_end"   : cartesian_end_tag,
+    "tag_start": ('''Z-Matrix orientation:''', cart_delim, cart_delim),
+    "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["StandardCartesianCoordinates"] = {
-    "tag_start" : ('''Standard orientation:''', cart_delim, cart_delim),
-    "tag_end"   : cartesian_end_tag,
+    "tag_start": ('''Standard orientation:''', cart_delim, cart_delim),
+    "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["InputCartesianCoordinates"] = {
-    "tag_start" : ('''Input orientation:''', cart_delim, cart_delim),
-    "tag_end"   : cartesian_end_tag,
+    "tag_start": ('''Input orientation:''', cart_delim, cart_delim),
+    "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           ZMatrices
 #
 
-#region ZMatrices
-tag_start  = """Z-MATRIX (ANGSTROMS AND DEGREES)
+# region ZMatrices
+tag_start = """Z-MATRIX (ANGSTROMS AND DEGREES)
    CD    Cent   Atom    N1       Length/X        N2       Alpha/Y        N3        Beta/Z          J
  ---------------------------------------------------------------------------------------------------"""
-tag_end    = " ---------------------------------------------------------------------"
+tag_end   = " ---------------------------------------------------------------------"
 
 ZMatParser = StringParser(
     Repeating(
@@ -182,42 +186,46 @@ def parser(strs):
         ]
 
     return coords
-mode       = "List"
+mode = "List"
 
 GaussianLogComponents["ZMatrices"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           OptimizationParameters
 #
 
-#region OptimizationParameters
+# region OptimizationParameters
 
 tag_start  = "Optimization "
 tag_end    = """                        !
  ------------------------------------------------------------------------
 """
+
+
 def parser(pars):
     """Parses a optimizatioon parameters block"""
     did_opts = [ "Non-Optimized" not in par for par in pars]
     return did_opts, pars
-mode       = "List"
+
+
+mode = "List"
 
 GaussianLogComponents["OptimizationParameters"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
@@ -225,21 +233,23 @@ GaussianLogComponents["OptimizationParameters"] = {
 #
 
 #region MullikenCharges
-tag_start  = "Mulliken charges:"
-tag_end    = "Sum of Mulliken charges"
+tag_start = "Mulliken charges:"
+tag_end   = "Sum of Mulliken charges"
+
+
 def parser(charges):
     """Parses a Mulliken charges block"""
     return charges
-mode       = "List"
+mode = "List"
 
 GaussianLogComponents["MullikenCharges"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
@@ -249,31 +259,32 @@ GaussianLogComponents["MullikenCharges"] = {
 #region MultipoleMoments
 tag_start  = "Dipole moment ("
 tag_end    = " N-N="
+
+
 def parser(moms):
     """Parses a multipole moments block"""
     return moms
-mode       = "List"
+
+
+mode = "List"
 
 GaussianLogComponents["MultipoleMoments"] = {
-    "tag_start" : tag_start,
-    "tag_end"   : tag_end,
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           DipoleMoments
 #
 
-#region DipoleMoments
+# region DipoleMoments
 tag_start  = "Dipole moment ("
 tag_end    = "Quadrupole moment ("
-
-# get_dips_pat = "X=\s+"+grp_p(num_p)+"\s+Y=\s+"+grp_p(num_p)+"\s+Z=\s+"+grp_p(num_p)
-# get_dips_re = re.compile(get_dips_pat)
 
 dips_parser = StringParser(
     RegexPattern(
@@ -292,6 +303,8 @@ def parser(moms):
     return res.array
 mode       = "List"
 
+
+mode = "List"
 GaussianLogComponents["DipoleMoments"] = {
     "tag_start" : tag_start,
     "tag_end"   : tag_end,
@@ -299,14 +312,14 @@ GaussianLogComponents["DipoleMoments"] = {
     "mode"      : mode
 }
 
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           OptimizedDipoleMoments
 #
 
-#region DipoleMoments
+# region DipoleMoments
 tag_start  = " Dipole        ="
 tag_end    = " Optimization"
 
@@ -347,15 +360,119 @@ GaussianLogComponents["OptimizedDipoleMoments"] = {
     "parse_mode": parse_mode
 }
 
-#endregion
+# endregion
 
-#endregion
+########################################################################################################################
+#
+#                                           ScanEnergies
+#
+
+# region ScanEnergies
+
+tag_start = """ Summary of the potential surface scan:"""
+tag_end = """ Leave Link  108"""
+
+# Number = '(?:[\\+\\-])?\\d*\\.\\d+'
+# block_pattern = "\s*"+Number+"\s*"+Number+"\s*"+Number+"\s*"+Number+"\s*"+Number
+# block_re = re.compile(block_pattern)
+
+
+def parser(pars):
+    """Parses the scan summary block"""
+    vals = np.array(pars)
+    return vals
+
+
+mode = "Single"
+
+GaussianLogComponents["ScanEnergies"] = {
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
+    "parser"   : parser,
+    "mode"     : mode
+}
+
+# endregion
+
+########################################################################################################################
+#
+#                                           OptimizedScanEnergies
+#
+
+# region OptimizedScanEnergies
+
+tag_start = """ Summary of Optimized Potential Surface Scan"""
+tag_end = """ Largest change from initial coordinates is atom """
+
+
+eigsPattern = RegexPattern(
+    (
+        "Eigenvalues --",
+        Repeating(Capturing(Number), suffix=Optional(Whitespace))
+    ),
+    joiner=Whitespace
+)
+
+coordsPattern = RegexPattern(
+    (
+        Capturing(VariableName),
+        Repeating(Capturing(Number), suffix=Optional(Whitespace))
+    ),
+    prefix=Whitespace,
+    joiner=Whitespace
+)
+
+OptScanPat = StringParser(
+    RegexPattern(
+        (
+            Named(eigsPattern,
+                  "Eigenvalues"
+                  #parser=lambda t: np.array(Number.findall(t), 'float')
+                  ),
+            Named(Repeating(coordsPattern, suffix=Optional(Newline)), "Coordinates")
+        ),
+        joiner=Newline
+    )
+)
+
+def parser(pars):
+    """Parses the scan summary block and returns only the energies"""
+    from collections import OrderedDict
+    import numpy as np
+
+    par_data = OptScanPat.parse_all(pars)
+    energies_array = np.concatenate(par_data["Eigenvalues"])
+    coords = OrderedDict()
+    for coord_names, coord_values in zip(par_data["Coordinates"].array):
+        for k, v in zip(coord_names, coord_values):
+            if k not in coords:
+                coords[k] = [v]
+            else:
+                coords[k].append(v)
+    for k in coords:
+        coords[k] = np.concatenate(coords[k])
+
+    return energies_array, coords
+
+
+mode = "Single"
+
+GaussianLogComponents["OptimizedScanEnergies"] = {
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
+    "parser"   : parser,
+    "mode"     : mode
+}
+
+# endregion
+
+# endregion
 
 ########################################################################################################################
 #
 #                                           GaussianLogDefaults
 #
-#region GaussianLogDefaults
+# region GaussianLogDefaults
 GaussianLogDefaults = (
     "StartDateTime",
     "InputZMatrix",
@@ -364,13 +481,13 @@ GaussianLogDefaults = (
     "ComputerTimeElapsed",
     "EndDateTime"
 )
-#endregion
+# endregion
 
 ########################################################################################################################
 #
 #                                           GaussianLogOrdering
 #
-#region GaussianLogOrdering
+# region GaussianLogOrdering
 # defines the ordering in a GaussianLog file
 glk = ( # this must be sorted by what appears when
     "StartDateTime",
@@ -398,4 +515,4 @@ glk = ( # this must be sorted by what appears when
 )
 GaussianLogOrdering = { k:i for i, k in enumerate(glk) }
 del glk
-#endregion
+# endregion

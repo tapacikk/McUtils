@@ -15,12 +15,13 @@ __all__ = [
     "Plot3D", "ListPlot3D", "ScatterPlot3D", "WireframePlot3D", "ContourPlot3D"
 ]
 
+
 ######################################################################################################
 #
 #                                    'adaptive' function sampling
 #
 #
-#region function application
+# region function application
 def _apply_f(f, grid):
     try:
         vals = f(grid)
@@ -28,7 +29,9 @@ def _apply_f(f, grid):
         vals = np.vectorize(f)(grid)
 
     return vals
-def _semi_adaptive_sample_func(f, xmin, xmax, npts = 150, max_refines = 10, der_cut = 10^5):
+
+
+def _semi_adaptive_sample_func(f, xmin, xmax, npts=150, max_refines=10, der_cut=10 ^ 5):
 
     refines = 0
     der_good = False
@@ -46,12 +49,14 @@ def _semi_adaptive_sample_func(f, xmin, xmax, npts = 150, max_refines = 10, der_
             npts *= 2
             refines += 1
 
-    if refines == 0: # edge case
+    if refines == 0:  # edge case
         grid = np.linspace(xmin, xmax, npts)
         vals = _apply_f(f, grid)
 
     return grid, vals, npts, refines
-def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts = 15, max_refines = 10, der_cut = 10^5):
+
+
+def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts=15, max_refines=10, der_cut=10 ^ 5):
     from ..Zachary import finite_difference
 
     refines = 0
@@ -62,26 +67,27 @@ def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts = 15, max_refine
         pass
     else:
         while refines < max_refines and not der_good:
-            grid = np.array(np.meshgrid( np.linspace(xmin, xmax, npts), np.linspace(ymin, ymax, npts) )).T
+            grid = np.array(np.meshgrid(np.linspace(xmin, xmax, npts), np.linspace(ymin, ymax, npts))).T
             vals = _apply_f(f, grid)
             ders = finite_difference(grid, vals, (1, 1), (5, 5))
             der_good = not np.any(abs(ders) > der_cut)
             npts *= 2
             refines += 1
 
-    if refines == 0: # edge case
+    if refines == 0:  # edge case
         grid = np.linspace(xmin, xmax, npts)
         vals = _apply_f(f, grid)
 
     return grid, vals, npts, refines
-#endregion
+# endregion
+
 
 ######################################################################################################
 #
 #                                    Plot data methods
 #
 #
-#region plot data prep
+# region plot data prep
 def _interp2DData(gpts, **opts):
     from scipy.interpolate import griddata
 
@@ -95,11 +101,11 @@ def _interp2DData(gpts, **opts):
     ydiffs = np.abs(np.diff(y)); yh = np.min(xdiffs[np.nonzero(ydiffs)])
 
     num_x = (xmin - xmax) / xh
-    if 5 > num_x or num_x < 10000: # don't want to get too wild
-        num_x = 100 # okay but let's get a little wild
+    if 5 > num_x or num_x < 10000:  # don't want to get too wild
+        num_x = 100  # okay but let's get a little wild
     num_y = (ymin - ymax) / yh
-    if 5 > num_y or num_y < 10000: # don't want to get too wild
-        num_y = 100 # okay but let's get a little wild
+    if 5 > num_y or num_y < 10000:  # don't want to get too wild
+        num_y = 100  # okay but let's get a little wild
 
     # import sys
     # print(num_x, num_y, file = sys.stderr)
@@ -110,6 +116,8 @@ def _interp2DData(gpts, **opts):
     vals = griddata(gpts[:, (0, 1)], gpts[:, 2], mesh, **opts)
 
     return xmesh, ymesh, vals.T
+
+
 def _get_2D_plotdata(func, xrange):
     if not callable(func):
         fvalues = xrange
@@ -125,6 +133,8 @@ def _get_2D_plotdata(func, xrange):
             xrange = res[0]
             fvalues = res[1]
     return xrange, fvalues
+
+
 def _get_3D_plotdata(func, xrange, yrange):
     if not callable(func):
         fvalues = yrange
@@ -145,7 +155,8 @@ def _get_3D_plotdata(func, xrange, yrange):
             fvalues = res[1]
 
     return xrange, yrange, fvalues
-#endregion
+# endregion
+
 
 ######################################################################################################
 #
@@ -166,10 +177,10 @@ class Plot(Graphics):
 
     def __init__(self,
                  *params,
-                 method = 'plot',
-                 figure = None, axes = None, subplot_kw = None,
-                 plot_style = None,
-                 colorbar = None,
+                 method='plot',
+                 figure=None, axes=None, subplot_kw=None,
+                 plot_style=None,
+                 colorbar=None,
                  **opts
                  ):
         """
@@ -191,7 +202,7 @@ class Plot(Graphics):
         :type opts:
         """
 
-        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
+        super().__init__(figure=figure, axes=axes, subplot_kw=subplot_kw)
         self.method = getattr(self.axes, method)
 
         # we're gonna set things up so that we can have delayed evaluation of the plotting.
@@ -216,6 +227,7 @@ class Plot(Graphics):
     def _get_plot_data(self, func, xrange):
         xrange, fvalues = _get_2D_plotdata(func, xrange)
         return xrange, fvalues
+
     def _plot_data(self, *data, **plot_style):
         return self.method(*self._get_plot_data(*data), **plot_style)
 
@@ -225,37 +237,53 @@ class Plot(Graphics):
         if not self._initialized:
             self._initialize()
         return self.graphics
+
     def add_colorbar(self, **kw):
-        fig = self.figure # type: matplotlib.figure.Figure
-        ax = self.axes # type: matplotlib.axes.Axes
+        fig = self.figure  # type: matplotlib.figure.Figure
+        ax = self.axes  # type: matplotlib.axes.Axes
         fig.colorbar(self.graphics, **kw)
+
 
 class ScatterPlot(Plot):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, method = "scatter", **kwargs)
+        super().__init__(*args, method="scatter", **kwargs)
+
+
 class ListScatterPlot(ScatterPlot):
     def __init__(self, griddata, **opts):
         super().__init__(griddata[:, 0], griddata[:, 1], **opts)
+
+
 class ErrorBarPlot(Plot):
     """A Plot object that plots error bars"""
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, method = "errorbar", **kwargs)
+        super().__init__(*args, method="errorbar", **kwargs)
+
+
 class ListErrorBarPlot(ErrorBarPlot):
     """A Plot that pulls the errorbar data from a list"""
     def __init__(self, griddata, **opts):
         super().__init__(griddata[:, 0], griddata[:, 1], **opts)
+
+
 class StickPlot(Plot):
     """A Plot object that plots sticks"""
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, method = "stem", **kwargs)
+        super().__init__(*args, method="stem", **kwargs)
+
+
 class ListStickPlot(StickPlot):
     """A Plot object that plots sticks from a list"""
     def __init__(self, griddata, **opts):
         super().__init__(griddata[:, 0], griddata[:, 1], **opts)
+
+
 class TriPlot(Plot):
     """A Plot object that plots a triangulation bars"""
     def __init__(self, *args, **opts):
-        super().__init__(args, method = 'triplot', **opts)
+        super().__init__(args, method='triplot', **opts)
+
+
 class ListTriPlot(TriPlot):
     """A Plot that pulls the triangulation data from a list"""
     def __init__(self, griddata, **opts):
@@ -273,9 +301,9 @@ class DataPlot(Plot):
     """
     def __init__(self,
                  *params,
-                 plot_style = None, method = None,
-                 figure = None, axes = None, subplot_kw = None,
-                 colorbar = None,
+                 plot_style=None, method=None,
+                 figure=None, axes=None, subplot_kw=None,
+                 colorbar=None,
                  **opts
                  ):
         """
@@ -297,67 +325,76 @@ class DataPlot(Plot):
         :type opts:
         """
         super().__init__(*params,
-                         plot_style = plot_style, method = method,
-                         colorbar = colorbar, figure = figure,
-                         axes = axes, subplot_kw = subplot_kw,
+                         plot_style=plot_style, method=method,
+                         colorbar=colorbar, figure=figure,
+                         axes=axes, subplot_kw=subplot_kw,
                          **opts
                          )
+
     def _get_plot_data(self, data):
         return data,
+
 
 class HistogramPlot(DataPlot):
     """
     Makes a Histogram of data
     """
     def __init__(*args, **kwargs):
-        super().__init__(*args, method = 'hist', **kwargs)
+        super().__init__(*args, method='hist', **kwargs)
+
+
 class HistogramPlot2D(DataPlot):
     """
     Makes a 2D histogram of data
     """
     def __init__(*args, **kwargs):
-        super().__init__(*args, method = 'hist2d', **kwargs)
+        super().__init__(*args, method='hist2d', **kwargs)
+
 
 class VerticalLinePlot(Plot):
     """
     Plots a bunch of vertical lines
     """
     def __init__(*args, **kwargs):
-        super().__init__(*args, method = 'vlines', **kwargs)
-    def _get_plot_data(self, x, y = 1.0):
+        super().__init__(*args, method='vlines', **kwargs)
+
+    def _get_plot_data(self, x, y=1.0):
         if isinstance(y, (int, float)):
             y = [0, y]
         return (x, y)
+
     def _plot_data(self, *data, **plot_style):
         x, y = data
         return self.method(x, *y, **plot_style)
+
 
 class ArrayPlot(DataPlot):
     """
     Plots an array as an image
     """
     def __init__(self, *params,
-                 plot_style = None, colorbar = None,
-                 figure=None, axes=None, subplot_kw = None,
-                 method = 'imshow',
+                 plot_style=None, colorbar=None,
+                 figure=None, axes=None, subplot_kw=None,
+                 method='imshow',
                  **opts
                  ):
         super().__init__(*params,
-                         plot_style = plot_style, method = method,
-                         colorbar = colorbar, figure = figure,
-                         axes = axes, subplot_kw = subplot_kw,
+                         plot_style=plot_style, method=method,
+                         colorbar=colorbar, figure=figure,
+                         axes=axes, subplot_kw=subplot_kw,
                          **opts
                          )
+
 
 class TensorPlot(GraphicsGrid):
     """
     Plots slices of a tensor as a grid
     """
     def __init__(self, tensor,
-                 nrows = None, ncols = None,
-                 plot_style = None, colorbar = None,
-                 figure=None, axes=None, subplot_kw = None,
-                 method = 'imshow',
+                 nrows=None, ncols=None,
+                 plot_style=None, colorbar=None,
+                 figure=None, axes=None, subplot_kw=None,
+                 method='imshow',
                  **opts
                  ):
         from operator import mul
@@ -365,7 +402,7 @@ class TensorPlot(GraphicsGrid):
         tensor_shape = tensor.shape
         total_dim = reduce(mul, tensor_shape[:-2], 1)
         if nrows is None or ncols is None:
-            if len(tensor_shape) == 4: # best case
+            if len(tensor_shape) == 4:  # best case
                 nrows, ncols = tensor_shape[:2]
             else:
                 if nrows is not None:
@@ -376,9 +413,9 @@ class TensorPlot(GraphicsGrid):
                     ncols = 5
                     nrows = total_dim // ncols
         super().__init__(nrows=nrows, ncols=ncols,
-                         figure = figure,
-                         axes = axes,
-                         subplot_kw = subplot_kw
+                         figure=figure,
+                         axes=axes,
+                         subplot_kw=subplot_kw
                          )
 
         tensor = tensor.reshape((total_dim,) + tensor_shape[-2:])
@@ -387,9 +424,9 @@ class TensorPlot(GraphicsGrid):
                 graphics = self.axes[i, j]
                 self.axes[i, j] = ArrayPlot(
                     tensor[nrows * i + j],
-                    figure = graphics,
-                    plot_style = plot_style,
-                    colorbar = colorbar,
+                    figure=graphics,
+                    plot_style=plot_style,
+                    colorbar=colorbar,
                     method=method,
                     **opts
                 )
@@ -405,12 +442,12 @@ class Plot2D(Plot):
     A base class for plots of 3D data but plotted on 2D axes
     """
     def __init__(self, *params,
-                 plot_style = None,
-                 method = 'contour',
-                 colorbar = None,
-                 figure = None,
-                 axes = None,
-                 subplot_kw = None,
+                 plot_style=None,
+                 method='contour',
+                 colorbar=None,
+                 figure=None,
+                 axes=None,
+                 subplot_kw=None,
                  **opts
                  ):
         """
@@ -432,33 +469,39 @@ class Plot2D(Plot):
         :type opts:
         """
         super().__init__(*params,
-                         plot_style = plot_style, method = method,
-                         colorbar = colorbar, figure = figure,
-                         axes = axes, subplot_kw = subplot_kw,
+                         plot_style=plot_style, method=method,
+                         colorbar=colorbar, figure=figure,
+                         axes=axes, subplot_kw=subplot_kw,
                          **opts
                          )
+
     def _get_plot_data(self, func, xrange, yrange):
         return _get_3D_plotdata(func, xrange, yrange)
+
 
 class ContourPlot(Plot2D):
     def __init__(self, *params, **opts):
         super().__init__(*params, method='contourf', **opts)
+
+
 class DensityPlot(Plot2D):
     def __init__(self, *params, **opts):
         super().__init__(*params, method='pcolormesh', **opts)
+
+
 class ListPlot2D(Plot2D):
     """
     Convenience class that handles the interpolation first
     """
     def __init__(self,
                  *params,
-                 plot_style = None,
-                 method = 'contour',
-                 colorbar = None,
-                 figure = None,
-                 axes = None,
-                 subplot_kw = None,
-                 interpolate = True,
+                 plot_style=None,
+                 method='contour',
+                 colorbar=None,
+                 figure=None,
+                 axes=None,
+                 subplot_kw=None,
+                 interpolate=True,
                  **opts
                  ):
         """
@@ -483,13 +526,13 @@ class ListPlot2D(Plot2D):
         """
         self.interpolate = interpolate
         super().__init__(*params,
-                         plot_style = plot_style, method = method,
-                         colorbar = colorbar, figure = figure,
-                         axes = axes, subplot_kw = subplot_kw,
+                         plot_style=plot_style, method=method,
+                         colorbar=colorbar, figure=figure,
+                         axes=axes, subplot_kw=subplot_kw,
                          **opts
                          )
 
-    def _get_plot_data(self, *griddata, interpolate = None):
+    def _get_plot_data(self, *griddata, interpolate=None):
         if interpolate is None:
             interpolate = self.interpolate
         if len(griddata) == 3:
@@ -503,30 +546,38 @@ class ListPlot2D(Plot2D):
 
         return (x, y, z)
 
+
 class ListContourPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
         super().__init__(griddata, method='contourf', **opts)
+
+
 class ListDensityPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
         super().__init__(griddata, method='pcolormesh', **opts)
+
+
 class ListTriContourPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
-        super().__init__(griddata, method = 'tricontourf', interpolate = False, **opts)
+        super().__init__(griddata, method='tricontourf', interpolate=False, **opts)
+
+
 class ListTriDensityPlot(ListPlot2D):
     def __init__(self, griddata, **opts):
-        super().__init__(griddata, method = 'tripcolor', interpolate = False, **opts)
+        super().__init__(griddata, method='tripcolor', interpolate=False, **opts)
+
 
 ######################################################################################################
 #
 #                                    3D Plots on 3D Axes
 #
 #
-class Plot3D(Graphics3D): # basically a mimic of the Plot class but inheriting from Graphics3D
+class Plot3D(Graphics3D):  # basically a mimic of the Plot class but inheriting from Graphics3D
     """A base class for 3D plots"""
     def __init__(self, *params,
-                 plot_style = None,
-                 method = 'plot_surface', colorbar = None,
-                 figure = None, axes = None, subplot_kw = None,
+                 plot_style=None,
+                 method='plot_surface', colorbar=None,
+                 figure=None, axes=None, subplot_kw=None,
                  **opts
                  ):
         """
@@ -548,7 +599,7 @@ class Plot3D(Graphics3D): # basically a mimic of the Plot class but inheriting f
         :type opts:
         """
 
-        super().__init__(figure = figure, axes = axes, subplot_kw = subplot_kw)
+        super().__init__(figure=figure, axes=axes, subplot_kw=subplot_kw)
         self.method = getattr(self, method)
 
         # we're gonna set things up so that we can have delayed evaluation of the plotting.
@@ -572,8 +623,10 @@ class Plot3D(Graphics3D): # basically a mimic of the Plot class but inheriting f
 
     def _get_plot_data(self, func, xrange, yrange):
         return _get_3D_plotdata(func, xrange, yrange)
+
     def _plot_data(self, *data, **plot_style):
         return self.method(*self._get_plot_data(*data), **plot_style)
+
     def plot(self, *params, **plot_style):
         plot_style = dict(self.plot_style, **plot_style)
         self.graphics = self._plot_data(*params, **plot_style)
@@ -582,28 +635,34 @@ class Plot3D(Graphics3D): # basically a mimic of the Plot class but inheriting f
         return self.graphics
 
     def add_colorbar(self, **kw):
-        fig = self.figure # type: matplotlib.figure.Figure
-        ax = self.axes # type: matplotlib.axes.Axes
+        fig = self.figure  # type: matplotlib.figure.Figure
+        ax = self.axes  # type: matplotlib.axes.Axes
         fig.colorbar(self.graphics, **kw)
+
 
 class ScatterPlot3D(Plot3D):
     """
     Creates a ScatterPlot of 3D data
     """
     def __init__(self, *params, **opts):
-        super().__init__(*params, method = 'scatter', **opts)
+        super().__init__(*params, method='scatter', **opts)
+
+
 class WireframePlot3D(Plot3D):
     """
     Creates a Wireframe mesh plot of 3D data
     """
     def __init__(self, *params, **opts):
-        super().__init__(*params, method = 'plot_wireframe', **opts)
+        super().__init__(*params, method='plot_wireframe', **opts)
+
+
 class ContourPlot3D(Plot3D):
     """
     Creates a 3D ContourPlot of 3D data
     """
     def __init__(self, *params, **opts):
-        super().__init__(*params, method = 'contourf', **opts)
+        super().__init__(*params, method='contourf', **opts)
+
 
 class ListPlot3D(Plot3D):
     """
@@ -611,13 +670,13 @@ class ListPlot3D(Plot3D):
     """
     def __init__(self,
                  *params,
-                 plot_style = None,
-                 method = 'contour',
-                 colorbar = None,
-                 figure = None,
-                 axes = None,
-                 subplot_kw = None,
-                 interpolate = True,
+                 plot_style=None,
+                 method='contour',
+                 colorbar=None,
+                 figure=None,
+                 axes=None,
+                 subplot_kw=None,
+                 interpolate=True,
                  **opts
                  ):
         """
@@ -642,13 +701,13 @@ class ListPlot3D(Plot3D):
         """
         self.interpolate = interpolate
         super().__init__(*params,
-                         plot_style = plot_style, method = method,
-                         colorbar = colorbar, figure = figure,
-                         axes = axes, subplot_kw = subplot_kw,
+                         plot_style=plot_style, method=method,
+                         colorbar=colorbar, figure=figure,
+                         axes=axes, subplot_kw=subplot_kw,
                          **opts
                          )
 
-    def _get_plot_data(self, *griddata, interpolate = None):
+    def _get_plot_data(self, *griddata, interpolate=None):
         if interpolate is None:
             interpolate = self.interpolate
         if len(griddata) == 3:
@@ -662,9 +721,11 @@ class ListPlot3D(Plot3D):
 
         return (x, y, z)
 
+
 class ListTriPlot3D(ListPlot3D):
     """
     Creates a triangulated surface plot in 3D
     """
     def __init__(self, *params, **opts):
-        super().__init__(*params, method = 'plot_trisurf', interpolate = False, **opts)
+        super().__init__(*params, method='plot_trisurf', interpolate=False, **opts)
+
