@@ -310,10 +310,6 @@ GaussianLogComponents["DipoleMoments"] = {
 tag_start  = " Dipole        ="
 tag_end    = " Optimization"
 
-# dnum_p = num_p + "D" + int_p
-# get_optdips_pat = "Dipole\s+="+"\s*"+grp_p(dnum_p)+"\s*"+grp_p(dnum_p)+"\s*"+grp_p(dnum_p)
-# get_optdips_re = re.compile(get_optdips_pat)
-
 DNumberPattern = RegexPattern((Number, "D", PositiveInteger), dtype = str)
 OptimizedDipolesParser = StringParser(
     RegexPattern(
