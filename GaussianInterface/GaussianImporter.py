@@ -5,7 +5,7 @@ Implements an importer for Gaussian output formats
 import numpy as np, re, math, io
 from .GaussianLogComponents import GaussianLogComponents, GaussianLogDefaults, GaussianLogOrdering
 from .GaussianFChkComponents import FormattedCheckpointComponents, FormattedCheckpointCommonNames
-from ..Parsers import FileStreamReader, FileCheckPoint, FileStreamReaderException
+from ..Parsers import FileStreamReader, FileStreamCheckPoint, FileStreamReaderException
 
 __all__ = ["GaussianFChkReader", "GaussianLogReader"]
 
@@ -74,7 +74,7 @@ class GaussianFChkReader(FileStreamReader):
         :return:
         :rtype: dict
         """
-        with FileCheckPoint(self):
+        with FileStreamCheckPoint(self):
             tag_line = self.readline()
             if tag_line is b'':
                 return None

@@ -30,10 +30,8 @@ tag_start = "Z-matrix:"
 tag_end   = """ 
 """
 
-
 def parser(zmat):
     return zmat
-
 
 mode = "Single"
 
@@ -56,14 +54,11 @@ GaussianLogComponents["InputZMatrix"] = {
  # the region thing is just a PyCharm hack to collapse the boilerplate here... Could also have done 5000 files
 
 cart_delim = """ --------------------------------------------------------------"""
-plain_cartesian_start_tags = (
+cartesian_start_tag = FileStreamerTag(
     """Center     Atomic      Atomic             Coordinates (Angstroms)""",
-    cart_delim
-    )
+    follow_ups= cart_delim
+)
 cartesian_end_tag = cart_delim
-
-# I'm gonna have to update this to work with the expanded Regex support...
-# cartesian_re_c = re.compile(ws_p.join(["("+int_p+")"]*3)+ws_p+cart_p)
 
 CartParser = StringParser(
     Repeating(
@@ -99,27 +94,26 @@ def cartesian_coordinates_parser(strs):
 
     return coords
 
-
 GaussianLogComponents["CartesianCoordinates"] = {
-    "tag_start": plain_cartesian_start_tags,
+    "tag_start": cartesian_start_tag,
     "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["ZMatCartesianCoordinates"] = {
-    "tag_start": ('''Z-Matrix orientation:''', cart_delim, cart_delim),
+    "tag_start": FileStreamerTag('''Z-Matrix orientation:''', follow_ups = (cart_delim, cart_delim)),
     "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["StandardCartesianCoordinates"] = {
-    "tag_start": ('''Standard orientation:''', cart_delim, cart_delim),
+    "tag_start": FileStreamerTag('''Standard orientation:''', follow_ups = (cart_delim, cart_delim)),
     "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
 }
 GaussianLogComponents["InputCartesianCoordinates"] = {
-    "tag_start": ('''Input orientation:''', cart_delim, cart_delim),
+    "tag_start": FileStreamerTag('''Input orientation:''', follow_ups = (cart_delim, cart_delim)),
     "tag_end"  : cartesian_end_tag,
     "parser"   : cartesian_coordinates_parser,
     "mode"     : "List"
@@ -376,12 +370,12 @@ tag_end = """ Leave Link  108"""
 # block_pattern = "\s*"+Number+"\s*"+Number+"\s*"+Number+"\s*"+Number+"\s*"+Number
 # block_re = re.compile(block_pattern)
 
-
 def parser(pars):
     """Parses the scan summary block"""
-    vals = np.array(pars)
-    return vals
+    import numpy as np
 
+    vals = np.array(pars, dtype = float)
+    return vals
 
 mode = "Single"
 
@@ -402,7 +396,12 @@ GaussianLogComponents["ScanEnergies"] = {
 # region OptimizedScanEnergies
 
 tag_start = """ Summary of Optimized Potential Surface Scan"""
-tag_end = """ Largest change from initial coordinates is atom """
+tag_end = FileStreamerTag(
+    tag_alternatives = (
+        """ Largest change from initial coordinates is atom """,
+        """-"""*25
+    )
+)
 
 
 eigsPattern = RegexPattern(
@@ -440,10 +439,14 @@ def parser(pars):
     from collections import OrderedDict
     import numpy as np
 
+    if pars is None:
+        return None
+
     par_data = OptScanPat.parse_all(pars)
     energies_array = np.concatenate(par_data["Eigenvalues"])
     coords = OrderedDict()
-    for coord_names, coord_values in zip(par_data["Coordinates"].array):
+    cdz = [a.array for a in par_data["Coordinates"].array]
+    for coord_names, coord_values in zip(*cdz):
         for k, v in zip(coord_names, coord_values):
             if k not in coords:
                 coords[k] = [v]

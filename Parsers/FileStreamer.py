@@ -1,7 +1,9 @@
 from mmap import mmap
+
 __all__ = [
     "FileStreamReader",
-    "FileCheckPoint",
+    "FileStreamCheckPoint",
+    "FileStreamerTag",
     "FileStreamReaderException"
 ]
 
@@ -9,17 +11,21 @@ __all__ = [
 #
 #                                           FileStreamReader
 #
-class FileCheckPoint:
+class FileStreamCheckPoint:
     """
     A checkpoint for a file that can be returned to when parsing
     """
-    def __init__(self, parent):
-        self._parent = parent
-        self._chk = parent.tell()
+    def __init__(self, parent, revert = True):
+        self.parent = parent
+        self.chk = parent.tell()
+        self._revert = revert
+    def revert(self):
+        self.parent.seek(self.chk)
     def __enter__(self, ):
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._parent.seek(self._chk)
+        if self._revert:
+            self.revert()
 
 class FileStreamReaderException(IOError):
     pass
@@ -59,51 +65,92 @@ class FileStreamReader:
     def tell(self):
         return self._stream.tell()
 
-    def find_tag(self, tag, skip_tag = True, seek = True):
+    def _find_tag(self, tag,
+                  skip_tag = True,
+                  seek = True,
+                  direction = 'forward'
+                  ):
         """Finds a tag in a file
 
-        :param header: a string specifying a header to look for
-        :type header: str
-        :return: if header was found
-        :rtype: bool
+        :param header: a tag specifying a header to look for + optional follow-up processing/offsets
+        :type header: FileStreamerTag
+        :return: position of tag
+        :rtype: int
+        """
+        with FileStreamCheckPoint(self, revert = False) as chk:
+            enc_tag = tag.encode(self._encoding)
+            mode = self._stream.find if direction == 'forward' else self._stream.rfind
+            pos = mode(enc_tag)
+            if seek and pos > 0:
+                if skip_tag:
+                    pos = pos + len(enc_tag) if direction == 'forward' else pos - len(enc_tag)
+                self._stream.seek(pos)
+            elif pos == -1:
+                chk.revert()
+        return pos
+    def find_tag(self, tag,
+                 skip_tag = None,
+                 seek = None
+                 ):
+        """Finds a tag in a file
+
+        :param header: a tag specifying a header to look for + optional follow-up processing/offsets
+        :type header: FileStreamerTag
+        :return: position of tag
+        :rtype: int
         """
         if isinstance(tag, str):
-            tags = (tag,)
+            tags = FileStreamerTag(tag)
         else:
             tags = tag
 
         pos = -1
-        for i, tag in enumerate(tags):
-            enc_tag = tag.encode(self._encoding)
-            pos = self._stream.find(enc_tag)
-            if seek and pos > 0:
-                if skip_tag:
-                    pos = pos + len(enc_tag)
+        if skip_tag is None:
+            skip_tag = tags.skip_tag
+        if seek is None:
+            seek = tags.seek
+        for i, tag in enumerate(tags.tags):
+            pos = self._find_tag(tag,
+                                 skip_tag = skip_tag,
+                                 seek = seek
+                                 )
+            if pos == -1:
+                continue
+
+            follow_ups = tags.skips
+            if follow_ups is not None:
+                for tag in follow_ups:
+                    p = self.find_tag(tag)
+                    if p > -1:
+                        pos = p
+
+            offset = tags.offset
+            if offset is not None:
+                pos = self._stream.tell() + offset
                 self._stream.seek(pos)
-            elif pos < 0:
-                break
+
         return pos
 
     def get_tagged_block(self, tag_start, tag_end, block_size = 500):
         """Pulls the string between tag_start and tag_end
 
         :param tag_start:
-        :type tag_start: str or None
+        :type tag_start: FileStreamerTag or None
         :param tag_end:
-        :type tag_end: str
+        :type tag_end: FileStreamerTag
         :return:
         :rtype:
         """
         if tag_start is not None:
             start = self.find_tag(tag_start)
             if start > 0:
-                with FileCheckPoint(self):
+                with FileStreamCheckPoint(self):
                     end = self.find_tag(tag_end, seek=False)
                 if end > 0:
                     return self._stream.read(end-start).decode(self._encoding)
         else:
             start = self.tell()
-            with FileCheckPoint(self):
+            with FileStreamCheckPoint(self):
                 end = self.find_tag(tag_end, seek=False)
             if end > 0:
                 return self._stream.read(end-start).decode(self._encoding)
@@ -131,7 +178,7 @@ class FileStreamReader:
                 "tag_end"
             ))
         if mode == "List":
-            with FileCheckPoint(self):
+            with FileStreamCheckPoint(self):
                 # we do this in a checkpointed fashion only for list-type tokens
                 # for all other tokens we introduce an ordering to apply when checking
                 # does it need to be done like this... probably not?
@@ -175,3 +222,23 @@ class FileStreamReader:
             if parser is not None:
                 block = parser(block)
             return block
+
+class FileStreamerTag:
+    def __init__(self,
+                 tag_alternatives = None,
+                 follow_ups = None,
+                 offset = None,
+                 direction = "forward",
+                 skip_tag = True,
+                 seek = True
+                 ):
+        if tag_alternatives is None:
+            raise FileStreamReaderException("{} needs to be supplied with some set of tag_alternatives to look for".format(
+                type(self).__name__
+            ))
+        self.tags = (tag_alternatives,) if isinstance(tag_alternatives, str) else tag_alternatives
+        self.skips = (follow_ups,) if isinstance(follow_ups, (str, FileStreamerTag)) else follow_ups
+        self.offset = offset
+        self.direction = direction
+        self.skip_tag = skip_tag
+        self.seek = seek
