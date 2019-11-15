@@ -122,7 +122,7 @@ class FiniteDifferenceDerivative:
             num_displacements = np.product(stencil_widths)
             displacement_shape = (num_displacements, ) + coords.shape[1:]
 
-            displacements = np.zeros(displacement_shape)
+            displacements = np.zeros(displacement_shape) # fuck ton of zeros
             base_roll = tuple(np.arange(len(stencil_widths)))
 
             coord = np.unique(coord, axis=0)

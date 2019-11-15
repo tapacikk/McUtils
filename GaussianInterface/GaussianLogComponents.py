@@ -370,12 +370,41 @@ tag_end = """ Leave Link  108"""
 # block_pattern = "\s*"+Number+"\s*"+Number+"\s*"+Number+"\s*"+Number+"\s*"+Number
 # block_re = re.compile(block_pattern)
 
-def parser(pars):
-    """Parses the scan summary block"""
-    import numpy as np
+ScanEnergiesParser = StringParser(
+    RegexPattern(
+        (
+            Named(
+                Repeating(Capturing(Word), prefix=Whitespace),
+                "Keys",
+                suffix=NonCapturing([Whitespace, Newline])
+            ),
+            Named(
+                Repeating(
+                    Repeating(
+                        Alternatives([PositiveInteger, Number], dtype=float),
+                        prefix=Whitespace
+                        ),
+                    suffix=Newline
+                ),
+                "Coords",
+                prefix=Newline,
+                handler=StringParser.array_handler()
+            ),
+        ),
+        joiner=NonCapturing(Repeating([Whitespace, Repeating(["-"])]))
+    )
+)
 
-    vals = np.array(pars, dtype = float)
-    return vals
+def parser(block):
+    """Parses the scan summary block"""
+    import re
+
+    r = ScanEnergiesParser.regex # type: RegexPattern
+    parse=ScanEnergiesParser.parse(block)
+    return {
+        "coords":parse["Keys"].array,
+        "values":parse["Coords"].array
+    }
 
 mode = "Single"
 

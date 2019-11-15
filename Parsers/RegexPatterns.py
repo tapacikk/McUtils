@@ -60,6 +60,7 @@ class RegexPattern:
                  repetitions = None,
                  key = None,
                  joiner = "",
+                 join_function = None,
                  wrapper_function = None,
                  suffix = None, # often we need a start or end RegexPattern for the match, but we don't actually care the data in it
                  prefix = None,
@@ -75,8 +76,8 @@ class RegexPattern:
         :type name: str
         :param dtype:
         :type dtype:
-        :param repeated:
-        :type repeated:
+        :param repetitions:
+        :type repetitions:
         :param key:
         :type key:
         :param joiner:
@@ -87,6 +88,18 @@ class RegexPattern:
         :type parents:
         :param wrapper_function:
         :type wrapper_function:
+        :param suffix:
+        :type suffix:
+        :param prefix:
+        :type prefix:
+        :param parser:
+        :type parser:
+        :param handler:
+        :type handler:
+        :param capturing:
+        :type capturing:
+        :param allow_inner_captures:
+        :type allow_inner_captures:
         """
 
         if isinstance(pat, (tuple, list)) and children is None:
@@ -125,6 +138,11 @@ class RegexPattern:
             parents = list(parents)
         self._parents = parents # we need this so we can propagate recompile calls all the way up
         self._joiner = joiner
+        if join_function is None:
+            join_function = lambda j, k, no_capture=False: j.join(k)
+        elif join_function == "safe":
+            join_function = self._join_kids
+        self._join_function = join_function # sometimes we might want to join the kids in a slightly different way...
         self._wrapper_function = wrapper_function
         self._combine_args = ()
         self._combine_kwargs = {}
@@ -194,6 +212,20 @@ class RegexPattern:
     @joiner.setter
     def joiner(self, j):
         self._joiner = j
+        self._cached = None
+
+    @property
+    def join_function(self):
+        """
+
+        :return:
+        :rtype: function
+        """
+        return self._join_function
+
+    @join_function.setter
+    def join_function(self, j):
+        self._join_function = j
         self._cached = None
     @property
     def suffix(self):
@@ -384,12 +416,18 @@ class RegexPattern:
         if self._wrapper_function is not None:
             self._wrapper_function(self, *args, **kwargs)
 
+    @staticmethod
+    def _join_kids(joiner, kids, no_capture=True):
+        if len(kids) > 1:
+            kids = [ group(k, no_capture=no_capture) if not is_grouped(k) else k for k in kids ]
+        return joiner.join(kids)
     def build(self,
               joiner = None,
               prefix = None,
               suffix = None,
               recompile = True,
-              no_captures = False
+              no_captures = False,
+              verbose = False
               ):
         # might want to add a flag that checks if a block has already been wrapped in no-capture? That would cut down
         # on regex length...
@@ -405,6 +443,9 @@ class RegexPattern:
                 ) for c in self._children
             ]
 
+            if verbose:
+                print("Compiling regex from: {}".format(kids))
+
             if joiner is None:
                 joiner = self.joiner
             if prefix is None:
@@ -414,15 +455,18 @@ class RegexPattern:
             joiner = joiner.build( no_captures = no_caps ) if isinstance(joiner, RegexPattern) else joiner if joiner is not None else ""
             prefix = prefix.build( no_captures = no_caps ) if isinstance(prefix, RegexPattern) else prefix if prefix is not None else ""
             suffix = suffix.build( no_captures = no_caps ) if isinstance(suffix, RegexPattern) else suffix if suffix is not None else ""
+            if verbose:
+                print("Joiner:{}\n Prefix:{}\n Suffix:{}".format(joiner, prefix, suffix))
 
             # the big question now is how do I figure out if a Capturing was applied...?
             # I guess since I'm walking _down_ the tree I don't even need to check for that
             # I can just check self.capturing... huh wow
             if no_captures and self.capturing:
                 # I guess we temporarily make our pattern a non-capturing one...?
+
                 comp = self.combine(
                     #unclear whether I should be putting the prefix/suffix inside or outside this ._.
-                    prefix + joiner.join(kids) + suffix,
+                    prefix + self.join_function(joiner, kids, no_capture=True) + suffix,
                     *self._combine_args,
                     no_capture = True,
                     **self._combine_kwargs
@@ -430,7 +474,7 @@ class RegexPattern:
             else:
                 comp = self.combine(
                     #unclear whether I should be putting the prefix/suffix inside or outside this ._.
-                    prefix + joiner.join(kids) + suffix,
+                    prefix + self.join_function(joiner, kids, no_capture=(not self.capturing)) + suffix,
                     *self._combine_args,
                     no_capture = (not self.capturing),
                     **self._combine_kwargs
@@ -440,6 +484,9 @@ class RegexPattern:
                     recompile= True if recompile else ('No Cache' if (comp.has_capturing_child and recomp_captures) else False),
                     no_captures = no_caps # is this right...?
                 )
+
+            if verbose:
+                print("End Regex:", comp)
 
             if no_captures: # basically no_captures means operate in a not-quite-right world?
                 return comp
@@ -542,6 +589,7 @@ class RegexPattern:
                  repetitions = None,
                  key = None,
                  joiner = None,
+                 join_function = None,
                  wrap_function = None,
                  suffix = None,
                  prefix = None,
@@ -568,6 +616,8 @@ class RegexPattern:
             new.key = key
         if joiner is not None:
             new._joiner = joiner
+        if join_function is not None:
+            new._join_function = join_function
         if dtype is not None:
             new._dtype = dtype
         if repetitions is not None:
@@ -681,6 +731,11 @@ def optional(p, no_capture = False):
         return non_capturing(p) + "?"
     else:
         return p + "?"
+def alternatives(p, no_capture = False):
+    if is_grouped(p):
+        return p
+    else:
+        return group(p, no_capture=no_capture)
 def shortest(p, no_capture = False):
     if not p.endswith("*") | p.endswith("+"):
         if not is_grouped(p):
@@ -718,8 +773,6 @@ def named(p, n, no_capture = False):
         return non_cap_p(p)
     else:
         return "(?P<"+n+">"+p+")"
-def alternatives(p, no_capture = False):
-    return "|".join(p)
 
 # wrapper patterns
 grp_p = group # capturing group
@@ -732,7 +785,7 @@ opnb_p = lambda p, no_capture = False: r"(?:"+p+r")?" # optional non-binding gro
 Optional = RegexPattern(optional,
                         "Optional"
                         )
-Alternatives = RegexPattern(lambda p, no_capture = False:p, joiner="|")
+Alternatives = RegexPattern(alternatives, joiner="|")
 
 lm_p = repeating
 Longest = RegexPattern(lm_p, "Longest")
@@ -828,7 +881,7 @@ XYZLine = RegexPattern(aNcart_p, "XYZLine", dtype=(str, (float, (3,))))
 
 Empty = RegexPattern("", "Empty")
 
-Newline = RegexPattern("\n", "Newline", dtype=str)
+Newline = RegexPattern(r"\n", "Newline", dtype=str)
 
 ZMatPattern = Capturing(AtomName)
 for i in range(3):

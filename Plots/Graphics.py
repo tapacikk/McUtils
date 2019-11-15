@@ -17,7 +17,6 @@ class GraphicsException(Exception):
 #
 from abc import *
 
-
 class GraphicsBase(metaclass=ABCMeta):
     """
     The base class for all things Graphics
@@ -42,6 +41,7 @@ class GraphicsBase(metaclass=ABCMeta):
                  axes = None,
                  subplot_kw = None,
                  parent = None,
+                 non_interactive = None,
                  **opts
                  ):
         """
@@ -58,8 +58,11 @@ class GraphicsBase(metaclass=ABCMeta):
         :param opts:
         :type opts:
         """
+
         if subplot_kw is None:
             subplot_kw = {}
+
+        self.non_interactive = non_interactive
         self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
         self.set_options(**opts)
 
@@ -208,14 +211,20 @@ class GraphicsBase(metaclass=ABCMeta):
         """
         return type(self)(**self.opts)
 
-    def show(self):
+    def show(self, reshow = True):
         from .VTKInterface import VTKWindow
 
         if isinstance(self.figure, VTKWindow):
             self.figure.show()
         else:
             import matplotlib.pyplot as plt
-            if not self._shown:
+
+            if self.non_interactive:
+                plt.ioff()
+            elif self.non_interactive is False:
+                plt.ion()
+
+            if reshow or not self._shown:
                 self.set_options(**self.opts)  # matplotlib is dumb so it makes sense to just reset these again...
                 plt.show()
                 self._shown = True
@@ -253,6 +262,24 @@ class GraphicsBase(metaclass=ABCMeta):
         for a in all_things:
             a.remove()
 
+    def _repr_html_(self):
+        # hacky, but hopefully enough to make it work?
+        return self.figure._repr_html_()
+
+    def to_png(self):
+        import io
+        buf = io.BytesIO()
+        fig = self.figure
+        fig.savefig(buf,
+                    format='png',
+                    facecolor = self.background #-_- stupid MPL
+                    )
+        buf.seek(0)
+        return buf
+
+    def _repr_png_(self):
+        # currently assumes a matplotlib backend...
+        return self.to_png().read()
 
 ########################################################################################################################
 #
@@ -539,6 +566,7 @@ class Graphics(GraphicsBase):
     @background.setter
     def background(self, bg):
         self._background = bg
+        self.figure.set_facecolor(bg)
         self.axes.set_facecolor(bg)
 
     # set plot scales
@@ -565,7 +593,6 @@ class Graphics(GraphicsBase):
             self.axes.set_yscale(*y.val, **y.opts)
         elif y is not None:
             self.axes.set_yscale(y)
-
 
 ########################################################################################################################
 #
