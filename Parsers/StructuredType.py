@@ -607,9 +607,11 @@ class StructuredTypeArray:
             append_chops = 1 if isinstance(key, int) else len(key) # how many dimensions in we dove for the append
 
             if isinstance(key, int) and self._array.shape[0] == key:
-                self.extend_array(axis = 0)
-            elif self._array.shape[append_chops-1] == key[-1]:
-                self.extend_array(axis = append_chops-1)
+                self.extend_array(axis=0)
+            else:
+                for i, k in enumerate(key):
+                    if k == self._array.shape[i]:
+                        self.extend_array(axis=i)
 
             if value is not None: # we use None as a placeholder for the default value because we need it for Optional patterns
 
@@ -631,7 +633,11 @@ class StructuredTypeArray:
                         else:
                             # we only allow 1D padding for now...
                             num_els = len(value)
-                            num_needed = len(self._array[key])
+                            try:
+                                num_needed = len(self._array[key])
+                            except:
+                                print(key, self._array.shape)
+                                raise
                             if num_els < num_needed:
                                 repeats = int(np.ceil(num_needed/num_els))
                                 value = np.tile(value, repeats)[:num_needed]
