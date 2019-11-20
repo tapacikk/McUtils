@@ -9,6 +9,7 @@ except ImportError:
     raise # we'll make this work later
     def _StirlingS1(n):
         pass
+
 def StirlingS1(n):
     """simple recursive definition of the StirlingS1 function in Mathematica
     implemented at the C level mostly just for fun
@@ -26,6 +27,7 @@ try:
 except ImportError:
     def _Binomial(n):
         pass
+
 def Binomial(n):
     """simple recursive Binomial coefficients up to r, computed all at once to vectorize later ops
     wastes space, justified by assuming a small-ish value for n

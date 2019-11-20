@@ -180,7 +180,8 @@ FUNCWITHARGS(ZachLib_UnevenFiniteDifferenceWeights) {
 static PyMethodDef ZachLibMethods[] = {
     {"UnevenFiniteDifferenceWeights", ZachLib_UnevenFiniteDifferenceWeights, METH_VARARGS, ""},
     {"StirlingS1", ZachLib_StirlingS1, METH_VARARGS, ""},
-    {"Binomial", ZachLib_Binomial, METH_VARARGS, ""}
+    {"Binomial", ZachLib_Binomial, METH_VARARGS, ""},
+    {NULL, NULL, 0, NULL}
 };
 
 const char ZachLib_doc[] = "ZachLib is a layer for doing performance critical stuff";
