@@ -292,9 +292,12 @@ dips_parser = StringParser(
 )
 def parser(moms):
     """Parses a multipole moments block"""
+    import numpy as np
     # print(repr(str(dips_parser.regex)), file=sys.stderr)
-    res = dips_parser.parse_all("\n".join(moms))
-    return res.array
+    # mommms="\n".join(moms)
+    hack = [ dips_parser.regex.search(m).groups() for m in moms ]
+    chack = np.array(hack, dtype=float)
+    return chack
 mode       = "List"
 
 
@@ -401,6 +404,7 @@ def parser(block):
 
     r = ScanEnergiesParser.regex # type: RegexPattern
     parse=ScanEnergiesParser.parse(block)
+    
     return {
         "coords":parse["Keys"].array,
         "values":parse["Coords"].array
