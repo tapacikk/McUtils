@@ -125,6 +125,7 @@ class Mesh(np.ndarray):
             else:
                 return cls.MeshType_Unstructured
         elif ndim == 2: # this means we were fed grid points
+            grid = np.asarray(grid)
             meshes = grid.T
             mesh_points = [np.unique(x) for x in meshes]
             mesh_lens = [ len(x) for x in mesh_points ]

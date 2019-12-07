@@ -182,7 +182,7 @@ class Interpolator:
         import matplotlib.pyplot as plt
         x = self.grid[:, 0]
         xvals = np.unique(x)
-        xyzz = np.column_stack((*self.grid, self.vals))
+        xyzz = np.column_stack((x, self.grid[:, 1], self.vals))
         slices = [xyzz[x == xv] for xv in xvals]
         maxx = max(len(slIce) for slIce in slices)
         idx = np.argmax([len(slIce) for slIce in slices])
