@@ -287,16 +287,18 @@ dips_parser = StringParser(
             "Y=", Capturing(Number),
             "Z=", Capturing(Number)
         ),
-        joiner=Whitespace
+        joiner=Whitespace,
+        dtype = (float, (3,))
     )
 )
 def parser(moms):
     """Parses a multipole moments block"""
     # print(repr(str(dips_parser.regex)), file=sys.stderr)
     res = dips_parser.parse_all("\n".join(moms))
+    # raise Exception(dips_parser.regex.findall("\n".join(moms)))
+    # raise Exception(res._array)
     return res.array
 mode       = "List"
-
 
 mode = "List"
 GaussianLogComponents["DipoleMoments"] = {

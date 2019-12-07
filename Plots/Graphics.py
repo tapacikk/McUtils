@@ -301,6 +301,7 @@ class Graphics(GraphicsBase):
                  scale=None,
                  image_size=None,
                  background='white',
+                 colorbar = None,
                  **kwargs
                  ):
         super().__init__(
@@ -318,6 +319,7 @@ class Graphics(GraphicsBase):
             event_handlers=event_handlers,
             animate=animate,
             background=background,
+            colorbar = colorbar,
             **kwargs
         )
 
@@ -331,6 +333,7 @@ class Graphics(GraphicsBase):
                     ticks_style=None,
                     image_size=None,
                     background=None,
+                    colorbar = None,
                     **parent_opts
                     ):
 
@@ -372,6 +375,10 @@ class Graphics(GraphicsBase):
         self._background = background
         if self._background is not None:
             self.background = background
+
+        self._colorbar = colorbar
+        if self._colorbar is not None:
+            self.colorbar = colorbar
 
     # set plot label
     @property
@@ -568,6 +575,24 @@ class Graphics(GraphicsBase):
         self._background = bg
         self.figure.set_facecolor(bg)
         self.axes.set_facecolor(bg)
+
+    @property
+    def colorbar(self):
+        return self._colorbar
+    @colorbar.setter
+    def colorbar(self, c):
+        self._colorbar = c
+        if self._colorbar is True:
+            self.add_colorbar()
+        elif isinstance(self._colorbar, dict):
+            self.add_colorbar(**self.colorbar)
+    def add_colorbar(self, graphics = None, norm = None, cmap = None, **kw):
+        fig = self.figure  # type: matplotlib.figure.Figure
+        ax = self.axes  # type: matplotlib.axes.Axes
+        if graphics is None:
+            import matplotlib.cm as cm
+            graphics = cm.ScalarMappable(norm=norm, cmap=cmap)
+        fig.colorbar(graphics, **kw)
 
     # set plot scales
     @property
@@ -950,6 +975,7 @@ class GraphicsGrid:
                  axes=None,
                  subplot_kw=None,
                  _subplot_init=None,
+                 tighten = False,
                  **opts
                  ):
 
@@ -963,16 +989,45 @@ class GraphicsGrid:
             **opts
         )
         self.shape = (nrows, ncols)
+        self._colorbar_axis = None # necessary hack for only GraphicsGrid
         self.set_options(**opts)
+        if tighten:
+            self.figure.tight_layout()
 
-    def set_options(self, image_size = None, **ignored):
+    def set_options(self,
+                    image_size = None,
+                    colorbar = None,
+                    spacings = (.1, .1),
+                    padding = (.05, .05),
+                    **ignored
+                    ):
+
         self._image_size = image_size
         if image_size is not None:
             self.image_size = image_size
         else:
-            self._image_size = tuple(s/72. for s in self.figure.get_size_inches())
+            first = self.axes[0]
+            if not isinstance(first, GraphicsBase):
+                first = first[0]
+            main_size = first.figure.get_size_inches()
+            width = main_size[0] * self.shape[1] * 72
+            height = main_size[1] * self.shape[0] * 72
+            self.image_size = (width, height)
 
-    def _init_suplots(self, nrows, ncols, figure, axes, graphics_class, *args,
+        self._colorbar = colorbar
+        if colorbar is not None:
+            self.colorbar = colorbar
+
+        self._spacings = spacings
+        if spacings is not None:
+            self.spacings = spacings
+
+        self._padding = padding
+        if padding is not None:
+            self.padding = padding
+
+    def _init_suplots(self,
+                      nrows, ncols, figure, axes, graphics_class, *args,
                       subplot_kw=None, _subplot_init=None,
                       fig_kw=None,
                       **kw
@@ -996,12 +1051,17 @@ class GraphicsGrid:
                 subplot_kw = {}
             if fig_kw is None:
                 fig_kw = {}
+            if 'figsize' not in fig_kw:
+                fig_kw['figsize'] = (4*ncols, 4*nrows)
             figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, **fig_kw)
 
             if isinstance(axes, matplotlib.axes.Axes):
                 axes = [[axes]]
             elif isinstance(axes[0], matplotlib.axes.Axes):
                 axes = [axes]
+
+            if 'image_size' not in kw:
+                kw['image_size'] = (300, 300)
             for i in range(nrows):
                 for j in range(ncols):
                     axes[i][j] = graphics_class(figure=figure, axes=axes[i][j], **kw)
@@ -1023,9 +1083,17 @@ class GraphicsGrid:
         try:
             i, j = item
         except ValueError:
-            return self.axes[i]
+            return self.axes[item]
         else:
             return self.axes[i][j]
+
+    def __setitem__(self, item, val):
+        try:
+            i, j = item
+        except ValueError:
+            self.axes[item] = val
+        else:
+            self.axes[i][j] = val
 
     # set size
     @property
@@ -1063,6 +1131,104 @@ class GraphicsGrid:
 
             self._image_size = (w, h)
             self.figure.set_size_inches(wi, hi)
+
+    @property
+    def colorbar(self):
+        return self._colorbar
+
+    @colorbar.setter
+    def colorbar(self, c):
+        self._colorbar = c
+        if self._colorbar is True:
+            self.add_colorbar()
+        elif isinstance(self._colorbar, dict):
+            self.add_colorbar(**self.colorbar)
+
+    @property
+    def spacings(self):
+        return self._spacings
+    @spacings.setter
+    def spacings(self, spacings):
+        try:
+            w, h = spacings
+        except ValueError:
+            w = h = spacings
+
+        self._spacings = (w, h)
+        self.figure.subplots_adjust(wspace=w, hspace=h)
+
+    @property
+    def padding(self):
+        return self._padding
+
+    @padding.setter
+    def padding(self, padding):
+        try:
+            w, h = padding
+        except (ValueError, TypeError):
+            w = h = padding
+        try:
+            wx, wy = w
+        except (ValueError, TypeError):
+            wx = wy = w
+        try:
+            hx, hy = h
+        except (ValueError, TypeError):
+            hx = hy = h
+
+        self._padding = ((wx, wy), (hx, hy))
+        self.figure.subplots_adjust(left=wx, right=1-wy, bottom=hx, top=1-hy)
+
+    @property
+    def padding_left(self):
+        return self._padding[0][0]
+    @padding_left.setter
+    def padding_left(self, p):
+        wx, wy = self._padding[0]
+        hx, hy = self._padding[1]
+        self._padding = ((p, wy), (hx, hy))
+        self.figure.subplots_adjust(left=p)
+    @property
+    def padding_right(self):
+        return self._padding[0][1]
+    @padding_right.setter
+    def padding_right(self, p):
+        wx, wy = self._padding[0]
+        hx, hy = self._padding[1]
+        self._padding = ((wx, p), (hx, hy))
+        self.figure.subplots_adjust(right=1-p)
+    @property
+    def padding_top(self):
+        return self._padding[1][1]
+    @padding_top.setter
+    def padding_top(self, p):
+        wx, wy = self._padding[0]
+        hx, hy = self._padding[1]
+        self._padding = ((wx, wy), (hx, p))
+        self.figure.subplots_adjust(top=1 - p)
+    @property
+    def padding_bottom(self):
+        return self._padding[1][0]
+    @padding_bottom.setter
+    def padding_bottom(self, p):
+        wx, wy = self._padding[0]
+        hx, hy = self._padding[1]
+        self._padding = ((wx, wy), (p, hy))
+        self.figure.subplots_adjust(top=p)
+
+    def add_colorbar(self, graphics=None, norm=None, cmap=None, **kw):
+        fig = self.figure  # type: matplotlib.figure.Figure
+        ax = self.axes  # type: matplotlib.axes.Axes
+        if graphics is None:
+            import matplotlib.cm as cm
+            graphics = cm.ScalarMappable(norm=norm, cmap=cmap)
+        if 'cax' not in kw:
+            if self._colorbar_axis is None:
+                self.padding_right = .1
+                self._colorbar_axis = fig.add_axes([0.93, 0.15, 0.02, 0.7])
+            kw['cax'] = self._colorbar_axis
+
+        fig.colorbar(graphics, **kw)
 
     def show(self):
         self.axes[0][0].show()

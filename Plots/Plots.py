@@ -180,7 +180,6 @@ class Plot(Graphics):
                  method='plot',
                  figure=None, axes=None, subplot_kw=None,
                  plot_style=None,
-                 colorbar=None,
                  **opts
                  ):
         """
@@ -211,7 +210,6 @@ class Plot(Graphics):
             plot_style = {}
         self.plot_style = plot_style
         self.plot_opts = opts
-        self.colorbar = colorbar
         self._initialized = False
 
         if len(params) > 0:
@@ -219,10 +217,6 @@ class Plot(Graphics):
 
     def _initialize(self):
         self.set_options(**self.plot_opts)
-        if self.colorbar:
-            self.add_colorbar()
-        elif isinstance(self.colorbar, dict):
-            self.add_colorbar(**self.colorbar)
 
     def _get_plot_data(self, func, xrange):
         xrange, fvalues = _get_2D_plotdata(func, xrange)
@@ -238,11 +232,10 @@ class Plot(Graphics):
             self._initialize()
         return self.graphics
 
-    def add_colorbar(self, **kw):
-        fig = self.figure  # type: matplotlib.figure.Figure
-        ax = self.axes  # type: matplotlib.axes.Axes
-        fig.colorbar(self.graphics, **kw)
-
+    def add_colorbar(self, graphics = None, norm = None,  **kw):
+        if graphics is None and norm is None:
+            graphics = self.graphics
+        super().add_colorbar(graphics = graphics, **kw)
 
 class ScatterPlot(Plot):
     def __init__(self, *args, **kwargs):

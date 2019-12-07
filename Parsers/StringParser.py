@@ -320,11 +320,18 @@ class StringParser:
         else:
             # handlers = None
             # if we have no named groups to work with we'll create a block handler for the capturing groups?
+
             handlers = regex.capturing_groups
             if handlers is not None:
                 if isinstance(handlers, RegexPattern):
                     handlers = [ handlers ]
-                handlers = [ cls._get_regex_handler(r) for r in handlers if r.dtype is not DisappearingType ]
+
+                dtype = regex.dtype
+                if dtype.is_simple and len(handlers) == dtype.shape[-1]:
+                    handlers = [ None ] # means we _wanted_ to have one block, but we had to declare it over multiple CapturingGroups
+                else:
+                    handlers = [ cls._get_regex_handler(r) for r in handlers if r.dtype is not DisappearingType ]
+
 
         return handlers
     @classmethod
@@ -374,8 +381,27 @@ class StringParser:
 
     #region Match Handler
     def _split_match_groups(self, groups, handlers, res):
+        """This is _supposed_ to be splitting my groups so that the appropriate handler handles them, but it's missing a corner case
+        Sometimes we have something like:
+            RegexPattern((Capturing(Number), ..., Capturing(Number), ..., Capturing(Number))
 
-        if (handlers is None) or len(groups[0]) == len(handlers): # the is None clause might be unnecessary...
+        This happens to make 3 handlers even though it's really a single array of data...
+        Then the grouping sees this and says "Aha! Must transpose"
+        In reality it shouldn't even be bothering to touch it though...
+
+        :param groups:
+        :type groups:
+        :param handlers:
+        :type handlers:
+        :param res:
+        :type res:
+        :return:
+        :rtype:
+        """
+
+        if handlers is None:
+            gg = groups
+        elif len(groups[0]) == len(handlers): # the is None clause might be unnecessary...
             # just need to transpose the groups, basically,
             gg = groups.T
         elif len(groups[0]) < len(handlers):
@@ -387,7 +413,7 @@ class StringParser:
                     len(groups[0])
                 )
             )
-        else:
+        elif all(isinstance(r, StructuredTypeArray) for r in res):
             # we have _more_ groups than handlers so we need to chunk them up
             blocks = [ r.block_size for r in res ]
             gg = [ None ] * len(blocks)
@@ -398,6 +424,10 @@ class StringParser:
                 else:
                     gg[i] = groups[:, sliced:sliced+b]
                 sliced += b
+        elif len(handlers) == 1:
+            gg = [groups]
+        else:
+            gg = groups
         # print(">"*50)
         # print("Got in groups:", groups)
         # print("Got out:", gg)
@@ -545,9 +575,8 @@ class StringParser:
             # the number of groups should align with the number of block_handlers, of course, which _should_ be connected
             # to what res looks like
 
-            if not single_match:# and not res.is_simple:
-                # means we need to split up the groups
-                groups = self._split_match_groups(groups, block_handlers, res.array)
+            if not single_match:
+                groups = self._split_match_groups(groups, block_handlers, res._array)
 
             if block_handlers is None:
                 # print("-"*10 + "No Handler" + "-"*10)
@@ -565,7 +594,7 @@ class StringParser:
             else:
                 # print("-"*10 + "Multiple Handlers" + "-"*10)
                 # print(block_handlers, res, groups)
-                for b,a,g in zip(block_handlers, res.array, groups):
+                for b,a,g in zip(block_handlers, res._array, groups):
                     self._handle_insert_result(a, b, g, single = single, append = append)
 
         else:
