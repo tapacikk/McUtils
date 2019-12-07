@@ -997,8 +997,8 @@ class GraphicsGrid:
     def set_options(self,
                     image_size = None,
                     colorbar = None,
-                    spacings = (.1, .1),
-                    padding = (.05, .05),
+                    spacings = (.2, .2),
+                    padding = ((.025, .2), (.125, .05)),
                     **ignored
                     ):
 
