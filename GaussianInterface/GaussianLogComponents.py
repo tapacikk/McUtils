@@ -316,7 +316,7 @@ GaussianLogComponents["DipoleMoments"] = {
 tag_start  = " Dipole        ="
 tag_end    = " Optimization"
 
-DNumberPattern = RegexPattern((Number, "D", PositiveInteger), dtype = str)
+DNumberPattern = RegexPattern((Number, "D", Integer), dtype = str)
 OptimizedDipolesParser = StringParser(
     RegexPattern(
         (
@@ -337,11 +337,20 @@ def parser(mom):
     import numpy as np
 
     mom = "Dipole  =" + mom
-    grps = OptimizedDipolesParser.parse_all(mom)
-    grp = grps[-1]
-    dip_list = [x.replace("D", "E") for x in grp]
-    dip_array = np.asarray(dip_list)
-    return dip_array.astype("float64")
+    # print(">>>>>", mom)
+    grps = OptimizedDipolesParser.parse_iter(mom)
+    match = None
+    for match in grps:
+        pass
+
+    if match is None:
+        return np.array([])
+    else:
+        grp = match.value
+        dip_list = [x.replace("D", "E") for x in grp]
+        dip_array = np.asarray(dip_list)
+        return dip_array.astype("float64")
+
 mode       = "List"
 parse_mode = "Single"
 

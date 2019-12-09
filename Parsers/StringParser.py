@@ -262,6 +262,34 @@ class StringParser:
 
         return res
 
+    class MatchIterator:
+        class Match:
+            def __init__(self, parent, block):
+                self.parent = parent
+                self.block = block
+            @property
+            def value(self):
+                res = self.parent.parser._set_up_result_arrays(self.parent.dtypes)
+                self.parent.parser._handle_parse_match(self.block, res, block_handlers=self.parent.block_handlers)
+                return res
+
+        def __init__(self, parser, match_iter, num_results, dtypes, block_handlers):
+            if num_results is not None:
+                import itertools as it
+                match_iter = it.islice(match_iter, None, num_results)
+
+            self.parser = parser
+            self.dtypes = dtypes
+            self.block_handlers = block_handlers
+            self.match_iter = match_iter
+
+        def __iter__(self):
+            for match in self.match_iter:
+                yield self.Match(self, match)
+        def __next__(self):
+            match = next(self.match_iter)
+            return self.Match(self, match)
+
     def parse_iter(self, txt,
                   regex = None,
                   num_results = None,
@@ -282,14 +310,8 @@ class StringParser:
             regex = regex.compiled
 
         match_iter = re.finditer(regex, txt)
-        if num_results is not None:
-            import itertools as it
-            match_iter = it.islice(match_iter, None, num_results)
+        return self.MatchIterator(self, match_iter, num_results, dtypes, block_handlers)
 
-        for match in match_iter:
-            res = self._set_up_result_arrays(dtypes)
-            self._handle_parse_match(match, res, block_handlers)
-            yield res
 
     #region RegexPattern data extractors
     @classmethod

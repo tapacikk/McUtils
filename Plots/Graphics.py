@@ -286,7 +286,9 @@ class GraphicsBase(metaclass=ABCMeta):
 #                                               Graphics
 #
 class Graphics(GraphicsBase):
-    """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
+    """
+    A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with
+    """
     def __init__(self, *args,
                  figure=None,
                  axes=None,
