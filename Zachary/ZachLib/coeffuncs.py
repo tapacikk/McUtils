@@ -3,41 +3,61 @@ coeffuncs defines the functions we use when computing coefficients for FD
 """
 import numpy as np
 
-try:
-    from .lib import StirlingS1 as _StirlingS1
-except ImportError:
-    raise # we'll make this work later
-    def _StirlingS1(n):
-        pass
-
 def StirlingS1(n):
-    """simple recursive definition of the StirlingS1 function in Mathematica
-    implemented at the C level mostly just for fun
+    """Computes the Stirling numbers
 
     :param n:
     :type n:
     :return:
     :rtype:
     """
-
-    return _StirlingS1(n)
-
-try:
-    from .lib import Binomial as _Binomial
-except ImportError:
-    def _Binomial(n):
-        pass
+    stirlings = np.eye(n)
+    for i in range(n):
+        for j in range(i+1):
+            stirlings[i, j] = (-1)**(i-j) *( (i-1)*abs(stirlings[i-1, j]) + abs(stirlings[i-1, j-1]))
+    return stirlings
 
 def Binomial(n):
-    """simple recursive Binomial coefficients up to r, computed all at once to vectorize later ops
-    wastes space, justified by assuming a small-ish value for n
+    """
 
     :param n:
     :type n:
     :return:
     :rtype:
     """
-    return _Binomial(n)
+    binomials = np.eye(n)
+    binomials[:, 0] = 1
+    for i in range(2, n):
+        if i%2 == 0:
+            k = i/2 + 1
+        else:
+            k = (i+1)/2
+        for j in range(int(k)):
+            binomials[i, j] = binomials[i, i-j] = binomials[i-1, j-1] + binomials[i-1, j]
+    return binomials
+
+# def _StirlingS1(n):
+#     """simple recursive definition of the StirlingS1 function in Mathematica
+#     implemented at the C level mostly just for fun
+#
+#     :param n:
+#     :type n:
+#     :return:
+#     :rtype:
+#     """
+#
+#     return _StirlingS1(n)
+#
+# def Binomial(n):
+#     """simple recursive Binomial coefficients up to r, computed all at once to vectorize later ops
+#     wastes space, justified by assuming a small-ish value for n
+#
+#     :param n:
+#     :type n:
+#     :return:
+#     :rtype:
+#     """
+#     return _Binomial(n)
 
 def GammaBinomial(s, n):
     """Generalized binomial gamma function
@@ -87,11 +107,11 @@ def EvenFiniteDifferenceWeights(m, s, n):
 
         which is shown by J.M. here: https://chat.stackexchange.com/transcript/message/49528234#49528234
 
-    :param m:
+    :param m: the order of the derivative requested
     :type m:
-    :param s:
+    :param s: the offset of the point at which the derivative is requested from the left edge of the stencil
     :type s:
-    :param n:
+    :param n: the number of points used in the stencil
     :type n:
     :return:
     :rtype:
@@ -110,12 +130,13 @@ def EvenFiniteDifferenceWeights(m, s, n):
     fcos = facs[m]/facs # factorial coefficient (m!/j!)
 
     coeffs = np.zeros(n)
+    bs = bges
+    ss = stirlings
+    fs = fcos
+    # print(n, m, s, fcos, bges)
     for k in range(n):
         # each of these bits here should go from
         # Binomial[s, r - j] * StirlingS1[j, m] *
-        bs = bges
-        ss = stirlings
-        fs = fcos
         bits = np.zeros(n-k)
         for r in range(k+1, n+1):
             bits[r-k-1] = np.dot(bs[-r:], ss[:r]*fs[:r])
@@ -124,6 +145,8 @@ def EvenFiniteDifferenceWeights(m, s, n):
         cs = (-1)**(np.arange(n-k)) * bins[k:n, k]
         # print(bits, file=sys.stderr)
         coeffs[k] = np.dot(cs, bits)
+
+    # print(coeffs)
 
     return coeffs
 

@@ -101,6 +101,7 @@ def split_vib_e2(e2):
     :return:
     :rtype:
     """
+
     l = len(e2)
     n = int(1 + np.sqrt(1 + l/9))
 
@@ -111,7 +112,7 @@ def split_vib_e2(e2):
 
     return {
         "Frequencies"    : freq,
-        "ReducedMasses"   : red_m,
+        "ReducedMasses"  : red_m,
         "ForceConstants" : frc_const,
         "Intensities"    : intense
     }

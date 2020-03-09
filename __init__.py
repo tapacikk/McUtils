@@ -12,6 +12,7 @@ import McUtils.Misc
 import McUtils.Parsers
 import McUtils.Plots
 import McUtils.Zachary
+import McUtils.Coordinerds
 
 __all__ = [
     "CPotentialLib",
@@ -20,5 +21,6 @@ __all__ = [
     "Misc",
     "Parsers",
     "Plots",
-    "Zachary"
+    "Zachary",
+    "Coordinerds"
 ]

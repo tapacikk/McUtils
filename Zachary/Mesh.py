@@ -3,9 +3,15 @@ Represents an n-dimensional grid, used by Interpolator and (eventually) FiniteDi
 know what kind of data is fed in
 """
 
-import numpy as np
+import numpy as np, enum
 
-__all__ = [ "Mesh" ]
+__all__ = [ "Mesh", "MeshType" ]
+
+class MeshType(enum.Enum):
+    Structured = "structured"
+    Unstructured = "unstructured"
+    SemiStructured = "semistructured"
+    Indeterminate = "indeterminate"
 
 class Mesh(np.ndarray):
     """
@@ -13,10 +19,6 @@ class Mesh(np.ndarray):
     """
     # we define a bunch of MeshType attributes so that the string names can change up or whatever but the interface
     # can remain consistent
-    MeshType_Structured = "structured"
-    MeshType_Unstructured = "structured"
-    MeshType_SemiStructured = "unsemistructured"
-    MeshType_Indeterminate = "indeterminate"
 
     # subclassing np.ndarray is weird... maybe I don't even want to do it... but I _think_ I do
     def __new__(cls,
@@ -50,13 +52,13 @@ class Mesh(np.ndarray):
 
     @property
     def mesh_spacings(self):
-        if self.mesh_type == self.MeshType_Structured:
+        if self.mesh_type == MeshType.Structured:
             return [ m[1] - m[0] for m in self.subgrids ]
         else:
             return None
     @property
     def subgrids(self):
-        if self.mesh_type == self.MeshType_Structured:
+        if self.mesh_type == MeshType.Structured:
             unroll = np.roll(np.arange(len(self.shape)), 1)
             meshes = self.transpose(unroll)
             return [np.unique(m) for m in meshes]
@@ -108,22 +110,23 @@ class Mesh(np.ndarray):
         return np.reshape(g, (cls.get_gridpoints(g), g.shape[-1]))
 
     @classmethod
-    def get_mesh_type(cls, grid):
+    def get_mesh_type(cls, grid, tol=8):
         """Determines what kind of grid we're working with
 
         :param grid:
         :type grid: np.ndarray
         :return: mesh_type
-        :rtype: str
+        :rtype: MeshType
         """
         ndim = grid.ndim
         shape = grid.shape
         if ndim == 1:
-            mesh_spacings = np.diff(np.sort(grid))
+            grid = np.asarray(grid)
+            mesh_spacings = np.round(np.diff(np.sort(grid)), tol)
             if len(np.unique(mesh_spacings)) == 1:
-                return cls.MeshType_Structured
+                return MeshType.Structured
             else:
-                return cls.MeshType_Unstructured
+                return MeshType.Unstructured
         elif ndim == 2: # this means we were fed grid points
             grid = np.asarray(grid)
             meshes = grid.T
@@ -132,24 +135,24 @@ class Mesh(np.ndarray):
             points =  np.product(mesh_lens)
             if len(grid) == points:
                 # should also check mesh-spacing consistency, but for now we won't
-                return cls.MeshType_Structured
+                return MeshType.Structured
             elif len(grid) < points:
                 # either semistructured or unstructured
                 mesh_spacings = [ len(np.diff(np.sort(g))) for g in mesh_points ]
                 if np.all(np.array(mesh_spacings) == 1):
-                    return cls.MeshType_SemiStructured
+                    return MeshType.SemiStructured
                 else:
-                    return cls.MeshType_Unstructured
+                    return MeshType.Unstructured
             else:
                 # maybe throw an error to complain about duplicate abcissa?
-                return cls.MeshType_Indeterminate
+                return MeshType.Indeterminate
 
         else: # means we _probably_ have a structured grid
             # I should be checking the mesh-spacings but I don't wanna
             if shape[-1] == ndim - 1:
-                return cls.MeshType_Structured
+                return MeshType.Structured
             else:
-                return cls.MeshType_Indeterminate
+                return MeshType.Indeterminate
 
     @classmethod
     def RegularMesh(cls, *mesh_specs):
@@ -157,4 +160,4 @@ class Mesh(np.ndarray):
         coords = [ np.linspace(*m) for m in mesh_specs ]
         cg = np.meshgrid(coords)
         roll = np.roll(np.arange(len(mesh_specs)), -1)
-        return cls(np.transpose(cg, roll), mesh_type=cls.MeshType_Structured)
+        return cls(np.transpose(cg, roll), mesh_type=MeshType.Structured)

@@ -28,7 +28,7 @@ class Tensor:
         if isinstance(a, Tensor):
             return a
         else:
-            cls(a, shape = shape)
+            return cls(a, shape = shape)
     @property
     def array(self):
         if isinstance(self._a, np.ndarray):
@@ -47,6 +47,8 @@ class Tensor:
         return TensorMul(self, other, **kw)
     def dot(self, other, **kw):
         return TensorDot(self, other, **kw)
+    def transpose(self, axes, **kw):
+        return TensorTranspose(self, axes, **kw)
     def pow(self, other, **kw):
         return TensorPow(self, other, **kw)
 
@@ -69,6 +71,13 @@ class Tensor:
         # the default assumption is basically to use the diagonal element -- i.e. to assume that only the extant indices matter
         return self._a[extant]
     def pull_index(self, *idx):
+        """Defines custom logic for handling how we pull indices
+
+        :param idx:
+        :type idx:
+        :return:
+        :rtype:
+        """
         dim = len(idx)
         sdim = self.dim
         if dim > sdim:
@@ -88,10 +97,13 @@ class Tensor:
             return new
 
     def __getitem__(self, item):
-        self.pull_index(*item)
+        if isinstance(item, int):
+            return self.pull_index(item)
+        else:
+            return self.pull_index(*item)
 
     def __repr__(self):
-        return "{}(<{}>)".format(type(self).__name__, ", ".join(*(str(x) for x in self.shape)))
+        return "{}(<{}>)".format(type(self).__name__, ", ".join((str(x) for x in self.shape)))
 
 ########################################################################################################################
 #
@@ -106,7 +118,15 @@ class TensorOp(Tensor):
         #     a = b._a
         self._a = a
         self._b = b
-        self._axis = axis
+        if axis is None:
+            self._axis = None
+            self._axis_2 = None
+        elif isinstance(axis, int):
+            self._axis = axis
+            self._axis_2 = None
+        else:
+            self._axis = axis[1]
+            self._axis_2 = axis[0]
         self._kw = dict(axis = axis)
 
     def op(self, a, b):
@@ -141,7 +161,7 @@ class TensorPlus(TensorOp):
     def __getitem__(self, i):
         return type(self)(self._a[i], self._b[i])
 class TensorPow(TensorOp):
-    """Represents an addition of two tensors"""
+    """Represents a power of a tensors"""
     def op(self, a, b):
         if isinstance(a, Tensor):
             a = a.array
@@ -160,20 +180,50 @@ class TensorMul(TensorOp):
         return super().get_shape(a, b)
     def __getitem__(self, i):
         return type(self)(self._a[i], self._b)
-class TensorDot(TensorOp):
-    """Represents a tensor contraction across the main axis only"""
+class TensorTranspose(TensorOp):
+    """Represents a tensor transposition"""
     def get_shape(self, a, b):
-        return a.shape[:-1] + b.shape[1:]
+        a_shp = a.shape
+        return tuple(a_shp[a] for a in b)
     def op(self, a, b):
+        if isinstance(a, Tensor):
+            a = a.array
+        return a.transpose(b)
+class TensorDot(TensorOp):
+    """Represents a tensor contraction"""
+    def get_shape(self, a, b):
+        a_shp = a.shape
+        b_shp = b.shape
+        ax = 0 if self._axis is None else self._axis
+        ax2 = -1 if self._axis_2 is None else self._axis_2
+        ax = set(len(b_shp) + a if a < 0 else a for a in ((ax,) if isinstance(ax, int) else ax))
+        ax2 = set(len(a_shp) + a if a < 0 else a for a in ((ax2,) if isinstance(ax2, int) else ax2))
+        shared = 0
+        for shared, s in enumerate(zip(a_shp, b_shp)):
+            if s[0] != s[1]:
+                break
+        shared = min(shared, min(ax), min(ax2))
+
+        return (
+            a_shp[:shared] +
+            tuple(a for i,a in enumerate(a_shp[shared:]) if i+shared not in ax2) +
+            tuple(a for i,a in enumerate(b_shp[shared:]) if i+shared not in ax)
+        )
+    def op(self, a, b):
+        from ..Numputils import vec_tensordot
+
         # we'll allow this to cast to dense as we'll assume people are only ever calling this on low dimensional tensors...
         if isinstance(a, Tensor):
             a = a.array
         if isinstance(b, Tensor):
             b = b.array
-        if not self._axis is None:
-            contract = np.tensordot(a, b, axes = self._axis)
-        else:
-            contract =  np.tensordot(a, b, axes = 1)
+        ax = 0 if self._axis is None else self._axis
+        ax2 = -1 if self._axis_2 is None else self._axis_2
+        if isinstance(ax, int):
+            ax = (ax,)
+        if isinstance(ax2, int):
+            ax2 = (ax2,)
+        contract = vec_tensordot(a, b, axes = (ax2, ax))
         return contract
     def __getitem__(self, i):
         return type(self)(self._a[i], self._b, **self._kw)
@@ -185,7 +235,7 @@ class TensorDot(TensorOp):
 class LazyOperatorTensor(Tensor):
     """A super-lazy tensor that represents the elements of an operator """
 
-    def __init__(self, operator, shape, memoization = True):
+    def __init__(self, operator, shape, memoization = True, dtype = object, fill = None):
         if memoization is True:
             memoization = {}
         self.memoization = isinstance(memoization, dict)
@@ -195,13 +245,15 @@ class LazyOperatorTensor(Tensor):
             a = None
 
         self.operator = operator
+        self.dtype = dtype
+        self.fill = fill
         super().__init__(a, shape=shape)
 
     @property
     def array(self):
         import itertools as it
 
-        base = np.full(self.shape, None, dtype=object)
+        base = np.full(self.shape, self.fill, dtype=self.dtype)
         mem = self._a
         try:
             self._a = None

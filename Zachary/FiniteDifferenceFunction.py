@@ -1,12 +1,18 @@
 """
 Provides a general, convenient FiniteDifferenceFunction class to handle all of our difference FD imps
 """
-import numpy as np
+import numpy as np, scipy.sparse as sparse
+from .Mesh import Mesh, MeshType
 
 __all__ = [
     'FiniteDifferenceFunction',
     'FiniteDifferenceError',
-    'finite_difference'
+    'finite_difference',
+    "FiniteDifference1D",
+    "RegularGridFiniteDifference",
+    "IrregularGridFiniteDifference",
+    "FiniteDifferenceData",
+    "FiniteDifferenceMatrix"
 ]
 
 ##########################################################################################
@@ -20,546 +26,370 @@ class FiniteDifferenceFunction:
     """The FiniteDifferenceFunction encapsulates a bunch of functionality extracted from Fornberger's
     Calculation of Wieghts in Finite Difference Formulas (https://epubs.siam.org/doi/pdf/10.1137/S0036144596322507)
 
+    Only applies to direct product grids, but each subgrid can be regular or irregular
     """
-    REGULAR_GRID = "regular"
-    IRREGULAR_GRID = "irregular"
-    def __init__(self, coefficients, widths = None, order = None, gridtype = None, regularize_results = False,
-                 mesh_spacings = None, shape = None, only_core = False, only_center = False, axis = 0
-                 ):
+    def __init__(self, *diffs, axes=0, contract = False):
+        """Constructs an object to take finite differences derivatives of grids of data
 
-        self._coefficients = coefficients # used to apply the weights to function values
-        # NOTE: the coefficients should be supplied without 'h' if an evenly spaced grid
-        # These will be forced back in later
-        self._widths = self._clean_widths(widths) # used to determine how to apply the coefficients
-        self._order = self._clean_order(order) # the order of the derivative
-        if gridtype is None:
-            gridtype = self.REGULAR_GRID
-        self._gridtype = gridtype # if 'regular' will dispatch to 'call_evenly_spaced' otherwise we'll use more general code
-        self._function = None
-        self._regr = regularize_results
-        self.mesh_spacings = mesh_spacings # in general we don't know this...
-        self.shape = shape # in general we also don't know this...
-        self.only_core = only_core
-        self.only_center = only_center
-        self.axis = axis
-    @property
-    def coefficients(self):
-        return self._coefficients
-    @property
-    def gridtype(self):
-        return self._gridtype
-    @property
-    def widths(self):
-        return self._widths
-    @property
-    def order(self):
-        return self._order
-    @property
-    def function(self):
-        if self._function is None:
-            self._function = self.get_FDF()
-        return self._function
-    def __call__(self, *args, **kwargs):
-        return self.function(*args, **kwargs)
-    @classmethod
-    def RegularGridFunction(cls, n, accuracy = 4, stencil = None, end_point_precision = 4, dimension = None, **kw):
-        """Constructs a finite-difference function that computes the nth derivative to a given accuracy order
-
-        :param n: the order derivatives to use
-        :type n: int or list(int)
-        :param accuracy: the target accuracy of the method
-        :type accuracy: int | Iterable[int]
-        :param stencil: the number of points to use in the stencil
-        :type stencil: None | int | Iterable[int]
-        :param end_point_precision: the number of stencil points added to the end points
-        :type end_point_precision: int
-        :param dimension: the dimension of the derivative to apply
-        :type dimension: int | Iterable[int]
-        :param kw: keywords for initializing the class
-        :type kw:
-        :return: fdf
-        :rtype: FiniteDifferenceFunction
+        :param diffs: A set of differences to take along successive axes in the data
+        :type diffs: FiniteDifference1D
+        :param axes: The axes to take the specified differences along
+        :type axes: int | Iterable[int]
+        :param contract: Whether to reduce the shape of the returned tensor if applicable after application
+        :type contract: bool
         """
+        self.differences = tuple(diffs)
+        self.axes = axes
+        self.contract = contract
 
-        # Gotta make sure we have the right dimensions for our derivatives
-        if isinstance(n, (int, np.integer)):
-            if not isinstance(dimension, (int, np.integer)):
-                dimension = 1
-            n = [ n ] * dimension
-        else:
-            dimension = len(n)
+    def apply(self, vals, axes=None, mesh_spacing = None, contract = None):
+        """Iteratively applies the stored finite difference objects to the vals
 
-        # we're gonna try to force our derivatives to either use a set number of points (stencil) or
-        # to have a certain order in the derivatives (accuracy)
-        if isinstance(accuracy, (int, np.integer)):
-            accuracy = [ accuracy ] * dimension
-        if isinstance(stencil, (int, np.integer)) or stencil is None:
-            stencil = [ stencil ] * dimension
-
-        coeff_list = [ None ] * dimension
-        width_list = [ None ] * dimension
-        for i, m in enumerate(n):
-            if m > 0:
-                if stencil[i] is None:
-                    sten = m + accuracy[i] - 1
-                else:
-                    sten = stencil[i] - 1
-
-                outer_stencil = sten + end_point_precision
-                lefthand_coeffs = cls._even_grid_coeffs(m, 0, outer_stencil)
-                centered_coeffs = cls._even_grid_coeffs(m, np.math.ceil(sten / 2), sten)
-                righthand_coeffs = cls._even_grid_coeffs(m, outer_stencil, outer_stencil)
-                sten = len(centered_coeffs)
-                widths = [
-                    [0, len(lefthand_coeffs)],
-                    [np.math.ceil(sten/2), np.math.floor(sten/2)],
-                    [len(righthand_coeffs), 0]
-                ]
-                coeffs = [lefthand_coeffs, centered_coeffs, righthand_coeffs]
-                coeff_list[i] = coeffs
-                width_list[i] = widths
-
-        fdf = cls(coeff_list, widths = width_list, order = n, gridtype = cls.REGULAR_GRID,
-                  regularize_results= True, **kw
-                  )
-        return fdf
-
-    @classmethod
-    def IrregularGridFunction(cls, n, grid, stencil = 10, **kw):
-        """Constructs a finite-difference function that computes the nth derivative with a given width
-
-        :param deriv:
-        :type deriv:
-        :param accuracy:
-        :type accuracy:
-        :return:
-        :rtype:
-        """
-        if stencil > len(grid):
-            stencil = len(grid)
-
-        # currently this is just fundamentally broken...
-        # I'll need to recast this in terms of my _fdm type structure
-        # so that these mats can be cleanly fed into the multidimensional FD stuff
-
-        # we're gonna do just the 1D case for now
-        slices = cls._pull_f_vals(grid, 0, stencil)
-        slices = np.concatenate( (
-            np.tile(slices[0], np.math.floor(stencil/2)),
-            slices,
-            np.tile(slices[0], np.math.ceil(stencil/2)),
-        ) )
-        coeffs = [ cls._uneven_spaced_weights(n, z, x) for z, x in zip(grid, slices)]
-        widths = [ stencil ]
-
-        coeff_list = [ coeffs ]
-        width_list = [ widths ]
-        return cls(coeff_list, widths = width_list, order = n, gridtype = cls.IRREGULAR_GRID, **kw )
-
-    @staticmethod
-    def get_mesh_spacings(gp):
-        """Computes the mesh spacings of gp
-
-        :param gp:
-        :type gp: np.ndarray
-        :return: mesh_spacings
+        :param vals: The tensor of values to take the difference on
+        :type vals: np.ndarray
+        :param axes: The axis or axes to take the differences along (defaults to `self.axes`)
+        :type axes: int | Iterable[int]
+        :return: The tensor of derivatives
         :rtype: np.ndarray
         """
-        ndd = gp.ndim
-        if ndd > 1: # ugly but workable way to calculate mesh_spacings
-            ndd -= 1
-            indsss = np.array([
-                [
-                    [0]*(ndd) + [i],
-                    [0]*(i) + [1] + [0]*(ndd-i-1) + [i]
-                ] for i in range(ndd)
-            ])
-            indsss = indsss.reshape(
-                (indsss.shape[0]*indsss.shape[1], )+indsss.shape[2:]
-            ).T
-            mesh_spacings = np.diff(gp[tuple(indsss)])[::2]
-        else:
-            mesh_spacings = np.array([gp[1] - gp[0]])
+        dim = len(self.differences)
+        val_dim = len(vals.shape)
 
-        return mesh_spacings
+        if contract is None:
+            contract = self.contract
+
+        axis = axes
+        if axis is None:
+            axis = self.axes
+        if mesh_spacing is None or isinstance(mesh_spacing, (int, np.integer, float, np.floating)):
+            mesh_spacing = [mesh_spacing] * dim
+
+        # by default we'll assume dimension one is the slowest changing index, dimension 2 is the next slowest, etc.
+        if isinstance(axis, (int, np.integer)):
+            axis = axis + np.arange(dim)
+        for i, m, h in zip(axis, self.differences, mesh_spacing):
+            if m is not None:
+                vals = m.apply(vals, val_dim = val_dim, axis = i, mesh_spacing = h)
+
+        if contract:
+            vals = vals.squeeze()
+        return vals
+
+    def __call__(self, vals, axes=None, mesh_spacing = None):
+        return self.apply(vals, axes=axes, mesh_spacing = mesh_spacing)
+
+    @property
+    def order(self):
+        return tuple(d.order for d in self.differences)
+
+    @property
+    def weights(self):
+        return tuple(d.weights for d in self.differences)
+
+    @property
+    def widths(self):
+        return tuple(d.widths for d in self.differences)
 
     @classmethod
-    def from_grid(cls, grid, order,
-                  accuracy = 2, stencil = None, end_point_precision = 2, gridtype = REGULAR_GRID,
-                  axis = 0, **kwargs
+    def regular_difference(cls,
+                           order,
+                           mesh_spacing = None,
+                           accuracy=2,
+                           stencil=None,
+                           end_point_accuracy=2,
+                           axes=0,
+                           contract=True,
+                           **kwargs
+                           ):
+        dim = len(order)
+        if isinstance(stencil, (int, np.integer)) or stencil is None:
+            stencil = [stencil]*dim
+        if isinstance(accuracy, (int, np.integer)) or accuracy is None:
+            accuracy = [accuracy]*dim
+        if isinstance(end_point_accuracy, (int, np.integer)) or end_point_accuracy is None:
+            end_point_accuracy = [end_point_accuracy] * dim
+        if mesh_spacing is None or isinstance(mesh_spacing, (int, np.integer, float, np.floating)):
+            mesh_spacing = [mesh_spacing] * dim
 
+        return cls(
+            *(
+                RegularGridFiniteDifference(
+                    d,
+                    stencil=s,
+                    accuracy=a,
+                    end_point_accuracy=e,
+                    mesh_spacing = h,
+                    **kwargs
+                    ) for d, s, a, e, h in zip(order, stencil, accuracy, end_point_accuracy, mesh_spacing)
+            ),
+            axes=axes,
+            contract=contract
+        )
+
+    @classmethod
+    def from_grid(cls,
+                  grid, order,
+                  accuracy = 2,
+                  stencil = None,
+                  end_point_accuracy = 2,
+                  axes = 0,
+                  contract = True,
+                  **kwargs
                   ):
-        """Constructs a FiniteDifferenceFunction from a grid and order
+        """Constructs a FiniteDifferenceFunction from a grid and order.
+         Deconstructs the grid into its subgrids and builds a different differencer for each dimension
 
-        :param grid:
+        :param grid: The grid to use as input data when defining the derivative
         :type grid: np.ndarray
-        :param values:
-        :type values: np.ndarray
         :param order: order of the derivative to compute
         :type order: int or list of ints
         :param stencil: number of points to use in the stencil
         :type stencil: int or list of ints
-        :param mode: 'regular' or 'irregular' specifying grid type
-        :type mode: str
-        :return:
-        :rtype:
-        """
-        gp = np.asarray(grid)
-        if axis is not None and axis > 0:
-            ax = np.min(np.array([axis]))
-            gp = gp[(0, )*np.min(ax)]
-            # print(gp.shape)
-
-        dim = max(len(gp.shape) - 1, 1)
-        if dim > 1 and isinstance(order, (int, np.integer)):
-            order = (order,) * dim
-        if stencil is None:
-            if dim > 1:
-                if isinstance(accuracy, (int, np.integer)):
-                    accuracy = [ accuracy ] * dim
-                stencil = [o + a for o, a in zip(order, accuracy)]
-            else:
-                stencil = order + accuracy
-
-        shape = gp.shape
-        if len(gp.shape) > 1:
-            shape = gp.shape[:-1]
-
-        mode = gridtype.lower()
-        # someday this should autodetect, but I don't really know how to do that...
-        if mode != cls.IRREGULAR_GRID:
-            mesh_spacings = cls.get_mesh_spacings(gp)
-            # if dim > 1:
-                # stencil = [n - o for n, o in zip(stencil, order)]
-            return cls.RegularGridFunction(order,
-                                           stencil = stencil,
-                                           end_point_precision = end_point_precision,
-                                           mesh_spacings = mesh_spacings,
-                                           shape = shape,
-                                           axis = axis,
-                                           **kwargs
-                                           )
-        else:
-            return cls.IrregularGridFunction(order, grid, stencil, shape = shape, **kwargs)
-
-
-    def _clean_coeffs(self, cfs):
-        cf1 = cfs[0]
-        if isinstance(cf1, (int, float, np.integer, np.float)):
-            cfs = [ [ cfs ] ]
-        return cfs
-    def _clean_widths(self, ws):
-
-        if isinstance(ws, (int, float, np.integer, np.float)):
-            ws = ( (int(ws), int(ws)) )
-        else:
-            w2s = [ None ] * len(ws)
-            for i, w in enumerate(ws):
-                if isinstance(w, (int, float, np.integer, np.float)):
-                    w2s[i] = (int(w), int(w))
-                elif w is None:
-                    pass
-                elif isinstance(w[0], (int, float, np.integer, np.float)):
-                    w2s[i] = (int(w[0]), int(w[1]))
-                elif w is not None:
-                    w2s[i] = self._clean_widths(w)
-            ws = tuple(w2s)
-        return ws
-    def _clean_order(self, order):
-        if not isinstance(order, (int, np.integer)):
-            try:
-                isinst = all((isinstance(o, (int, np.integer)) for o in order))
-            except:
-                isinst = False
-            if not isinst:
-                raise TypeError("{}: order {} is expected to be an int or list of ints",
-                                type(self).__name__, order)
-        else:
-            order = [ order ]
-        return order
-
-    #region Finite Difference Function Implementations
-    def get_FDF(self, *args, **kwargs):
-        if self._gridtype != self.IRREGULAR_GRID:
-            return self._evenly_spaced_FDF(*args, **kwargs)
-        else:
-            return self._unevenly_spaced_FDF(*args, **kwargs)
-
-    def _evenly_spaced_FDF(self, h = None, shape = None, only_core = None, only_center = None, axis = None):
-        """Generates a closure that applies the calculated coefficients to the case of an evenly spaced grid
-         in a hopefully efficient manner
-
-         :param h:
-         :type h:
-         :param shape:
-         :type shape:
-         :param only_core:
-         :type only_core:
-         :return:
-         :rtype:
-        """
-
-        coeffs = self._coefficients
-        orders = self._order
-        if h is None:
-            h = self.mesh_spacings
-        if only_core is None:
-            only_core = self.only_core
-        if only_center is None:
-            only_center = self.only_center
-        if axis is None:
-            axis = self.axis
-        if shape is None:
-            shape = self.shape
-        return self._even_grid_FDF(coeffs, orders, mesh_spacings = h, shape = shape,
-                                   only_core = only_core, only_center = only_center, axis = axis)
-
-    @classmethod
-    def _even_grid_matrices(cls, shape, h, coeffs, orders, axis = None, only_core = False, only_center = False):
-        if h is None:
-            raise FiniteDifferenceError("{} object has no 'mesh_spacings' bound so one needs to be passed".format(cls.__name__))
-        try:
-            len(h)
-        except (IndexError, TypeError):
-            h = [h]*len(coeffs)
-        meshy = h
-        if axis is None:
-            axis = 0
-
-        num_vals = shape[axis:]
-
-        new_mats = [
-            cls._fd_matrix_1D(
-                *c,
-                n,
-                h = h,
-                o = o,
-                only_core = only_core,
-                only_center = only_center
-                ) if (c is not None and o is not None) else None for c, n, h, o in zip(coeffs, num_vals, meshy, orders)
-        ]
-        # if len(new_mats) == 1:
-        #     new_mats = new_mats[0]
-        return new_mats
-
-    @classmethod
-    def _even_grid_FDF(cls, coeffs, orders, mesh_spacings = None, shape = None, only_core = None, only_center = None, axis = None):
-        """For simplicity this will handle mixed derivatives simply by doing each dimension separately
-
-        :param take_lists:
-        :type take_lists:
-        :param coeffs:
-        :type coeffs:
-        :return:
-        :rtype:
-        """
-        # num_vals is low-key the wrong name for this... it's really the number of points in the target values thing...
-
-        # if we know the number of points ahead of time we can build our mats ahead of time
-        # otherwise we need to be general about it
-        if shape is not None:
-            ndim = len(coeffs)
-            if axis is None:
-                axis = 0
-            if len(coeffs) > 1 and isinstance(shape, (int, np.integer)):
-                shape = [shape]*ndim
-            if len(shape) < axis + ndim: # padding for the call into _even_grid_matrices
-                shape = (0,) *(ndim + axis - len(shape)) + tuple(shape)
-
-            if mesh_spacings is None:
-                mmm = [ None ]*ndim
-            else:
-                mmm = mesh_spacings
-            mats = cls._even_grid_matrices(shape, mmm, coeffs, orders, axis = axis, only_core = only_core, only_center = only_center)
-        else:
-            mats = None
-
-        def FDF(f_vals, h = None, mats = None, default_mats = mats, default_h = mesh_spacings, axis = axis,
-                only_core = only_core,
-                only_center = only_center
-                ):
-            "Calculates a finite difference"
-            if mats is None:
-                mats = default_mats
-            if mats is None:
-                if h is None:
-                    h = default_h
-                new_mats = cls._even_grid_matrices(f_vals.shape, h, coeffs, orders, axis = axis,
-                                                   only_core = only_core, only_center = only_center
-                                                   )
-                vavoom = cls._apply_fdm(new_mats, f_vals, axis = axis)
-            else:
-                if h is not None and default_h is None:
-                    if isinstance(h, (int, np.integer, float, np.float)):
-                        h = [ h ] * len(mats)
-
-                    mats = [ m / ( ms ** o) if m is not None else m for ms, m, o in zip(h, mats, orders) ]
-
-                vavoom = cls._apply_fdm(mats, f_vals, axis = axis)
-            return vavoom
-
-        return FDF
-
-    def _unevenly_spaced_FDF(self, *args, **kwargs):
-        """Generates a closure that applies the calculated coefficients to the case of an evenly spaced grid
-         in a hopefully efficient manner
-
-        :param h:
-        :type h:
-        :param function_values:
-        :type function_values:
         :return:
         :rtype:
         """
 
-        coeffs = self._coefficients
-        widths = self._widths
-        orders = self._order
-        return self._uneven_grid_FDF(self._pull_f_vals, coeffs, widths, orders)
-    @staticmethod
-    def _uneven_grid_FDF(take_lists, coeffs, widths, orders, regularize = False):
-        """For simplicity this will handle mixed derivatives simply by doing each dimension separately
+        if isinstance(order, (int, np.integer)):
+            order = (order,)
+        dim = len(order)
+        if isinstance(stencil, (int, np.integer)) or stencil is None:
+            stencil = [stencil]*dim
+        if isinstance(accuracy, (int, np.integer)) or accuracy is None:
+            accuracy = [accuracy]*dim
+        if isinstance(end_point_accuracy, (int, np.integer)) or end_point_accuracy is None:
+            end_point_accuracy = [end_point_accuracy] * dim
 
-        :param take_lists:
-        :type take_lists:
-        :param coeffs:
-        :type coeffs:
-        :param widths:
-        :type widths:
-        :return:
-        :rtype:
-        """
+        if axes is None:
+            axes = grid.ndim - dim - 1
+        if isinstance(axes, (int, np.integer)):
+            axes = axes + np.arange(dim)
+        axes = tuple(axes)
 
-        def FDF_1D(f_vals, w, c):
-            """Calculates a 1D finite difference"""
-            vals = np.asarray(f_vals)
-            slices = take_lists(vals, 0, w)
-            np.concatenate( (
-                np.tile(slices[0], np.math.floor(w/2)),
-                slices,
-                np.tile(slices[0], np.math.ceil(w/2)),
-            ) )
-            fdf_vals = np.sum(slices*c, axis=1)
-            return fdf_vals
-
-        if len(widths) == 1:
-            def FDF(f_vals):
-                "Calculates a 1D finite difference"
-                w = widths[0]
-                c = coeffs[0]
-                return FDF_1D(f_vals, w, c)
-        else:
-            # we do our finite differencing along multiple different axes as needed
-            def FDF(f_vals):
-                """Calculates the multi-dimensional FD by FD-ing each dimension in turn"""
-                red_vals = f_vals
-                for c, w in zip(coeffs, widths):
-                    red_vals = FDF_1D(red_vals, c, w)
-                return red_vals
-
-        return FDF
-
-    #endregion
-
-    #region Finite Difference Matrices
-    @classmethod
-    def _fd_matrix_1D(cls, c_left, c_center, c_right, npts, h = None, o = None, only_core = False, only_center = False):
-        """Builds a 1D finite difference matrix for a set of boundary weights, central weights, and num of points
-        Will look like:
-            b1 b2 b3 ...
-            w1 w2 w3 ...
-            0  w1 w2 w3 ...
-            0  0  w1 w2 w3 ...
-                 ...
-                 ...
-                 ...
-                    .... b3 b2 b1
-
-        :param coeffs:
-        :type coeffs:
-        :param npts:
-        :type npts:
-        :return:
-        :rtype:
-        """
-        npts = int(npts)
-        lcc = len(c_center)
-        if only_core:
-            fdm = cls._fdm_core(c_center, npts - lcc + (lcc % 2), npts)
-        else:
-            bound_l = min(int(np.floor(lcc/2)), int(np.floor(npts/2)))
-            #TODO: sometimes the grid-point stencils overrun the grid I actually have (for small grids)
-            # which means I need to handle these boundary cases better
-            bdm_l = cls._fdm_core(c_left, bound_l, npts)
-            bdm_r = cls._fdm_core(c_right, bound_l, npts, side = "r")
-            core = cls._fdm_core(c_center, npts - lcc + (lcc % 2), npts)
-            fdm = np.concatenate((bdm_l, core, bdm_r))
-
-        if only_center:
-            fdm_mid = int(np.floor(fdm.shape[0]/2))
-            fdm = fdm[(fdm_mid, ), :]
-
-        if h is not None:
-            fdm = fdm/(h**o) #useful for even grid cases where we'll cache the FD matrices for reuse
-        return fdm
-    @classmethod
-    def _fdm_core(cls, a, n1, n2, side = "l"):
-        # pulled from https://stackoverflow.com/a/52464135/5720002
-        # returns the inner blocks of the FD mat
-        a = np.asarray(a)
-        p = np.zeros(n2, dtype=a.dtype)
-        b = np.concatenate((p,a,p))
-        s = b.strides[0]
-        strided = np.lib.stride_tricks.as_strided
-        if side == "r":
-            mmm = strided(b[len(a)+n1-1:], shape=(n1, n2), strides=(-s,s))
-            # print(mmm)
-        else:
-            mmm = strided(b[n2:], shape=(n1, n2), strides=(-s,s))
-        return mmm
-    @staticmethod
-    def _apply_fdm(mats, vals, axis = 0):
-
-        dim = 1 if isinstance(mats, np.ndarray) else len(mats) # we use a non-numpy type as our flag we got more than one
-        val_dim = len(vals.shape)
-
-        if dim == 1 and mats is not None: # we only have one FD matrix
-
-            if not isinstance(axis, (int, np.integer)):
-                axis = axis[0]
-            if not isinstance(mats, np.ndarray):
-                mats = mats[0]
-            if val_dim == 1:
-                vals = np.dot(mats, vals) # axis doesn't even make sense here...
-            else:
-                vals = np.tensordot(mats, vals, axes=((1), (axis)))
-                roll = np.concatenate((
-                    np.roll(np.arange(axis+1), -1),
-                    np.arange(axis+1, val_dim)
+        if dim > 1:
+            if grid.ndim < dim+1:
+                raise FiniteDifferenceError("{}.{}: grid has {} dimensions but {} dimensional difference requested".format(
+                    cls.__name__,
+                    "from_grid",
+                    grid.ndim-1,
+                    dim
                 ))
-                vals = vals.transpose(roll)
 
+            # get the grid we actually will be doing the FD on
+            sel_ax = axes + (grid.ndim-1,)
+            missing = tuple(ax for ax in range(grid.ndim) if ax not in sel_ax)
+            transp_ax = missing+sel_ax
+            new_grid = grid.transpose(transp_ax)
+            if len(missing)>0:
+                new_grid = new_grid[(0,)*len(missing)]
+
+            gp = Mesh(new_grid)
+            subgrids = gp.subgrids#[sg[a] if a is not None else a for a in sel_ax]
         else:
-            # by default we'll assume dimension one is the slowest changing index, dimension 2 is the next slowest, etc.
-            if isinstance(axis, (int, np.integer)):
-                axis = axis + np.arange(len(mats))
+            subgrids = [grid]
 
-            for i, m in zip(axis, mats):
-                if m is not None:
-                    vals = np.tensordot(m, vals, axes=((1, ), (i, )))
-                    roll = np.concatenate((
-                        np.roll(np.arange(i+1), -1),
-                        np.arange(i+1, val_dim)
-                    ))
-                    vals = vals.transpose(roll)
+        diffs = [None] * dim
+        for i, d in enumerate(zip(order, stencil, accuracy, end_point_accuracy, subgrids)):
+            o, s, a, e, g = d
+            if o is None or o == 0:
+                diffs[i] = None
+            else:
+                m = Mesh(g)
+                if m.mesh_type == MeshType.Structured:
+                    diffs[i] = RegularGridFiniteDifference(
+                        o,
+                        stencil=s,
+                        accuracy=a,
+                        end_point_accuracy=e,
+                        mesh_spacing=g[1]-g[0],
+                        **kwargs
+                    )
+                else:
+                    diffs[i] = IrregularGridFiniteDifference(
+                        g,
+                        o,
+                        stencil=s,
+                        accuracy=a,
+                        end_point_accuracy=e,
+                        **kwargs
+                    )
+        return cls(*diffs, contract=contract, axes=axes)
+
+##########################################################################################
+#
+#                                    FiniteDifference1D
+#
+##########################################################################################
+class FiniteDifference1D:
+    def __init__(self, finite_difference_data, matrix):
+        self.data = finite_difference_data
+        self.mat = matrix
+
+    @property
+    def order(self):
+        return self.data.order
+    @property
+    def weights(self):
+        return tuple(tuple(w) for w in self.data.weights)
+    @property
+    def widths(self):
+        return tuple(tuple(w) for w in self.data.widths)
+
+    @classmethod
+    def get_stencil(cls, order, stencil, accuracy):
+        if stencil is None:
+            sten = order + accuracy - 1
+        else:
+            sten = stencil - 1
+        return sten
+
+    def apply(self, vals, val_dim = None, axis = 0, mesh_spacing = None):
+        """Applies the held FiniteDifferenceMatrix to the array of values
+
+        :param vals: values to do the difference over
+        :type vals: np.ndarray | sparse.csr_matrix
+        :param val_dim: dimensions of the vals
+        :type val_dim: int
+        :param axis:
+        :type axis:
+        :return:
+        :rtype:
+        """
+        if val_dim is None:
+            val_dim = len(vals.shape)
+        vs = vals.shape
+        if val_dim == 1:
+            if mesh_spacing is not None:
+                self.mat.mesh_spacing = mesh_spacing
+            self.mat.npts = vs[0]
+            # print(type(self.mat.matrix))
+            vals = self.mat.matrix.dot(vals)  # axis doesn't even make sense here...
+            # print(vals.shape)
+        else:
+            if mesh_spacing is not None:
+                self.mat.mesh_spacing = mesh_spacing
+            self.mat.npts = vs[axis]
+            if self.mat.mode == "sparse":
+                vals = self.sparse_tensordot(self.mat.matrix, vals, axis)
+            else:
+                vals = np.tensordot(self.mat.matrix, vals, axes=((1), (axis)))
+            roll = np.concatenate((
+                np.roll(np.arange(axis + 1), -1),
+                np.arange(axis + 1, val_dim)
+            ))
+            vals = vals.transpose(roll)
+
         return vals
 
-    #endregion
+    @staticmethod
+    def sparse_tensordot(sparse, mat, axis):
+        """Not sure how fast this will be, but does a very simple contraction of `mat` along `axis` by the final axis of `sparse`
 
-    #region Grid Weights
+        Heavily de-generalized from here: https://github.com/pydata/sparse/blob/9dc40e15a04eda8d8efff35dfc08950b4c07a810/sparse/_coo/common.py
+        :param sparse:
+        :type sparse: sparse.sparsemat
+        :param mat:
+        :type mat: np.ndarray
+        :param axis:
+        :type axis:
+        :return:
+        :rtype:
+        """
+
+        axis_a = 1
+        axis_b = axis
+
+        as_ = sparse.shape
+        nda = sparse.ndim
+        bs = mat.shape
+        ndb = mat.ndim
+
+        if as_[axis_a] != bs[axis_b]:
+            raise ValueError("shape-mismatch for sum")
+        if axis_b < 0:
+            axis_b += ndb
+
+        # Move the axes to sum over to the end of "a"
+        # and to the front of "b"
+        notin = [k for k in range(nda) if k != axis_a]
+        newaxes_a = notin + [axis_a]
+        N2 = 1
+        N2 *= as_[axis_a]
+        newshape_a = (-1, N2)
+        olda = [as_[axis] for axis in notin]
+
+        notin = [k for k in range(ndb) if k != axis_b]
+        newaxes_b = [axis_b] + notin
+        N2 = 1
+        N2 *= bs[axis_b]
+        newshape_b = (N2, -1)
+        oldb = [bs[axis] for axis in notin]
+
+        # don't think I need this...
+        # at = sparse.transpose(newaxes_a).reshape(newshape_a)
+        bt = mat.transpose(newaxes_b).reshape(newshape_b)
+        res = np.asarray(sparse.dot(bt))
+        return res.reshape(olda + oldb)
+
+class RegularGridFiniteDifference(FiniteDifference1D):
+    """
+    Defines a 1D finite difference over a regular grid
+    """
+    def __init__(self,
+                 order,
+                 stencil = None,
+                 accuracy = 4,
+                 end_point_accuracy = 2,
+                 **kw
+                 ):
+        """
+
+        :param order: the order of the derivative to take
+        :type order: int
+        :param stencil: the number of stencil points to add
+        :type stencil: int | None
+        :param accuracy: the approximate accuracy to target with the method
+        :type accuracy: int | None
+        :param end_point_accuracy: the extra number of stencil points to add to the end points
+        :type end_point_accuracy: int | None
+        :param kw: options passed through to the `FiniteDifferenceMatrix`
+        :type kw:
+        """
+
+        data = self.finite_difference_data(order, self.get_stencil(order, stencil, accuracy), end_point_accuracy)
+        mat = FiniteDifferenceMatrix(data, **kw)
+        super().__init__(data, mat)
+
+    @classmethod
+    def finite_difference_data(cls, order, stencil, end_point_precision):
+        """Builds a FiniteDifferenceData object from an order, stencil, and end_point_precision
+
+        :param order:
+        :type order:
+        :param stencil:
+        :type stencil:
+        :param end_point_precision:
+        :type end_point_precision:
+        :return:
+        :rtype:
+        """
+
+        m = order
+        outer_stencil = stencil + end_point_precision
+        lefthand_coeffs = cls.get_weights(m, 0, outer_stencil)
+        centered_coeffs = cls.get_weights(m, np.math.ceil(stencil / 2), stencil)
+        righthand_coeffs = cls.get_weights(m, outer_stencil, outer_stencil)
+        sten = len(centered_coeffs)
+        widths = [
+            [0, len(lefthand_coeffs)],
+            [np.math.ceil(sten / 2), np.math.floor(sten / 2)],
+            [len(righthand_coeffs), 0]
+        ]
+        coeffs = [lefthand_coeffs, centered_coeffs, righthand_coeffs]
+
+        return FiniteDifferenceData(coeffs, widths, order)
 
     @staticmethod
-    def _even_grid_coeffs(m, s, n):
+    def get_weights(m, s, n):
         """Extracts the weights for an evenly spaced grid
 
         :param m:
@@ -574,8 +404,53 @@ class FiniteDifferenceFunction:
         from .ZachLib import EvenFiniteDifferenceWeights
 
         return EvenFiniteDifferenceWeights(m, s, n)
+
+class IrregularGridFiniteDifference(FiniteDifference1D):
+    """
+    Defines a finite difference over an irregular grid
+    """
+    def __init__(self,
+                 grid,
+                 order,
+                 stencil=None,
+                 accuracy=2,
+                 end_point_accuracy=2,
+                 **kw
+                 ):
+        """
+
+        :param grid: the grid to get the weights from
+        :type grid: np.ndarray
+        :param order: the order of the derivative to take
+        :type order: int
+        :param stencil: the number of stencil points to add
+        :type stencil: int | None
+        :param accuracy: the approximate accuracy to target with the method
+        :type accuracy: int | None
+        :param end_point_accuracy: the extra number of stencil points to add to the end points
+        :type end_point_accuracy: int | None
+        :param kw: options passed through to the `FiniteDifferenceMatrix`
+        :type kw:
+        """
+        data = self.finite_difference_data(grid, order, self.get_stencil(order, stencil, accuracy), end_point_accuracy)
+        mat = FiniteDifferenceMatrix(data, npts=len(grid), mesh_spacing=1, **kw)
+        super().__init__(data, mat)
+
     @staticmethod
-    def _uneven_spaced_weights(m, z, x):
+    def get_grid_slices(grid, stencil):
+        """
+
+        :param grid:
+        :type grid:
+        :param stencil:
+        :type stencil:
+        :return:
+        :rtype:
+        """
+        return [grid[a:b] for a,b in zip(range(0, len(grid)-stencil), range(stencil, len(grid)))]
+
+    @staticmethod
+    def get_weights(m, z, x):
         """Extracts the grid weights for an unevenly spaced grid based off of the algorithm outlined by
         Fronberger in https://pdfs.semanticscholar.org/8bf5/912bde884f6bd4cfb4991ba3d077cace94c0.pdf
 
@@ -586,12 +461,331 @@ class FiniteDifferenceFunction:
         :param X: grid of points
         :type X:
         """
-        from .ZachLib import UnevenFiniteDifferenceWeights # loads from C extension
+        from .ZachLib import UnevenFiniteDifferenceWeights  # loads from C extension
 
         x = np.asarray(x)
         return UnevenFiniteDifferenceWeights(m, z, x).T
+
+    @classmethod
+    def finite_difference_data(cls, grid, order, stencil, end_point_precision):
+        """Constructs a finite-difference function that computes the nth derivative with a given width
+
+                :param deriv:
+                :type deriv:
+                :param accuracy:
+                :type accuracy:
+                :return:
+                :rtype:
+                """
+
+        outer_stencil = stencil + end_point_precision
+
+        # we're gonna do just the 1D case for now
+        left_pad = np.math.floor(stencil / 2)
+        right_pad = np.math.ceil(stencil / 2)
+        slices_outer = cls.get_grid_slices(grid, outer_stencil)
+        slices_core = cls.get_grid_slices(grid, stencil)
+        slices_left = slices_outer[:left_pad]
+        slices_right = slices_outer[-right_pad:]
+        coeffs = [
+            [cls.get_weights(order, x[0], x) for x in slices_left],
+            [cls.get_weights(order, x[left_pad], x) for x in slices_core],
+            [cls.get_weights(order, x[-1], x) for x in slices_right]
+            ]
+        widths = [(outer_stencil, 0), (left_pad, right_pad), (0, outer_stencil)]
+
+        return FiniteDifferenceData(coeffs, widths, order)
+
+##########################################################################################
+#
+#                                    FiniteDifferenceData
+#
+##########################################################################################
+class FiniteDifferenceData:
+    """
+    Holds the data used by to construct a finite difference matrix
+    """
+    def __init__(self, weights, widths, order):
+        self._weights = self._clean_coeffs(weights)  # used to apply the weights to function values
+        # NOTE: the coefficients should be supplied without 'h' if an evenly spaced grid
+        # These will be forced back in later
+        self._widths = self._clean_widths(widths)  # used to determine how to apply the coefficients
+        self._order = self._clean_order(order)  # the order of the derivative
+
+    # region Properties
+    @property
+    def weights(self):
+        return tuple(tuple(x) for x in self._weights)
+    @property
+    def widths(self):
+        return tuple(tuple(x) for x in self._widths)
+    @property
+    def order(self):
+        return self._order
     #endregion
 
+    @classmethod
+    def _clean_coeffs(cls, cfs):
+        try:
+            cl, cc, cr = cfs
+            islcr = True
+        except ValueError:
+            islcr = False
+        if not islcr:
+            raise TypeError("{}: coefficients {} is expected to be list of list coefficients on the left, center, and right",
+                            cls.__name__, cfs)
+        return cfs
+    @classmethod
+    def _clean_order(cls, order):
+        if not isinstance(order, (int, np.integer)):
+            raise TypeError("{}: order {} is expected to be an int",
+                            cls.__name__, order)
+        return order
+    @classmethod
+    def _clean_widths(cls, ws):
+
+        if isinstance(ws, (int, float, np.integer, np.floating)):
+            ws = ( (int(ws), int(ws)) )
+        else:
+            w2s = [ None ] * len(ws)
+            for i, w in enumerate(ws):
+                if isinstance(w, (int, float, np.integer, np.floating)):
+                    w2s[i] = (int(w), int(w))
+                elif w is None:
+                    pass
+                elif isinstance(w[0], (int, float, np.integer, np.floating)):
+                    w2s[i] = (int(w[0]), int(w[1]))
+                elif w is not None:
+                    w2s[i] = cls._clean_widths(w)
+            ws = tuple(w2s)
+        return ws
+
+##########################################################################################
+#
+#                                    FiniteDifferenceMatrix
+#
+##########################################################################################
+class FiniteDifferenceMatrix:
+    """
+    Defines a matrix that can be applied to a regular grid of values to take a finite difference
+    """
+
+    def __init__(self,
+                 finite_difference_data,
+                 npts = None, mesh_spacing = None,
+                 only_core = False, only_center = False,
+                 mode = "sparse", dtype = "float64"
+                 ):
+        """
+
+        :param finite_difference_data:
+        :type finite_difference_data: FiniteDifferenceData
+        :param npts:
+        :type npts:
+        :param mesh_spacing:
+        :type mesh_spacing:
+        :param only_core:
+        :type only_core:
+        :param only_center:
+        :type only_center:
+        :param mode:
+        :type mode:
+        """
+        self.data = finite_difference_data
+        self._npts = npts
+        self._mesh_spacing = mesh_spacing
+        self._only_core = only_core
+        self._only_center = only_center
+        self._mode = mode
+        self._mat = None
+        self._dtype = dtype
+
+    #region Properties
+    @property
+    def weights(self):
+        return self.data.weights
+    @property
+    def order(self):
+        return self.data.order
+    @property
+    def npts(self):
+        return self._npts
+    @npts.setter
+    def npts(self, val):
+        if val != self._npts:
+            self._mat = None
+            self._npts = val
+    @property
+    def mesh_spacing(self):
+        return self._mesh_spacing
+    @mesh_spacing.setter
+    def mesh_spacing(self, val):
+        if val != self._mesh_spacing:
+            self._mat = None
+            self._mesh_spacing = val
+    @property
+    def only_core(self):
+        return self._only_core
+    @only_core.setter
+    def only_core(self, val):
+        if val != self._only_core:
+            self._mat = None
+            self._only_core = val
+    @property
+    def only_center(self):
+        return self._only_center
+    @only_center.setter
+    def only_center(self, val):
+        if val != self._only_center:
+            self._mat = None
+            self._only_center = val
+    @property
+    def mode(self):
+        return self._mode
+    @mode.setter
+    def mode(self, val):
+        if val != self._mode:
+            self._mat = None
+            self._mode = val
+    @property
+    def dtype(self):
+        return self._dtype
+    @dtype.setter
+    def dtype(self, val):
+        if val != self._dtype:
+            self._mat = None
+            self._dtype = val
+    @property
+    def matrix(self):
+        if self._mat is None:
+            self._mat = self.fd_matrix()
+        return self._mat
+    #endregion
+
+    def fd_matrix(self):
+        """Builds a 1D finite difference matrix for a set of boundary weights, central weights, and num of points
+        Will look like:
+            b1 b2 b3 ...
+            w1 w2 w3 ...
+            0  w1 w2 w3 ...
+            0  0  w1 w2 w3 ...
+                 ...
+                 ...
+                 ...
+                    .... b3 b2 b1
+        :return:
+        :rtype:
+        """
+        npts = int(self.npts)
+        only_core = self.only_core
+        only_center = self.only_center
+        o = self.order
+        h = self.mesh_spacing
+        dtype = self.dtype
+        if h is not None:
+            c_left, c_center, c_right = [np.array(x, dtype=dtype) / (h**o) for x in self.weights]
+        else:
+            c_left, c_center, c_right = [np.array(x, dtype=dtype) for x in self.weights]
+        mode = self.mode
+
+        if isinstance(c_center[0], (int, float, np.integer, np.floating)):
+            fdm = self._fdm_regular(c_left, c_center, c_right, npts, only_core, only_center, mode, dtype)
+        else:
+            fdm = self._fdm_irregular(c_left, c_center, c_right, npts, only_core, only_center, mode, dtype)
+
+        return fdm
+
+    @classmethod
+    def _fdm_irregular(cls, c_left, c_center, c_right, npts, only_core, only_center, mode, dtype):
+        lcc = len(c_center)
+        if only_center:
+            shape = (1, npts)
+            if mode == "sparse":
+                fdm = sparse.lil_matrix(shape)
+            else:
+                fdm = np.zeros(shape)
+            lcf = len(c_left)
+            mid = np.math.floor(lcc)
+            x = c_center[mid]
+            p = lcf+mid
+            fdm[p:p+len(x)] = x
+        elif only_core:
+            lcf = len(c_left)
+            shape = (npts - lcc + (lcc % 2), npts)
+            if mode == "sparse":
+                fdm = sparse.lil_matrix(shape)
+            else:
+                fdm = np.zeros(shape)
+            for i, x in enumerate(c_center):
+                p = lcf+i
+                fdm[i, p:p+lcc] = x
+        else:
+            shape = (npts, npts)
+            if mode == "sparse":
+                fdm = sparse.lil_matrix(shape)
+            else:
+                fdm = np.zeros(shape)
+            lcf = len(c_left)
+            for i, x in enumerate(c_left):
+                fdm[i, i:i+lcf] = x
+            for j, x in enumerate(c_center):
+                fdm[j, j:j+lcc] = x
+            lcr = len(c_right)
+            for k, x in enumerate(c_right):
+                fdm[-k, -(k+lcr):-k] = x
+
+        return fdm
+
+    @classmethod
+    def _fdm_regular(cls, c_left, c_center, c_right, npts, only_core, only_center, mode, dtype):
+        lcc = len(c_center)
+        if only_center:
+
+            if mode == "sparse":
+                fdm = sparse.lil_matrix((1, npts), dtype=dtype)
+            else:
+                fdm = np.zeros((1, npts))
+            grid_mid = np.math.floor((npts - lcc + (lcc % 2))/2)
+            x = c_center
+            p = grid_mid
+            fdm[0, p:p + len(x)] = x
+        elif only_core:
+            fdm = cls._fdm_core(c_center, npts - lcc + (lcc % 2), npts, mode=mode)
+        else:
+            bound_l = min(int(np.floor(lcc / 2)), int(np.floor(npts / 2)))
+            # TODO: sometimes the grid-point stencils overrun the grid I actually have (for small grids)
+            # which means I need to handle these boundary cases better
+
+            bdm_l = cls._fdm_core(c_left, bound_l, npts, mode=mode)
+            bdm_r = cls._fdm_core(c_right, bound_l, npts, side="r", mode=mode)
+            core = cls._fdm_core(c_center, npts - lcc + (lcc % 2), npts, mode=mode)
+            if mode == "sparse":
+                fdm = sparse.vstack((bdm_l, core, bdm_r))
+                # print("\n", bdm_r.todense())
+            else:
+                fdm = np.array(np.vstack((bdm_l, core, bdm_r)))
+                # print("\n", fdm)
+
+        return fdm
+
+    @classmethod
+    def _fdm_core(cls, a, n1, n2, side="l", mode = "dense"):
+        # pulled from https://stackoverflow.com/a/52464135/5720002
+        # returns the inner blocks of the FD mat
+        if mode == "sparse":
+            offs = (n2-len(a)-n1+1) + np.arange(len(a)) if side == "r" else np.arange(len(a))
+            mmm = sparse.diags(a, offsets=offs, shape=(n1, n2), dtype=a.dtype)
+        else:
+            a = np.asarray(a)
+            p = np.zeros(n2, dtype=a.dtype)
+            b = np.concatenate((p, a, p))
+            s = b.strides[0]
+            strided = np.lib.stride_tricks.as_strided
+            if side == "r":
+                mmm = strided(b[len(a) + n1 - 1:], shape=(n1, n2), strides=(-s, s))
+            else:
+                mmm = strided(b[n2:], shape=(n1, n2), strides=(-s, s))
+        return mmm
 
 ##########################################################################################
 #
@@ -600,45 +794,48 @@ class FiniteDifferenceFunction:
 ##########################################################################################
 
 def finite_difference(grid, values, order,
-                      accuracy = 4,
+                      accuracy = 2,
                       stencil = None,
-                      end_point_precision = 4,
-                      axis = None,
-                      gridtype = FiniteDifferenceFunction.REGULAR_GRID,
+                      end_point_accuracy = 1,
+                      axes = None,
+                      dtype = "float64",
                       **kw
                       ):
     """Computes a finite difference derivative for the values on the grid
-
 
     :param grid: the grid of points for which the vlaues lie on
     :type grid: np.ndarray
     :param values: the values on the grid
     :type values: np.ndarray
     :param order: order of the derivative to compute
-    :type order: int | list[int]
+    :type order: int | Iterable[int]
     :param stencil: number of points to use in the stencil
-    :type stencil: int | list[int]
-    :param accuracy:
-    :type accuracy:
-    :param end_point_precision:
-    :type end_point_precision:
-    :param gridtype: 'regular' or 'irregular' specifying grid type
-    :type gridtype: str
+    :type stencil: int | Iterable[int]
+    :param accuracy: approximate accuracy of the derivative to request (overridden by `stencil`)
+    :type accuracy: int | Iterable[int]
+    :param end_point_accuracy: extra stencil points to use on the edges
+    :type end_point_accuracy: int | Iterable[int]
+    :param end_point_accuracy: extra stencil points to use on the edges
+    :param axes: which axes to perform the successive derivatives over (defaults to the first _n_ axes)
+    :type axes: int | Iterable[int]
     :return:
     :rtype:
     """
     gv = np.asarray(values)
+    if 'end_point_precision' in kw:
+        end_point_accuracy = kw['end_point_precision']
+    if 'axis' in kw:
+        axes = kw['axis']
     func = FiniteDifferenceFunction.from_grid(
         grid, order,
         accuracy = accuracy,
         stencil = stencil,
-        end_point_precision = end_point_precision,
-        axis = axis,
-        gridtype=gridtype,
+        end_point_accuracy = end_point_accuracy,
+        axes = axes,
+        dtype = dtype,
         **kw
     )
-    fdf = func.function
-    return fdf(gv)
+    return func(gv)
     # if func.gridtype != FiniteDifferenceFunction.IRREGULAR_GRID:
     #     return fdf(gv)
     # else:

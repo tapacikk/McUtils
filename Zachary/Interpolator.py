@@ -4,7 +4,7 @@ Sets up a general Interpolator class that looks like Mathematica's Interpolating
 
 import numpy as np
 import scipy.interpolate as interpolate
-from .Mesh import Mesh
+from .Mesh import Mesh, MeshType
 
 __all__ = [
     "Interpolator",
@@ -66,7 +66,7 @@ class Interpolator:
             # 1D cases trivial with interp1D
             # should maybe handle method...?
             interpolator = interpolate.interp1d(grid, vals, **opts)
-        elif grid.mesh_type == Mesh.MeshType_Structured:
+        elif grid.mesh_type == MeshType.Structured:
             if grid.dimension == 2:
                 # structured potentially 2D
                 x, y = grid.gridpoints.T
@@ -75,10 +75,10 @@ class Interpolator:
                 interpolator = interpolate.interp2d(x, y, v, **opts)
             else:
                 interpolator = interpolate.RegularGridInterpolator(grid.gridpoints, vals.flatten(), **opts)
-        elif grid.mesh_type == Mesh.MeshType_Unstructured:
+        elif grid.mesh_type == MeshType.Unstructured:
             # for now we'll only use the RadialBasisFunction interpolator, but this may be extended in the future
             interpolator = interpolate.Rbf(*grid.gridpoints.T, vals, **opts)
-        elif grid.mesh_type == Mesh.MeshType_SemiStructured:
+        elif grid.mesh_type == MeshType.SemiStructured:
             # 1d Cubic extrapolator to normal grid / 1d "fill" extrapolator (uses last data point to extend to regular grid)
             # not sure what we want to do here... I'm thinking we can use some default
             # extrapolator or the Rbf to extrapolate to a full grid then from there build a RegularGridInterpolator?

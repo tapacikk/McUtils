@@ -415,7 +415,7 @@ def parser(block):
         "values":parse["Coords"].array
     }
 
-mode = "Single"
+mode = "List"
 
 GaussianLogComponents["ScanEnergies"] = {
     "tag_start": tag_start,

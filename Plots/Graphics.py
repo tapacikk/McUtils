@@ -1060,7 +1060,10 @@ class GraphicsGrid:
             if isinstance(axes, matplotlib.axes.Axes):
                 axes = [[axes]]
             elif isinstance(axes[0], matplotlib.axes.Axes):
-                axes = [axes]
+                if ncols == 1:
+                    axes = [[ax] for ax in axes]
+                else:
+                    axes = [axes]
 
             if 'image_size' not in kw:
                 kw['image_size'] = (300, 300)
