@@ -407,7 +407,7 @@ class UnitsDataHandler(DataHandler):
                 conv = self.find_conversion(unit, target)
                 self.add_conversion(unit, target, conv)
             else:
-                conv = 1/conv
+                conv = 1/conv["Value"]
         else:
             conv = conv["Value"]
 

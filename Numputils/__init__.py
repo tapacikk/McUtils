@@ -6,4 +6,5 @@ from .EulerSystem import *
 from .TransformationMatrices import *
 from .TransformationTransformations import *
 from .VectorOps import *
+from .Sparse import *
 

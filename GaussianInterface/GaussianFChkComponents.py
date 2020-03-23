@@ -132,6 +132,7 @@ FormattedCheckpointCommonNames = {
 
     "Atomic numbers": "AtomicNumbers",
     "Current cartesian coordinates":"Coordinates",
+    "Cartesian Gradient": "Gradient",
     "Cartesian Force Constants" : "ForceConstants",
     "Cartesian 3rd/4th derivatives" : "ForceDerivatives",
     "Vib-E2" : "VibrationalData",

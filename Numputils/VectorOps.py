@@ -306,9 +306,9 @@ def vec_tensordot(tensa, tensb, axes=2):
         return np.tensordot(a, b, axes=axes)
 
     as_ = a_shape
-    nda = a.ndim - shared
+    nda = a.ndim
     bs = b.shape
-    ndb = b.ndim - shared
+    ndb = b.ndim
 
     equal = True
     if na != nb:

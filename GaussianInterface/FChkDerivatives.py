@@ -2,6 +2,7 @@
 Lazy class for holding force constants and higher derivative tensors pulled from the Gaussian log file
 """
 import numpy as np
+from ..Numputils import SparseArray
 
 class FchkForceConstants:
     """Holder class for force constants coming out of an fchk file
@@ -26,6 +27,9 @@ class FchkForceConstants:
     @property
     def n(self):
         return self._get_n()
+    @property
+    def shape(self):
+        return (3*self.n, 3*self.n)
 
     def _get_array(self):
         """Uses the computed n to make and symmetrize an appropriately formatted array from the lower-triangle data
@@ -100,18 +104,32 @@ class FchkForceDerivatives:
         """
         dim_1 = (3*n)
         mode_n = 3*n-6
-        full_array_1 = np.zeros((mode_n, dim_1, dim_1))
-        # set the lower triangle
-        inds_1 = np.tril_indices_from(full_array_1[0])
-        l_per = len(inds_1[0])
-        main_ind = np.broadcast_to(np.arange(mode_n), (l_per, mode_n)).flatten(order="F")
-        sub_ind_1 = np.broadcast_to(inds_1[0], (mode_n, l_per)).flatten()
-        sub_ind_2 = np.broadcast_to(inds_1[1], (mode_n, l_per)).flatten()
-        inds = ( main_ind, sub_ind_1, sub_ind_2 )
-        full_array_1[inds] = derivs
-        # set the upper triangle
-        inds2 = ( main_ind, sub_ind_2, sub_ind_1 ) # basically just taking a transpose
-        full_array_1[inds2] = derivs
+
+        # it is unclear to me _which_ way this data is ordered... but I think it's in blocks
+        modes_blocks = True
+        if modes_blocks: # assumes that we get mode_n blocks of lower-triangle data
+            full_array_1 = np.zeros((mode_n, dim_1, dim_1))
+            # set the lower triangle
+            inds_1, inds_2 = np.tril_indices(dim_1)
+            l_per = len(inds_1)
+            main_ind = np.broadcast_to(np.arange(mode_n)[:, np.newaxis], (mode_n, l_per)).flatten()
+            sub_ind_1 = np.broadcast_to(inds_1, (mode_n, l_per)).flatten()
+            sub_ind_2 = np.broadcast_to(inds_2, (mode_n, l_per)).flatten()
+            inds = ( main_ind, sub_ind_1, sub_ind_2 )
+            full_array_1[inds] = derivs
+            # set the upper triangle
+            inds2 = ( main_ind, sub_ind_2, sub_ind_1 ) # basically just taking a transpose
+            full_array_1[inds2] = derivs
+        else: # assumes we get a big lower triangle with each element a vector of length mode_n
+            full_array_1 = np.zeros((dim_1, dim_1, mode_n))
+            sub_1, sub_2 = np.tril_indices(dim_1)
+            l_per = len(sub_1)
+            main_ind = np.broadcast_to(np.arange(mode_n), (l_per, mode_n)).flatten()
+            sub_1 = np.broadcast_to(sub_1[:, np.newaxis], (l_per, mode_n)).flatten()
+            sub_2 = np.broadcast_to(sub_2[:, np.newaxis], (l_per, mode_n)).flatten()
+            full_array_1[sub_1, sub_2, main_ind] = derivs
+            full_array_1[sub_2, sub_1, main_ind] = derivs
+            full_array_1 = full_array_1.T
         return full_array_1
     def _get_third_deriv_array(self):
         """we make the appropriate 3D tensor from a bunch of 2D tensors
@@ -134,7 +152,7 @@ class FchkForceDerivatives:
         """
         n = self.n
         derivs = self.fourth_derivs
-        return self._fill_3d_tensor(n, derivs)
+        return SparseArray.from_diag(self._fill_3d_tensor(n, derivs))
     @property
     def fourth_deriv_array(self):
         return self._get_fourth_deriv_array()

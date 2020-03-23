@@ -3,7 +3,7 @@ LazyTensors provides a small framework for symbolically working with Tensors
 """
 
 import numpy as np
-import scipy.sparse as sp
+from ..Numputils import SparseArray
 
 __all__ = [
     'Tensor',
@@ -20,9 +20,7 @@ class Tensor:
     """A semi-symbolic representation of a tensor. Allows for lazy processing of tensor operations."""
     def __init__(self, a, shape = None):
         self._a = a
-        if shape is None:
-            shape = a.shape
-        self.shape = shape
+        self._shape = shape
     @classmethod
     def from_array(cls, a, shape = None):
         if isinstance(a, Tensor):
@@ -35,6 +33,12 @@ class Tensor:
             return self._a
         else:
             return self._a.array
+
+    def get_shape(self, a):
+        return a.shape
+    @property
+    def shape(self):
+        return self.get_shape(self._a)
     def get_dim(self):
         return len(self.shape)
     @property
@@ -104,6 +108,18 @@ class Tensor:
 
     def __repr__(self):
         return "{}(<{}>)".format(type(self).__name__, ", ".join((str(x) for x in self.shape)))
+
+class SparseTensor(Tensor):
+    """
+    Tensor class that uses SparseArray
+    """
+
+    def __init__(self, a, shape = None):
+        super().__init__(SparseArray(a), shape = shape)
+
+    @property
+    def array(self):
+        return self._a.todense()
 
 ########################################################################################################################
 #
@@ -281,82 +297,6 @@ class LazyOperatorTensor(Tensor):
             return res
         else:
             return self.operator(indices)
-
-    def __getitem__(self, item):
-        return self._get_element(item)
-
-class SparseTensor(Tensor):
-    """
-    Tensor class that holds sparse tensors in its deepest levels
-    """
-
-    def __init__(self, a, shape = None):
-        self._shape = shape
-        self._non_sparse_shape = None
-        if shape is None:
-            shape = -1
-        super().__init__(a, shape = shape)
-
-    @property
-    def array(self):
-        return NotImplementedError("don't yet have the sparse to dense code written...")
-
-    @property
-    def shape(self):
-        if self._shape is None:
-            self._shape = self._get_shape()
-        return self._shape
-    @shape.setter
-    def shape(self, value):
-        pass
-
-    @property
-    def non_sparse_shape(self):
-        if self._non_sparse_shape is None:
-            self._get_shape()
-        return self._non_sparse_shape
-
-    def _get_shape(self):
-
-        if isinstance(self._a, np.ndarray):
-            non_sp = self._a.shape
-            shape = self._a.flatten()[0].shape
-        else:
-            non_sp = []
-            shape = []
-            elm = self._a
-            while not isinstance(elm, (sp.csr_matrix, sp.coo_matrix, sp.csc_matrix)):
-                try:
-                    elm_2 = elm[0]
-                except IndexError:
-                    break
-                else:
-                    non_sp.append(len(elm))
-                    elm = elm_2
-            else: # only catch if no break
-                shape = elm.shape
-
-        self._non_sparse_shape = tuple(non_sp)
-        return self._non_sparse_shape + tuple(shape)
-
-    def _get_element(self, i):
-        from functools import reduce
-
-        if isinstance(i, (int, np.int)):
-            return self._a[0]
-        elif len(i) > len(self.non_sparse_shape):
-            # minor efficiency from not doing all these python loops when it may be avoided
-            lnsp = len(self.non_sparse_shape)
-            if isinstance(self._a, np.ndarray):
-                main = self._a[i[:lnsp]]
-            else:
-                main = reduce(lambda a,n:a[n], i[:lnsp], self._a)
-            return main[lnsp:]
-        else:
-            if isinstance(self._a, np.ndarray):
-                return self._a[i]
-            else:
-                return reduce(lambda a,n:a[n], i, self._a)
 
     def __getitem__(self, item):
         return self._get_element(item)
