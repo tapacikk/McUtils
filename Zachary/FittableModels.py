@@ -7,6 +7,12 @@ but we layer on conveniences w.r.t. specification of bases and automation of the
 import numpy as np, scipy.optimize as opt, enum
 from collections import OrderedDict as odict
 
+__all__ = [
+    "FittableModel",
+    "LinearFittableModel",
+    "LinearFitBasis"
+]
+
 class FittableModel:
     """
     Defines a model that can be fit

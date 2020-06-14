@@ -6,7 +6,10 @@ import abc, numpy as np
 
 __all__ = [
     "BaseSurface",
-    "TaylorSeriesSurface"
+    "TaylorSeriesSurface",
+    "LinearExpansionSurface",
+    "LinearFitSurface",
+    "InterpolatedSurface"
 ]
 
 class BaseSurface(metaclass=abc.ABCMeta):
@@ -39,6 +42,7 @@ class BaseSurface(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
+        gridpoints = np.asarray(gridpoints)
         if self.dimension is not None:
             gp_dim = gridpoints.shape[-1]
             if gp_dim != self.dimension:
@@ -54,7 +58,7 @@ class TaylorSeriesSurface(BaseSurface):
     """
     A surface with an evaluator built off of a Taylor series expansion
     """
-    def __init__(self, derivs, opts=None, *, dimension=None):
+    def __init__(self, *derivs, dimension=None, **opts):
         """
         :param data: derivs or a tuple of derivs + options
         :type data:
@@ -63,8 +67,6 @@ class TaylorSeriesSurface(BaseSurface):
         """
         from ..Taylor import FunctionExpansion
 
-        if opts is None:
-            opts = {}
         if dimension is None:
             dimension = len(derivs[0])
         self.expansion = FunctionExpansion(derivs, **opts)
@@ -115,6 +117,7 @@ class LinearExpansionSurface(BaseSurface):
         basis_values = [f(points, **kwargs) for f in self.basis]
         return np.dot(self.coeffs, basis_values)
 
+#TODO: add in a NonLinearFitSurface...
 class LinearFitSurface(LinearExpansionSurface):
     """
     A surface built off of a LinearExpansionSurface, but done by fitting.
@@ -138,7 +141,7 @@ class LinearFitSurface(LinearExpansionSurface):
             basis = LinearFitBasis([LinearFitBasis.power_series]*dim, order=order)
         self.model = LinearFittableModel(basis)
         self.model.fit(points)
-        super().__init__({"basis":basis, "coeffs":coefficients}, dimension)
+        super().__init__(self.model.parameter_values, basis, dimension)
 
     def evaluate(self, points, **kwargs):
         """
@@ -152,6 +155,30 @@ class LinearFitSurface(LinearExpansionSurface):
         """
 
         return self.model.evaluate(points)
+
+class InterpolatedSurface(BaseSurface):
+    """
+    A surface that operates by doing an interpolation of passed mesh data
+    """
+    def __init__(self, grid_points, **opts):
+        from ..Interpolator import Interpolator
+        dimension = grid_points.shape[-1] - 1
+        self.interp = Interpolator(grid_points[..., :-1], grid_points[..., -1], **opts)
+        super().__init__({"interpolator":self.interp}, dimension)
+
+    def evaluate(self, points, **kwargs):
+        """
+        We delegate all the dirty work to the Interpolator so hopefully that's working...
+        :param points:
+        :type points:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+        return self.interp(points)
+
+
 
 
 

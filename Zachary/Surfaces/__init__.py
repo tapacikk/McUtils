@@ -5,3 +5,12 @@ expansions basis expansions, or analytic representations.
 The idea is to provide a unified interface that represents the _concept_ while allowing for flexibility in implementation.
 Specific types of surfaces, like PES and dipole surfaces can be layered on top as superclasses and provided their own bespoke importers.
 """
+
+from .BaseSurface import *
+from .Surface import *
+
+__all__ = []
+from .BaseSurface import __all__ as exposed
+__all__ += exposed
+from .Surface import __all__ as exposed
+__all__ += exposed

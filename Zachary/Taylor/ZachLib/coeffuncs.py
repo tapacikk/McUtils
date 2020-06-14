@@ -150,10 +150,13 @@ def EvenFiniteDifferenceWeights(m, s, n):
 
     return coeffs
 
-try:
-    from .lib import UnevenFiniteDifferenceWeights as _UnevenFiniteDifferenceWeights
-except ImportError:
-    def _UnevenFiniteDifferenceWeights(m, s, n):
-        pass
+_UnevenFiniteDifferenceWeights = None
 def UnevenFiniteDifferenceWeights(m, z, x):
+    global _UnevenFiniteDifferenceWeights
+    if _UnevenFiniteDifferenceWeights is None:
+        try:
+            from .lib import UnevenFiniteDifferenceWeights as _UnevenFiniteDifferenceWeights
+        except ImportError:
+            def _UnevenFiniteDifferenceWeights(m, s, n):
+                raise NotImplementedError("Need to translate the C implementation to pure python; don't want to use an extension for something so minimal")
     return _UnevenFiniteDifferenceWeights(m, z, x)

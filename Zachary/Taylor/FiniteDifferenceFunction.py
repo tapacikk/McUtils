@@ -2,7 +2,7 @@
 Provides a general, convenient FiniteDifferenceFunction class to handle all of our difference FD imps
 """
 import numpy as np, scipy.sparse as sparse
-from .Mesh import Mesh, MeshType
+from ..Mesh import Mesh, MeshType
 
 __all__ = [
     'FiniteDifferenceFunction',
