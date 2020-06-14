@@ -67,6 +67,28 @@ class Line(GraphicsPrimitive):
 
             return line
 
+class Text(GraphicsPrimitive):
+    def __init__(self, txt, pos, **opts):
+        self.txt = txt
+        self.pos = pos
+        self.opts = opts
+    def plot(self, graphics, *args, **kwargs):
+        if isinstance(graphics.figure, VTKWindow):
+            raise NotImplemented
+        else:
+            return graphics.axes.arrow(self.txt, *self.pos, **self.opts)
+
+class Arrow(GraphicsPrimitive):
+    def __init__(self, pos1, pos2, **opts):
+        self.pos1 = pos1
+        self.pos2 = pos2
+        self.opts = opts
+    def plot(self, graphics, *args, **kwargs):
+        if isinstance(graphics.figure, VTKWindow):
+            raise NotImplemented
+        else:
+            return graphics.axes.arrow(*self.pos1, *(self.pos2 - self.pos1), **self.opts)
+
 class Sphere(GraphicsPrimitive):
     def __init__(self, position = (0, 0, 0), radius = 1, sphere_points = 48, **opts):
         self.pos = position

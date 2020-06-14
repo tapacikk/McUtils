@@ -16,6 +16,7 @@ __all__ = [
 ]
 
 
+
 ######################################################################################################
 #
 #                                    'adaptive' function sampling
@@ -163,6 +164,7 @@ def _get_3D_plotdata(func, xrange, yrange):
 #                                    Unified PlotBase class
 #
 #
+# Never implemented this
 
 ######################################################################################################
 #
@@ -208,9 +210,10 @@ class Plot(Graphics):
         # i.e. a Plot can be initialized but then do all its plotting later
         if plot_style is None:
             plot_style = {}
-        self.plot_style = plot_style
+        self._plot_style = plot_style
         self.plot_opts = opts
         self._initialized = False
+        self._data = None
 
         if len(params) > 0:
             self.plot(*params)
@@ -227,10 +230,33 @@ class Plot(Graphics):
 
     def plot(self, *params, **plot_style):
         plot_style = dict(self.plot_style, **plot_style)
+        self._data = (params, plot_style)
         self.graphics = self._plot_data(*params, **plot_style)
         if not self._initialized:
             self._initialize()
         return self.graphics
+
+    def clear(self):
+        for g in self.graphics:
+            self.axes.remove(g)
+        self.graphics=None
+
+    def restyle(self, **plot_style):
+        self.clear()
+        self.plot(*self.data, **plot_style)
+
+    @property
+    def data(self):
+        if self._data is None:
+            raise ValueError("{} hasn't been plotted in the first place...")
+        return self._data[0]
+    @property
+    def plot_style(self):
+        if self._data is None:
+            style = self.plot_style
+        else:
+            style = self._data[1]
+        return style
 
     def add_colorbar(self, graphics = None, norm = None,  **kw):
         if graphics is None and norm is None:
@@ -238,14 +264,14 @@ class Plot(Graphics):
         super().add_colorbar(graphics = graphics, **kw)
 
 class ScatterPlot(Plot):
+    """Plots a bunch of x values against a bunch of y values"""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, method="scatter", **kwargs)
 
-
 class ListScatterPlot(ScatterPlot):
+    """Plots a bunch of (x, y) points"""
     def __init__(self, griddata, **opts):
         super().__init__(griddata[:, 0], griddata[:, 1], **opts)
-
 
 class ErrorBarPlot(Plot):
     """A Plot object that plots error bars"""

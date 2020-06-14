@@ -1053,7 +1053,8 @@ class StructuredTypeArray:
                     # should we also force the values to be right...?
 
             else:
-                self._array = array
+                # print(">>>>", array)
+                self._array = np.array(array, dtype=str)
 
             # at this point we should deal with the filling level that we already had, I think...
             ft = self.filled_to[0]

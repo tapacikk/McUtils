@@ -1,16 +1,15 @@
 """
-A small framework for handling finite differencing of functions and other Taylor series related things
+Handles all of the "numerical math" stuff inside Mcutils which made it balloon a little bit
 """
 
-from .FiniteDifferenceFunction import __all__ as fd__all__
-from .FiniteDifferenceFunction import *
-from .Derivatives import *
+from .Taylor import *
+from .Mesh import __all__ as Mesh__all__
+from .Mesh import *
+from .Interpolator import *
 from .LazyTensors import *
-from .FunctionExpansions import *
 
 __all__ = (
-    fd__all__ +
-    Derivatives.__all__ +
-    LazyTensors.__all__ +
-    FunctionExpansions.__all__
+    Taylor.__all__ +
+    Mesh__all__ +
+    LazyTensors.__all__
 )

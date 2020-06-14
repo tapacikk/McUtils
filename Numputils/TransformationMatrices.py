@@ -190,6 +190,7 @@ def affine_matrix(tmat, shift):
     :return:
     :rtype:
     """
+
     base_mat = np.asarray(tmat)
     if shift is None:
         return base_mat

@@ -4,7 +4,7 @@ Provides Graphics base classes that can be extended upon
 import matplotlib.figure
 import matplotlib.axes
 
-__all__ = ["GraphicsBase", "Graphics", "Graphics3D", "GraphicsGrid"]
+__all__ = ["GraphicsBase", "Graphics", "Graphics3D", "GraphicsGrid", "Styled"]
 
 
 class GraphicsException(Exception):
@@ -32,7 +32,9 @@ class GraphicsBase(metaclass=ABCMeta):
         'image_size',
         'event_handlers',
         'animated',
-        'background'
+        'background',
+        'epilog'
+        'prolog'
     }
 
     def __init__(self,
@@ -141,6 +143,8 @@ class GraphicsBase(metaclass=ABCMeta):
     def set_options(self,
                     event_handlers=None,
                     animated=None,
+                    prolog=None,
+                    epilog=None,
                     **opts
                     ):
         """Sets options for the plot
@@ -154,6 +158,30 @@ class GraphicsBase(metaclass=ABCMeta):
         self.bind_events(event_handlers)
         self._animated = animated
         self.create_animation(animated)
+
+        self._prolog = prolog
+        if self._prolog is not None:
+            self.prolog = prolog
+
+        self._epilog = epilog
+        if self._epilog is not None:
+            self.epilog = epilog
+
+    @property
+    def prolog(self):
+        return self._prolog
+    @prolog.setter
+    def prolog(self, p):
+        # might want to clear the elements in the prolog?
+        self._prolog = p
+
+    @property
+    def epilog(self):
+        return self._epilog
+    @epilog.setter
+    def epilog(self, e):
+        # might want to clear the elements in the epilog?
+        self._epilog = e
 
     def __getattr__(self, item):
         try:
@@ -226,6 +254,11 @@ class GraphicsBase(metaclass=ABCMeta):
 
             if reshow or not self._shown:
                 self.set_options(**self.opts)  # matplotlib is dumb so it makes sense to just reset these again...
+                if self.epilog is not None:
+                    self._epilog_graphics = [ e.plot(self.axes) for e in self.epilog ]
+                if self.prolog is not None:
+                    self._prolog_graphics = [ p.plot(self.axes) for p in self.prolog ]
+
                 plt.show()
                 self._shown = True
             else:
@@ -281,6 +314,8 @@ class GraphicsBase(metaclass=ABCMeta):
         # currently assumes a matplotlib backend...
         return self.to_png().read()
 
+Styled = GraphicsBase.modified
+
 ########################################################################################################################
 #
 #                                               Graphics
@@ -292,6 +327,7 @@ class Graphics(GraphicsBase):
     def __init__(self, *args,
                  figure=None,
                  axes=None,
+                 frame=((True, False), (True, False)),
                  subplot_kw=None,
                  event_handlers=None,
                  animate=None,
@@ -303,6 +339,7 @@ class Graphics(GraphicsBase):
                  scale=None,
                  image_size=None,
                  background='white',
+                 aspect_ratio = 1,
                  colorbar = None,
                  **kwargs
                  ):
@@ -310,6 +347,7 @@ class Graphics(GraphicsBase):
             *args,
             figure=figure,
             axes=axes,
+            frame=frame,
             subplot_kw=subplot_kw,
             axes_labels=axes_labels,
             plot_label=plot_label,
@@ -317,6 +355,7 @@ class Graphics(GraphicsBase):
             plot_legend=plot_legend,
             ticks=ticks,
             scale=scale,
+            aspect_ratio=aspect_ratio,
             image_size=image_size,
             event_handlers=event_handlers,
             animate=animate,
@@ -330,12 +369,16 @@ class Graphics(GraphicsBase):
                     plot_label=None,
                     plot_range=None,
                     plot_legend=None,
+                    frame=None,
                     ticks=None,
                     scale=None,
                     ticks_style=None,
                     image_size=None,
+                    aspect_ratio=None,
                     background=None,
                     colorbar = None,
+                    prolog = None,
+                    epilog = None,
                     **parent_opts
                     ):
 
@@ -353,6 +396,10 @@ class Graphics(GraphicsBase):
         self._axes_labels = axes_labels
         if self._axes_labels is not None:
             self.axes_labels = axes_labels
+
+        self._frame = frame
+        if self.frame is not None:
+            self.frame = frame
 
         self._plot_range = plot_range
         if self._plot_range is not None:
@@ -373,6 +420,10 @@ class Graphics(GraphicsBase):
         self._image_size = image_size
         if image_size is not None:
             self.image_size = image_size
+
+        self._aspect_ratio = aspect_ratio
+        if aspect_ratio is not None:
+            self.aspect_ratio = aspect_ratio
 
         self._background = background
         if self._background is not None:
@@ -530,6 +581,17 @@ class Graphics(GraphicsBase):
 
     # set size
     @property
+    def aspect_ratio(self):
+        return self._aspect_ratio
+
+    @aspect_ratio.setter
+    def aspect_ratio(self, ar):
+        if isinstance(ar, (float, int, str)):
+            self.axes.set_aspect(ar)
+        else:
+            self.axes.set_aspect(ar[0], **ar[1])
+    # set size
+    @property
     def image_size(self):
         return self._image_size
 
@@ -577,6 +639,29 @@ class Graphics(GraphicsBase):
         self._background = bg
         self.figure.set_facecolor(bg)
         self.axes.set_facecolor(bg)
+
+    # set show_frame
+    @property
+    def frame(self):
+        return self._frame
+
+    @frame.setter
+    def frame(self, fr):
+        self._frame = fr
+        if fr is True or fr is False:
+            self.axes.set_frame_on(fr)
+        else:
+            lr, bt = fr
+            if len(lr) == 2:
+                l, r = lr
+            else:
+                l = lr; r=lr
+            if len(bt) == 2:
+                b, t = bt
+            else:
+                b = bt; t = bt
+            self.axes.spines['left'].set_visible(l); self.axes.spines['right'].set_visible(r)
+            self.axes.spines['bottom'].set_visible(b); self.axes.spines['top'].set_visible(t)
 
     @property
     def colorbar(self):

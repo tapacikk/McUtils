@@ -464,20 +464,28 @@ class RegexPattern:
             if no_captures and self.capturing:
                 # I guess we temporarily make our pattern a non-capturing one...?
 
+                if 'no_capture' in self._combine_kwargs:
+                    kwargs = self._combine_kwargs.copy()
+                    kwargs['no_capture'] = True
+                else:
+                    kwargs = self._combine_kwargs
                 comp = self.combine(
                     #unclear whether I should be putting the prefix/suffix inside or outside this ._.
                     prefix + self.join_function(joiner, kids, no_capture=True) + suffix,
                     *self._combine_args,
-                    no_capture = True,
-                    **self._combine_kwargs
+                    **kwargs
                 )
             else:
+                if 'no_capture' in self._combine_kwargs:
+                    kwargs = self._combine_kwargs.copy()
+                    kwargs['no_capture'] = (not self.capturing)
+                else:
+                    kwargs = self._combine_kwargs
                 comp = self.combine(
                     #unclear whether I should be putting the prefix/suffix inside or outside this ._.
                     prefix + self.join_function(joiner, kids, no_capture=(not self.capturing)) + suffix,
                     *self._combine_args,
-                    no_capture = (not self.capturing),
-                    **self._combine_kwargs
+                    **kwargs
                 )
             if isinstance(comp, RegexPattern): # to be honest I don't know how we got here...?
                 comp = comp.build(
@@ -793,7 +801,7 @@ Longest = RegexPattern(lm_p, "Longest")
 sm_p = shortest
 Shortest = RegexPattern(sm_p, "Shortest")
 
-def wrap_repeats(self, min = None, max = None):
+def wrap_repeats(self, min = None, max = None, no_capture=None):
     self.repetitions = (min, max)
 Repeating = RegexPattern(repeating,
                          "Repeating",

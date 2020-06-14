@@ -1,6 +1,6 @@
-from .LazyTensors import Tensor
+from ..LazyTensors import Tensor
 from .Derivatives import FiniteDifferenceDerivative
-from ..Coordinerds import CoordinateSet, CoordinateSystem
+from ...Coordinerds import CoordinateSet, CoordinateSystem
 import numpy as np, itertools
 
 __all__ = [

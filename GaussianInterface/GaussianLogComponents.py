@@ -507,6 +507,60 @@ GaussianLogComponents["OptimizedScanEnergies"] = {
 
 # endregion
 
+########################################################################################################################
+#
+#                                           X-Matrix
+#
+
+# region X-Matrix
+
+tag_start = FileStreamerTag(
+    """Total Anharmonic X Matrix (in cm^-1)""",
+    follow_ups=("""-"""*25,)
+)
+tag_end = FileStreamerTag(
+    tag_alternatives = (
+        """ ================================================== """,
+        """-"""*25
+    )
+)
+
+def parser(pars):
+    """Parses the scan summary block and returns only the energies"""
+    import numpy as np
+
+    energies = np.array([x.replace("D", "E") for x in DNumberPattern.findall(pars)])
+    l = len(energies)
+    n = int( (-1 + np.sqrt(1 + 8*l))/2 )
+    X = np.empty((n, n))
+    # gaussian returns the data as blocks of 5 columns in the lower-triangle, annoyingly,
+    # so we need to rearrange the indices so that they are sorted to make this work
+    i, j = np.tril_indices_from(X)
+    energies_taken = 0
+    blocks = int(np.ceil(n/5))
+    for b in range(blocks):
+        sel = np.where((b*5-1 < j) * (j < (b+1)*5))[0]
+        e_new=energies_taken+len(sel)
+        e = energies[energies_taken:e_new]
+        energies_taken=e_new
+        ii = i[sel]
+        jj = j[sel]
+        X[ii, jj] = e
+        X[jj, ii] = e
+
+    return X
+
+mode = "Single"
+
+GaussianLogComponents["XMatrix"] = {
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
+    "parser"   : parser,
+    "mode"     : mode
+}
+
+# endregion
+
 # endregion
 
 ########################################################################################################################

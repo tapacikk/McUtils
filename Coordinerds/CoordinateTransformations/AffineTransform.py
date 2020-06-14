@@ -18,7 +18,7 @@ class AffineTransform(TransformationFunction):
         """tmat must be a transformation matrix to work properly
 
         :param shift: the shift for the transformation
-        :type shift: np.ndarray
+        :type shift: np.ndarray | None
         :param tmat: the matrix for the linear transformation
         :type tmat: np.ndarray
         """
@@ -74,7 +74,8 @@ class AffineTransform(TransformationFunction):
         :type coords: np.ndarry
         """
 
-        coords = np.array(coords)
+        # Assumes that we're getting 3D cartesian coordinates...might not be a valid assumption
+        coords = np.asarray(coords)
         coord_shape = coords.shape
         if len(coord_shape) == 1:
             coords.reshape((1, coord_shape[1]))
