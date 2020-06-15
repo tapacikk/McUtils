@@ -65,7 +65,7 @@ class GaussianFChkReader(FileStreamReader):
         """
         return self.get_tagged_block(None, "Number of atoms")
 
-    fchk_re_pattern = r"^(.+?)\s+(I|R)\s+(N=)?\s+(.+)\s+" # matches name, type, num (if there), and val
+    fchk_re_pattern = r"^(.+?)\s+(I|R|C|H)\s+(N=)?\s+(.+)\s+" # matches name, type, num (if there), and val
     fchk_re = re.compile(fchk_re_pattern)
     def get_next_block_params(self):
         """Pulls the tag of the next block, the type, the number of bytes it'll be,
