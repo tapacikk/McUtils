@@ -42,15 +42,23 @@ class BaseSurface(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
+        if isinstance(gridpoints, (int, float, np.floating, np.integer)):
+            gridpoints = np.array([gridpoints])
         gridpoints = np.asarray(gridpoints)
         if self.dimension is not None:
-            gp_dim = gridpoints.shape[-1]
-            if gp_dim != self.dimension:
-                raise ValueError("{}: dimension mismatch in call, grid points had dim {} but surface expects dim {}".format(
-                    type(self).__name__,
-                    gp_dim,
-                    self.dimension
-                ))
+            if self.dimension == 1:
+                if gridpoints.ndim > 1:
+                    raise ValueError("{}: dimension mismatch in call, surface expects grid points to be 1D".format(
+                        type(self).__name__
+                    ))
+            else:
+                gp_dim = gridpoints.shape[-1]
+                if gp_dim != self.dimension:
+                    raise ValueError("{}: dimension mismatch in call, grid points had dim {} but surface expects dim {}".format(
+                        type(self).__name__,
+                        gp_dim,
+                        self.dimension
+                    ))
         return self.evaluate(gridpoints, **kwargs)
 
 
@@ -160,11 +168,14 @@ class InterpolatedSurface(BaseSurface):
     """
     A surface that operates by doing an interpolation of passed mesh data
     """
-    def __init__(self, grid_points, **opts):
+    def __init__(self, xdata, ydata=None, dimension=None, **opts):
         from ..Interpolator import Interpolator
-        dimension = grid_points.shape[-1] - 1
-        self.interp = Interpolator(grid_points[..., :-1], grid_points[..., -1], **opts)
-        super().__init__({"interpolator":self.interp}, dimension)
+        if ydata is None:
+            ydata = xdata[...,  -1]
+            xdata = xdata[..., :-1]
+        dimension = 1 if xdata.ndim == 1 else xdata.shape[-1]
+        self.interp = Interpolator(xdata, ydata, **opts)
+        super().__init__({"interpolator": self.interp}, dimension)
 
     def evaluate(self, points, **kwargs):
         """

@@ -145,30 +145,37 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 coords[ol[1:, 0]],
                 coords[ol[1:, 1]]
             )
-            angles = np.concatenate( (
-                [0],
-                self.get_angles(
-                    coords[ol[2:, 0]],
-                    coords[ol[2:, 1]],
-                    coords[ol[2:, 2]]
-                )
-            ) )
-            if not use_rad:
-                angles = np.rad2deg(angles)
-            diheds = np.concatenate( (
-                [0, 0],
-                self.get_diheds(
-                    coords[ol[3:, 0]],
-                    coords[ol[3:, 1]],
-                    coords[ol[3:, 2]],
-                    coords[ol[3:, 3]]
-                )
-            ) )
-            if not use_rad:
-                diheds = np.rad2deg(diheds)
+            if len(ol) > 2:
+                angles = np.concatenate( (
+                    [0],
+                    self.get_angles(
+                        coords[ol[2:, 0]],
+                        coords[ol[2:, 1]],
+                        coords[ol[2:, 2]]
+                    )
+                ) )
+                if not use_rad:
+                    angles = np.rad2deg(angles)
+            else:
+                angles = np.array([0.])
+            if len(ol) > 3:
+                diheds = np.concatenate( (
+                    [0, 0],
+                    self.get_diheds(
+                        coords[ol[3:, 0]],
+                        coords[ol[3:, 1]],
+                        coords[ol[3:, 2]],
+                        coords[ol[3:, 3]]
+                    )
+                ) )
+                if not use_rad:
+                    diheds = np.rad2deg(diheds)
+            else:
+                diheds = np.array([0, 0])
             ol = ol[1:]
 
         else: # multiconfig
+
             # we do all of this stuff with masking operations in the multiconfiguration cases
             mask = np.repeat(True, ncoords)
             mask[np.arange(0, ncoords, nol)] = False
@@ -177,33 +184,45 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 coords[ol[mask, 1]]
             )
 
-            # set up the mask to drop all of the first bits
-            mask[np.arange(1, ncoords, nol)] = False
-            angles = self.get_angles(
-                coords[ol[mask, 0]],
-                coords[ol[mask, 1]],
-                coords[ol[mask, 2]]
-            )
-            angles = np.append(angles, np.zeros(steps))
-            insert_pos = np.arange(0, ncoords-1*steps-1, nol-2)
-            angles = np.insert(angles, insert_pos, 0)
-            angles = angles[:ncoords-steps]
-            if not use_rad:
-                angles = np.rad2deg(angles)
+            if nol>2:
+                # set up the mask to drop all of the first bits
+                mask[np.arange(1, ncoords, nol)] = False
+                angles = self.get_angles(
+                    coords[ol[mask, 0]],
+                    coords[ol[mask, 1]],
+                    coords[ol[mask, 2]]
+                )
+                angles = np.append(angles, np.zeros(steps))
+                insert_pos = np.arange(0, ncoords-1*steps-1, nol-2)
+                angles = np.insert(angles, insert_pos, 0)
+                angles = angles[:ncoords-steps]
+                if not use_rad:
+                    angles = np.rad2deg(angles)
+            else:
+                angles = np.zeros(ncoords-steps)
 
-            # set up mask to drop all of the second bits (wtf it means 'second')
-            mask[np.arange(2, ncoords, nol)] = False
-            diheds = self.get_diheds(
-                coords[ol[mask, 0]],
-                coords[ol[mask, 1]],
-                coords[ol[mask, 2]],
-                coords[ol[mask, 3]]
-            )
-            diheds = np.append(diheds, np.zeros(2*steps))
-            diheds = np.insert(diheds, np.repeat(np.arange(0, ncoords-2*steps-1, nol-3), 2), 0)
-            diheds = diheds[:ncoords-steps]
-            if not use_rad:
-                diheds = np.rad2deg(diheds)
+
+            if nol > 3:
+                # set up mask to drop all of the second bits (wtf it means 'second')
+                mask[np.arange(2, ncoords, nol)] = False
+                diheds = self.get_diheds(
+                    coords[ol[mask, 0]],
+                    coords[ol[mask, 1]],
+                    coords[ol[mask, 2]],
+                    coords[ol[mask, 3]]
+                )
+                # pad diheds to be the size of ncoords
+                diheds = np.append(diheds, np.zeros(2*steps))
+
+                # insert zeros where undefined
+                diheds = np.insert(diheds, np.repeat(np.arange(0, ncoords-2*steps-1, nol-3), 2), 0)
+                # take only as many as actually used
+                diheds = diheds[:ncoords-steps]
+                if not use_rad:
+                    diheds = np.rad2deg(diheds)
+            else:
+                diheds = np.zeros(ncoords-steps)
+
 
             # after the np.insert calls we have the right number of final elements, but too many
             # ol and om elements and they're generally too large
@@ -224,9 +243,10 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
 
 
         if multiconfig:
-            origins = coords[ol[::nol, 1]]
-            x_axes = coords[ol[::nol, 0]] - origins
-            y_axes = coords[ol[1::nol, 0]] - origins
+            # figure out what to use for the axes
+            origins = coords[ol[::nol-1, 1]] # whatever was referenced by the first atom in the spec
+            x_axes  = coords[ ol[::nol-1, 0]] - origins # the first displacement vector
+            y_axes  = coords[ ol[1::nol-1, 0]] - origins # the second displacement vector (just defines the x-y plane, not the real y-axis)
             axes = np.array([x_axes, y_axes]).transpose((1, 0, 2))
             # print(origins.shape, axes.shape)
             # print(origins)

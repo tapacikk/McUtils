@@ -66,6 +66,7 @@ class RegexPattern:
                  prefix = None,
                  parser = None, # a parser function we can use instead of the default StringParser parser
                  handler = None, # a data handler for after capturing a block
+                 default_value = None, # default value for Optional types
                  capturing = None,
                  allow_inner_captures = False # whether or not to multiple captures for a given pattern
                  ):
@@ -151,6 +152,7 @@ class RegexPattern:
         self._suffix = suffix
         self.parser = parser
         self.handler = handler
+        self.default_value = default_value
 
         self._capturing = capturing
         self.allow_inner_captures = allow_inner_captures
@@ -158,6 +160,8 @@ class RegexPattern:
         # since I chose to let named groups take precedence over regular groups I guess I need to be cognizant of this...
         self.has_capturing_child = any((c.has_capturing_child or c.capturing) for c in self._children)
         self._capturing_groups = None
+
+
 
     @property
     def pat(self):
@@ -282,19 +286,19 @@ class RegexPattern:
                 subdts = [ g.dtype for g in subdts ]
 
             if len(subdts) == 0:
-                dt = StructuredType(str)
+                dt = StructuredType(str, default_value=self.default_value)
             elif isinstance(subdts, OrderedDict):
-                dt = StructuredType(subdts)
+                dt = StructuredType(subdts, default_value=self.default_value)
             elif len(subdts) == 1:
                 dt = subdts[0] # singular type
                 if not isinstance(dt, StructuredType):
-                    dt = StructuredType(dt)
+                    dt = StructuredType(dt, default_value=self.default_value)
             else:
                 import functools as ft
                 from operator import add
 
                 if not isinstance(subdts[0], StructuredType):
-                    subdts[0] = StructuredType(subdts[0])
+                    subdts[0] = StructuredType(subdts[0], default_value=self.default_value)
                 dt = ft.reduce(add, subdts) # build the compound type
             if self.repetitions is not None:
                 reps = self.repetitions
@@ -302,7 +306,7 @@ class RegexPattern:
                     reps = (reps, None)
                 dt = dt.repeat(*reps)
         elif dt is not None and (not isinstance(dt, StructuredType)):
-            dt = StructuredType(dt)
+            dt = StructuredType(dt, default_value=self.default_value)
 
         return dt
 
@@ -464,11 +468,9 @@ class RegexPattern:
             if no_captures and self.capturing:
                 # I guess we temporarily make our pattern a non-capturing one...?
 
-                if 'no_capture' in self._combine_kwargs:
-                    kwargs = self._combine_kwargs.copy()
-                    kwargs['no_capture'] = True
-                else:
-                    kwargs = self._combine_kwargs
+                kwargs = self._combine_kwargs.copy()
+                kwargs['no_capture'] = True
+
                 comp = self.combine(
                     #unclear whether I should be putting the prefix/suffix inside or outside this ._.
                     prefix + self.join_function(joiner, kids, no_capture=True) + suffix,
@@ -605,6 +607,7 @@ class RegexPattern:
                  parser = None,
                  handler = None,
                  capturing = None,
+                 default=None,
                  allow_inner_captures = None,
                  **kwargs
                  ):
@@ -640,6 +643,8 @@ class RegexPattern:
             new.parser = parser
         if handler is not None:
             new.handler = handler
+        if default is not None:
+            new.default_value = default
         if capturing is not None:
             new.capturing = capturing
         if allow_inner_captures is not None:
@@ -776,7 +781,7 @@ def duplicated(p, num, riffle="", no_capture = False):
     if isinstance(riffle, RegexPattern):
         riffle = str(riffle)
     return riffle.join([p]*num)
-def named(p, n, no_capture = False):
+def named(p, n, no_capture=False):
     if no_capture:
         return non_cap_p(p)
     else:

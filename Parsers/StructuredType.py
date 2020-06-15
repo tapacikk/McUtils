@@ -37,7 +37,22 @@ class StructuredType:
 
         self.is_alternative = is_alternative
         self.is_optional = is_optional
-        self.default = default_value # for optional types
+
+
+        self.default = default_value if default_value is not None else self._infer_default_value() # for optional types
+
+    def _infer_default_value(self):
+        missing = None
+        if isinstance(self.dtype, type):
+            if self.dtype is str:
+                missing = "[NaN]"
+            elif self.dtype is int or self.dtype is np.int:
+                missing = int(-121e12) # -(Na e N)
+            elif self.dtype is float or self.dtype is np.floating:
+                missing = np.nan
+        # I guess we're gonna assume no other cases will realistically need padding/defaults?
+        return missing
+
 
     @property
     def is_simple(self):
@@ -262,7 +277,7 @@ class StructuredTypeArray:
 
     # at some point this should make use of the more complex structured dtypes that NumPy provides...
     # for now we'll stick with this format, but using more NumPy will make stuff more efficient and easier to post-process
-    def __init__(self, stype, num_elements = 50):
+    def __init__(self, stype, num_elements = 50, padding_mode = 'fill', padding_value = None):
         """
         :param stype:
         :type stype: StructuredType
@@ -284,6 +299,9 @@ class StructuredTypeArray:
         self._array = None
         self._array = self.empty_array() # empty_array tries to use shape if possible
         self._append_depth = -1
+
+        self.padding_mode = padding_mode
+        self.padding_value = stype.default
 
     @property
     def is_simple(self):
@@ -639,12 +657,27 @@ class StructuredTypeArray:
                                 print(key, self._array.shape)
                                 raise
                             if num_els < num_needed:
-                                repeats = int(np.ceil(num_needed/num_els))
-                                value = np.tile(value, repeats)[:num_needed]
+                                if self.padding_mode == 'repeat':
+                                    repeats = int(np.ceil(num_needed/num_els))
+                                    value = np.tile(value, repeats)[:num_needed]
+                                elif self.padding_mode == 'last':
+                                    value = np.concatenate((value, np.full(num_needed-num_els, value[-1])))
+                                elif self.padding_mode == 'fill':
+                                    value = np.concatenate((value, np.full(num_needed-num_els, self.padding_value)))
+                                else:
+                                    raise StructuredTypeArrayException("unknown padding_mode '{}'".format(
+                                        self.padding_mode
+                                    ))
+
+
                     else:
                         # we can now determine our shape and so we will force the shape
-                        curr_slices = (slice(None, None), ) * append_chops
-                        slices =  curr_slices + tuple( slice(0, x) if self.axis_shape_indeterminate(i) else None for i, x in enumerate(value.shape) )
+                        take_all = slice(None, None)
+                        curr_slices = (take_all, ) * append_chops
+                        slices = curr_slices + tuple(
+                            slice(0, x) if self.axis_shape_indeterminate(i) else take_all
+                            for i, x in enumerate(value.shape)
+                        )
                         self._array = self._array[slices]
 
                     value = value.astype(self.dtype)
@@ -654,7 +687,7 @@ class StructuredTypeArray:
                         num_val = int(str(value.dtype).strip("<US|"))
                         if num_arr < num_val:
                             self._array = self._array.astype(value.dtype)
-                    # print(key, self._array.shape)
+                    # print(key, value, self._array.shape)
                     self._array[key] = value
                     fill=self.filled_to
                     self.filled_to = fill[:append_chops] + list(max(a, s) for a,s in zip(fill[append_chops:], value.shape))

@@ -239,7 +239,8 @@ class SparseArray:
         """
 
         # print(">>>>", idx, self.shape)
-
+        if isinstance(idx, (int, np.integer)):
+            idx = (idx,)
         pull_elements = len(idx) == len(self.shape) and all(isinstance(x, (int, np.integer)) for x in idx)
         if not pull_elements:
             pull_elements = all(not isinstance(x, (int, np.integer, slice)) for x in idx)
@@ -256,7 +257,9 @@ class SparseArray:
         else:
             # need to compute the shape of the resultant block _and_ keep it as
             blocks = [np.array([i]) if isinstance(i, (int, np.integer)) else np.arange(s)[i] for i, s in zip(idx, self.shape)]
-            new_shape = [len(x) for x in blocks]
+            # print(blocks)
+            new_shape = [len(x) for x in blocks if len(x) > 1] + list(self.shape[len(blocks):])
+            # print(new_shape)
             data, inds = self.block_data
             inds = list(inds)
             for i, b, s in zip(range(len(blocks)), blocks, self.shape):
@@ -289,7 +292,18 @@ class SparseArray:
                 unflat = inds
                 total_shape = new_shape
 
-            data = self._build_data(data, unflat, total_shape)
+            try:
+                data = self._build_data(data, unflat, total_shape)
+            except Exception as e:
+                print(data.shape, unflat)
+                data = e
+            if isinstance(data, Exception):
+                raise IndexError("{}: couldn't take element {} of array {} (Got Error: '{}')".format(
+                    type(self).__name__,
+                    idx,
+                    self,
+                    data
+                ))
             return type(self)(data, shape=new_shape, layout=self.fmt)
     def __getitem__(self, item):
         return self._get_element(item)

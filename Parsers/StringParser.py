@@ -244,6 +244,7 @@ class StringParser:
             single = None
 
         # if we're given a non-string regex we compile it
+        base_regex = regex
         if isinstance(regex, RegexPattern):
             regex = regex.compiled
 
@@ -638,8 +639,15 @@ class StringParser:
                 if k in block_handlers:
                     handler = block_handlers[k]
                 else:
-                    # unclear what we do in this case? By default we'll just not bother to handle it
-                    handler = None
+                    # unclear what we do in this case?
+                    # Unless it breaks too much stuff, we'll throw an error...
+                    # Originally, by default we just chose to not bother to handle it
+                    # handler = None
+                    raise StringParserException("{}: can't find a handler for group '{}' in block handlers ({})".format(
+                        type(self).__name__,
+                        k,
+                        block_handlers
+                    ))
 
                 self._handle_insert_result(r, handler, v, single = single, append = append)
 
@@ -842,7 +850,8 @@ class StringParser:
                  array = None,
                  append = False,
                  dtype = 'float',
-                 shape = None
+                 shape = None,
+                 pre=None
                  ):
         """A method to take a string or iterable of strings and quickly dump it to a NumPy array of the right dtype (if it can be cast as one)
 
@@ -860,13 +869,21 @@ class StringParser:
                 # we need to load each chunk in turn...
                 def hold_me_closer_tiny_dancer(data, dtype = dtype, cls = cls):
                     if data.ndim == 1:
-                        return cls.load_array('\n'.join((d.strip() for d in data)), dtype = dtype)
+                        bleh = '\n'.join((d.strip() for d in data))
+                        if pre is not None:
+                            bleh = pre(bleh)
+                        return cls.load_array(bleh, dtype = dtype)
                     else:
                         return [ hold_me_closer_tiny_dancer(d) for d in data ]
                 arr = np.array(hold_me_closer_tiny_dancer(data))
             else:
-                arr = cls.load_array('\n'.join((d.strip() for d in data)), dtype=dtype)
+                bleh = '\n'.join((d.strip() for d in data))
+                if pre is not None:
+                    bleh = pre(bleh)
+                arr = cls.load_array(bleh, dtype=dtype)
         else:
+            if pre is not None:
+                data = pre(data)
             arr = cls.load_array(data, dtype=dtype)
         if shape is not None:
             fudge_axis = [ i for i, s in enumerate(shape) if s is None]
@@ -902,7 +919,8 @@ class StringParser:
                       array = None,
                       append = False,
                       dtype = 'float',
-                      shape = None
+                      shape = None,
+                      pre = None
                       ):
         """Returns a handler that uses to_array
 
@@ -916,6 +934,6 @@ class StringParser:
         :rtype:
         """
         def handler(data, array = array, append = append, dtype = dtype, shape = shape, cls=cls):
-            return cls.to_array(data, array = array, append = append, dtype = dtype, shape = shape)
+            return cls.to_array(data, array = array, append = append, dtype = dtype, shape = shape, pre=pre)
         return handler
     #endregion

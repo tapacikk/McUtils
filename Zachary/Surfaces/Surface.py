@@ -125,7 +125,7 @@ class DipoleSurface(MultiSurface):
             mu_z
         )
     @classmethod
-    def from_log_file(cls, log_file, coord_transf, **opts):
+    def from_log_file(cls, log_file, coord_transf, tol = .001, keys = ("StandardCartesianCoordinates", "DipoleMoments"), **opts):
         """
         Loads dipoles from a Gaussian log file and builds a dipole surface by interpolating.
         Obviously this only really works if we have a subset of "scan" coordinates, so at this stage the user is obligated
@@ -141,10 +141,41 @@ class DipoleSurface(MultiSurface):
         from ...GaussianInterface import GaussianLogReader
 
         with GaussianLogReader(log_file) as parser:
-            parse_data = parser.parse(["CartesianCoordinates", "DipoleMoments"])
+            parse_data = parser.parse(keys)
 
-        scan_coords = coord_transf(parser["CartesianCoordinates"])
-        dipoles = list(np.transpose(parse_data["DipoleMoments"]))
+        carts = parse_data[keys[0]][1]
+        dipoles = parse_data[keys[1]]
+        scan_coords = coord_transf(carts)
+        if len(dipoles) != len(scan_coords):
+            raise ValueError(
+                "mismatch between number of dipoles ({}) and number of coordinates ({})".format(
+                    len(dipoles),
+                    len(scan_coords)
+                )
+            )
+
+        if scan_coords.ndim == 1:
+            scan_sort = np.argsort(scan_coords)
+        else:
+            scan_sort = np.lexsort(tuple(reversed(tuple(scan_coords.T))))
+        scan_coords = scan_coords[scan_sort]
+        dipoles = dipoles[scan_sort]
+
+        # this is particularly relevant for optimization scans...but we pull all the "unique" indices
+        # then we pull the indices right _before_ each unique one since that's the final one in the block of "uniques"
+        # finally we do a "roll" to make sure the order from the sort is preserved
+        tol_coords = np.floor(scan_coords/tol)
+        if tol_coords.ndim == 1:
+            diffs = np.diff(tol_coords)
+        else:
+            print(tol_coords)
+            diffs = np.sum(abs(np.diff(tol_coords, axis=0)), axis=1)
+        inds = np.where(diffs != 0)[0]
+        inds = np.concatenate((inds, [len(inds)]))
+        scan_coords = scan_coords[inds]
+        dipoles = dipoles[inds]
+
+        dipoles = list(np.transpose(dipoles))
 
         return MultiSurface(*(
             Surface(

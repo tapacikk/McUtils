@@ -64,8 +64,13 @@ CartParser = StringParser(
     Repeating(
         (
             Named(
-                Repeating(Capturing(PositiveInteger), min=3, max=3, prefix=Optional(Whitespace), suffix=Whitespace),
-                "GaussianStuff"
+                Repeating(
+                    Capturing(PositiveInteger),
+                    min=3, max=3,
+                    prefix=Optional(Whitespace),
+                    suffix=Whitespace
+                ),
+                "GaussianStuff", handler=StringParser.array_handler(dtype=int)
             ),
             Named(
                 Repeating(
@@ -75,12 +80,14 @@ CartParser = StringParser(
                     prefix=Optional(Whitespace),
                     joiner = Whitespace
                 ),
-                "Coordinates"
+                "Coordinates", handler=StringParser.array_handler(dtype=float)
             )
         ),
         suffix = Optional(Newline)
     )
 )
+
+# raise Exception(CartParser.regex)
 
 def cartesian_coordinates_parser(strs):
     strss = "\n\n".join(strs)
@@ -154,7 +161,7 @@ ZMatParser = StringParser(
                     min = None,
                     max = 3,
                     prefix=Optional(Whitespace),
-                    joiner = Whitespace
+                    joiner = Whitespace,
                 ),
                 "Coordinates"
             )
@@ -316,13 +323,17 @@ GaussianLogComponents["DipoleMoments"] = {
 tag_start  = " Dipole        ="
 tag_end    = " Optimization"
 
-DNumberPattern = RegexPattern((Number, "D", Integer), dtype = str)
+
+def convert_D_number(a, **kw):
+    import numpy as np
+    return np.array([float(s.replace("D", "E")) for s in a])
+DNumberPattern = RegexPattern((Number, "D", Integer), dtype=float)
 OptimizedDipolesParser = StringParser(
     RegexPattern(
         (
             "Dipole", "=",
             Repeating(
-                Capturing(DNumberPattern),
+                Capturing(DNumberPattern, handler=convert_D_number),
                 min=3,
                 max=3,
                 suffix=Optional(Whitespace)
@@ -345,11 +356,12 @@ def parser(mom):
 
     if match is None:
         return np.array([])
-    else:
-        grp = match.value
-        dip_list = [x.replace("D", "E") for x in grp]
-        dip_array = np.asarray(dip_list)
-        return dip_array.astype("float64")
+    return match.value.array
+    # else:
+    #     grp = match.value
+    #     dip_list = [x.replace("D", "E") for x in grp]
+    #     dip_array = np.asarray(dip_list)
+    #     return dip_array.astype("float64")
 
 mode       = "List"
 parse_mode = "Single"
@@ -415,7 +427,7 @@ def parser(block):
         "values":parse["Coords"].array
     }
 
-mode = "List"
+mode = "Single"
 
 GaussianLogComponents["ScanEnergies"] = {
     "tag_start": tag_start,
@@ -526,7 +538,7 @@ tag_end = FileStreamerTag(
 )
 
 def parser(pars):
-    """Parses the scan summary block and returns only the energies"""
+    """Parses the X matrix block and returns stuff --> huge pain in the ass function"""
     import numpy as np
 
     energies = np.array([x.replace("D", "E") for x in DNumberPattern.findall(pars)])

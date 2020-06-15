@@ -29,7 +29,9 @@ class Interpolator:
                  grid,
                  vals,
                  interpolation_function=None,
+                 interpolation_order=None,
                  extrapolator=None,
+                 extrapolation_order=1,
                  **interpolation_opts
                  ):
         """
@@ -39,24 +41,37 @@ class Interpolator:
         :type vals: np.ndarray
         :param interpolation_function: the basic function to be used to handle the raw interpolation
         :type interpolation_function: None | function
+        :param interpolation_order: the order of extrapolation to use (when applicable)
+        :type interpolation_order: int | str | None
         :param extrapolator: the extrapolator to use for data points not on the grid
-        :type extrapolator: Extrapolator
+        :type extrapolator: Extrapolator | None | str | function
+        :param extrapolation_order: the order of extrapolation to use by default
+        :type extrapolation_order: int | str | None
         :param interpolation_opts: the options to be fed into the interpolating_function
         :type interpolation_opts:
         """
         self.grid = grid = Mesh(grid) if not isinstance(grid, Mesh) else grid
         self.vals = vals
-        self.interpolator = self.get_interpolator(grid, vals, **interpolation_opts) if interpolation_function is None else interpolation_function
-        self.extrapolator = self.get_extrapolator(grid) if extrapolator is None else extrapolator
+        if interpolation_function is None:
+            interpolation_function = self.get_interpolator(grid, vals, interpolation_order=interpolation_order, **interpolation_opts)
+        self.interpolator = interpolation_function
+        if extrapolator is not None:
+            if extrapolator == 'Automatic':
+                extrapolator = self.get_extrapolator(grid, vals, extrapolation_order=extrapolation_order)
+            elif not isinstance(extrapolator, Extrapolator):
+                extrapolator = Extrapolator(extrapolator)
+        self.extrapolator = extrapolator
 
     @classmethod
-    def get_interpolator(cls, grid, vals, **opts):
+    def get_interpolator(cls, grid, vals, interpolation_order = None, **opts):
         """Returns a function that can be called on grid points to interpolate them
 
         :param grid:
         :type grid: Mesh
         :param vals:
         :type vals: np.ndarray
+        :param interpolation_order:
+        :type interpolation_order: int | str | None
         :param opts:
         :type opts:
         :return: interpolator
@@ -65,6 +80,10 @@ class Interpolator:
         if grid.ndim == 1:
             # 1D cases trivial with interp1D
             # should maybe handle method...?
+            if interpolation_order is not None:
+                opts['kind'] = interpolation_order
+            if 'bounds_error' not in opts:
+                opts['bounds_error'] = False
             interpolator = interpolate.interp1d(grid, vals, **opts)
         elif grid.mesh_type == MeshType.Structured:
             if grid.dimension == 2:
@@ -72,17 +91,57 @@ class Interpolator:
                 x, y = grid.gridpoints.T
                 v = vals.flatten()
                 # should add something for automatic method determination I think...
+                if interpolation_order is not None:
+                    opts['kind'] = interpolation_order
                 interpolator = interpolate.interp2d(x, y, v, **opts)
             else:
+                if interpolation_order is not None:
+                    if isinstance(interpolation_order, int):
+                        if interpolation_order == 1:
+                            interpolation_order = "linear"
+                        else:
+                            raise InterpolatorException("Interpolator '{}' doesn't support interpolation order '{}'".format(
+                                interpolate.RegularGridInterpolator,
+                                interpolation_order
+                            ))
+                    opts['kind'] = interpolation_order
                 interpolator = interpolate.RegularGridInterpolator(grid.gridpoints, vals.flatten(), **opts)
         elif grid.mesh_type == MeshType.Unstructured:
             # for now we'll only use the RadialBasisFunction interpolator, but this may be extended in the future
+            if interpolation_order is not None:
+                if isinstance(interpolation_order, int):
+                    if interpolation_order == 1:
+                        interpolation_order = "linear"
+                    elif interpolation_order == 3:
+                        interpolation_order = "cubic"
+                    elif interpolation_order == 5:
+                        interpolation_order = "quintic"
+                    else:
+                        raise InterpolatorException("Interpolator '{}' doesn't support interpolation order '{}'".format(
+                            interpolate.Rbf,
+                            interpolation_order
+                        ))
+                opts['method'] = interpolation_order
             interpolator = interpolate.Rbf(*grid.gridpoints.T, vals, **opts)
         elif grid.mesh_type == MeshType.SemiStructured:
-            # 1d Cubic extrapolator to normal grid / 1d "fill" extrapolator (uses last data point to extend to regular grid)
-            # not sure what we want to do here... I'm thinking we can use some default
-            # extrapolator or the Rbf to extrapolate to a full grid then from there build a RegularGridInterpolator?
-            raise NotImplemented
+            if interpolation_order is not None:
+                if isinstance(interpolation_order, int):
+                    if interpolation_order == 1:
+                        interpolation_order = "linear"
+                    elif interpolation_order == 3:
+                        interpolation_order = "cubic"
+                    else:
+                        raise InterpolatorException("Interpolator '{}' doesn't support interpolation order '{}'".format(
+                            interpolate.griddata,
+                            interpolation_order
+                        ))
+                opts['method'] = interpolation_order
+            def interpolator(xi, g=grid, v=vals, opts=opts):
+                return interpolate.griddata(v, g, xi, **opts)
+            # # 1d Cubic extrapolator to normal grid / 1d "fill" extrapolator (uses last data point to extend to regular grid)
+            # # not sure what we want to do here... I'm thinking we can use some default
+            # # extrapolator or the Rbf to extrapolate to a full grid then from there build a RegularGridInterpolator?
+            # raise NotImplemented
         else:
             raise InterpolatorException("{}.{}: can't handle mesh_type '{}'".format(
                 cls.__name__,
@@ -93,19 +152,29 @@ class Interpolator:
         return interpolator
 
     @classmethod
-    def get_extrapolator(cls, grid):
-        """Returns an Extrapolator that can be called on grid points to extrapolate them
+    def get_extrapolator(cls, grid, vals, extrapolation_order=2):
+        """
+        Returns an Extrapolator that can be called on grid points to extrapolate them
 
         :param grid:
         :type grid: np.ndarray
-        :param opts:
-        :type opts:
+        :param extrapolation_order:
+        :type extrapolation_order: int
         :return: extrapolator
         :rtype: Extrapolator
         """
-        ...
+        #TODO: turns out this works for Mathematica...but scipy isn't half so sophisticated
 
-    def apply(self, grid_points):
+        return Extrapolator(
+            cls(
+                grid,
+                vals,
+                interpolation_order=1,
+                extrapolator=Extrapolator(lambda g:np.full(g.shape, np.nan))
+            )
+        )
+
+    def apply(self, grid_points, **opts):
         """Interpolates then extrapolates the function at the grid_points
 
         :param grid_points:
@@ -116,11 +185,14 @@ class Interpolator:
         # determining what points are "inside" a region is quite tough
         # instead it is probably better to allow the basic thing to interpolate and do its thing
         # and then allow the extrapolator to post-process that result
-        vals = self.interpolator(grid_points)
-        return self.extrapolator(grid_points, vals)
+        vals = self.interpolator(grid_points, **opts)
+        if self.extrapolator is not None:
+            print(self.extrapolator)
+            vals = self.extrapolator(grid_points, vals)
+        return vals
 
     def __call__(self, *args, **kwargs):
-        self.apply(*args, **kwargs)
+        return self.apply(*args, **kwargs)
 
     # we can define a bunch of non-standard interpolators here
     @classmethod
@@ -163,7 +235,7 @@ class Interpolator:
 
     def regularize_mesh(self,
                        interp_kind='cubic',
-                       interpolator = None,
+                       interpolator=None,
                        **kwargs
                        ):
         """
@@ -219,7 +291,8 @@ class Interpolator:
         return square_grid, square_vals
 
     def regular_grid(self, interp_kind='cubic', fillvalues=False, plot=False, **kwargs):
-        """ TODO: extend to also check y coordinates... maybe add param to do x, y, or both?
+        """
+        TODO: extend to also check y coordinates... maybe add param to do x, y, or both?
         creates a regular grid from a set of semistructured points. Only has 2D capabilities.
         :param grid: a semistructured grid of points.
         :type grid: np.ndarray (x, y)
@@ -276,11 +349,14 @@ class Interpolator:
 ######################################################################################################
 class Extrapolator:
     """
-    A general purpose that takes your data and just extrapolates it
+    A general purpose that takes your data and just extrapolates it.
+    This currently only exists in template format.
+    As I do more work with the Surface stuff I'm sure this will get filled out more.
+    One big target is to use
     """
     def __init__(self,
                  extrapolation_function,
-                 warning = False,
+                 warning=False,
                  **opts
                  ):
         """
@@ -296,9 +372,9 @@ class Extrapolator:
         self.extrap_warning = warning
         self.opts = opts
 
-    def find_extrapolated_points(self, gps, vals):
+    def find_extrapolated_points(self, gps, vals, extrap_value = np.nan):
         """
-
+        Currently super rough heuristics to determine at which points we need to extrapolate
         :param gps:
         :type gps:
         :param vals:
@@ -306,7 +382,16 @@ class Extrapolator:
         :return:
         :rtype:
         """
-        ...
+        if extrap_value is np.nan:
+            where = np.isnan(vals)
+        elif extrap_value is np.inf:
+            where = np.isinf(vals)
+        elif not isinstance(extrap_value, (int, float, np.floating, np.integer)):
+            where = np.logical_and(vals <= extrap_value[0], vals >= extrap_value[1])
+        else:
+            where = np.where(vals == extrap_value)
+
+        return gps[where], where
 
     def extrap2d(self, gps, vals, extrap_kind='linear'):
         """ Takes a regular grid and creates a function for interpolation/extrapolation.
@@ -335,8 +420,13 @@ class Extrapolator:
 
         return pf
 
-    def apply(self, gps, vals):
-        ...
+    def apply(self, gps, vals, extrap_value = np.nan):
+        ext_gps, inds = self.find_extrapolated_points(gps, vals, extrap_value=extrap_value)
+        if len(ext_gps) > 0:
+            new_vals = self.extrapolator(ext_gps)
+            # TODO: emit a warning about extrapolating if we're doing so
+            vals[inds] = new_vals
+        return vals
 
     def __call__(self, *args, **kwargs):
-        self.apply(*args, **kwargs)
+        return self.apply(*args, **kwargs)

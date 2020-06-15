@@ -7,3 +7,5 @@ provided.
 """
 
 from .CoordinateSystems import *
+from .CoordinateTransformations import *
+from .Conveniences import *
