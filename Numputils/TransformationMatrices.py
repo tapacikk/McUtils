@@ -208,10 +208,12 @@ def affine_matrix(tmat, shift):
 
     else:
         base_shift = np.append(np.array(shift), [1])
-        np.reshape(base_shift, (4, 1))
-        mat = np.append(
-            np.append(base_mat, np.zeros((1, 3)), axis=0),
-            base_shift.transpose(),
-            axis=1
+        mat = np.column_stack(
+            (
+                np.row_stack(
+                    (base_mat, np.zeros((1, 3)))
+                ),
+                base_shift
+            )
         )
     return mat

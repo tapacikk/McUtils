@@ -1,6 +1,7 @@
 
 from .BaseSurface import *
 import numpy as np
+from collections import namedtuple
 
 __all__ = [
     "Surface",
@@ -59,7 +60,7 @@ class Surface:
         :return:
         :rtype:
         """
-        from ..FittableModel import LinearFitBasis
+        from ..FittableModels import LinearFitBasis
 
         # try a Taylor expansion
         if (
@@ -124,8 +125,20 @@ class DipoleSurface(MultiSurface):
             mu_y,
             mu_z
         )
+
+    @staticmethod
+    def get_log_values(log_file, keys=("StandardCartesianCoordinates", "DipoleMoments")):
+        from ...GaussianInterface import GaussianLogReader
+
+        with GaussianLogReader(log_file) as parser:
+            parse_data = parser.parse(keys)
+
+        carts = parse_data[keys[0]][1]
+        dipoles = np.array(parse_data[keys[1]])
+
+        return namedtuple('dipole_log_values', ['cartesians', 'dipoles'])(carts, dipoles)
     @classmethod
-    def from_log_file(cls, log_file, coord_transf, tol = .001, keys = ("StandardCartesianCoordinates", "DipoleMoments"), **opts):
+    def from_log_file(cls, log_file, coord_transf, keys=("StandardCartesianCoordinates", "DipoleMoments"), tol = .001, **opts):
         """
         Loads dipoles from a Gaussian log file and builds a dipole surface by interpolating.
         Obviously this only really works if we have a subset of "scan" coordinates, so at this stage the user is obligated
@@ -138,13 +151,8 @@ class DipoleSurface(MultiSurface):
         :rtype:
         """
 
-        from ...GaussianInterface import GaussianLogReader
+        carts, dipoles = cls.get_log_values(log_file, keys=keys)
 
-        with GaussianLogReader(log_file) as parser:
-            parse_data = parser.parse(keys)
-
-        carts = parse_data[keys[0]][1]
-        dipoles = parse_data[keys[1]]
         scan_coords = coord_transf(carts)
         if len(dipoles) != len(scan_coords):
             raise ValueError(
@@ -185,6 +193,19 @@ class DipoleSurface(MultiSurface):
             ) for i,d in enumerate(dipoles)
         ))
 
+    @staticmethod
+    def get_fchk_values(fchk_file):
+        from ...GaussianInterface import GaussianFChkReader
+
+        with GaussianFChkReader(fchk_file) as parser:
+            parse_data = parser.parse(["Coordinates", "Dipole Moment", "Dipole Derivatives"])
+
+        center = parse_data["Coordinates"]
+        const_dipole = parse_data["Dipole Moment"]
+        derivs = parse_data["Dipole Derivatives"]
+        derivs = np.reshape(derivs, (int(len(derivs) / 3), 3))
+
+        return namedtuple('dipole_fchk_values', ['center', 'const', 'derivs'])(center, const_dipole, derivs)
     @classmethod
     def from_fchk_file(cls, fchk_file, **opts):
         """
@@ -196,15 +217,7 @@ class DipoleSurface(MultiSurface):
         :rtype:
         """
 
-        from ...GaussianInterface import GaussianFChkReader
-
-        with GaussianFChkReader(fchk_file) as parser:
-            parse_data = parser.parse(["Coordinates", "Dipole Moment", "Dipole Derivatives"])
-
-        center = parse_data["Coordinates"]
-        const_dipole = parse_data["Dipole Moment"]
-        derivs = parse_data["Dipole Derivatives"]
-        derivs = np.reshape(derivs, (int(len(derivs)/3), 3))
+        center, const_dipole, derivs = cls.get_fchk_values(fchk_file)
         derivs = list(np.transpose(derivs))
 
         opts['center'] = center.flatten()

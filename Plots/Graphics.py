@@ -34,7 +34,8 @@ class GraphicsBase(metaclass=ABCMeta):
         'animated',
         'background',
         'epilog'
-        'prolog'
+        'prolog',
+        'aspect_ratio'
     }
 
     def __init__(self,
@@ -227,9 +228,13 @@ class GraphicsBase(metaclass=ABCMeta):
 
     @property
     def opts(self):
-        # for k in self.opt_keys:
-        #     getattr(self, k)
-        return {k: getattr(self, k) for k in self.opt_keys if k in self.__dict__}
+        opt_dict = {}
+        for k in self.opt_keys:
+            if k in self.__dict__:
+                opt_dict[k] = getattr(self, k)
+            elif "_"+k in self.__dict__:
+                opt_dict[k] = getattr(self, "_" + k)
+        return opt_dict
 
     def copy(self):
         """Creates a copy of the object with new axes and a new figure
@@ -239,6 +244,13 @@ class GraphicsBase(metaclass=ABCMeta):
         """
         return type(self)(**self.opts)
 
+    def prep_show(self):
+        self.set_options(**self.opts)  # matplotlib is dumb so it makes sense to just reset these again...
+        if self.epilog is not None:
+            self._epilog_graphics = [e.plot(self.axes) for e in self.epilog]
+        if self.prolog is not None:
+            self._prolog_graphics = [p.plot(self.axes) for p in self.prolog]
+        self._shown = True
     def show(self, reshow = True):
         from .VTKInterface import VTKWindow
 
@@ -253,14 +265,8 @@ class GraphicsBase(metaclass=ABCMeta):
                 plt.ion()
 
             if reshow or not self._shown:
-                self.set_options(**self.opts)  # matplotlib is dumb so it makes sense to just reset these again...
-                if self.epilog is not None:
-                    self._epilog_graphics = [ e.plot(self.axes) for e in self.epilog ]
-                if self.prolog is not None:
-                    self._prolog_graphics = [ p.plot(self.axes) for p in self.prolog ]
-
+                self.prep_show()
                 plt.show()
-                self._shown = True
             else:
                 self._shown = False
                 self.refresh().show()
@@ -324,10 +330,16 @@ class Graphics(GraphicsBase):
     """
     A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with
     """
+    default_style = dict(
+        frame=((True, False), (True, False)),
+        background='white',
+        aspect_ratio=1,
+        image_size=(300, 300)
+    )
     def __init__(self, *args,
                  figure=None,
                  axes=None,
-                 frame=((True, False), (True, False)),
+                 frame=None,
                  subplot_kw=None,
                  event_handlers=None,
                  animate=None,
@@ -338,9 +350,9 @@ class Graphics(GraphicsBase):
                  ticks=None,
                  scale=None,
                  image_size=None,
-                 background='white',
-                 aspect_ratio = 1,
-                 colorbar = None,
+                 background=None,
+                 aspect_ratio=None,
+                 colorbar=None,
                  **kwargs
                  ):
         super().__init__(
@@ -364,6 +376,18 @@ class Graphics(GraphicsBase):
             **kwargs
         )
 
+    def _get_def_opt(self, key, val):
+        if val is None:
+            try:
+                v = object.__getattribute__(self, '_'+key) # we overloaded getattr
+            except AttributeError:
+                if key in self.default_style:
+                    v = self.default_style[key]
+                else:
+                    v = None
+            return v
+        else:
+            return val
     def set_options(self,
                     axes_labels=None,
                     plot_label=None,
@@ -384,54 +408,53 @@ class Graphics(GraphicsBase):
 
         super().set_options(**parent_opts)
 
-        axes = self.axes
-        self._plot_label = plot_label
+        self._plot_label = self._get_def_opt('plot_label', plot_label)
         if self._plot_label is not None:
-            self.plot_label = plot_label
+            self.plot_label = self._plot_label
 
-        self._plot_legend = plot_legend
+        self._plot_legend = self._get_def_opt('plot_legend', plot_legend)
         if self._plot_legend is not None:
-            self.plot_legend = plot_legend
+            self.plot_legend = self._plot_legend
 
-        self._axes_labels = axes_labels
+        self._axes_labels = self._get_def_opt('axes_labels', axes_labels)
         if self._axes_labels is not None:
-            self.axes_labels = axes_labels
+            self.axes_labels = self._axes_labels
 
-        self._frame = frame
-        if self.frame is not None:
-            self.frame = frame
+        self._frame = self._get_def_opt('frame', frame)
+        if self._frame is not None:
+            self.frame = self._frame
 
-        self._plot_range = plot_range
+        self._plot_range = self._get_def_opt('plot_range', plot_range)
         if self._plot_range is not None:
             self.plot_range = self._plot_range
 
-        self._ticks = ticks
+        self._ticks = self._get_def_opt('ticks', ticks)
         if self._ticks is not None:
             self.ticks = self._ticks
 
-        self._scale = scale
+        self._scale = self._get_def_opt('scale', scale)
         if self._scale is not None:
             self.scale = self._scale
 
-        self._ticks_style = ticks_style
+        self._ticks_style = self._get_def_opt('ticks_style', ticks_style)
         if ticks_style is not None:
-            self.ticks_style = ticks_style
+            self.ticks_style = self._ticks_style
 
-        self._image_size = image_size
-        if image_size is not None:
-            self.image_size = image_size
-
-        self._aspect_ratio = aspect_ratio
+        self._aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio)
         if aspect_ratio is not None:
-            self.aspect_ratio = aspect_ratio
+            self.aspect_ratio = self._aspect_ratio
 
-        self._background = background
+        self._image_size = self._get_def_opt('image_size', image_size)
+        if self._image_size is not None:
+            self.image_size = self._image_size
+
+        self._background = self._get_def_opt('background', background)
         if self._background is not None:
-            self.background = background
+            self.background = self._background
 
-        self._colorbar = colorbar
+        self._colorbar = self._get_def_opt('colorbar', colorbar)
         if self._colorbar is not None:
-            self.colorbar = colorbar
+            self.colorbar = self._colorbar
 
     # set plot label
     @property
@@ -494,7 +517,11 @@ class Graphics(GraphicsBase):
     # set plot ranges
     @property
     def plot_range(self):
-        return self._plot_range
+        if self._plot_range is None:
+            pr = (self.axes.get_xlim(), self.axes.get_ylim())
+        else:
+            pr = self._plot_range
+        return pr
 
     @plot_range.setter
     def plot_range(self, ranges):
@@ -586,26 +613,37 @@ class Graphics(GraphicsBase):
 
     @aspect_ratio.setter
     def aspect_ratio(self, ar):
-        if isinstance(ar, (float, int, str)):
+        if isinstance(ar, (float, int)):
+            a, b = self.plot_range
+            cur_ar = (b[1] - b[0])/(a[1] - a[0])
+            targ_ar = ar / cur_ar
+            self.axes.set_aspect(targ_ar)
+        elif isinstance(ar, str):
             self.axes.set_aspect(ar)
         else:
             self.axes.set_aspect(ar[0], **ar[1])
     # set size
     @property
     def image_size(self):
+        # im_size = self._image_size
+        # if isinstance(self._image_size, (int, float)):
+        #     im_size =
         return self._image_size
 
     @image_size.setter
     def image_size(self, wh):
         if self._image_size is None:
             self._image_size = tuple( s/72. for s in self.get_size_inches() )
+
         try:
             w, h = wh
-        except ValueError:
-            try:
-                ar = self._image_size[1] / self._image_size[0]
-            except TypeError:
-                ar = 1
+        except (TypeError, ValueError):
+            ar = self.aspect_ratio
+            if not isinstance(ar, (int, float)):
+                try:
+                    ar = self._image_size[1] / self._image_size[0]
+                except TypeError:
+                    ar = 1
             w, h = wh = (wh, ar*wh)
 
         if w is not None or h is not None:
@@ -864,7 +902,11 @@ class Graphics3D(Graphics):
     # set plot ranges
     @property
     def plot_range(self):
-        return self._plot_range
+        if self._plot_range is None:
+            pr = (self.axes.get_xlim(), self.axes.get_ylim())
+        else:
+            pr = self._plot_range
+        return pr
 
     @plot_range.setter
     def plot_range(self, ranges):
@@ -1054,6 +1096,10 @@ class Graphics3D(Graphics):
 #                                               GraphicsGrid
 #
 class GraphicsGrid:
+    default_style = dict(
+        spacings=(.2, .2),
+        padding=((.025, .2), (.125, .05))
+    )
     def __init__(self,
                  *args,
                  nrows=2, ncols=2,
@@ -1078,40 +1124,44 @@ class GraphicsGrid:
         self.shape = (nrows, ncols)
         self._colorbar_axis = None # necessary hack for only GraphicsGrid
         self.set_options(**opts)
-        if tighten:
-            self.figure.tight_layout()
+        self.tighten = tighten
 
+    def _get_def_opt(self, key, val):
+        if val is None:
+            try:
+                v = object.__getattribute__(self, '_'+key) # we overloaded getattr
+            except AttributeError:
+                if key in self.default_style:
+                    v = self.default_style[key]
+                else:
+                    v = None
+            return v
+        else:
+            return val
     def set_options(self,
                     image_size = None,
                     colorbar = None,
-                    spacings = (.2, .2),
-                    padding = ((.025, .2), (.125, .05)),
+                    spacings = None,
+                    padding = None,
+                    tight = None,
                     **ignored
                     ):
 
-        self._image_size = image_size
-        if image_size is not None:
-            self.image_size = image_size
-        else:
-            first = self.axes[0]
-            if not isinstance(first, GraphicsBase):
-                first = first[0]
-            main_size = first.figure.get_size_inches()
-            width = main_size[0] * self.shape[1] * 72
-            height = main_size[1] * self.shape[0] * 72
-            self.image_size = (width, height)
+        self._image_size = self._get_def_opt('image_size', image_size)
+        if self._image_size is not None:
+            self.image_size = self._image_size
 
         self._colorbar = colorbar
         if colorbar is not None:
             self.colorbar = colorbar
 
-        self._spacings = spacings
-        if spacings is not None:
-            self.spacings = spacings
+        self._spacings = self._get_def_opt('spacings', spacings)
+        if self._spacings is not None:
+            self.spacings = self._spacings
 
-        self._padding = padding
-        if padding is not None:
-            self.padding = padding
+        self._padding = self._get_def_opt('padding', padding)
+        if self._padding is not None:
+            self.padding = self._padding
 
     def _init_suplots(self,
                       nrows, ncols, figure, axes, graphics_class, *args,
@@ -1150,8 +1200,8 @@ class GraphicsGrid:
                 else:
                     axes = [axes]
 
-            if 'image_size' not in kw:
-                kw['image_size'] = (300, 300)
+            # if 'image_size' not in kw:
+            #     kw['image_size'] = (300, 300)
             for i in range(nrows):
                 for j in range(ncols):
                     axes[i][j] = graphics_class(figure=figure, axes=axes[i][j], **kw)
@@ -1169,6 +1219,9 @@ class GraphicsGrid:
 
         return figure, axes
 
+    def __iter__(self):
+        import itertools as ip
+        return ip.chain(*self.axes)
     def __getitem__(self, item):
         try:
             i, j = item
@@ -1186,9 +1239,20 @@ class GraphicsGrid:
             self.axes[i][j] = val
 
     # set size
+    def calc_image_size(self):
+        w=0; h=0
+        for f in self:
+            wh = f.image_size
+            if wh is not None:
+                w += wh[0]
+                h += wh[1]
+        return w, h
     @property
     def image_size(self):
-        return self._image_size
+        if self._image_size is None:
+            return self.calc_image_size()
+        else:
+            return self._image_size
 
     @image_size.setter
     def image_size(self, wh):
@@ -1320,5 +1384,16 @@ class GraphicsGrid:
 
         fig.colorbar(graphics, **kw)
 
+    def prep_show(self):
+        self.image_size = self.image_size
+        self.spacings = self.spacings
+        self.padding = self.padding
+        if self.tighten:
+            self.figure.tight_layout()
+
     def show(self):
-        self.axes[0][0].show()
+        for f in self:
+            if isinstance(f, GraphicsBase):
+                f.prep_show()
+        self.prep_show()
+        f.show()

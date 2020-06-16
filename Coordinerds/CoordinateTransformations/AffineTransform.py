@@ -47,7 +47,7 @@ class AffineTransform(TransformationFunction):
         :type other: np.ndarray or AffineTransform
         """
 
-        if isinstance(type(other), AffineTransform):
+        if isinstance(other, AffineTransform):
             other = other.transf
         transf = self.transf
 
@@ -78,20 +78,22 @@ class AffineTransform(TransformationFunction):
         coords = np.asarray(coords)
         coord_shape = coords.shape
         if len(coord_shape) == 1:
-            coords.reshape((1, coord_shape[1]))
+            coords = coords.reshape((1, coord_shape[0]))
         elif len(coord_shape) > 2:
             nels = np.product(coord_shape[:-1])
-            coords.reshape((nels, 3))
+            coords = coords.reshape((nels, 3))
 
+        coords = coords.T
         tmat = self.transf
         if tmat.shape[-1] == 4:
-            adj_coord = np.append(coords, np.ones(coords.shape[0], 1), axis=0)
-            adj_coord = np.dot(tmat, adj_coord)
-            adj_coord = adj_coord[:, :3]
+            shift = tmat[:3, -1]
+            mat = tmat[:3, :3]
+            adj_coord = coords + shift[:, np.newaxis]
+            adj_coord = np.dot(mat, adj_coord)
         else:
             adj_coord = np.dot(tmat, coords)
 
-        adj_coord.reshape(coord_shape)
+        adj_coord = adj_coord.reshape(coord_shape)
 
         return adj_coord
 

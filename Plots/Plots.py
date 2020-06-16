@@ -253,7 +253,7 @@ class Plot(Graphics):
     @property
     def plot_style(self):
         if self._data is None:
-            style = self.plot_style
+            style = self._plot_style
         else:
             style = self._data[1]
         return style
