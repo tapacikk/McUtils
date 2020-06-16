@@ -32,6 +32,11 @@ class CoordinateTransform:
 
     @property
     def transformation_function(self):
+        """
+
+        :return:
+        :rtype: TransformationFunction
+        """
         return self._trans
     @property
     def transforms(self):
@@ -40,6 +45,11 @@ class CoordinateTransform:
     def apply(self, coords):
         tfunc = self.transformation_function #type: TransformationFunction
         return tfunc.operate(coords)
+    def __call__(self, coords):
+        if isinstance(coords, (TransformationFunction, CoordinateTransform)):
+            return type(self)(coords, self)
+        else:
+            return self.apply(coords)
 
     def condense_transforms(self):
         self._trans = self._transform_list[-1]

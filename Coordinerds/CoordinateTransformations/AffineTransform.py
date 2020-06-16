@@ -35,7 +35,7 @@ class AffineTransform(TransformationFunction):
         transf = self.transf
         transf_shape = transf.shape
         if transf_shape[-1] == 4:
-            vec = transf[:-1, 4] # hopefully this copies rather than just being a view...
+            vec = transf[:-1, 3] # hopefully this copies rather than just being a view...
         else:
             vec = None
         return vec
@@ -78,25 +78,24 @@ class AffineTransform(TransformationFunction):
         coords = np.asarray(coords)
         coord_shape = coords.shape
         if len(coord_shape) == 1:
-            coords = coords.reshape((1, coord_shape[0]))
+            adj_coord = coords.reshape((1, coord_shape[0]))
         elif len(coord_shape) > 2:
             nels = np.product(coord_shape[:-1])
-            coords = coords.reshape((nels, 3))
+            adj_coord = coords.reshape((nels, 3))
+        else:
+            adj_coord = coords
 
-        coords = coords.T
         tmat = self.transf
         if tmat.shape[-1] == 4:
             shift = tmat[:3, -1]
-            mat = tmat[:3, :3]
-            adj_coord = coords + shift[:, np.newaxis]
-            adj_coord = np.dot(mat, adj_coord)
-        else:
-            adj_coord = np.dot(tmat, coords)
+            tmat = tmat[:3, :3]
+            adj_coord = adj_coord + shift[np.newaxis]
 
+        adj_coord = np.tensordot(adj_coord, tmat, axes=[1, 1])
         adj_coord = adj_coord.reshape(coord_shape)
 
         return adj_coord
 
     def __repr__(self):
         ## we'll basically just leverage the ndarray repr:
-        return "{}({})".format(type(self), str(self.transf))
+        return "{}(transformation={}, shift={})".format(type(self).__name__, str(self.transform), str(self.shift))

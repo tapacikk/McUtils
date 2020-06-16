@@ -1050,6 +1050,22 @@ class Graphics3D(Graphics):
             self._image_size = (w, h)
             self.figure.set_size_inches(wi, hi)
 
+    @property
+    def aspect_ratio(self):
+        return self._aspect_ratio
+    @aspect_ratio.setter
+    def aspect_ratio(self, ar):
+        pass
+        # if isinstance(ar, (float, int)):
+        #     a, b = self.plot_range
+        #     cur_ar = (b[1] - b[0]) / (a[1] - a[0])
+        #     targ_ar = ar / cur_ar
+        #     self.axes.set_aspect(targ_ar)
+        # elif isinstance(ar, str):
+        #     self.axes.set_aspect(ar)
+        # else:
+        #     self.axes.set_aspect(ar[0], **ar[1])
+
     # set size
     @property
     def background(self):

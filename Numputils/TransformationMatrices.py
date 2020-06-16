@@ -13,6 +13,7 @@ __all__ = [
 #                                                 rotation_matrix
 #
 
+#TODO: I'm pretty sure all of my rotation
 def rotation_matrix_basic(xyz, theta):
     """rotation matrix about x, y, or z axis
 
@@ -25,21 +26,21 @@ def rotation_matrix_basic(xyz, theta):
     axis = xyz.lower()
     if axis == "z": # most common case so it comes first
         mat = [
-            [ math.cos(theta), math.sin(theta), 0.],
-            [-math.sin(theta), math.cos(theta), 0.],
-            [0.,               0.,              1.]
+            [ math.cos(theta), -math.sin(theta), 0.],
+            [ math.sin(theta),  math.cos(theta), 0.],
+            [ 0.,               0.,              1.]
         ]
     elif axis == "y":
         mat = [
-            [ math.cos(theta), 0., math.sin(theta)],
-            [0.,               1.,              0.],
-            [-math.sin(theta), 0., math.cos(theta)]
+            [ math.cos(theta), 0., -math.sin(theta)],
+            [ 0.,              1.,               0.],
+            [ math.sin(theta), 0.,  math.cos(theta)]
         ]
     elif axis == "x":
         mat = [
-            [1.,               0.,              0.],
-            [0.,  math.cos(theta), math.sin(theta)],
-            [0., -math.sin(theta), math.cos(theta)]
+            [ 1.,               0.,               0.],
+            [ 0.,  math.cos(theta), -math.sin(theta)],
+            [ 0.,  math.sin(theta),  math.cos(theta)]
         ]
     else:
         raise Exception("{}: axis '{}' invalid".format('rotation_matrix_basic', xyz))
@@ -102,7 +103,8 @@ def rotation_matrix_ER(axis, theta):
     ])
 
 def rotation_matrix_ER_vec(axes, thetas):
-    """Vectorized version of baisc ER
+    """
+    Vectorized version of basic ER
     """
 
     axes = np.asarray(axes)
