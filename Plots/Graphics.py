@@ -615,7 +615,7 @@ class Graphics(GraphicsBase):
     def aspect_ratio(self, ar):
         if isinstance(ar, (float, int)):
             a, b = self.plot_range
-            cur_ar = (b[1] - b[0])/(a[1] - a[0])
+            cur_ar = abs(b[1] - b[0])/abs(a[1] - a[0])
             targ_ar = ar / cur_ar
             self.axes.set_aspect(targ_ar)
         elif isinstance(ar, str):

@@ -61,6 +61,32 @@ class BaseSurface(metaclass=abc.ABCMeta):
                     ))
         return self.evaluate(gridpoints, **kwargs)
 
+    def minimize(self, initial_guess, function_options=None, **opts):
+        """
+        Just calls into `scipy.optimize.minimize` as the default implementation
+
+        :param initial_guess: starting position for the minimzation
+        :type initial_guess: np.ndarray
+        :param function_options:
+        :type function_options: dict | None
+        :param opts:
+        :type opts:
+        :return:
+        :rtype:
+        """
+
+        import scipy.optimize as opt
+
+        if function_options is None:
+            function_options = {}
+        test_call = self(initial_guess, **function_options) # if this fails the initial guess is bad
+
+        func = lambda x, f=self.evaluate, o=function_options: f(x, **o)
+
+        min = opt.minimize(func, initial_guess, **opts)
+
+
+
 
 class TaylorSeriesSurface(BaseSurface):
     """
@@ -143,13 +169,15 @@ class LinearFitSurface(LinearExpansionSurface):
         :param basis: a basis of functions to use (defaults to power series)
         :type basis: Iterable[function] | None
         """
-        from ..FittableModel import LinearFittableModel, LinearFitBasis
+        from ..FittableModels import LinearFittableModel, LinearFitBasis
+
         dim = points.shape[-1]
         if basis is None:
             basis = LinearFitBasis([LinearFitBasis.power_series]*dim, order=order)
         self.model = LinearFittableModel(basis)
         self.model.fit(points)
-        super().__init__(self.model.parameter_values, basis, dimension)
+        self.fit_data = points
+        super().__init__(self.model.parameters, basis, dimension)
 
     def evaluate(self, points, **kwargs):
         """
@@ -164,6 +192,12 @@ class LinearFitSurface(LinearExpansionSurface):
 
         return self.model.evaluate(points)
 
+    # Is there any way to cleverly minimize a general function like this? My guess is I'd need to know how to take derivs
+    def minimize(self, initial_guess=None, function_options=None, **opts):
+        if initial_guess is None:
+            initial_guess = self.fit_data[np.argmin(self.fit_data[:, -1])][:-1]
+        return super().minimize(initial_guess, function_options=function_options, **opts)
+
 class InterpolatedSurface(BaseSurface):
     """
     A surface that operates by doing an interpolation of passed mesh data
@@ -174,6 +208,7 @@ class InterpolatedSurface(BaseSurface):
             ydata = xdata[...,  -1]
             xdata = xdata[..., :-1]
         dimension = 1 if xdata.ndim == 1 else xdata.shape[-1]
+        self.interp_data = (xdata, ydata)
         self.interp = Interpolator(xdata, ydata, **opts)
         super().__init__({"interpolator": self.interp}, dimension)
 
@@ -189,7 +224,7 @@ class InterpolatedSurface(BaseSurface):
         """
         return self.interp(points)
 
-
-
-
-
+    def minimize(self, initial_guess=None, function_options=None, **opts):
+        if initial_guess is None:
+            initial_guess = self.interp_data[0][np.argmin(self.interp_data[1], axis=-1)]
+        return super().minimize(initial_guess, function_options=function_options, **opts)

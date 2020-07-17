@@ -134,7 +134,7 @@ class StringParser:
                 if isinstance(dtypes, StructuredType):
                     dtypes = dtypes.drop_axis()
                 elif dtypes is not None:
-                    dtypes = [ d.drop_axis() for d in dtypes ]
+                    dtypes = [d.drop_axis() for d in dtypes]
             else:
                 dtypes = None
             if isinstance(out, (dict, OrderedDict)):
@@ -144,7 +144,6 @@ class StringParser:
                 out = {'array':out, 'single':True}
 
             res = parser.parse_all(txt, dtypes = dtypes, out = out)
-
 
         else:
             if block_handlers is None and isinstance(regex, RegexPattern):
@@ -350,7 +349,9 @@ class StringParser:
                     handlers = [ handlers ]
 
                 dtype = regex.dtype
-                if dtype.is_simple and len(handlers) == dtype.shape[-1]:
+                if dtype.shape is None:
+                    handlers = None
+                elif dtype.is_simple and len(handlers) == dtype.shape[-1]:
                     handlers = [ None ] # means we _wanted_ to have one block, but we had to declare it over multiple CapturingGroups
                 else:
                     handlers = [ cls._get_regex_handler(r) for r in handlers if r.dtype is not DisappearingType ]
@@ -614,6 +615,8 @@ class StringParser:
             #         '_handle_parse_match',
             #         block_handlers
             #     ))
+            elif len(block_handlers) == 0:
+                raise StringParserException("No block handlers available to parse data")
             else:
                 # print("-"*10 + "Multiple Handlers" + "-"*10)
                 # print(block_handlers, res, groups)

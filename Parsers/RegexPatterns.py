@@ -386,6 +386,8 @@ class RegexPattern:
                 groups = OrderedDict(
                     (g.key, g) for g in caps if g.key is not None
                 )
+                if len(groups) == 0:
+                    groups = None
             return groups
         else:
             return OrderedDict(((self.key, self), ) )
@@ -465,7 +467,7 @@ class RegexPattern:
             # the big question now is how do I figure out if a Capturing was applied...?
             # I guess since I'm walking _down_ the tree I don't even need to check for that
             # I can just check self.capturing... huh wow
-            if no_captures and self.capturing:
+            if no_captures:
                 # I guess we temporarily make our pattern a non-capturing one...?
 
                 kwargs = self._combine_kwargs.copy()

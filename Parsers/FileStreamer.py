@@ -120,12 +120,15 @@ class FileStreamReader:
             follow_ups = tags.skips
             if follow_ups is not None:
                 for tag in follow_ups:
+                    self.seek(pos + 1)
                     p = self.find_tag(tag)
                     if p > -1:
                         pos = p
 
             offset = tags.offset
             if offset is not None:
+                # why are we using self._stream.tell here...?
+                # I won't touch it for now but I feel like it should be pos
                 pos = self._stream.tell() + offset
                 self._stream.seek(pos)
 

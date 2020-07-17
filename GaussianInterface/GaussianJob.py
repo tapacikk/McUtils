@@ -213,7 +213,8 @@ class GaussianJob:
                              "Polar", "ADMP", "BOMD", "Force", "Stable", "Volume"]}
 
         )
-        basis_set_keys = ['mp2', "cc" "aug", "sto"] # common basis set specs...
+        level_of_theory_keys = ['mp2', 'ccsd', 'b2plypd3', 'b3lyp'] # some level of theory stuff...lots of DFT functionals
+        basis_set_keys = ["cc", "aug", "sto"] # common level-of-theory/basis set specs...
 
 
         def __init__(self, job_type = None, basis_set = None, **kw):

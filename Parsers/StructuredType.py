@@ -61,7 +61,8 @@ class StructuredType:
         )
 
     def add_types(self, other):
-        """Constructs a new type by treating the two objects as siblings, that is if they can be merged due to type and
+        """
+        Constructs a new type by treating the two objects as siblings, that is if they can be merged due to type and
         shape similarity they will be, otherwise a non-nesting structure will be constructed from them
 
         We'll also want a nesting version of this I'm guessing, which probably we hook into __call__
@@ -71,6 +72,7 @@ class StructuredType:
         :return:
         :rtype:
         """
+
         if other is DisappearingType or isinstance(other, type(DisappearingType)):
             return self
         elif self is DisappearingType or isinstance(self, type(DisappearingType)):
@@ -512,16 +514,25 @@ class StructuredTypeArray:
             return [ s.filled_to for s in self._subarrays ]
     @filled_to.setter
     def filled_to(self, filling):
+        # print(">>>>", self._filled_to)
         if self._is_simple:
             if isinstance(filling, int):
+                # print("  >>", 1, filling, self._filled_to)
                 self.filled_to[0] = filling
             elif len(filling) < len(self.filled_to):
+                # print("  >>", 2, filling, self._filled_to)
                 self._filled_to = list(filling) + self._filled_to[len(filling):]
             else:
+                # print("  >>", 3, filling, self._filled_to)
                 self._filled_to = list(filling)
         else:
             # thread the setting
-            ...
+            raise NotImplementedError("can't apply filling {} to multidim array {} because I'm lazy".format(
+                filling,
+                self
+            ))
+
+        # print(self._filled_to, "<<<<")
     def set_filling(self, amt, axis = 0):
         if self._is_simple:
             if self._filled_to is None:
@@ -654,7 +665,7 @@ class StructuredTypeArray:
                             try:
                                 num_needed = len(self._array[key])
                             except:
-                                print(key, self._array.shape)
+                                print("Oh foook", key, self._array.shape)
                                 raise
                             if num_els < num_needed:
                                 if self.padding_mode == 'repeat':
@@ -690,7 +701,10 @@ class StructuredTypeArray:
                     # print(key, value, self._array.shape)
                     self._array[key] = value
                     fill=self.filled_to
-                    self.filled_to = fill[:append_chops] + list(max(a, s) for a,s in zip(fill[append_chops:], value.shape))
+
+                    chopped_fill = fill[:append_chops]
+                    max_chops = list(max(a, s) for a,s in zip(fill[append_chops:], value.shape))
+                    self.filled_to =  chopped_fill + max_chops
 
             if isinstance(key, int) and key == self.filled_to[0]:
                 self.filled_to[0] += 1
@@ -773,6 +787,7 @@ class StructuredTypeArray:
         :rtype:
         """
 
+        # print(">>>>>", self)
         change_shape = True # just gonna see what effect this has...?
         if self.is_simple:
             if self.has_indeterminate_shape:
@@ -851,6 +866,8 @@ class StructuredTypeArray:
                 else:
                     self._stype.shape = (None,) + self._stype.shape
                 self._dtype = None # resets this flag so the caching is broken
+
+        # print(self, "<<<<<")
 
     def can_cast(self, val):
         """Determines whether val can probably be cast to the right return type and shape without further processing or if that's definitely not possible
@@ -1050,9 +1067,10 @@ class StructuredTypeArray:
             if isinstance(array, np.ndarray):
                 # one big thing we have to watch out for is shrinking the array along some _determined_ axis
                 # it doesn't matter what we do to indeterminate axes, but determined ones matter
-                array = array.astype(self.dtype)
+                if self.dtype is not None:
+                    array = array.astype(self.dtype)
                 shp = self._stype.shape
-                if shp is None:
+                if shp is None or all(a is None for a in shp):
                     self._array = array
                 else:
                     ashp = array.shape
@@ -1081,7 +1099,10 @@ class StructuredTypeArray:
                         # we should _probably_ check to make sure we're not breaking things but... meh
                         self._array = array
                     else:
-                        raise NotImplementedError("I don't know how to coerce a higher dimensional shape into a lower dimensional one")
+                        raise NotImplementedError("Filling data of shape {} into {}, but I don't know how to coerce a higher dimensional shape into a lower dimensional one".format(
+                            shp,
+                            ashp
+                        ))
 
                     # should we also force the values to be right...?
 

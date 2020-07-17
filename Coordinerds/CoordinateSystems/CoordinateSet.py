@@ -95,7 +95,12 @@ class CoordinateSet(np.ndarray):
         if cops is None:
             cops = {}
         kw = dict(cops, **kw)
-        new_coords, ops = self.system.convert_coords(self, system, **kw)
+        res = self.system.convert_coords(self, system, **kw)
+        if isinstance(res, tuple):
+            new_coords, ops = res
+        else:
+            new_coords = res
+            ops = {}
         return type(self)(new_coords, system = system, converter_options=ops)
 
     def jacobian(self, system,

@@ -13,6 +13,9 @@ __all__ = ["GaussianFChkReader", "GaussianLogReader"]
 #
 #                                           GaussianLogReader
 #
+class GaussianLogReaderException(FileStreamReaderException):
+    pass
+
 class GaussianLogReader(FileStreamReader):
     """Implements a stream based reader for a Gaussian .log file... a bit messy
 
@@ -22,7 +25,7 @@ class GaussianLogReader(FileStreamReader):
     default_keys = GaussianLogDefaults
     default_ordering = GaussianLogOrdering
 
-    def parse(self, keys = None, num = None):
+    def parse(self, keys = None, num = None, reset = False):
         """The main function we'll actually use. Parses bits out of a .log file.
 
         :param keys: the keys we'd like to read from the log file
@@ -33,13 +36,64 @@ class GaussianLogReader(FileStreamReader):
         :rtype:
         """
         if keys is None:
-            keys = self.default_keys
+            keys = self.get_default_keys()
         # important for ensuring correctness of what we pull
         if isinstance(keys, str):
             keys = (keys,)
-        keys = sorted(keys, key = lambda k:self.default_ordering[k] if k in self.default_ordering else 0)
-        res = { k:self.parse_key_block(**self.registered_components[k], num=num) for k in keys }
+        keys = sorted(keys,
+                      key = lambda k: (
+                          -1 if (self.registered_components[k]["mode"] == "List") else (
+                              self.default_ordering[k] if k in self.default_ordering else 0
+                          )
+                      )
+                      )
+
+        res = {}
+        if reset:
+            with FileStreamCheckPoint(self):
+                for k in keys:
+                    comp = self.registered_components[k]
+                    res[k] = self.parse_key_block(**comp, num=num)
+        else:
+            for k in keys:
+                comp = self.registered_components[k]
+                res[k] = self.parse_key_block(**comp, num=num)
         return res
+
+    job_default_keys = {
+        "opt":{
+            "p": ("StandardCartesianCoordinates", "OptimizedScanEnergies", "OptimizedDipoleMoments"),
+            "_": ("StandardCartesianCoordinates", "OptimizedScanEnergies")
+        },
+        "popt": {
+            "p": ("StandardCartesianCoordinates", "OptimizedScanEnergies", "OptimizedDipoleMoments"),
+            "_": ("StandardCartesianCoordinates", "OptimizedScanEnergies")
+        },
+        "scan": ("StandardCartesianCoordinates", "ScanEnergies")
+    }
+    def get_default_keys(self):
+        header = self.parse("Header", reset=True)["Header"]
+
+        header_low = {k.lower() for k in header.job}
+        for k in self.job_default_keys:
+            if k in header_low:
+                sub = self.job_default_keys[k]
+                if isinstance(sub, dict):
+                    for k in sub:
+                        if k in header_low:
+                            defs = sub[k]
+                            break
+                    else:
+                        defs = sub["_"]
+                else:
+                    defs = sub
+                break
+        else:
+            raise GaussianLogReaderException("unclear what default keys should be used if not a scan and not a popt")
+
+        return ("Header", ) + tuple(defs) + ("Footer",)
+
+
 
 ########################################################################################################################
 #

@@ -3,13 +3,14 @@
 """
 
 from ..Parsers import *
+from collections import namedtuple, OrderedDict
 
 ########################################################################################################################
 #
 #                                           GaussianLogComponents
 #
 # region GaussianLogComponents
-GaussianLogComponents = {}  # we'll register on this bit by bit
+GaussianLogComponents = OrderedDict()  # we'll register on this bit by bit
 # each registration should look like:
 
 # GaussianLogComponents["Name"] = {
@@ -19,6 +20,90 @@ GaussianLogComponents = {}  # we'll register on this bit by bit
 #     "parser"      : parser, # function that'll parse the returned list of blocks (for "List") or block (for "Single")
 #     "mode"        : mode # "List" or "Single"
 # }
+
+########################################################################################################################
+#
+#                                           Header
+#
+
+"""
+ ******************************************
+ Gaussian 16:  ES64L-G16RevA.03 25-Dec-2016
+                 7-Mar-2020 
+ ******************************************
+ %cpu=0-27
+ SetSPE:  set environment variable "MP_BIND" = "yes"
+ SetSPE:  set environment variable "MP_BLIST" = "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27"
+ Will use up to   28 processors via shared memory.
+ %mem=72GB
+ %chk=input.chk
+ ----------------------------------------------------------------------
+ # scf=verytight integral=ultrafine freq=(restart,anharm) b2plypd3/cc-p
+ vtz
+ ----------------------------------------------------------------------
+ """
+
+tag_start = "******************************************"
+tag_end   = FileStreamerTag(
+    """ --------""",
+    follow_ups = (""" -----""",)
+)
+
+HeaderPercentBlockParser = StringParser(
+    NonCapturing(
+        ("%", Capturing(Word, dtype=str), "=", Capturing((Word, Optional(Any), Word), dtype=str) ),
+        dtype=str
+    )
+)
+HeaderHashBlockLine = RegexPattern((
+    Capturing(Optional((Word, "="), dtype=str)),
+    Capturing(Repeating(Alternatives((WordCharacter, "\(", "\)", "\/", "\-")), dtype=str))
+    ))
+HeaderHashBlockLineParser = StringParser(HeaderHashBlockLine)
+HeaderHashBlockParser = StringParser(
+    RegexPattern((
+        "#",
+         Optional(Whitespace),
+         Repeating(
+             Named(
+                Repeating(HeaderHashBlockLine),
+                "Command",
+                suffix=Optional(Whitespace),
+                dtype=str,
+                default=""
+             )
+        )
+    ))
+)
+
+def header_parser(header):
+    # regex = HeaderHashBlockParser.regex #type: RegexPattern
+    header_percent_data = HeaderPercentBlockParser.parse_all(header)
+    runtime_options = {}
+    for k, v in header_percent_data.array:
+        runtime_options[k] = v
+
+    header_hash_data = HeaderHashBlockParser.parse_all(header)
+    all_keys=" ".join(header_hash_data["Command"].array.flatten())
+    raw_data = HeaderHashBlockLineParser.parse_all(all_keys).array
+
+    job_options = {}
+    for k, v in raw_data:
+        if k.endswith("="):
+            job_options[k.strip("=").lower()] = v.strip("()").split(",")
+        else:
+            job_options[v] = []
+
+    return namedtuple("HeaderData", ["config", 'job'])(runtime_options, job_options)
+
+mode = "Single"
+
+GaussianLogComponents["Header"] = {
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
+    "parser"   : header_parser,
+    "mode"     : mode
+}
 
 ########################################################################################################################
 #
@@ -384,7 +469,7 @@ GaussianLogComponents["OptimizedDipoleMoments"] = {
 # region ScanEnergies
 
 tag_start = """ Summary of the potential surface scan:"""
-tag_end = """ Leave Link  108"""
+tag_end = """Normal termination of"""
 
 # Number = '(?:[\\+\\-])?\\d*\\.\\d+'
 # block_pattern = "\s*"+Number+"\s*"+Number+"\s*"+Number+"\s*"+Number+"\s*"+Number
@@ -419,13 +504,16 @@ def parser(block):
     """Parses the scan summary block"""
     import re
 
+    if block is None:
+        raise KeyError("key '{}' not in .log file".format('ScanEnergies'))
+
     r = ScanEnergiesParser.regex # type: RegexPattern
     parse=ScanEnergiesParser.parse(block)
     
-    return {
-        "coords":parse["Keys"].array,
-        "values":parse["Coords"].array
-    }
+    return namedtuple("ScanEnergies", ["coords", "energies"])(
+        parse["Keys"].array,
+        parse["Coords"].array
+    )
 
 mode = "Single"
 
@@ -505,7 +593,10 @@ def parser(pars):
     for k in coords:
         coords[k] = np.concatenate(coords[k])
 
-    return energies_array, coords
+    return namedtuple("OptimizedScanEnergies", ["coords", "energies"])(
+        coords,
+        energies_array
+    )
 
 
 mode = "Single"
@@ -573,6 +664,22 @@ GaussianLogComponents["XMatrix"] = {
 
 # endregion
 
+
+tag_start =  "Job cpu time"
+tag_end = "Normal termination"
+
+def parser(block, start=tag_start):
+    return " " + start + block
+
+mode = "Single"
+
+GaussianLogComponents["Footer"] = {
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
+    "parser"   : parser,
+    "mode"     : mode
+}
+
 # endregion
 
 ########################################################################################################################
@@ -597,29 +704,32 @@ GaussianLogDefaults = (
 # region GaussianLogOrdering
 # defines the ordering in a GaussianLog file
 glk = ( # this must be sorted by what appears when
+    "Header",
     "StartDateTime",
-    "AtomPositions",
     "CartesianCoordinates",
+    "ZMatCartesianCoordinates",
+    "StandardCartesianCoordinates",
     "CartesianCoordinateVectors",
     "MullikenCharges",
     "MultipoleMoments",
     "DipoleMoments",
+    "OptimizedDipoleMoments",
     "QuadrupoleMoments",
     "OctapoleMoments",
     "HexadecapoleMoments",
-    "HartreeFockEnergies",
-    "MP2Energies",
+    "IntermediateEnergies",
     "InputZMatrix",
     "InputZMatrixVariables",
     "ZMatrices",
-    "ZMatrixCoordinates",
-    "ZMatrixCoordinateVectors",
-    "ScanTable",
+    "ScanEnergies",
+    "OptimizedScanEnergies",
     "OptimizationScan",
     "Blurb",
-    "ComputerTimeElapsed",
-    "EndDateTime"
+    "Footer"
 )
-GaussianLogOrdering = { k:i for i, k in enumerate(glk) }
+list_type = { k:-1 for k in GaussianLogComponents if GaussianLogComponents[k]["mode"] == "List" }
+GaussianLogOrdering = { k:i for i, k in enumerate([k for k in glk if k not in list_type]) }
+GaussianLogOrdering.update(list_type)
 del glk
+del list_type
 # endregion

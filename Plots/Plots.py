@@ -440,8 +440,8 @@ class TensorPlot(GraphicsGrid):
         tensor = tensor.reshape((total_dim,) + tensor_shape[-2:])
         for i in range(nrows):
             for j in range(ncols):
-                graphics = self.axes[i, j]
-                self.axes[i, j] = ArrayPlot(
+                graphics = self.axes[i][j]
+                self.axes[i][j] = ArrayPlot(
                     tensor[nrows * i + j],
                     figure=graphics,
                     plot_style=plot_style,
