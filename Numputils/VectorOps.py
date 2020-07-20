@@ -13,6 +13,7 @@ __all__ = [
     "vec_angles",
     "vec_sins",
     "vec_cos",
+    "vec_outer",
     "pts_normals",
     "pts_dihedrals",
     "mat_vec_muls",
@@ -147,6 +148,72 @@ def vec_angles(vectors1, vectors2):
     sin_comps = cross_norms/norm_prod
 
     return (np.arctan2(sin_comps, cos_comps), crosses)
+
+################################################
+#
+#       vec_normals
+#
+def vec_outer(a, b, axes=None):
+    """
+    Provides the outer product of a and b in a vectorized way.
+    Currently not entirely convinced I'm doing it right :|
+
+    :param a:
+    :type a:
+    :param b:
+    :type b:
+    :param axis:
+    :type axis:
+    :return:
+    :rtype:
+    """
+    # we'll treat this like tensor_dot:
+    #   first we turn this into a plain matrix
+    #   then we do the outer on the matrix
+    #   then we cast back to the shape we want
+    if axes is None:
+        if a.ndim > 2:
+            axes = [-1, -1]
+        else:
+            axes = [0, 0]
+
+    # we figure out how we'd conver
+    a_ax = axes[0]
+    if isinstance(a_ax, (int, np.integer)):
+        a_ax = [a_ax]
+    a_ax = list(a_ax)
+    a_leftover = [x for x in range(a.ndim) if x not in a_ax]
+    a_transp = a_leftover + a_ax
+    a_shape = a.shape
+    a_old_shape = [a_shape[x] for x in a_leftover]
+    a_subshape = [a_shape[x] for x in a_ax]
+    a_contract = a_old_shape + [np.prod(a_subshape)]
+
+    b_ax = axes[1]
+    if isinstance(b_ax, (int, np.integer)):
+        b_ax = [b_ax]
+    b_ax = list(b_ax)
+    b_leftover = [x for x in range(b.ndim) if x not in b_ax]
+    b_transp = b_leftover + b_ax
+    b_shape = b.shape
+    b_old_shape = [b_shape[x] for x in b_leftover]
+    b_subshape = [b_shape[x] for x in b_ax]
+    b_contract = b_old_shape + [np.prod(b_subshape)]
+
+    a_new = a.transpose(a_transp).reshape(a_contract)
+    b_new = b.transpose(b_transp).reshape(b_contract)
+
+    outer = a_new[..., :, np.newaxis] * b_new[..., np.newaxis, :]
+
+    # now we put the shapes right again and revert the transposition
+    # base assumption is that a_old_shape == b_old_shape
+    # if not we'll get an error anyway
+    final_shape = a_old_shape + a_subshape + b_subshape
+
+    res = outer.reshape(final_shape)
+    final_transp = np.argsort(a_leftover + a_ax + b_ax)
+
+    return res.transpose(final_transp)
 
 
 ################################################

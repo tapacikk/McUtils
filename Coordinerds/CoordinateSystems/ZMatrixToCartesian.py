@@ -19,30 +19,28 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
     def zmatrix_affine_transforms(centers, vecs1, vecs2, angles, dihedrals):
         """Builds a single set of affine transformation matrices to apply to the vecs1 to get the next set of points
 
-        :param refs1:
-        :type refs1:
-        :param refs2:
-        :type refs2:
-        :param refs3:
-        :type refs3:
-        :param angles:
-        :type angles:
-        :param dihedrals:
-        :type dihedrals:
+        :param centers: central coordinates
+        :type centers: np.ndarray
+        :param vecs1: vectors coming off of the centers
+        :type vecs1: np.ndarray
+        :param vecs2: vectors coming off of the centers
+        :type vecs2: np.ndarray
+        :param angles: angle values
+        :type angles: np.ndarray
+        :param dihedrals: dihedral values
+        :type dihedrals: np.ndarray | None
         :return:
         :rtype:
         """
         crosses = vec_crosses(vecs2, vecs1)
         rot_mats_1 = rotation_matrix(crosses, angles)
         if dihedrals is not None:
-            # this is where things break down
-            # looks like I don't get the correct rotation into the dihedral frame
             rot_mats_2 = rotation_matrix(vecs1, -dihedrals)
             rot_mat = np.matmul(rot_mats_2, rot_mats_1)
         else:
             rot_mat = rot_mats_1
         transfs = affine_matrix(rot_mat, centers)
-        # raise Exception(transfs, rot_mats_1, crosses, angles, vecs1)
+
         return transfs
 
     def build_next_points(self, refs1, dists, refs2, angles, refs3, dihedrals, ref_axis = None):
@@ -50,8 +48,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         if dihedrals is not None:
             vecs2 = refs3 - refs1
         else:
-            # vecs2 = np.broadcast_to([0., 1., 0.], (len(refs1), 3))
-            # if no dihedral for now we'll let our new axis be some random things in the x-y plane
+            # if no dihedral, for now we'll let our new axis be some random things in the x-y plane
             if ref_axis is None:
                 vecs2 = np.concatenate((np.random.uniform(.5, 1, (len(refs1), 2)), np.zeros((len(refs1), 1))), axis=-1)
             elif ref_axis.ndim == 1:
@@ -62,12 +59,55 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         newstuff = affine_multiply(transfs, vecs1)
         return newstuff
 
+    def default_ordering(self, coordlist):
+        if coordlist.shape[-1] == 6:
+            ordering = coordlist[:, :, (0, 2, 4)]
+            coordlist = coordlist[:, :, (1, 3, 5)]
+        else:
+            r = np.arange(len(coordlist[0]))
+            ordering = np.broadcast_to(
+                np.array([r, np.roll(r, 1), np.roll(r, 2)]).T[np.newaxis],
+                coordlist.shape[:2] + (3,)
+            )
+        return ordering, coordlist
 
-    def convert_many(self, coordlist, ordering=None, origins=None, axes=None, use_rad=True, **kw):
+    def _derivs(self, coordlist, ordering=None, origins=None, axes=None, use_rad=True, **kw):
+        """
+        Returns the derivatives of the generated Cartesians with respect to the coordlist
+        Uses analytic expressions
+
+        :param coordlist:
+        :type coordlist: np.ndarray
+        :param ordering:
+        :type ordering:
+        :param origins:
+        :type origins:
+        :param axes:
+        :type axes:
+        :param use_rad:
+        :type use_rad:
+        :param kw:
+        :type kw:
+        :return:
+        :rtype:
+        """
+
+
+
+    def convert_many(self, coordlist,
+                     ordering=None, origins=None, axes=None, use_rad=True,
+                     return_derivs = False,
+                     **kw
+                     ):
         """Expects to get a list of configurations
         These will look like:
             [
-                [anchor, dist, ref, angle, plane, dihedral ]
+                [dist, angle, dihedral]
+                ...
+            ]
+        and ordering will be
+            [
+                [pos, point, line, plane]
                 ...
             ]
         **For efficiency it is assumed that all configurations have the same length**
@@ -85,15 +125,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         """
         # make sure we have the ordering stuff in hand
         if ordering is None:
-            if coordlist.shape[-1] == 6:
-                ordering = coordlist[:, :, (0, 2, 4)]
-                coordlist = coordlist[:, :, (1, 3, 5)]
-            else:
-                r = np.arange(len(coordlist[0]))
-                ordering = np.broadcast_to(
-                    np.array([r, np.roll(r, 1), np.roll(r, 2)]).T[np.newaxis],
-                    coordlist.shape[:2] + (3,)
-                )
+           ordering, coordlist = self.default_ordering(coordlist)
 
         orderings = ordering
         if np.min(orderings) > 0:
@@ -109,7 +141,6 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         else:
             atom_ordering = None
 
-        #still need to handle the n < 4 case...
         sysnum = len(coordlist)
         coordnum = len(coordlist[0])
         total_points = np.empty((sysnum, coordnum+1, 3))
@@ -165,7 +196,12 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
                 if not use_rad:
                     dihed = np.deg2rad(dihed)
 
-            ref_points = self.build_next_points(refs1, dists, refs2, angle, refs3, dihed, ref_axis=axes[:, 1]) # iteratively build z-mat
+            ref_points = self.build_next_points(refs1, dists, refs2, angle, refs3, dihed,
+                                                ref_axis=axes[:, 1],
+                                                return_derivs = return_derivs
+                                                ) # iteratively build z-mat
+            if return_derivs:
+                ref_points, derivs = return_derivs
             total_points[:, i+1] = ref_points
 
         if atom_ordering is not None:
@@ -176,7 +212,8 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
 
     def convert(self, coords, **kw):
         """dipatches to convert_many but only pulls the first"""
-        return self.convert_many(np.reshape(coords, (1,)+coords.shape), **kw)[0]
+        total_points, opts = self.convert_many(np.reshape(coords, (1,)+coords.shape), **kw)[0]
+        return total_points[0], opts
 
 
 __converters__ = [ ZMatrixToCartesianConverter() ]

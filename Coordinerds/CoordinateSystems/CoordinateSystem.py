@@ -231,7 +231,7 @@ class CoordinateSystem:
         from McUtils.Zachary import FiniteDifferenceDerivative
 
         if converter_options is None:
-            converter_options = {}
+            converter_options = {} # convert_coords tracks the other conversion options for us
         convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
         self_shape = self.coordinate_shape
         if self_shape is None:
