@@ -20,9 +20,9 @@ class CoordinateSystem:
 
     """
     def __init__(self,
-                 name = None, basis = None, matrix = None, dimension = None,
-                 jacobian_prep = None, coordinate_shape = None,
-                 converter_options = None
+                 name=None, basis=None, matrix=None, dimension=None,
+                 jacobian_prep=None, coordinate_shape=None,
+                 converter_options=None
                  ):
         """Sets up the CoordinateSystem object
 
@@ -232,41 +232,60 @@ class CoordinateSystem:
 
         if converter_options is None:
             converter_options = {} # convert_coords tracks the other conversion options for us
-        convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
-        self_shape = self.coordinate_shape
-        if self_shape is None:
-            self_shape = coords.shape[1:]
-        if self_shape is None:
-            raise CoordinateSystemError(
-                "{}.{}: 'coordinate_shape' {} must be tuple of ints".format(
-                    type(self).__name__,
-                    'jacobian',
-                    self_shape
-                ))
 
-        other_shape = system.coordinate_shape
-        # if other_shape is None:
-        #     raise CoordinateSystemException(
-        #         "{}.{}: 'coordinate_shape' {} must be tuple of ints".format(
-        #             type(self).__name__,
-        #             'jacobian',
-        #             other_shape
-        #         ))
+        deriv_tensor = None # default return value
 
-        for k, v in zip(
-                ('mesh_spacing', 'prep'),
-                (.001, system.jacobian_prep, None)
-        ):
-            if k not in finite_difference_options:
-                finite_difference_options[k] = v
+        # sort of a hack right now: if the conversion returns 'derivs', then we use those for the FD
+        converter_options['return_derivs'] = True
+        test_crd, test_opts = self.convert_coords(coords, system, **converter_options)
+        deriv_key = 'derivs'
+        if deriv_key in test_opts and test_opts[deriv_key] is not None:
+            order = order-1
+            deriv_tensor = test_opts['derivs']
+            convert = lambda c, s=system, dk=deriv_key, kw=converter_options: self.convert_coords(c, s, **kw)[1][dk]
+        else:
+            convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
 
-        deriv = FiniteDifferenceDerivative(
-            convert,
-            function_shape=(self_shape, other_shape),
-            **finite_difference_options
-        )(coords)
+        if order > 0:
+            self_shape = self.coordinate_shape
+            if self_shape is None:
+                self_shape = coords.shape[1:]
+            if self_shape is None:
+                raise CoordinateSystemError(
+                    "{}.{}: 'coordinate_shape' {} must be tuple of ints".format(
+                        type(self).__name__,
+                        'jacobian',
+                        self_shape
+                    ))
 
-        return deriv.derivative_tensor(order, coordinates=coordinates)
+            other_shape = system.coordinate_shape
+            # if other_shape is None:
+            #     raise CoordinateSystemException(
+            #         "{}.{}: 'coordinate_shape' {} must be tuple of ints".format(
+            #             type(self).__name__,
+            #             'jacobian',
+            #             other_shape
+            #         ))
+
+            for k, v in zip(
+                    ('mesh_spacing', 'prep'),
+                    (.001, system.jacobian_prep, None)
+            ):
+                if k not in finite_difference_options:
+                    finite_difference_options[k] = v
+
+            deriv = FiniteDifferenceDerivative(
+                convert,
+                function_shape=(self_shape, other_shape),
+                **finite_difference_options
+            )(coords)
+
+            deriv_tensor = deriv.derivative_tensor(order, coordinates=coordinates)
+
+        if deriv_tensor is None:
+            raise CoordinateSystemError("derivative order '{}' less than 0".format(order))
+
+        return deriv_tensor
 
 
 ######################################################################################################
@@ -289,7 +308,7 @@ class BaseCoordinateSystem(CoordinateSystem):
 
     """
 
-    def __init__(self, name, dimension=None, matrix=None, coordinate_shape=None, **converter_options):
+    def __init__(self, name, dimension=None, matrix=None, coordinate_shape=None, converter_options=None):
         super().__init__(name=name,
                          dimension=dimension, basis=self, matrix=matrix, coordinate_shape=coordinate_shape,
                          converter_options=converter_options

@@ -65,6 +65,14 @@ class CoordinateSystemConverters:
 
     @classmethod
     def _preload_converters(self):
+        from .CartesianToZMatrix import __converters__ as converters
+        for conv in converters:
+            type_pair = tuple(conv.types)
+            self.converters[type_pair] = conv
+        from .ZMatrixToCartesian import __converters__ as converters
+        for conv in converters:
+            type_pair = tuple(conv.types)
+            self.converters[type_pair] = conv
         for file in os.listdir(self.converters_dir):
             self.load_converter(file)
 
