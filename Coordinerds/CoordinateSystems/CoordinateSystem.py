@@ -208,6 +208,7 @@ class CoordinateSystem:
                  order = 1,
                  coordinates = None,
                  converter_options = None,
+                 all_numerical=False,
                  **finite_difference_options
                  ):
         """Computes the Jacobian between the current coordinate system and a target coordinate system
@@ -235,17 +236,26 @@ class CoordinateSystem:
 
         deriv_tensor = None # default return value
 
-        # sort of a hack right now: if the conversion returns 'derivs', then we use those for the FD
-        converter_options['return_derivs'] = True
-        test_crd, test_opts = self.convert_coords(coords, system, **converter_options)
-        deriv_key = 'derivs'
-        if deriv_key in test_opts and test_opts[deriv_key] is not None:
-            order = order-1
-            deriv_tensor = test_opts['derivs']
-            convert = lambda c, s=system, dk=deriv_key, kw=converter_options: self.convert_coords(c, s, **kw)[1][dk]
+        if not all_numerical:
+            # sort of a hack right now: if the conversion returns 'derivs', then we use those for the FD
+            # we clearly need to allow for higher derivatives, but I haven't figured out what I want to do at this stage
+            rd = converter_options['return_derivs'] if 'return_derivs' in converter_options else None
+            converter_options['return_derivs'] = True
+            test_crd, test_opts = self.convert_coords(coords, system, **converter_options)
+            if rd is None:
+                del converter_options['return_derivs']
+            else:
+                converter_options['return_derivs'] = rd
+            deriv_key = 'derivs'
+            if deriv_key in test_opts and test_opts[deriv_key] is not None:
+                order = order-1
+                deriv_tensor = test_opts['derivs']
+                convert = lambda c, s=system, dk=deriv_key, kw=converter_options: self.convert_coords(c, s, **kw)[1][dk]
+            else:
+                convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
         else:
             convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
-
+            
         if order > 0:
             self_shape = self.coordinate_shape
             if self_shape is None:

@@ -9,6 +9,7 @@ __all__ = [
     "vec_normalize",
     "vec_norms",
     "vec_tensordot",
+    "vec_tdot",
     "vec_crosses",
     "vec_angles",
     "vec_sins",
@@ -21,56 +22,74 @@ __all__ = [
     "affine_multiply"
 ]
 
+##
+# NOTE: The design of a lot of this stuff needs a bit of work
+#       Like should it work with things that aren't just stacks of vectors?
+#       Or should it all be specifically for vector-vector operations?
+#       Lots of it doesn't even make sense in a non-vector context...
+#       But then there's also like "vec_tensordot" which is explicitly non-vector in scope...
+#       Not sure what exactly I want with this. Lots of stuff TBD.
+
 ################################################
 #
 #       vec_dots
 #
 
-def vec_dot_vanilla(vecs1, vecs2):
-    return np.sum(vecs1*vecs2, axis=1)
-
-def vec_dot_matty(vecs1, vecs2):
-    return np.diag(np.matmul(vecs1, vecs2.T))
-
-def vec_dots(vecs1, vecs2, mode = None, arbitrary_cutoff = 0):
-    """Computes the pair-wise dot product of two lists of vecs
-
-    # some question as to the fastest way to compute pairwise dot products of a pile of vectors
-    # the internet reccomends einsum but this seems to not perform well over huge arrays
-    # a definite contender instead is to use an element wise product and a sum
-    # the shitty thing is that this two operations, but the latter is O(n) so it shouldn't matter
-    # probably fastest is to do a dot and take the diagonal, so that'll be the default method up to a
-    # set bytecount where we'll switch to the sum and vec mode
-    # alternately could introduce some chunking, but that's for the future
-    # the mode argument will someday be used to allow you to control the algorithm
+def vec_dots(vecs1, vecs2, axis=-1):
+    """
+    Computes the pair-wise dot product of two lists of vecs using np.matmul
 
     :param vecs1:
     :type vecs1:
     :param vecs2:
     :type vecs2:
     """
-    if vecs1.shape != vecs2.shape:
-        raise ValueError("pairwise dot has to be done on things of the same size")
-    if vecs1.nbytes > arbitrary_cutoff:
-        return vec_dot_vanilla(vecs1, vecs2)
-    else:
-        return vec_dot_matty(vecs1, vecs2)
+
+    vecs1 = np.expand_dims(vecs1, axis-1)
+    vecs2 = np.expand_dims(vecs2, axis)
+    res = np.matmul(vecs1, vecs2)
+    res_shape = res.shape
+
+    for _ in range(2):
+        if res_shape[axis] == 1:
+            res = res.reshape(np.delete(res_shape, axis))
+            res_shape = res.shape
+
+    return res
 
 ################################################
 #
 #       vec_norms
 #
 
-def vec_norms(vecs):
-    return np.linalg.norm(vecs, axis=1)
+def vec_norms(vecs, axis=-1):
+    """
+
+    :param vecs:
+    :type vecs: np.ndarray
+    :param axis:
+    :type axis: int
+    :return:
+    :rtype:
+    """
+    return np.linalg.norm(vecs, axis=-1)
 
 ################################################
 #
 #       vec_normalize
 #
 
-def vec_normalize(vecs):
-    norms = np.reshape(vec_norms(vecs), (len(vecs), 1))
+def vec_normalize(vecs, axis=-1):
+    """
+
+    :param vecs:
+    :type vecs: np.ndarray
+    :param axis:
+    :type axis: int
+    :return:
+    :rtype:
+    """
+    norms = vec_norms(vecs)[..., np.newaxis]
     return vecs/norms
 
 ################################################
@@ -78,10 +97,10 @@ def vec_normalize(vecs):
 #       vec_crosses
 #
 
-def vec_crosses(vecs1, vecs2, normalize=False):
-    crosses = np.cross(vecs1, vecs2)
+def vec_crosses(vecs1, vecs2, normalize=False, axis=-1):
+    crosses = np.cross(vecs1, vecs2, axis=axis)
     if normalize:
-        crosses = crosses/vec_norms(crosses)[:, np.newaxis]
+        crosses = crosses/vec_norms(crosses, axis=axis)[..., np.newaxis]
     return crosses
 
 ################################################
@@ -89,7 +108,7 @@ def vec_crosses(vecs1, vecs2, normalize=False):
 #       vec_cos
 #
 
-def vec_cos(vectors1, vectors2):
+def vec_cos(vectors1, vectors2, axis=-1):
     """Gets the cos of the angle between two vectors
 
     :param vectors1:
@@ -97,9 +116,9 @@ def vec_cos(vectors1, vectors2):
     :param vectors2:
     :type vectors2: np.ndarray
     """
-    dots   = vec_dots(vectors1, vectors2)
-    norms1 = vec_norms(vectors1)
-    norms2 = vec_norms(vectors2)
+    dots   = vec_dots(vectors1, vectors2, axis=axis)
+    norms1 = vec_norms(vectors1, axis=axis)
+    norms2 = vec_norms(vectors2, axis=axis)
 
     return dots/(norms1*norms2)
 
@@ -108,7 +127,7 @@ def vec_cos(vectors1, vectors2):
 #       vec_sins
 #
 
-def vec_sins(vectors1, vectors2):
+def vec_sins(vectors1, vectors2, axis=-1):
     """Gets the sin of the angle between two vectors
 
     :param vectors1:
@@ -116,9 +135,9 @@ def vec_sins(vectors1, vectors2):
     :param vectors2:
     :type vectors2: np.ndarray
     """
-    crosses= vec_crosses(vectors1, vectors2)
-    norms1 = vec_norms(vectors1)
-    norms2 = vec_norms(vectors2)
+    crosses= vec_crosses(vectors1, vectors2, axis=axis)
+    norms1 = vec_norms(vectors1, axis=axis)
+    norms2 = vec_norms(vectors2, axis=axis)
 
     return crosses/(norms1*norms2)
 
@@ -128,7 +147,7 @@ def vec_sins(vectors1, vectors2):
 #       vec_angles
 #
 
-def vec_angles(vectors1, vectors2):
+def vec_angles(vectors1, vectors2, axis=-1):
     """Gets the angles and normals between two vectors
 
     :param vectors1:
@@ -138,13 +157,13 @@ def vec_angles(vectors1, vectors2):
     :return: angles and normals between two vectors
     :rtype: (np.ndarray, np.ndarray)
     """
-    dots    = vec_dots(vectors1, vectors2)
-    crosses = vec_crosses(vectors1, vectors2)
-    norms1  = vec_norms(vectors1)
-    norms2  = vec_norms(vectors2)
+    dots    = vec_dots(vectors1, vectors2, axis=axis)
+    crosses = vec_crosses(vectors1, vectors2, axis=axis)
+    norms1  = vec_norms(vectors1, axis=axis)
+    norms2  = vec_norms(vectors2, axis=axis)
     norm_prod = norms1*norms2
     cos_comps = dots/norm_prod
-    cross_norms = vec_norms(crosses)
+    cross_norms = vec_norms(crosses, axis=axis)
     sin_comps = cross_norms/norm_prod
 
     return (np.arctan2(sin_comps, cos_comps), crosses)
@@ -172,7 +191,7 @@ def vec_outer(a, b, axes=None):
     #   then we do the outer on the matrix
     #   then we cast back to the shape we want
     if axes is None:
-        if a.ndim > 2:
+        if a.ndim > 1:
             axes = [-1, -1]
         else:
             axes = [0, 0]
@@ -181,7 +200,7 @@ def vec_outer(a, b, axes=None):
     a_ax = axes[0]
     if isinstance(a_ax, (int, np.integer)):
         a_ax = [a_ax]
-    a_ax = list(a_ax)
+    a_ax = [ax + a.ndim if ax<0 else ax for ax in a_ax]
     a_leftover = [x for x in range(a.ndim) if x not in a_ax]
     a_transp = a_leftover + a_ax
     a_shape = a.shape
@@ -192,7 +211,7 @@ def vec_outer(a, b, axes=None):
     b_ax = axes[1]
     if isinstance(b_ax, (int, np.integer)):
         b_ax = [b_ax]
-    b_ax = list(b_ax)
+    b_ax = [ax + b.ndim if ax<0 else ax for ax in b_ax]
     b_leftover = [x for x in range(b.ndim) if x not in b_ax]
     b_transp = b_leftover + b_ax
     b_shape = b.shape
@@ -214,6 +233,128 @@ def vec_outer(a, b, axes=None):
     final_transp = np.argsort(a_leftover + a_ax + b_ax)
 
     return res.transpose(final_transp)
+
+#################################################################################
+#
+#   vec_tensordot
+#
+def vec_tensordot(tensa, tensb, axes=2):
+    """Defines a version of tensordot that uses matmul to operate over stacks of things
+    Basically had to duplicate the code for regular tensordot but then change the final call
+
+    :param tensa:
+    :type tensa:
+    :param tensb:
+    :type tensb:
+    :param axes:
+    :type axes:
+    :return:
+    :rtype:
+    """
+
+    if isinstance(axes, (int, np.integer)):
+        axes = (list(range(-axes, 0)), list(range(0, axes)))
+    axes_a, axes_b = axes
+    try:
+        na = len(axes_a)
+        axes_a = list(axes_a)
+    except TypeError:
+        axes_a = [axes_a]
+        na = 1
+    try:
+        nb = len(axes_b)
+        axes_b = list(axes_b)
+    except TypeError:
+        axes_b = [axes_b]
+        nb = 1
+
+    a, b = np.asarray(tensa), np.asarray(tensb)
+
+    axes_a = [ax if ax >= 0 else a.ndim + ax for ax in axes_a]
+    axes_b = [ax if ax >= 0 else b.ndim + ax for ax in axes_b]
+    a_shape = tensa.shape
+    b_shape = tensb.shape
+    shared = 0
+    for shared, s in enumerate(zip(a_shape, b_shape)):
+        if s[0] != s[1]:
+            break
+        shared = shared + 1
+
+    # the minimum number of possible shared axes
+    # is constrained by the contraction of axes
+    shared = min(shared, min(axes_a), min(axes_b))
+
+    if shared == 0:
+        return np.tensordot(a, b, axes=axes)
+
+    as_ = a_shape
+    nda = a.ndim
+    bs = b.shape
+    ndb = b.ndim
+
+    equal = True
+    if na != nb:
+        equal = False
+        raise ValueError("{}: shape-mismatch ({}) and ({}) in number of axes to contract over".format(
+            "vec_tensordot",
+            na,
+            nb
+        ))
+    else:
+        for k in range(na):
+            if as_[axes_a[k]] != bs[axes_b[k]]:
+                equal = False
+                raise ValueError("{}: shape-mismatch ({}) and ({}) in contraction over axes ({}) and ({})".format(
+                    "vec_tensordot",
+                    axes_a[k],
+                    axes_b[k],
+                    na,
+                    nb
+                    ))
+            if axes_a[k] < 0:
+                axes_a[k] += nda
+            if axes_b[k] < 0:
+                axes_b[k] += ndb
+
+    # Move the axes to sum over to the end of "a"
+    # and to the front of "b"
+    # preserve things so that the "shared" stuff remains at the fron of both of these...
+    notin_a = [k for k in range(nda) if k not in axes_a]
+    newaxes_a = notin_a + axes_a
+    N2_a = 1
+    for axis in axes_a:
+        N2_a *= as_[axis]
+    newshape_a = as_[:shared] + (int(np.product([as_[ax] for ax in notin_a if ax >= shared])), N2_a)
+    olda = [as_[axis] for axis in notin_a if axis >= shared]
+
+    notin_b = [k for k in range(ndb) if k not in axes_b]
+    newaxes_b = notin_b + axes_b
+    N2_b = 1
+    for axis in axes_b:
+        N2_b *= bs[axis]
+    newshape_b = as_[:shared] + (N2_b, int(np.product([bs[ax] for ax in notin_b if ax >= shared])))
+    oldb = [bs[axis] for axis in notin_b if axis >= shared]
+
+    at = a.transpose(newaxes_a).reshape(newshape_a)
+    bt = b.transpose(newaxes_b).reshape(newshape_b)
+    res = np.matmul(at, bt)
+    final_shape = list(a_shape[:shared]) + olda + oldb
+    return res.reshape(final_shape)
+def vec_tdot(tensa, tensb, axes=[[-1], [1]]):
+    """
+    Tensor dot but just along the final axes by default. Totally a convenience function.
+
+    :param tensa:
+    :type tensa:
+    :param tensb:
+    :type tensb:
+    :param axes:
+    :type axes:
+    :return:
+    :rtype:
+    """
+
+    return vec_tensordot(tensa, tensb, axes=axes)
 
 
 ################################################
@@ -321,107 +462,3 @@ def affine_multiply(mats, vecs):
     if vec_shape[-1] != 4:
         res = res[:, :3]
     return res
-
-
-#################################################################################
-#
-#   vec_tensordot
-#
-def vec_tensordot(tensa, tensb, axes=2):
-    """Defines a version of tensordot that uses matmul to operate over stacks of things
-    Basically had to duplicate the code for regular tensordot but then change the final call
-
-    :param tensa:
-    :type tensa:
-    :param tensb:
-    :type tensb:
-    :param axes:
-    :type axes:
-    :return:
-    :rtype:
-    """
-
-    if isinstance(axes, (int, np.integer)):
-        axes = (list(range(-axes, 0)), list(range(axes, 0)))
-    axes_a, axes_b = axes
-    try:
-        na = len(axes_a)
-        axes_a = list(axes_a)
-    except TypeError:
-        axes_a = [axes_a]
-        na = 1
-    try:
-        nb = len(axes_b)
-        axes_b = list(axes_b)
-    except TypeError:
-        axes_b = [axes_b]
-        nb = 1
-
-    a, b = np.asarray(tensa), np.asarray(tensb)
-    axes_a = [ax if ax > 0 else a.ndim + ax for ax in axes_a]
-    axes_b = [ax if ax > 0 else b.ndim + ax for ax in axes_b]
-    a_shape = tensa.shape
-    b_shape = tensb.shape
-    shared = 0
-    for shared, s in enumerate(zip(a_shape, b_shape)):
-        if s[0] != s[1]:
-            break
-
-    shared = min(shared, min(axes_a), min(axes_b))
-
-    if shared == 0:
-        return np.tensordot(a, b, axes=axes)
-
-    as_ = a_shape
-    nda = a.ndim
-    bs = b.shape
-    ndb = b.ndim
-
-    equal = True
-    if na != nb:
-        equal = False
-        raise ValueError("{}: shape-mismatch ({}) and ({}) in number of axes to contract over".format(
-            "vec_tensordot",
-            na,
-            nb
-        ))
-    else:
-        for k in range(na):
-            if as_[axes_a[k]] != bs[axes_b[k]]:
-                equal = False
-                raise ValueError("{}: shape-mismatch ({}) and ({}) in contraction over axes ({}) and ({})".format(
-                    "vec_tensordot",
-                    axes_a[k],
-                    axes_b[k],
-                    na,
-                    nb
-                    ))
-            if axes_a[k] < 0:
-                axes_a[k] += nda
-            if axes_b[k] < 0:
-                axes_b[k] += ndb
-
-    # Move the axes to sum over to the end of "a"
-    # and to the front of "b"
-    # preserve things so that the "shared" stuff remains at the fron of both of these...
-    notin_a = [k for k in range(nda) if k not in axes_a]
-    newaxes_a = notin_a + axes_a
-    N2_a = 1
-    for axis in axes_a:
-        N2_a *= as_[axis]
-    newshape_a = as_[:shared] + (int(np.product([as_[ax] for ax in notin_a if ax >= shared])), N2_a)
-    olda = [as_[axis] for axis in notin_a if axis >= shared]
-
-    notin_b = [k for k in range(ndb) if k not in axes_b]
-    newaxes_b = notin_b + axes_b
-    N2_b = 1
-    for axis in axes_b:
-        N2_b *= bs[axis]
-    newshape_b = as_[:shared] + (N2_b, int(np.product([bs[ax] for ax in notin_b if ax >= shared])))
-    oldb = [bs[axis] for axis in notin_b if axis >= shared]
-
-    at = a.transpose(newaxes_a).reshape(newshape_a)
-    bt = b.transpose(newaxes_b).reshape(newshape_b)
-    res = np.matmul(at, bt)
-    final_shape = list(a_shape[:shared]) + olda + oldb
-    return res.reshape(final_shape)

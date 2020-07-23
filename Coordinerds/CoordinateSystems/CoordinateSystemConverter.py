@@ -73,8 +73,9 @@ class CoordinateSystemConverters:
         for conv in converters:
             type_pair = tuple(conv.types)
             self.converters[type_pair] = conv
-        for file in os.listdir(self.converters_dir):
-            self.load_converter(file)
+        if os.path.exists(self.converters_dir):
+            for file in os.listdir(self.converters_dir):
+                self.load_converter(file)
 
     @classmethod
     def get_converter(self, system1, system2):

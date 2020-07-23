@@ -42,7 +42,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         transfs = affine_matrix(rot_mat, centers)
 
         if return_comps:
-            comps = (crosses, rot_mats_1, rot_mats_2)
+            comps = (-crosses, rot_mats_2, rot_mats_1)
         else:
             comps = None
         return transfs, comps
@@ -52,21 +52,23 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
                           return_comps = False
                           ):
         v = refs2 - refs1
-        vecs1 = dists*vec_normalize(v)
+        vecs1 = vec_normalize(v)
         if dihedrals is not None:
-            vecs2 = refs3 - refs1
+            v2 = refs3 - refs2
         else:
             # if no dihedral, for now we'll let our new axis be some random things in the x-y plane
             if ref_axis is None:
-                vecs2 = np.concatenate((np.random.uniform(.5, 1, (len(refs1), 2)), np.zeros((len(refs1), 1))), axis=-1)
+                v2 = np.concatenate((np.random.uniform(.5, 1, (len(refs1), 2)), np.zeros((len(refs1), 1))), axis=-1)
             elif ref_axis.ndim == 1:
-                vecs2 = np.broadcast_to(ref_axis[np.newaxis, :], (len(refs1), 2))
+                v2 = np.broadcast_to(ref_axis[np.newaxis, :], (len(refs1), 2))
             else:
-                vecs2 = ref_axis
+                v2 = ref_axis
+        vecs2 = vec_normalize(v2)
+
         transfs, comps = self.zmatrix_affine_transforms(refs1, vecs1, vecs2, angles, dihedrals, return_comps=return_comps)
-        newstuff = affine_multiply(transfs, vecs1)
+        newstuff = affine_multiply(transfs, dists*vecs1)
         if return_comps:
-            comps = (v, vecs2) + comps
+            comps = (v, v2) + comps
         else:
             comps = None
         return newstuff, comps
@@ -120,71 +122,83 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         i3 = np.broadcast_to(np.eye(3), (len(derivs), 3, 3))
         e3 = np.broadcast_to(levi_cevita3, (len(derivs), 3, 3, 3))
 
-        print(i, r, q, f, ia, ib, ic)
+        # print(i, r, q, f, ia, ib, ic)
+        zorks = np.arange(len(ia))
+
+        nv = vec_norms(v)
+        v = v/nv
+        if i > 0:
+            nu = vec_norms(u)
+            u = u/nu
+            nn = vec_norms(n)
+            n = n/nn
+            if R1 is None:
+                Q = R2
+            else:
+                Q = np.matmul(R1, R2)
 
         for z in range(i+1): # Lower-triangle is 0
             for m in range(3):
-                dx1 = derivs[:, z, m, ia]
+                dx1 = derivs[zorks, z, m, ia]
 
                 # Get derivatives for the v-vector
-                nv = vec_norms(v)
-                v /= nv
+
                 if i > 0:
-                    dx2 = derivs[:, z, m, ib]
+                    dx2 = derivs[zorks, z, m, ib]
                     dv = dx2 - dx1
-                    print(dx1.shape, dx2.shape, dv.shape, v.shape)
+                    # print("|", ib, dx1.shape, dx2.shape, dv.shape, v.shape)
                     dv = 1/nv*(dv - v*vec_dots(dv, v))
 
                     # Get derivatives for the u-vector
                     if i > 1:
-                        dx3 = derivs[:, z, m, ic]
+                        dx3 = derivs[zorks, z, m, ic]
                         du = dx3 - dx2
-                        nu = vec_norms(u)
-                        u /= nu
                         du = 1/nu*(du - u*vec_dots(du, u))
                     else:
                         du = np.zeros(dx1.shape)
-
                 else:
                     dv = np.zeros(dx1.shape)
                     du = np.zeros(dx1.shape)
 
+                delta_rn = z==i and m==0
+                delta_qn = z==i and m==1
+                delta_fn = z==i and m==2
+
                 if i > 0:
-                    nn = vec_norms(n)
                     dn = vec_crosses(dv, u) + vec_crosses(v, du)
-                    dn = 1/nn * (dn - n*vec_dots(dn, n))
+                    dn = 1/nn*(dn - n*vec_dots(dn, n))
 
                     dR2 = (
                             (vec_outer(dn, n) + vec_outer(n, dn))*(1-np.cos(q))
-                            - vec_dots(e3, dn)*np.sin(q)
+                            - vec_tdot(e3, dn)*np.sin(q)
                     )
-                    if m == 1:
-                        # component that only gets subtracted if m==q
-                        dR2 -= (i3 - vec_outer(n, n))*np.sin(q) + vec_dots(e3, n)*np.cos(q)
+                    if delta_qn:
+                        # component that only gets subtracted if m==1
+                        dR2 -= (i3 - vec_outer(n, n))*np.sin(q) + vec_tdot(e3, n)*np.cos(q)
 
                     if i > 1:
                         dR1 = (
                                 (vec_outer(dv, v) + vec_outer(v, dv)) * (1 - np.cos(f))
-                                - vec_dots(e3, dv) * np.sin(f)
+                                - vec_tdot(e3, dv) * np.sin(f)
                         )
-                        if m == 2:
-                            dR1 -= (i3 - vec_outer(v, v)) * np.sin(f) + vec_dots(e3, v) * np.cos(f)
+                        if delta_fn:
+                            dR1 -= (i3 - vec_outer(v, v)) * np.sin(f) + vec_tdot(e3, v) * np.cos(f)
 
-                        # we've got three flavors of dQ for the three flavors of internals
-                        dQ = vec_dots(dR1, R2) + vec_dots(R1, dR2)
-                    elif i == 0:
-                        dQ = vec_dots(R1, dR2)
+                        dQ = np.matmul(dR1, R2) + np.matmul(R1, dR2)
+                    elif i == 1:
+                        if R1 is None:
+                            dQ = dR2
+                        else:
+                            dQ = np.matmul(R1, dR2)
 
-                dvr = (v if m == 0 else np.zeros(v.shape))
+                dvr = (v if delta_rn else np.zeros(v.shape))
                 if i > 0:
-                    Q = vec_dots(R1, R2)
-                    derivs[:, z, m, i] = (
-                            dx1
-                            + vec_dots(dQ, r*v)
-                            + vec_dots(Q, r*dv + dvr)
-                    )
+                    dQr = vec_tdot(dQ, r*v)
+                    Qdr = vec_tdot(Q, r*dv + dvr)
+                    d = dx1 + dQr + Qdr
+                    derivs[zorks, z, m, i+1] = d
                 else:
-                    derivs[:, z, m, i] = dx1 + dvr
+                    derivs[zorks, z, m, i+1] = dx1 + dvr
 
     def convert_many(self,
                      coordlist,
@@ -227,6 +241,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
            ordering, coordlist = self.default_ordering(coordlist)
         else:
             ordering = np.array(ordering)
+        coordlist = np.asarray(coordlist)
 
         orderings = ordering
         if np.min(orderings) > 0:
@@ -334,7 +349,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
 
     def convert(self, coords, **kw):
         """dipatches to convert_many but only pulls the first"""
-        total_points, opts = self.convert_many(np.reshape(coords, (1,)+coords.shape), **kw)[0]
+        total_points, opts = self.convert_many(np.reshape(coords, (1,)+coords.shape), **kw)
         return total_points[0], opts
 
 

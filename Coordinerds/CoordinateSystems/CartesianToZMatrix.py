@@ -1,6 +1,6 @@
 from .CoordinateSystemConverter import CoordinateSystemConverter
 from .CommonCoordinateSystems import CartesianCoordinateSystem, ZMatrixCoordinateSystem
-from ...Numputils import vec_norms, vec_angles, pts_dihedrals
+from ...Numputils import vec_norms, vec_angles, pts_dihedrals, dist_deriv, angle_deriv, dihed_deriv
 import numpy as np
 # this import gets bound at load time, so unfortunately PyCharm can't know just yet
 # what properties its class will have and will try to claim that the files don't exist
@@ -73,7 +73,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
     def get_diheds(points, centers, seconds, thirds):
         return pts_dihedrals(points, centers, seconds, thirds)
 
-    def convert_many(self, coords, ordering = None, use_rad=True, **kw):
+    def convert_many(self, coords, ordering = None, use_rad=True, return_derivs=False, **kw):
         """
         We'll implement this by having the ordering arg wrap around in coords?
         """
@@ -86,7 +86,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
         new_coords = np.reshape(new_coords, new_shape)
         return new_coords, ops
 
-    def convert(self, coords, ordering=None, use_rad=True, **kw):
+    def convert(self, coords, ordering=None, use_rad=True, return_derivs=False, **kw):
         """The ordering should be specified like:
 
         [
@@ -133,43 +133,61 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 (ncoords, 4)
             )
 
-
         # we define an order map that we'll index into to get the new indices for a
         # given coordinate
         om = 1+np.argsort(ol[:, 0])
 
         # need to check against the cases of like 1, 2, 3 atom molecules
         # annoying but not hard
+        if return_derivs:
+            derivs = np.zeros(coords.shape + (len(ol)-1, 3))
         if not multiconfig:
+            ix = ol[1:, 0]
+            jx = ol[1:, 1]
             dists = self.get_dists(
-                coords[ol[1:, 0]],
-                coords[ol[1:, 1]]
+                coords[ix],
+                coords[jx]
             )
+            if return_derivs:
+                dist_derivs = dist_deriv(coords,ix, jx)
+                drang = np.arange(len(ix))
+                derivs[ix, :, drang, 0] = dist_derivs[0]
+                derivs[jx, :, drang, 0] = dist_derivs[1]
             if len(ol) > 2:
+                ix = ol[2:, 0]
+                jx = ol[2:, 1]
+                kx = ol[2:, 2]
                 angles = np.concatenate( (
-                    [0],
-                    self.get_angles(
-                        coords[ol[2:, 0]],
-                        coords[ol[2:, 1]],
-                        coords[ol[2:, 2]]
-                    )
+                    [0], self.get_angles(coords[ix], coords[jx], coords[kx])
                 ) )
                 if not use_rad:
                     angles = np.rad2deg(angles)
+                if return_derivs:
+                    angle_derivs = angle_deriv(coords, jx, ix, kx)
+                    drang = 1+np.arange(len(ix))
+                    derivs[jx, :, drang, 1] = angle_derivs[0]
+                    derivs[ix, :, drang, 1] = angle_derivs[1]
+                    derivs[kx, :, drang, 1] = angle_derivs[2]
             else:
                 angles = np.array([0.])
             if len(ol) > 3:
+                ix = ol[3:, 0]
+                jx = ol[3:, 1]
+                kx = ol[3:, 2]
+                lx = ol[3:, 3]
                 diheds = np.concatenate( (
                     [0, 0],
-                    self.get_diheds(
-                        coords[ol[3:, 0]],
-                        coords[ol[3:, 1]],
-                        coords[ol[3:, 2]],
-                        coords[ol[3:, 3]]
-                    )
+                    self.get_diheds(coords[ix], coords[jx], coords[kx], coords[lx])
                 ) )
                 if not use_rad:
                     diheds = np.rad2deg(diheds)
+                if return_derivs:
+                    dihed_derivs = -dihed_deriv(coords, ix, jx, kx, lx)
+                    drang = 2+np.arange(len(ix))
+                    derivs[ix, :, drang, 2] = dihed_derivs[0]
+                    derivs[jx, :, drang, 2] = dihed_derivs[1]
+                    derivs[kx, :, drang, 2] = dihed_derivs[2]
+                    derivs[lx, :, drang, 2] = dihed_derivs[3]
             else:
                 diheds = np.array([0, 0])
             ol = ol[1:]
@@ -179,38 +197,46 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
             # we do all of this stuff with masking operations in the multiconfiguration cases
             mask = np.repeat(True, ncoords)
             mask[np.arange(0, ncoords, nol)] = False
-            dists = self.get_dists(
-                coords[ol[mask, 0]],
-                coords[ol[mask, 1]]
-            )
+            ix = ol[mask, 0]
+            jx = ol[mask, 1]
+            dists = self.get_dists(coords[ix], coords[jx])
+            if return_derivs:
+                dist_derivs = dist_deriv(coords, ix, jx)
+                drang = np.arange(len(ix))
+                derivs[ix, :, drang, 0] = dist_derivs[0]
+                derivs[jx, :, drang, 0] = dist_derivs[1]
 
             if nol>2:
                 # set up the mask to drop all of the first bits
                 mask[np.arange(1, ncoords, nol)] = False
-                angles = self.get_angles(
-                    coords[ol[mask, 0]],
-                    coords[ol[mask, 1]],
-                    coords[ol[mask, 2]]
-                )
+                ix = ol[mask, 0]
+                jx = ol[mask, 1]
+                kx = ol[mask, 2]
+                angles = self.get_angles(coords[ix], coords[jx], coords[kx])
                 angles = np.append(angles, np.zeros(steps))
                 insert_pos = np.arange(0, ncoords-1*steps-1, nol-2)
                 angles = np.insert(angles, insert_pos, 0)
                 angles = angles[:ncoords-steps]
                 if not use_rad:
                     angles = np.rad2deg(angles)
+                if return_derivs:
+                    # we might need to mess with the masks akin to the insert call...
+                    angle_derivs = angle_deriv(coords, ix, jx, kx)
+                    drang = 1+np.arange(len(ix))
+                    derivs[ix, :, drang, 1] = angle_derivs[0]
+                    derivs[jx, :, drang, 1] = angle_derivs[1]
+                    derivs[kx, :, drang, 1] = angle_derivs[2]
             else:
                 angles = np.zeros(ncoords-steps)
-
 
             if nol > 3:
                 # set up mask to drop all of the second bits (wtf it means 'second')
                 mask[np.arange(2, ncoords, nol)] = False
-                diheds = self.get_diheds(
-                    coords[ol[mask, 0]],
-                    coords[ol[mask, 1]],
-                    coords[ol[mask, 2]],
-                    coords[ol[mask, 3]]
-                )
+                ix = ol[mask, 0]
+                jx = ol[mask, 1]
+                kx = ol[mask, 2]
+                lx = ol[mask, 3]
+                diheds = self.get_diheds(coords[ix], coords[jx], coords[kx], coords[lx])
                 # pad diheds to be the size of ncoords
                 diheds = np.append(diheds, np.zeros(2*steps))
 
@@ -220,9 +246,15 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 diheds = diheds[:ncoords-steps]
                 if not use_rad:
                     diheds = np.rad2deg(diheds)
+                if return_derivs:
+                    dihed_derivs = dihed_deriv(coords, ix, jx, kx, lx)
+                    drang = 2+np.arange(len(ix))
+                    derivs[ix, :, drang, 2] = dihed_derivs[0]
+                    derivs[jx, :, drang, 2] = dihed_derivs[1]
+                    derivs[kx, :, drang, 2] = dihed_derivs[2]
+                    derivs[lx, :, drang, 2] = dihed_derivs[3]
             else:
                 diheds = np.zeros(ncoords-steps)
-
 
             # after the np.insert calls we have the right number of final elements, but too many
             # ol and om elements and they're generally too large
@@ -234,27 +266,25 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
             om = np.reshape(om[mask], (steps, nol-1))-nol*np.reshape(np.arange(steps), (steps, 1))-1
             om = np.reshape(om, (ncoords-steps,))
 
-        #### should find some way to return the order ?
         final_coords = np.array(
             [
                 dists, angles, diheds
             ]
         ).T
 
-
         if multiconfig:
             # figure out what to use for the axes
-            origins = coords[ol[::nol-1, 1]] # whatever was referenced by the first atom in the spec
-            x_axes  = coords[ ol[::nol-1, 0]] - origins # the first displacement vector
-            y_axes  = coords[ ol[1::nol-1, 0]] - origins # the second displacement vector (just defines the x-y plane, not the real y-axis)
+            origins = coords[ol[::nol-1,  1]] # whatever was referenced by the first atom in the spec
+            x_axes  = coords[ol[::nol-1,  0]] - origins # the first displacement vector
+            y_axes  = coords[ol[1::nol-1, 0]] - origins # the second displacement vector (just defines the x-y plane, not the real y-axis)
             axes = np.array([x_axes, y_axes]).transpose((1, 0, 2))
             # print(origins.shape, axes.shape)
             # print(origins)
             # print(axes)
 
         else:
-            axes = np.array([coords[1] - coords[0], coords[2] - coords[0]])
-            origins = coords[0]
+            origins = coords[ol[0, 1]]
+            axes = np.array([coords[ol[0, 0]] - origins, coords[ol[1, 0]] - origins])
 
         ol = orig_ol
         om = om - 1
@@ -264,6 +294,12 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 ]
             ).T
 
-        return final_coords, dict(use_rad=use_rad, ordering=ordering, origins=origins, axes=axes)
+        opts = dict(use_rad=use_rad, ordering=ordering, origins=origins, axes=axes)
+
+        # if we're returning derivs, we also need to make sure that they're ordered the same way the other data is...
+        if return_derivs:
+            opts['derivs'] = derivs
+
+        return final_coords, opts
 
 __converters__ = [ CartesianToZMatrixConverter() ]
