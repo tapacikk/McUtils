@@ -15,8 +15,6 @@ __all__ = [
 ##                                   CoordinateSet Class
 ##
 ######################################################################################################
-
-
 class CoordinateSet(np.ndarray):
     """
     A subclass of np.ndarray that lives in an explicit coordinate system and can convert between them
@@ -103,7 +101,8 @@ class CoordinateSet(np.ndarray):
             ops = {}
         return type(self)(new_coords, system = system, converter_options=ops)
 
-    def jacobian(self, system,
+    def jacobian(self,
+                 system,
                  order=1,
                  coordinates=None,
                  converter_options=None,
@@ -127,10 +126,16 @@ class CoordinateSet(np.ndarray):
         :rtype:
         """
 
+        cops = self.converter_options
+        if cops is None:
+            cops = {}
+        if converter_options is None:
+            converter_options = {}
+        kw = dict(cops, **converter_options)
         return self.system.jacobian(self,
                                     system,
                                     order=order,
                                     coordinates=coordinates,
-                                    converter_options=converter_options,
+                                    converter_options=kw,
                                     **fd_options
                                     )

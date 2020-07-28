@@ -445,7 +445,8 @@ def one_pad_vecs(vecs):
 #       affine_multiply
 
 def affine_multiply(mats, vecs):
-    """Multiplies affine mats and vecs
+    """
+    Multiplies affine mats and vecs
 
     :param mats:
     :type mats:

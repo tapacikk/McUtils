@@ -163,3 +163,12 @@ class CoordinateSystemConverter(metaclass=abc.ABCMeta):
         :type kwargs:
         """
         pass
+
+    def register(self):
+        """
+        Registers the CoordinateSystemConverter
+
+        :return:
+        :rtype:
+        """
+        CoordinateSystemConverters.register_converter(*self.types, self)

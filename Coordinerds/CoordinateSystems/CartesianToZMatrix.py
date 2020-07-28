@@ -73,7 +73,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
     def get_diheds(points, centers, seconds, thirds):
         return pts_dihedrals(points, centers, seconds, thirds)
 
-    def convert_many(self, coords, ordering = None, use_rad=True, return_derivs=False, **kw):
+    def convert_many(self, coords, ordering=None, use_rad=True, return_derivs=False, **kw):
         """
         We'll implement this by having the ordering arg wrap around in coords?
         """
@@ -81,9 +81,15 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
             ordering = range(len(coords[0]))
         base_shape = coords.shape
         new_coords = np.reshape(coords, (np.product(base_shape[:-1]),) + base_shape[-1:])
-        new_coords, ops = self.convert(new_coords, ordering=ordering, use_rad=use_rad)
-        new_shape = base_shape[:-2] + (base_shape[-2]-1, new_coords.shape[-1])
+        new_coords, ops = self.convert(new_coords, ordering=ordering, use_rad=use_rad, return_derivs=return_derivs)
+        single_coord_shape = (base_shape[-2]-1, new_coords.shape[-1])
+        new_shape = base_shape[:-2] + single_coord_shape
         new_coords = np.reshape(new_coords, new_shape)
+        if return_derivs:
+            ders = ops['derivs']
+            ders_shape = coords.shape + single_coord_shape
+            ders = ders.reshape(ders_shape)
+            ops['derivs'] = ders
         return new_coords, ops
 
     def convert(self, coords, ordering=None, use_rad=True, return_derivs=False, **kw):
@@ -140,7 +146,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
         # need to check against the cases of like 1, 2, 3 atom molecules
         # annoying but not hard
         if return_derivs:
-            derivs = np.zeros(coords.shape + (len(ol)-1, 3))
+            derivs = np.zeros(coords.shape + (nol-1, 3))
         if not multiconfig:
             ix = ol[1:, 0]
             jx = ol[1:, 1]
@@ -202,7 +208,9 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
             dists = self.get_dists(coords[ix], coords[jx])
             if return_derivs:
                 dist_derivs = dist_deriv(coords, ix, jx)
-                drang = np.arange(len(ix))
+                drang = np.arange(nol-1)
+                nreps = int(len(ix)/(nol-1))
+                drang = np.broadcast_to(drang[:, np.newaxis], drang.shape + (nreps,)).flatten()
                 derivs[ix, :, drang, 0] = dist_derivs[0]
                 derivs[jx, :, drang, 0] = dist_derivs[1]
 
@@ -222,7 +230,9 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 if return_derivs:
                     # we might need to mess with the masks akin to the insert call...
                     angle_derivs = angle_deriv(coords, ix, jx, kx)
-                    drang = 1+np.arange(len(ix))
+                    drang = 1+np.arange(nol-2)
+                    nreps = int(len(ix)/(nol-2))
+                    drang = np.broadcast_to(drang[:, np.newaxis], drang.shape + (nreps,)).flatten()
                     derivs[ix, :, drang, 1] = angle_derivs[0]
                     derivs[jx, :, drang, 1] = angle_derivs[1]
                     derivs[kx, :, drang, 1] = angle_derivs[2]
@@ -248,7 +258,9 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                     diheds = np.rad2deg(diheds)
                 if return_derivs:
                     dihed_derivs = dihed_deriv(coords, ix, jx, kx, lx)
-                    drang = 2+np.arange(len(ix))
+                    drang = 2+np.arange(nol-2)
+                    nreps = int(len(ix)/(nol-2))
+                    drang = np.broadcast_to(drang[:, np.newaxis], drang.shape + (nreps,)).flatten()
                     derivs[ix, :, drang, 2] = dihed_derivs[0]
                     derivs[jx, :, drang, 2] = dihed_derivs[1]
                     derivs[kx, :, drang, 2] = dihed_derivs[2]

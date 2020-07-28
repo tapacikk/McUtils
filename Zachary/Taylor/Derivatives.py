@@ -354,19 +354,27 @@ class DerivativeGenerator:
         displacements, displaced_coords = disp_data
         stencil_widths, stencil_shapes, finite_difference, dorder = fd_data
 
+        # TODO: sit down and add comments to this compact implementation...
+
         config_shape = self.config_shape
         cdim = len(config_shape)
         roll = [cdim] + [a for a in np.arange(displaced_coords.ndim) if a != cdim]
         dcoords = displaced_coords.transpose(roll)
         function_values = f(dcoords)
-        roll = tuple(np.arange(cdim) + 1) + (0,) + tuple(np.arange(cdim+1, function_values.ndim))
-        function_values = function_values.transpose(roll)
+        unroll = tuple(np.arange(cdim) + 1) + (0,) + tuple(np.arange(cdim+1, function_values.ndim))
+        function_values = function_values.transpose(unroll)
         disp, fvals = self.prep(spec, displacements, function_values)
 
         # TODO: handle stuff like dipoles where we have an x, y, z component each of which should be handled separately...
         #       this might actually be handled naturally, though? I'm actually pretty hopeful it will be...
 
         # we now need to reformat the fvals so that they respect the stencil_shapes
+        # not sure where the extra 1 is coming from here...?
+        # I think maybe from the transpose call...?
+        # Actually no that just puts the displacement back in the right spot...
+        #   seems that it comes out of the way the coordinates get fed in/come out...
+        #   the tested stuff all has an extra '1' because of the way the displacement
+        #   gets generated
         out_shape = fvals.shape[1+len(self.config_shape):]
         out_dim = 1 if isinstance(out_shape, (int, np.integer)) else len(out_shape)
         fvals_shape = self.config_shape + stencil_widths

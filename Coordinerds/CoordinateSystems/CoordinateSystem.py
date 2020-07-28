@@ -176,9 +176,9 @@ class CoordinateSystem:
         else:
             converter = self.converter(system)
             if is_multiconfig(coords):
-                fun = lambda coords: converter.convert_many(coords, **kw)
+                fun = lambda coords, kw=kw: converter.convert_many(coords, **kw)
             else:
-                fun = lambda coords: converter.convert(coords, **kw)
+                fun = lambda coords, kw=kw: converter.convert(coords, **kw)
             new_coords = mc_safe_apply(fun, coords=coords)
             return new_coords
 
@@ -239,18 +239,31 @@ class CoordinateSystem:
         if not all_numerical:
             # sort of a hack right now: if the conversion returns 'derivs', then we use those for the FD
             # we clearly need to allow for higher derivatives, but I haven't figured out what I want to do at this stage
-            rd = converter_options['return_derivs'] if 'return_derivs' in converter_options else None
-            converter_options['return_derivs'] = True
+            ret_d_key = 'return_derivs'
+            rd = converter_options[ret_d_key] if ret_d_key in converter_options else None
+            converter_options[ret_d_key] = True
             test_crd, test_opts = self.convert_coords(coords, system, **converter_options)
             if rd is None:
-                del converter_options['return_derivs']
+                del converter_options[ret_d_key]
             else:
-                converter_options['return_derivs'] = rd
+                converter_options[ret_d_key] = rd
             deriv_key = 'derivs'
             if deriv_key in test_opts and test_opts[deriv_key] is not None:
                 order = order-1
-                deriv_tensor = test_opts['derivs']
-                convert = lambda c, s=system, dk=deriv_key, kw=converter_options: self.convert_coords(c, s, **kw)[1][dk]
+                deriv_tensor = test_opts[deriv_key]
+                kw = converter_options.copy()
+                if ret_d_key in kw:
+                    del kw[ret_d_key]
+                def convert(c, s=system, dk=deriv_key, self=self, convert_kwargs=kw):
+                    crds, opts = self.convert_coords(c, s, return_derivs=True, **convert_kwargs)
+                    # we now have to reshape the derivatives because mc_safe_apply is only applied to the coords -_-
+                    # should really make that function manage deriv shapes too, but don't know how to _tell_ it that I
+                    # want it to
+                    derivs = opts[dk]
+
+                    new_deriv_shape = c.shape + derivs.shape[len(c.shape) - 1:]
+                    derivs = derivs.reshape(new_deriv_shape)
+                    return derivs
             else:
                 convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
         else:

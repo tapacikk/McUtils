@@ -421,7 +421,10 @@ class TensorPlot(GraphicsGrid):
         tensor_shape = tensor.shape
         total_dim = reduce(mul, tensor_shape[:-2], 1)
         if nrows is None or ncols is None:
-            if len(tensor_shape) == 4:  # best case
+            if len(tensor_shape) == 3:
+                nrows = 1
+                ncols = tensor_shape[0]
+            elif len(tensor_shape) == 4:  # best case
                 nrows, ncols = tensor_shape[:2]
             else:
                 if nrows is not None:

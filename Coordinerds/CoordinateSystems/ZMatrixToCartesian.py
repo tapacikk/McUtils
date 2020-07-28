@@ -6,8 +6,8 @@ import numpy as np
 # what properties its class will have and will try to claim that the files don't exist
 
 class ZMatrixToCartesianConverter(CoordinateSystemConverter):
-    """A converter class for going from ZMatrix coordinates to Cartesian coordinates
-
+    """
+    A converter class for going from ZMatrix coordinates to Cartesian coordinates
     """
 
     @property
@@ -284,6 +284,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         if axes.ndim == 2:
             axes = np.broadcast_to(axes[np.newaxis], (sysnum, 2, 3))
         x_axes = vec_normalize(axes[:, 0])
+
         dists = coordlist[:, 0, 0]
         ref_points_1 = np.reshape(dists, (sysnum, 1)) * x_axes
         ref_points_1 += origins
@@ -299,7 +300,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
             ic = None
             R1 = None
             R2 = None
-            v = x_axes
+            v = axes[:, 0]
             u = None
             n = None
             self._fill_deriv(i, derivs, r, q, f, ia, ib, ic, v, u, n, R1, R2)
