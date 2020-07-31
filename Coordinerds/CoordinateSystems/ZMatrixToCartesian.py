@@ -243,17 +243,17 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
             ordering = np.array(ordering)
         coordlist = np.asarray(coordlist)
 
-        orderings = ordering
-        if np.min(orderings) > 0:
-            orderings = orderings - 1
-        dim_diff = coordlist.ndim - orderings.ndim
+
+        if np.min(ordering) > 0:
+            ordering = ordering - 1
+        dim_diff = coordlist.ndim - ordering.ndim
         if dim_diff > 0:
             missing = coordlist.shape[:dim_diff]
-            orderings = np.broadcast_to(ordering, missing + orderings.shape )
+            ordering = np.broadcast_to(ordering, missing + ordering.shape )
 
-        if orderings.shape[-1] == 4:
-            atom_ordering = orderings[:, :, 0]
-            orderings = orderings[:, 1:, 1:]
+        if ordering.shape[-1] == 4:
+            atom_ordering = ordering[:, :, 0]
+            ordering = ordering[:, 1:, 1:]
         else:
             atom_ordering = None
 
@@ -309,11 +309,12 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         for i in range(1, coordnum):
             # Get the distances away
             # raise Exception(coordlist[:, i, [0, 2, 4]])
-            ref_coords1 = orderings[:, i, 0] # reference atom numbers for first coordinate
+            # raise Exception(ordering)
+            ref_coords1 = ordering[:, i, 0] # reference atom numbers for first coordinate
             refs1 = total_points[np.arange(sysnum), ref_coords1] # get the actual reference coordinates
             dists = np.reshape(coordlist[:, i, 0], (sysnum, 1)) # pull the requisite distances
 
-            ref_coords2 = orderings[:, i, 1] # reference atom numbers for second coordinate
+            ref_coords2 = ordering[:, i, 1] # reference atom numbers for second coordinate
             refs2 = total_points[np.arange(sysnum), ref_coords2] # get the actual reference coordinates for the angle
             angle = coordlist[:, i, 1] # pull the requisite angle values
             if not use_rad:
@@ -324,7 +325,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
                 dihed = None
                 ref_coords3 = None
             else:
-                ref_coords3 = orderings[:, i, 2] # reference atom numbers for dihedral ref coordinate
+                ref_coords3 = ordering[:, i, 2] # reference atom numbers for dihedral ref coordinate
                 refs3 = total_points[np.arange(sysnum), ref_coords3] # get the actual reference coordinates for the dihed
                 dihed = coordlist[:, i, 2] # pull proper dihedral values
                 if not use_rad:
@@ -350,8 +351,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
 
     def convert(self, coords, **kw):
         """dipatches to convert_many but only pulls the first"""
-        total_points, opts = self.convert_many(np.reshape(coords, (1,)+coords.shape), **kw)
+        total_points, opts = self.convert_many(coords[np.newaxis], **kw)
         return total_points[0], opts
-
 
 __converters__ = [ ZMatrixToCartesianConverter() ]

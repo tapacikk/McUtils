@@ -1,15 +1,20 @@
 """
 Provides Graphics base classes that can be extended upon
 """
-import matplotlib.figure
-import matplotlib.axes
 
-__all__ = ["GraphicsBase", "Graphics", "Graphics3D", "GraphicsGrid", "Styled"]
+
+import platform
+# import matplotlib.figure
+# import matplotlib.axes
+from .Properties import GraphicsPropertyManager, GraphicsPropertyManager3D
+from .Styling import Styled, ThemeManager
+from .Backends import Backends
+
+__all__ = ["GraphicsBase", "Graphics", "Graphics3D", "GraphicsGrid"]
 
 
 class GraphicsException(Exception):
     pass
-
 
 ########################################################################################################################
 #
@@ -35,16 +40,39 @@ class GraphicsBase(metaclass=ABCMeta):
         'background',
         'epilog'
         'prolog',
-        'aspect_ratio'
+        'aspect_ratio',
+        'padding'
     }
+    def _get_def_opt(self, key, val):
+        if val is None:
+            try:
+                v = object.__getattribute__(self, '_'+key) # we overloaded getattr
+            except AttributeError:
+                try:
+                    v = object.__getattribute__(self._prop_manager, '_' + key)  # we overloaded getattr
+                except AttributeError:
+                    v = None
+            if v is None and key in self.default_style:
+                v = self.default_style[key]
+            return v
+        else:
+            return val
 
     def __init__(self,
                  *args,
                  figure = None,
+                 tighten = False,
                  axes = None,
                  subplot_kw = None,
                  parent = None,
+                 image_size = None,
+                 padding = None,
+                 aspect_ratio = None,
                  non_interactive = None,
+                 mpl_backend = None,
+                 theme=None,
+                 prop_manager = GraphicsPropertyManager,
+                 theme_manager = ThemeManager,
                  **opts
                  ):
         """
@@ -66,16 +94,58 @@ class GraphicsBase(metaclass=ABCMeta):
             subplot_kw = {}
 
         self.non_interactive = non_interactive
-        self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
-        self.set_options(**opts)
+        # if mpl_backend is None and platform.system() == "Darwin":
+        #     mpl_backend = "TkAgg"
+        self.mpl_backend = mpl_backend
+        aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio)
+        image_size = self._get_def_opt('image_size', image_size)
+        padding = self._get_def_opt('padding', padding)
+        if image_size is not None and 'figsize' not in subplot_kw:
+            try:
+                w, h = image_size
+            except TypeError:
+                w = image_size
+                asp = aspect_ratio
+                if asp is None or isinstance(asp, str):
+                    asp = 4.8/6.4
+                h = w * asp
+            if padding is not None:
+                pw, ph = padding
+                try:
+                    pwx, pwy = pw
+                except (TypeError, ValueError):
+                    pwx = pwy = pw
+                try:
+                    phx, phy = ph
+                except (TypeError, ValueError):
+                    phx = phy = ph
+                w += pwx + pwy
+                h += phx + phy
+                image_size = (w, h)
+            subplot_kw['figsize'] = (w/72., h/72.)
+
+        theme = self._get_def_opt('theme', theme)
+        if theme is not None:
+            if isinstance(theme, (str, dict)):
+                theme = [theme]
+            with theme_manager(*theme):
+                self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
+        else:
+            self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
+        self._prop_manager = prop_manager(self, self.figure, self.axes)
+        self.set_options(padding=padding, aspect_ratio=aspect_ratio, image_size=image_size, **opts)
 
         self.event_handler = None
         self._shown = False
         self.parent = parent
         self.animator = None
+        self.tighten = tighten
 
     @staticmethod
-    def _subplot_init(*args, **kw):
+    def _subplot_init(*args, mpl_backend=None, **kw):
+        if mpl_backend is not None:
+            import matplotlib as mpl
+            mpl.use(mpl_backend)
         import matplotlib.pyplot as plt
 
         return plt.subplots(*args, **kw)
@@ -96,7 +166,7 @@ class GraphicsBase(metaclass=ABCMeta):
         """
 
         if figure is None:
-            figure, axes = self._subplot_init(*args, **kw)
+            figure, axes = self._subplot_init(*args, mpl_backend=self.mpl_backend, **kw)
             # yes axes is overwritten intentionally for now -- not sure how to "reparent" an Axes object
         elif isinstance(figure, GraphicsBase):
             axes = figure.axes # type: matplotlib.axes.Axes
@@ -185,16 +255,28 @@ class GraphicsBase(metaclass=ABCMeta):
         self._epilog = e
 
     def __getattr__(self, item):
+        reraise_error = None
+        axes = object.__getattribute__(self, 'axes')
         try:
-            meth = getattr(self.axes, item)
+            meth = getattr(axes, item)
         except AttributeError as e:
-            meth = getattr(self.figure, item)
-        return meth
+            if 'Axes' not in e.args[0]:
+                reraise_error = e
+            else:
+                try:
+                    meth = getattr(self.figure, item)
+                except AttributeError as e:
+                    if 'Figure' not in e.args[0]:
+                        reraise_error = e
+                    else:
+                        reraise_error = AttributeError("'{}' object has no attribute '{}'".format(
+                            type(self).__name__,
+                            item
+                        ))
+        if reraise_error is not None:
+            raise reraise_error
 
-    class modified:
-        def __init__(self, *str, **opts):
-            self.val = str
-            self.opts = opts
+        return meth
 
     def copy_axes(self):
         """Copies the axes object
@@ -250,6 +332,8 @@ class GraphicsBase(metaclass=ABCMeta):
             self._epilog_graphics = [e.plot(self.axes) for e in self.epilog]
         if self.prolog is not None:
             self._prolog_graphics = [p.plot(self.axes) for p in self.prolog]
+        if self.tighten:
+            self.figure.tight_layout()
         self._shown = True
     def show(self, reshow = True):
         from .VTKInterface import VTKWindow
@@ -272,29 +356,6 @@ class GraphicsBase(metaclass=ABCMeta):
                 self.refresh().show()
                 # raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
 
-    # useful shared bits
-    def _set_ticks(self, x, set_ticks=None, set_locator=None, set_minor_locator=None, **opts):
-        import matplotlib.ticker as ticks
-
-        if isinstance(x, self.modified):  # name feels wrong here...
-            self._set_ticks(*x.val,
-                            set_ticks=set_ticks,
-                            set_locator=set_locator, set_minor_locator=set_minor_locator,
-                            **x.opts
-                            )
-        elif isinstance(x, ticks.Locator):
-            set_locator(x)
-        elif isinstance(x, (list, tuple)):
-            if len(x) == 2 and isinstance(x[0], (list, tuple)):
-                self.axes.set_xticks(*x, **opts)
-            elif len(x) == 2 and isinstance(x[0], ticks.Locator):
-                set_locator(x[0])
-                set_minor_locator(x[1])
-        elif isinstance(x, (float, int)):
-            set_ticks(ticks.MultipleLocator(x), **opts)
-        elif x is not None:
-            set_ticks(x, **opts)
-
     def clear(self):
         ax = self.axes  # type: matplotlib.axes.Axes
         all_things = ax.artists + ax.patches
@@ -305,6 +366,13 @@ class GraphicsBase(metaclass=ABCMeta):
         # hacky, but hopefully enough to make it work?
         return self.figure._repr_html_()
 
+    def savefig(self, where, format='png', **kw):
+        if 'facecolor' not in kw:
+            kw['facecolor'] = self.background# -_- stupid MPL
+        return self.figure.savefig(where,
+                    format=format,
+                    **kw
+                    )
     def to_png(self):
         import io
         buf = io.BytesIO()
@@ -320,8 +388,6 @@ class GraphicsBase(metaclass=ABCMeta):
         # currently assumes a matplotlib backend...
         return self.to_png().read()
 
-Styled = GraphicsBase.modified
-
 ########################################################################################################################
 #
 #                                               Graphics
@@ -331,63 +397,13 @@ class Graphics(GraphicsBase):
     A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with
     """
     default_style = dict(
+        theme='mccoy',
         frame=((True, False), (True, False)),
-        background='white',
         aspect_ratio=1,
-        image_size=(300, 300)
+        image_size=300,
+        padding = ((30, 10), (30, 10))
     )
-    def __init__(self, *args,
-                 figure=None,
-                 axes=None,
-                 frame=None,
-                 subplot_kw=None,
-                 event_handlers=None,
-                 animate=None,
-                 axes_labels=None,
-                 plot_label=None,
-                 plot_range=None,
-                 plot_legend=None,
-                 ticks=None,
-                 scale=None,
-                 image_size=None,
-                 background=None,
-                 aspect_ratio=None,
-                 colorbar=None,
-                 **kwargs
-                 ):
-        super().__init__(
-            *args,
-            figure=figure,
-            axes=axes,
-            frame=frame,
-            subplot_kw=subplot_kw,
-            axes_labels=axes_labels,
-            plot_label=plot_label,
-            plot_range=plot_range,
-            plot_legend=plot_legend,
-            ticks=ticks,
-            scale=scale,
-            aspect_ratio=aspect_ratio,
-            image_size=image_size,
-            event_handlers=event_handlers,
-            animate=animate,
-            background=background,
-            colorbar = colorbar,
-            **kwargs
-        )
 
-    def _get_def_opt(self, key, val):
-        if val is None:
-            try:
-                v = object.__getattribute__(self, '_'+key) # we overloaded getattr
-            except AttributeError:
-                if key in self.default_style:
-                    v = self.default_style[key]
-                else:
-                    v = None
-            return v
-        else:
-            return val
     def set_options(self,
                     axes_labels=None,
                     plot_label=None,
@@ -396,353 +412,136 @@ class Graphics(GraphicsBase):
                     frame=None,
                     ticks=None,
                     scale=None,
+                    padding=None,
                     ticks_style=None,
                     image_size=None,
                     aspect_ratio=None,
                     background=None,
-                    colorbar = None,
-                    prolog = None,
-                    epilog = None,
+                    colorbar=None,
+                    prolog=None,
+                    epilog=None,
                     **parent_opts
                     ):
 
         super().set_options(**parent_opts)
 
-        self._plot_label = self._get_def_opt('plot_label', plot_label)
-        if self._plot_label is not None:
-            self.plot_label = self._plot_label
-
-        self._plot_legend = self._get_def_opt('plot_legend', plot_legend)
-        if self._plot_legend is not None:
-            self.plot_legend = self._plot_legend
-
-        self._axes_labels = self._get_def_opt('axes_labels', axes_labels)
-        if self._axes_labels is not None:
-            self.axes_labels = self._axes_labels
-
-        self._frame = self._get_def_opt('frame', frame)
-        if self._frame is not None:
-            self.frame = self._frame
-
-        self._plot_range = self._get_def_opt('plot_range', plot_range)
-        if self._plot_range is not None:
-            self.plot_range = self._plot_range
-
-        self._ticks = self._get_def_opt('ticks', ticks)
-        if self._ticks is not None:
-            self.ticks = self._ticks
-
-        self._scale = self._get_def_opt('scale', scale)
-        if self._scale is not None:
-            self.scale = self._scale
-
-        self._ticks_style = self._get_def_opt('ticks_style', ticks_style)
-        if ticks_style is not None:
-            self.ticks_style = self._ticks_style
-
-        self._aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio)
-        if aspect_ratio is not None:
-            self.aspect_ratio = self._aspect_ratio
-
-        self._image_size = self._get_def_opt('image_size', image_size)
-        if self._image_size is not None:
-            self.image_size = self._image_size
-
-        self._background = self._get_def_opt('background', background)
-        if self._background is not None:
-            self.background = self._background
-
-        self._colorbar = self._get_def_opt('colorbar', colorbar)
-        if self._colorbar is not None:
-            self.colorbar = self._colorbar
-
-    # set plot label
+        opts = (
+            ('plot_label', plot_label),
+            ('plot_legend', plot_legend),
+            ('axes_labels', axes_labels),
+            ('frame', frame),
+            ('plot_range', plot_range),
+            ('ticks', ticks),
+            ('ticks_style', ticks_style),
+            ('scale', scale),
+            ('aspect_ratio', aspect_ratio),
+            ('image_size', image_size),
+            ('padding', padding),
+            ('background', background),
+            ('colorbar', colorbar)
+        )
+        for oname, oval in opts:
+            oval = self._get_def_opt(oname, oval)
+            if oval is not None:
+                setattr(self, oname, oval)
+    # attaching custom property setters
     @property
     def plot_label(self):
-        return self._plot_label
-
+        return self._prop_manager.plot_label
     @plot_label.setter
-    def plot_label(self, label):
-        self._plot_label = label
-        if label is None:
-            self.axes.set_title("")
-        elif isinstance(label, self.modified):
-            self.axes.set_title(*label.val, **label.opts)
-        else:
-            self.axes.set_title(label)
+    def plot_label(self, value):
+        self._prop_manager.plot_label = value
 
-    # set plot legend
     @property
     def plot_legend(self):
-        return self._plot_legend
-
+        return self._prop_manager.plot_legend
     @plot_legend.setter
-    def plot_legend(self, legend):
-        self._plot_legend = legend
-        if legend is None:
-            self.axes.set_label("")
-        elif isinstance(legend, self.modified):
-            self.axes.set_label(*legend.val, **legend.opts)
-        else:
-            self.axes.set_label(legend)
+    def plot_legend(self, value):
+        self._prop_manager.plot_legend = value
 
-    # set axes labels
     @property
     def axes_labels(self):
-        return self._axes_labels
-
+        return self._prop_manager.axes_labels
     @axes_labels.setter
-    def axes_labels(self, labels):
-        if self._axes_labels is None:
-            self._axes_labels = (self.axes.get_xlabel(), self.axes.get_ylabel())
-        try:
-            xlab, ylab = labels
-        except ValueError:
-            xlab, ylab = labels = (labels, self._axes_labels[1])
+    def axes_labels(self, value):
+        self._prop_manager.axes_labels = value
 
-        self._axes_labels = tuple(labels)
-        if xlab is None:
-            self.axes.set_xlabel("")
-        elif isinstance(xlab, self.modified):
-            self.axes.set_xlabel(*xlab.val, **xlab.opts)
-        else:
-            self.axes.set_xlabel(xlab)
-        if ylab is None:
-            self.axes.set_ylabel("")
-        elif isinstance(ylab, self.modified):
-            self.axes.set_ylabel(*ylab.val, **ylab.opts)
-        else:
-            self.axes.set_ylabel(ylab)
-
-    # set plot ranges
-    @property
-    def plot_range(self):
-        if self._plot_range is None:
-            pr = (self.axes.get_xlim(), self.axes.get_ylim())
-        else:
-            pr = self._plot_range
-        return pr
-
-    @plot_range.setter
-    def plot_range(self, ranges):
-        if self._plot_range is None:
-            self._plot_range = (self.axes.get_xlim(), self.axes.get_ylim())
-        try:
-            x, y = ranges
-        except ValueError:
-            x, y = ranges = (self._plot_range[0], ranges)
-        else:
-            if isinstance(x, int) or isinstance(x, float):
-                x, y = ranges = (self._plot_range[0], ranges)
-
-        self._plot_range = tuple(ranges)
-
-        if isinstance(x, self.modified): # name feels wrong here...
-            self.axes.set_xlim(*x.val, **x.opts)
-        elif x is not None:
-            self.axes.set_xlim(x)
-        if isinstance(y, self.modified):
-            self.axes.set_ylim(*y.val, **y.opts)
-        elif y is not None:
-            self.axes.set_ylim(y)
-
-    # set plot ticks
-    @property
-    def ticks(self):
-        return self._ticks
-
-    def _set_xticks(self, x, **opts):
-        return self._set_ticks(x,
-                        set_ticks=self.axes.set_xticks,
-                        set_locator=self.axes.xaxis.set_major_locator,
-                        set_minor_locator=self.axes.xaxis.set_minor_locator,
-                        **opts
-                        )
-
-    def _set_yticks(self, y, **opts):
-        return self._set_ticks(y,
-                               set_ticks=self.axes.set_yticks,
-                               set_locator=self.axes.yaxis.set_major_locator,
-                               set_minor_locator=self.axes.yaxis.set_minor_locator,
-                               **opts
-                               )
-
-    @ticks.setter
-    def ticks(self, ticks):
-
-        try:
-            x, y = ticks
-        except ValueError:
-            x, y = ticks = (self._ticks[0], ticks)
-
-        self._ticks = (self.axes.get_xticks(), self.axes.get_yticks())
-
-        self._ticks = ticks
-        self._set_xticks(x)
-        self._set_yticks(y)
-
-    # set ticks styles
-    @property
-    def ticks_style(self):
-        return self._ticks_style
-
-    @ticks_style.setter
-    def ticks_style(self, ticks_style):
-        if self._ticks_style is None:
-            self._ticks_style = (None,)*2
-        try:
-            x, y = ticks_style
-        except ValueError:
-            x, y = ticks_style = (self._ticks_style[0], ticks_style)
-        self._ticks_style = ticks_style
-        if x is not None:
-            self.axes.tick_params(
-                axis='x',
-                **x
-            )
-        if y is not None:
-            self.axes.tick_params(
-                axis='y',
-                **y
-            )
-
-    # set size
-    @property
-    def aspect_ratio(self):
-        return self._aspect_ratio
-
-    @aspect_ratio.setter
-    def aspect_ratio(self, ar):
-        if isinstance(ar, (float, int)):
-            a, b = self.plot_range
-            cur_ar = abs(b[1] - b[0])/abs(a[1] - a[0])
-            targ_ar = ar / cur_ar
-            self.axes.set_aspect(targ_ar)
-        elif isinstance(ar, str):
-            self.axes.set_aspect(ar)
-        else:
-            self.axes.set_aspect(ar[0], **ar[1])
-    # set size
-    @property
-    def image_size(self):
-        # im_size = self._image_size
-        # if isinstance(self._image_size, (int, float)):
-        #     im_size =
-        return self._image_size
-
-    @image_size.setter
-    def image_size(self, wh):
-        if self._image_size is None:
-            self._image_size = tuple( s/72. for s in self.get_size_inches() )
-
-        try:
-            w, h = wh
-        except (TypeError, ValueError):
-            ar = self.aspect_ratio
-            if not isinstance(ar, (int, float)):
-                try:
-                    ar = self._image_size[1] / self._image_size[0]
-                except TypeError:
-                    ar = 1
-            w, h = wh = (wh, ar*wh)
-
-        if w is not None or h is not None:
-            if w is None:
-                w = self._image_size[0]
-            if h is None:
-                h = self._image_size[1]
-
-            if w > 72:
-                wi = w/72
-            else:
-                wi = w
-                w = 72 * w
-
-            if h > 72:
-                hi = h/72
-            else:
-                hi = h
-                h = 72 * h
-
-            self._image_size = (w, h)
-            self.figure.set_size_inches(wi, hi)
-
-    # set background color
-    @property
-    def background(self):
-        return self._background
-
-    @background.setter
-    def background(self, bg):
-        self._background = bg
-        self.figure.set_facecolor(bg)
-        self.axes.set_facecolor(bg)
-
-    # set show_frame
     @property
     def frame(self):
-        return self._frame
-
+        return self._prop_manager.frame
     @frame.setter
-    def frame(self, fr):
-        self._frame = fr
-        if fr is True or fr is False:
-            self.axes.set_frame_on(fr)
-        else:
-            lr, bt = fr
-            if len(lr) == 2:
-                l, r = lr
-            else:
-                l = lr; r=lr
-            if len(bt) == 2:
-                b, t = bt
-            else:
-                b = bt; t = bt
-            self.axes.spines['left'].set_visible(l); self.axes.spines['right'].set_visible(r)
-            self.axes.spines['bottom'].set_visible(b); self.axes.spines['top'].set_visible(t)
+    def frame(self, value):
+        self._prop_manager.frame = value
+
+    @property
+    def plot_range(self):
+        return self._prop_manager.plot_range
+    @plot_range.setter
+    def plot_range(self, value):
+        self._prop_manager.plot_range = value
+
+    @property
+    def ticks(self):
+        return self._prop_manager.ticks
+    @ticks.setter
+    def ticks(self, value):
+        self._prop_manager.ticks = value
+
+    @property
+    def ticks_style(self):
+        return self._prop_manager.ticks_style
+    @ticks_style.setter
+    def ticks_style(self, value):
+        self._prop_manager.ticks_style = value
+
+    @property
+    def scale(self):
+        return self._prop_manager.ticks
+    @scale.setter
+    def scale(self, value):
+        self._prop_manager.scale = value
+
+    @property
+    def aspect_ratio(self):
+        return self._prop_manager.aspect_ratio
+    @aspect_ratio.setter
+    def aspect_ratio(self, value):
+        self._prop_manager.aspect_ratio = value
+
+    @property
+    def image_size(self):
+        return self._prop_manager.image_size
+    @image_size.setter
+    def image_size(self, value):
+        self._prop_manager.image_size = value
+
+    @property
+    def padding(self):
+        return self._prop_manager.padding
+    @padding.setter
+    def padding(self, value):
+        self._prop_manager.padding = value
+
+    @property
+    def background(self):
+        return self._prop_manager.background
+    @background.setter
+    def background(self, value):
+        self._prop_manager.background = value
 
     @property
     def colorbar(self):
-        return self._colorbar
+        return self._prop_manager.colorbar
     @colorbar.setter
-    def colorbar(self, c):
-        self._colorbar = c
-        if self._colorbar is True:
-            self.add_colorbar()
-        elif isinstance(self._colorbar, dict):
-            self.add_colorbar(**self.colorbar)
-    def add_colorbar(self, graphics = None, norm = None, cmap = None, **kw):
+    def colorbar(self, value):
+        self._prop_manager.colorbar = value
+    def add_colorbar(self, graphics=None, norm=None, cmap=None, **kw):
         fig = self.figure  # type: matplotlib.figure.Figure
         ax = self.axes  # type: matplotlib.axes.Axes
         if graphics is None:
             import matplotlib.cm as cm
             graphics = cm.ScalarMappable(norm=norm, cmap=cmap)
         fig.colorbar(graphics, **kw)
-
-    # set plot scales
-    @property
-    def scale(self):
-        return self._scale
-
-    @scale.setter
-    def scale(self, scales):
-        if self._scale is None:
-            self._scale = (self.axes.get_xscale(), self.axes.get_yscale())
-        try:
-            x, y = scales
-        except ValueError:
-            x, y = scales = (self._scale[0], scales)
-
-        self._scale = tuple(scales)
-
-        if isinstance(x, self.modified): # name feels wrong here...
-            self.axes.set_xscale(*x.val, **x.opts)
-        elif x is not None:
-            self.axes.set_xscale(x)
-        if isinstance(y, self.modified):
-            self.axes.set_yscale(*y.val, **y.opts)
-        elif y is not None:
-            self.axes.set_yscale(y)
 
 ########################################################################################################################
 #
@@ -765,7 +564,7 @@ class Graphics3D(Graphics):
                  ticks_style=None,
                  image_size=None,
                  background=None,
-                 backend='matplotlib',
+                 backend=Backends.MPL,
                  **kwargs
                  ):
 
@@ -785,17 +584,21 @@ class Graphics3D(Graphics):
             image_size=image_size,
             event_handlers=event_handlers,
             animate=animate,
+            prop_manager=GraphicsPropertyManager3D,
             **kwargs
         )
 
     @staticmethod
-    def _subplot_init(*args, backend = 'MPL', **kw):
-        if backend == "VTK":
+    def _subplot_init(*args, backend = Backends.MPL, mpl_backend=None, **kw):
+        if backend == Backends.VTK:
             from .VTKInterface import VTKWindow
             window = VTKWindow()
             return window, window
         else:
             from mpl_toolkits.mplot3d import Axes3D
+            if mpl_backend is not None:
+                import matplotlib as mpl
+                mpl.use(mpl_backend)
             import matplotlib.pyplot as plt
 
             subplot_kw = {"projection": '3d'}
@@ -820,235 +623,114 @@ class Graphics3D(Graphics):
         """
 
         if figure is None:
-            figure, axes = self._subplot_init(*args, backend = self._backend, **kw)
+            figure, axes = self._subplot_init(*args, backend = self._backend, mpl_backend=self.mpl_backend, **kw)
         elif isinstance(figure, GraphicsBase):
             axes = figure.axes
             figure = figure.figure
 
         if axes is None:
-            if self._backend == "VTK":
+            if self._backend == Backends.MPL:
                 axes = figure
             else:
                 axes = figure.add_subplot(1, 1, 1, projection='3d')
 
         return figure, axes
 
-    # set plot label
     @property
     def plot_label(self):
-        return self._plot_label
-
+        return self._prop_manager.plot_label
     @plot_label.setter
-    def plot_label(self, label):
-        self._plot_label = label
-        if label is None:
-            self.axes.set_title("")
-        elif isinstance(label, self.modified):
-            self.axes.set_title(*label.val, **label.opts)
-        else:
-            self.axes.set_title(label)
+    def plot_label(self, value):
+        self._prop_manager.plot_label = value
 
-    # set plot legend
     @property
     def plot_legend(self):
-        return self._plot_legend
-
+        return self._prop_manager.plot_legend
     @plot_legend.setter
-    def plot_legend(self, legend):
-        self._plot_legend = legend
-        if legend is None:
-            self.axes.set_label("")
-        elif isinstance(legend, self.modified):
-            self.axes.set_label(*legend.val, **legend.opts)
-        else:
-            self.axes.set_label(legend)
+    def plot_legend(self, value):
+        self._prop_manager.plot_legend = value
 
-    # set axes labels
     @property
     def axes_labels(self):
-        return self._axes_labels
-
+        return self._prop_manager.axes_labels
     @axes_labels.setter
-    def axes_labels(self, labels):
-        if self._axes_labels is None:
-            self._axes_labels = (self.axes.get_xlabel(), self.axes.get_ylabel(), self.axes.get_zlabel())
-        try:
-            xlab, ylab, zlab = labels
-        except ValueError:
-            xlab, ylab, zlab = labels = (labels, self._axes_labels[1], self._axes_labels[2])
+    def axes_labels(self, value):
+        self._prop_manager.axes_labels = value
 
-        self._axes_labels = tuple(labels)
-        if xlab is None:
-            self.axes.set_xlabel("")
-        elif isinstance(xlab, self.modified):
-            self.axes.set_xlabel(*xlab.val, **xlab.opts)
-        else:
-            self.axes.set_xlabel(xlab)
+    @property
+    def frame(self):
+        return self._prop_manager.frame
+    @frame.setter
+    def frame(self, value):
+        self._prop_manager.frame = value
 
-        if ylab is None:
-            self.axes.set_ylabel("")
-        elif isinstance(ylab, self.modified):
-            self.axes.set_ylabel(*ylab.val, **ylab.opts)
-        else:
-            self.axes.set_ylabel(ylab)
-
-        if zlab is None:
-            self.axes.set_zlabel("")
-        elif isinstance(zlab, self.modified):
-            self.axes.set_zlabel(*zlab.val, **zlab.opts)
-        else:
-            self.axes.set_zlabel(zlab)
-
-    # set plot ranges
     @property
     def plot_range(self):
-        if self._plot_range is None:
-            pr = (self.axes.get_xlim(), self.axes.get_ylim())
-        else:
-            pr = self._plot_range
-        return pr
-
+        return self._prop_manager.plot_range
     @plot_range.setter
-    def plot_range(self, ranges):
+    def plot_range(self, value):
+        self._prop_manager.plot_range = value
 
-        if self._plot_range is None:
-            self._plot_range = (self.axes.get_xlim(), self.axes.get_ylim(), self.axes.get_zlim())
+    @property
+    def ticks(self):
+        return self._prop_manager.ticks
+    @ticks.setter
+    def ticks(self, value):
+        self._prop_manager.ticks = value
 
-        try:
-            x, y, z = ranges
-        except ValueError:
-            x, y, z = ranges = (self._plot_range[0], self._plot_range[1], ranges)
-        else:
-            if isinstance(x, int) or isinstance(x, float):
-                x, y, z = ranges = (self._plot_range[0], self._plot_range[1], ranges)
+    @property
+    def ticks_style(self):
+        return self._prop_manager.ticks_style
+    @ticks_style.setter
+    def ticks_style(self, value):
+        self._prop_manager.ticks_style = value
 
+    @property
+    def scale(self):
+        return self._prop_manager.ticks
+    @scale.setter
+    def scale(self, value):
+        self._prop_manager.scale = value
 
-        self._plot_range = tuple(ranges)
+    @property
+    def aspect_ratio(self):
+        return self._prop_manager.aspect_ratio
+    @aspect_ratio.setter
+    def aspect_ratio(self, value):
+        self._prop_manager.aspect_ratio = value
 
-        if isinstance(x, self.modified): # name feels wrong here...
-            self.axes.set_xlim(*x.val, **x.opts)
-        elif x is not None:
-            self.axes.set_xlim(x)
-        if isinstance(y, self.modified):
-            self.axes.set_ylim(*y.val, **y.opts)
-        elif y is not None:
-            self.axes.set_ylim(y)
-        if isinstance(z, self.modified):
-            self.axes.set_zlim(*z.val, **z.opts)
-        elif z is not None:
-            self.axes.set_zlim(z)
+    @property
+    def image_size(self):
+        return self._prop_manager.image_size
+    @image_size.setter
+    def image_size(self, value):
+        self._prop_manager.image_size = value
+
+    @property
+    def padding(self):
+        return self._prop_manager.padding
+    @padding.setter
+    def padding(self, value):
+        self._prop_manager.padding = value
+
+    @property
+    def background(self):
+        return self._prop_manager.background
+    @background.setter
+    def background(self, value):
+        self._prop_manager.background = value
+
+    @property
+    def colorbar(self):
+        return self._prop_manager.colorbar
+    @colorbar.setter
+    def colorbar(self, value):
+        self._prop_manager.colorbar = value
 
     # set plot ranges
     @property
     def ticks(self):
         return self._ticks
-
-    def _set_xticks(self, x, **opts):
-        return self._set_ticks(x,
-                               set_ticks=self.axes.set_xticks,
-                               set_locator=self.axes.xaxis.set_major_locator,
-                               set_minor_locator=self.axes.xaxis.set_minor_locator,
-                               **opts
-                               )
-
-    def _set_yticks(self, y, **opts):
-        return self._set_ticks(y,
-                               set_ticks=self.axes.set_yticks,
-                               set_locator=self.axes.yaxis.set_major_locator,
-                               set_minor_locator=self.axes.yaxis.set_minor_locator,
-                               **opts
-                               )
-
-    def _set_zticks(self, z, **opts):
-        return self._set_ticks(z,
-                               set_ticks=self.axes.set_zticks,
-                               set_locator=self.axes.zaxis.set_major_locator,
-                               set_minor_locator=self.axes.zaxis.set_minor_locator,
-                               **opts
-                               )
-
-    @ticks.setter
-    def ticks(self, ticks):
-        if self._ticks is None:
-            self._ticks = (self.axes.get_xticks(), self.axes.get_yticks(), self.axes.get_zticks())
-        try:
-            x, y, z = ticks
-        except ValueError:
-            x, y, z = ticks = (self._ticks[0], self._ticks[1], ticks)
-
-        self._ticks = ticks
-
-        self._set_xticks(x)
-        self._set_yticks(y)
-        self._set_zticks(z)
-
-    @property
-    def ticks_style(self):
-        return self._ticks_style
-
-    @ticks_style.setter
-    def ticks_style(self, ticks_style):
-        if self._ticks_style is None:
-            self._ticks_style = (None,)*3
-        try:
-            x, y, z = ticks_style
-        except ValueError:
-            x, y, z = ticks_style = (self._ticks_style[0], self._ticks_style[1], ticks_style)
-        self._ticks_style = ticks_style
-        if x is not None:
-            self.axes.tick_params(
-                axis='x',
-                **x
-            )
-        if y is not None:
-            self.axes.tick_params(
-                axis='y',
-                **y
-            )
-        if z is not None:
-            self.axes.tick_params(
-                axis='z',
-                **z
-            )
-
-    # set size
-    @property
-    def image_size(self):
-        return self._image_size
-
-    @image_size.setter
-    def image_size(self, wh):
-        if self._image_size is None:
-            self._image_size = tuple( s/72. for s in self.get_size_inches() )
-        try:
-            w, h = wh
-        except ValueError:
-            try:
-                ar = self._image_size[1] / self._image_size[0]
-            except TypeError:
-                ar = 1
-            w, h = wh = (wh, ar*wh)
-
-        if w is not None or h is not None:
-            if w is None:
-                w = self._image_size[0]
-            if h is None:
-                h = self._image_size[1]
-
-            if w > 72:
-                wi = w/72
-            else:
-                wi = w
-                w = 72 * w
-
-            if h > 72:
-                hi = h/72
-            else:
-                hi = h
-                h = 72 * h
-
-            self._image_size = (w, h)
-            self.figure.set_size_inches(wi, hi)
 
     @property
     def aspect_ratio(self):
@@ -1066,55 +748,14 @@ class Graphics3D(Graphics):
         # else:
         #     self.axes.set_aspect(ar[0], **ar[1])
 
-    # set size
-    @property
-    def background(self):
-        return self._background
-
-    @background.setter
-    def background(self, bg):
-        self._background = bg
-        self.axes.set_facecolor(bg)
-
-    # set plot scales
-    @property
-    def scale(self):
-        return self._scale
-
-    @scale.setter
-    def scale(self, scales):
-
-        if self._scale is None:
-            self._scale = (self.axes.get_xscale(), self.axes.get_yscale(), self.axes.get_zscale())
-        try:
-            x, y, z = scales
-        except ValueError:
-            x, y, z = scales = (self._scale[0], self._scale[1], scales)
-
-        self._scale = tuple(scales)
-
-        if isinstance(x, self.modified): # name feels wrong here...
-            self.axes.set_xscale(*x.val, **x.opts)
-        elif x is not None:
-            self.axes.set_xscale(x)
-        if isinstance(y, self.modified):
-            self.axes.set_yscale(*y.val, **y.opts)
-        elif y is not None:
-            self.axes.set_yscale(y)
-        if isinstance(z, self.modified):
-            self.axes.set_scale(*z.val, **z.opts)
-        elif y is not None:
-            self.axes.set_zscale(z)
-
-
 ########################################################################################################################
 #
 #                                               GraphicsGrid
 #
-class GraphicsGrid:
+class GraphicsGrid(GraphicsBase):
     default_style = dict(
         spacings=(.2, .2),
-        padding=((.025, .2), (.125, .05))
+        padding=((30, 10), (30, 10))
     )
     def __init__(self,
                  *args,
@@ -1124,10 +765,18 @@ class GraphicsGrid:
                  axes=None,
                  subplot_kw=None,
                  _subplot_init=None,
+                 mpl_backend = None,
                  tighten = False,
                  **opts
                  ):
 
+        # if mpl_backend is None and platform.system() == "Darwin":
+        #     mpl_backend = "TkAgg"
+        self.mpl_backend = mpl_backend
+        super().__init__(
+            figure=figure, axes=axes,
+            graphics_class=graphics_class
+        )
         self.figure, self.axes = self._init_suplots(
             nrows, ncols,
             figure, axes,
@@ -1135,11 +784,11 @@ class GraphicsGrid:
             *args,
             subplot_kw=subplot_kw,
             _subplot_init=graphics_class._subplot_init if _subplot_init is None else _subplot_init,
+            mpl_backend = mpl_backend,
             **opts
         )
         self.shape = (nrows, ncols)
         self._colorbar_axis = None # necessary hack for only GraphicsGrid
-        self.set_options(**opts)
         self.tighten = tighten
 
     def _get_def_opt(self, key, val):
@@ -1182,7 +831,7 @@ class GraphicsGrid:
     def _init_suplots(self,
                       nrows, ncols, figure, axes, graphics_class, *args,
                       subplot_kw=None, _subplot_init=None,
-                      fig_kw=None,
+                      fig_kw=None, mpl_backend = None,
                       **kw
                       ):
         """Initializes the subplots for the Graphics object
@@ -1198,6 +847,10 @@ class GraphicsGrid:
         :return: figure, axes
         :rtype: matplotlib.figure.Figure, matplotlib.axes.Axes
         """
+        import matplotlib.figure, matplotlib.axes
+        if mpl_backend is not None:
+            import matplotlib
+            matplotlib.use(mpl_backend)
 
         if figure is None:
             if subplot_kw is None:
@@ -1205,7 +858,9 @@ class GraphicsGrid:
             if fig_kw is None:
                 fig_kw = {}
             if 'figsize' not in fig_kw:
-                fig_kw['figsize'] = (4*ncols, 4*nrows)
+                w = nrows * 300
+                h = ncols * 300
+                fig_kw['figsize'] = (w/72., h/72.) #(4*ncols, 4*nrows)
             figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, **fig_kw)
 
             if isinstance(axes, matplotlib.axes.Axes):
@@ -1266,46 +921,12 @@ class GraphicsGrid:
     @property
     def image_size(self):
         if self._image_size is None:
-            return self.calc_image_size()
-        else:
-            return self._image_size
-
-    @image_size.setter
-    def image_size(self, wh):
-        try:
-            w, h = wh
-        except ValueError:
-            try:
-                ar = self._image_size[1] / self._image_size[0]
-            except TypeError:
-                ar = 1
-            w, h = wh = (wh, ar*wh)
-
-        if w is not None or h is not None:
-            if w is None:
-                w = self._image_size[0]
-            if h is None:
-                h = self._image_size[1]
-
-            if w > 72:
-                wi = w/72
-            else:
-                wi = w
-                w = 72 * w
-
-            if h > 72:
-                hi = h/72
-            else:
-                hi = h
-                h = 72 * h
-
-            self._image_size = (w, h)
-            self.figure.set_size_inches(wi, hi)
+            self._image_size = self.calc_image_size()
+        return self._image_size
 
     @property
     def colorbar(self):
         return self._colorbar
-
     @colorbar.setter
     def colorbar(self, c):
         self._colorbar = c
@@ -1313,78 +934,6 @@ class GraphicsGrid:
             self.add_colorbar()
         elif isinstance(self._colorbar, dict):
             self.add_colorbar(**self.colorbar)
-
-    @property
-    def spacings(self):
-        return self._spacings
-    @spacings.setter
-    def spacings(self, spacings):
-        try:
-            w, h = spacings
-        except ValueError:
-            w = h = spacings
-
-        self._spacings = (w, h)
-        self.figure.subplots_adjust(wspace=w, hspace=h)
-
-    @property
-    def padding(self):
-        return self._padding
-
-    @padding.setter
-    def padding(self, padding):
-        try:
-            w, h = padding
-        except (ValueError, TypeError):
-            w = h = padding
-        try:
-            wx, wy = w
-        except (ValueError, TypeError):
-            wx = wy = w
-        try:
-            hx, hy = h
-        except (ValueError, TypeError):
-            hx = hy = h
-
-        self._padding = ((wx, wy), (hx, hy))
-        self.figure.subplots_adjust(left=wx, right=1-wy, bottom=hx, top=1-hy)
-
-    @property
-    def padding_left(self):
-        return self._padding[0][0]
-    @padding_left.setter
-    def padding_left(self, p):
-        wx, wy = self._padding[0]
-        hx, hy = self._padding[1]
-        self._padding = ((p, wy), (hx, hy))
-        self.figure.subplots_adjust(left=p)
-    @property
-    def padding_right(self):
-        return self._padding[0][1]
-    @padding_right.setter
-    def padding_right(self, p):
-        wx, wy = self._padding[0]
-        hx, hy = self._padding[1]
-        self._padding = ((wx, p), (hx, hy))
-        self.figure.subplots_adjust(right=1-p)
-    @property
-    def padding_top(self):
-        return self._padding[1][1]
-    @padding_top.setter
-    def padding_top(self, p):
-        wx, wy = self._padding[0]
-        hx, hy = self._padding[1]
-        self._padding = ((wx, wy), (hx, p))
-        self.figure.subplots_adjust(top=1 - p)
-    @property
-    def padding_bottom(self):
-        return self._padding[1][0]
-    @padding_bottom.setter
-    def padding_bottom(self, p):
-        wx, wy = self._padding[0]
-        hx, hy = self._padding[1]
-        self._padding = ((wx, wy), (p, hy))
-        self.figure.subplots_adjust(top=p)
 
     def add_colorbar(self, graphics=None, norm=None, cmap=None, **kw):
         fig = self.figure  # type: matplotlib.figure.Figure

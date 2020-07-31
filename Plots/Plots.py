@@ -15,8 +15,6 @@ __all__ = [
     "Plot3D", "ListPlot3D", "ScatterPlot3D", "WireframePlot3D", "ContourPlot3D"
 ]
 
-
-
 ######################################################################################################
 #
 #                                    'adaptive' function sampling
@@ -181,7 +179,7 @@ class Plot(Graphics):
                  *params,
                  method='plot',
                  figure=None, axes=None, subplot_kw=None,
-                 plot_style=None,
+                 plot_style=None, theme=None,
                  **opts
                  ):
         """
@@ -203,7 +201,7 @@ class Plot(Graphics):
         :type opts:
         """
 
-        super().__init__(figure=figure, axes=axes, subplot_kw=subplot_kw)
+        super().__init__(figure=figure, axes=axes, theme=theme, subplot_kw=subplot_kw, **opts)
         self.method = getattr(self.axes, method)
 
         # we're gonna set things up so that we can have delayed evaluation of the plotting.
@@ -219,6 +217,7 @@ class Plot(Graphics):
             self.plot(*params)
 
     def _initialize(self):
+        self._initialized = True
         self.set_options(**self.plot_opts)
 
     def _get_plot_data(self, func, xrange):
@@ -630,13 +629,14 @@ class Plot3D(Graphics3D):  # basically a mimic of the Plot class but inheriting 
             plot_style = {}
         self.plot_style = plot_style
         self.plot_opts = opts
-        self.colorbar = colorbar
+        self._colorbar = colorbar
         self._initialized = False
 
         if len(params) > 0:
             self.plot(*params)
 
     def _initialize(self):
+        self._initialized = True
         self.set_options(**self.plot_opts)
         if self.colorbar:
             self.add_colorbar()
@@ -655,11 +655,13 @@ class Plot3D(Graphics3D):  # basically a mimic of the Plot class but inheriting 
         if not self._initialized:
             self._initialize()
         return self.graphics
-
     def add_colorbar(self, **kw):
-        fig = self.figure  # type: matplotlib.figure.Figure
-        ax = self.axes  # type: matplotlib.axes.Axes
-        fig.colorbar(self.graphics, **kw)
+        if self._initialized:
+            fig = self.figure  # type: matplotlib.figure.Figure
+            ax = self.axes  # type: matplotlib.axes.Axes
+            fig.colorbar(self.graphics, **kw)
+        else:
+            self._colorbar = kw
 
 
 class ScatterPlot3D(Plot3D):

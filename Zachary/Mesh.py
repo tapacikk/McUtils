@@ -159,7 +159,7 @@ class Mesh(np.ndarray):
             return mesh_points
         else:
             unroll = np.roll(np.arange(len(grid.shape)), 1)
-            meshes = grid.transpose(unroll)
+            meshes = np.asarray(grid).transpose(unroll)
             return [np.unique(np.round(m, tol)) for m in meshes]
 
     @classmethod

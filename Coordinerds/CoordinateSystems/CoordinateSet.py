@@ -79,7 +79,7 @@ class CoordinateSet(np.ndarray):
         """
         coords = self
         new_coords = tf(coords)
-        return type(self)(new_coords, system = self.system)
+        return type(self)(new_coords, system=self.system)
 
     def convert(self, system, **kw):
         """Converts across coordinate systems
@@ -99,7 +99,31 @@ class CoordinateSet(np.ndarray):
         else:
             new_coords = res
             ops = {}
-        return type(self)(new_coords, system = system, converter_options=ops)
+        return type(self)(new_coords, system=system, converter_options=ops)
+
+    def derivatives(self,
+                    function,
+                    order=1,
+                    coordinates=None,
+                    result_shape=None,
+                    **fd_options
+                    ):
+        """
+        Takes derivatives of `function` with respect to the current geometry
+
+        :param function:
+        :type function:
+        :param order:
+        :type order:
+        :param coordinates:
+        :type coordinates:
+        :param fd_options:
+        :type fd_options:
+        :return:
+        :rtype:
+        """
+        return self.system.derivatives(self, function, order=order,
+                                       coordinates=coordinates, result_shape=result_shape, **fd_options)
 
     def jacobian(self,
                  system,

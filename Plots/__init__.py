@@ -7,15 +7,19 @@ from .Graphics import *
 from .Plots import *
 from .Primitives import *
 from .Interactive import *
+from .Styling import *
+from .Image import *
 
-from .Graphics import __all__ as Graphics__all__
-from .Plots import __all__ as Plots__all__
-from .Primitives import __all__ as Primitives__all__
-from .Interactive import __all__ as Interactive__all__
-
-__all__ = (
-        Graphics__all__ +
-        Plots__all__ +
-        Primitives__all__ +
-        Interactive__all__
-)
+__all__ = []
+from .Graphics import __all__ as exposed
+__all__ += exposed
+from .Plots import __all__ as exposed
+__all__ += exposed
+from .Primitives import __all__ as exposed
+__all__ += exposed
+from .Interactive import __all__ as exposed
+__all__ += exposed
+from .Styling import __all__ as exposed
+__all__ += exposed
+from .Image import __all__ as exposed
+__all__ += exposed

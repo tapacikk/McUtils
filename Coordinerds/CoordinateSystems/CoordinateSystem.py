@@ -128,19 +128,25 @@ class CoordinateSystem:
                 ))
 
         shape = coords.shape
-        cdims = len(shape) - len(input_coordinate_shape)
-        config_shape = shape[:cdims]
-        if cdims > 0:
-            new_shape = config_shape + (np.product(shape[cdims:]),)
-            coords = coords.reshape(new_shape)
-        # print(coords.shape, matrix.shape)
-        coords = np.tensordot(coords, matrix, axes=((cdims,), (1,)))  # set up the basic expansion coordinates in the more primitive system
+        n = matrix.shape[1]
+        needs_reshape = shape[-1] != n
 
-        # coords = coords.T
-        oblock = np.product([o for o in odims if o is not None])
-        out_shape = config_shape + tuple(matrix.shape[0] // oblock if o is None else o for o in odims)
+        if needs_reshape:
+            cum_prods = np.cumprod(np.flip(shape))
+            pos = np.where(cum_prods==n)[0]
+            if len(pos) == 0:
+                raise ValueError("Coordinate array of shape '{}' can't work with an expansion matrix of shape '{}'".format(
+                    shape,
+                    matrix.shape
+                ))
+            pos=pos[0]
+            new_shape = shape[:-(pos+1)]+(n,)
+            coords = np.reshape(coords, new_shape)
 
-        return np.reshape(coords, out_shape)  # reshape so as to actually fit the dimension of the basis
+        coords = np.tensordot(coords, matrix, axes=((-1,), (1,)))
+        # set up the basic expansion coordinates in the more primitive system
+
+        return coords  # reshape so as to actually fit the dimension of the basis
 
     def convert_coords(self, coords, system, **kw):
         """
@@ -156,6 +162,7 @@ class CoordinateSystem:
         """
         if system is self:
             return coords, {}
+
         ops = dict(system.converter_options, **self.converter_options)
         kw = dict(ops, **kw)
         if self.matrix is not None:
@@ -164,13 +171,14 @@ class CoordinateSystem:
             return self.basis.convert_coords(coords, system, **kw)
 
         elif system.matrix is not None:
-
             coords, convs = self.convert_coords(coords, system.basis, **kw)
             square_Q=system.matrix.shape[0] == system.matrix.shape[1]
             inv = (np.linalg.inv if square_Q else np.linalg.pinv)(system.matrix)
 
-            coords = self._apply_system_matrix(system, coords, inv, system.basis.coordinate_shape,
-                                               system.coordinate_shape)
+            coords = self._apply_system_matrix(system, coords, inv,
+                                               system.basis.coordinate_shape,
+                                               system.coordinate_shape
+                                               )
             return coords, convs
 
         else:
@@ -201,6 +209,72 @@ class CoordinateSystem:
         #         if amts.ndim == 1:
         #             amts = np.broadcast_to(np.reshape(amts, amts.shape + (1,)), amts.shape + self.matrix.shape[-1:])
         #     return np.matmul(amts, self.matrix)
+
+    def derivatives(self,
+                    coords,
+                    function,
+                    order=1,
+                    coordinates=None,
+                    result_shape=None,
+                    **finite_difference_options
+                    ):
+        """
+        Computes derivatives for an arbitrary function with respect to this coordinate system
+
+        :param function:
+        :type function:
+        :param order:
+        :type order:
+        :param coordinates:
+        :type coordinates:
+        :param finite_difference_options:
+        :type finite_difference_options:
+        :return:
+        :rtype:
+        """
+
+        from McUtils.Zachary import FiniteDifferenceDerivative
+
+        deriv_tensor = None
+        if order > 0:
+            self_shape = self.coordinate_shape
+            if self_shape is None:
+                self_shape = coords.shape[1:]
+            if self_shape is None:
+                raise CoordinateSystemError(
+                    "{}.{}: 'coordinate_shape' {} must be tuple of ints".format(
+                        type(self).__name__,
+                        'derivatives',
+                        self_shape
+                    ))
+
+            # if other_shape is None:
+            #     raise CoordinateSystemException(
+            #         "{}.{}: 'coordinate_shape' {} must be tuple of ints".format(
+            #             type(self).__name__,
+            #             'jacobian',
+            #             other_shape
+            #         ))
+
+            for k, v in zip(
+                    ('mesh_spacing',),
+                    (.001,)
+            ):
+                if k not in finite_difference_options:
+                    finite_difference_options[k] = v
+
+            deriv = FiniteDifferenceDerivative(
+                function,
+                function_shape=(self_shape, result_shape),
+                **finite_difference_options
+            )(coords)
+
+            deriv_tensor = deriv.derivative_tensor(order, coordinates=coordinates)
+
+        if deriv_tensor is None:
+            raise CoordinateSystemError("derivative order {} <= 0".format(order))
+
+        return deriv_tensor
 
     def jacobian(self,
                  coords,

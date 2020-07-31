@@ -240,7 +240,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 angles = np.zeros(ncoords-steps)
 
             if nol > 3:
-                # set up mask to drop all of the second bits (wtf it means 'second')
+                # set up mask to drop all of the second atom bits (wtf it means 'second')
                 mask[np.arange(2, ncoords, nol)] = False
                 ix = ol[mask, 0]
                 jx = ol[mask, 1]
@@ -258,8 +258,9 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                     diheds = np.rad2deg(diheds)
                 if return_derivs:
                     dihed_derivs = dihed_deriv(coords, ix, jx, kx, lx)
-                    drang = 2+np.arange(nol-2)
-                    nreps = int(len(ix)/(nol-2))
+                    drang = 2+np.arange(nol-3)
+                    nreps = int(len(ix)/(nol-3))
+                    # raise Exception([ol.shape, orig_ol.shape, coords.shape, nol, drang, ix])
                     drang = np.broadcast_to(drang[:, np.newaxis], drang.shape + (nreps,)).flatten()
                     derivs[ix, :, drang, 2] = dihed_derivs[0]
                     derivs[jx, :, drang, 2] = dihed_derivs[1]
