@@ -14,9 +14,10 @@ class GraphicsPropertyManager:
     Manages properties for Graphics objects so that concrete GraphicsBase instances don't need to duplicate code, but
     at the same time things that build off of GraphicsBase don't need to implement all of these properties
     """
-    
-    def __init__(self, graphics, figure, axes):
+
+    def __init__(self, graphics, figure, axes, managed=False):
         self.graphics = graphics
+        self.managed = managed # if there's an external manager
         self.figure = figure
         self.axes = axes
         self._plot_label = None
@@ -37,22 +38,8 @@ class GraphicsPropertyManager:
         self._spacings = None
 
     @property
-    def spacings(self):
-        return self._spacings
-    @spacings.setter
-    def spacings(self, spacings):
-        try:
-            w, h = spacings
-        except ValueError:
-            w = h = spacings
-
-        self._spacings = (w, h)
-        self.figure.subplots_adjust(wspace=w, hspace=h)
-
-    @property
     def plot_label(self):
         return self._plot_label
-
     @plot_label.setter
     def plot_label(self, label):
         self._plot_label = label
@@ -67,7 +54,6 @@ class GraphicsPropertyManager:
     @property
     def plot_legend(self):
         return self._plot_legend
-
     @plot_legend.setter
     def plot_legend(self, legend):
         self._plot_legend = legend
@@ -82,7 +68,6 @@ class GraphicsPropertyManager:
     @property
     def axes_labels(self):
         return self._axes_labels
-
     @axes_labels.setter
     def axes_labels(self, labels):
         if self._axes_labels is None:
@@ -114,7 +99,6 @@ class GraphicsPropertyManager:
         else:
             pr = self._plot_range
         return pr
-
     @plot_range.setter
     def plot_range(self, ranges):
         if self._plot_range is None:
@@ -142,7 +126,6 @@ class GraphicsPropertyManager:
     @property
     def ticks(self):
         return self._ticks
-
     def _set_ticks(self, x, set_ticks=None, set_locator=None, set_minor_locator=None, **opts):
         import matplotlib.ticker as ticks
 
@@ -203,6 +186,8 @@ class GraphicsPropertyManager:
     def ticks_style(self, ticks_style):
         if self._ticks_style is None:
             self._ticks_style = (None,) * 2
+        if isinstance(ticks_style, dict):
+            ticks_style = (ticks_style, ticks_style)
         try:
             x, y = ticks_style
         except ValueError:
@@ -224,6 +209,29 @@ class GraphicsPropertyManager:
                 y = dict(left=False, right=False, labelleft=False, labelright=False)
             self.axes.tick_params(
                 axis='y',
+                **y
+            )
+
+    @property
+    def ticks_label_style(self):
+        return self._ticks_label_style
+    @ticks_label_style.setter
+    def ticks_label_style(self, ticks_style):
+        if self._ticks_label_style is None:
+            self._ticks_label_style = (None,) * 2
+        try:
+            x, y = ticks_style
+        except ValueError:
+            x, y = ticks_style = (ticks_style, ticks_style)
+        self._ticks_label_style = ticks_style
+        if x is not None:
+            self.axes.set_xticklabels(
+                self.axes.get_xticklabels(),
+                **x
+            )
+        if y is not None:
+            self.axes.set_yticklabels(
+                self.axes.get_yticklabels(),
                 **y
             )
 
@@ -253,7 +261,7 @@ class GraphicsPropertyManager:
     @image_size.setter
     def image_size(self, wh):
         if self._image_size is None:
-            self._image_size = tuple(s / 72. for s in self.figure.get_size_inches())
+            self._image_size = tuple(s * 72. for s in self.figure.get_size_inches())
 
         try:
             w, h = wh
@@ -285,7 +293,8 @@ class GraphicsPropertyManager:
                 h = 72 * h
 
             self._image_size = (w, h)
-            self.figure.set_size_inches(wi, hi)
+            if not self.managed:
+                self.figure.set_size_inches(wi, hi)
 
     # set background color
     @property
@@ -297,7 +306,8 @@ class GraphicsPropertyManager:
     @background.setter
     def background(self, bg):
         self._background = bg
-        self.figure.set_facecolor(bg)
+        if not self.managed:
+            self.figure.set_facecolor(bg)
         self.axes.set_facecolor(bg)
 
     # set show_frame
@@ -348,7 +358,6 @@ class GraphicsPropertyManager:
     @property
     def padding(self):
         return self._padding
-
     @padding.setter
     def padding(self, padding):
         try:
@@ -376,47 +385,67 @@ class GraphicsPropertyManager:
         self._padding = ((wx, wy), (hx, hy))
         wx = wx / W; wy = wy / W
         hx = hx / H; hy = hy / H
-        self.figure.subplots_adjust(left=wx, right=1 - wy, bottom=hx, top=1 - hy)
-
+        if not self.managed:
+            # print(wx, wy, hx, hy)
+            self.figure.subplots_adjust(left=wx, right=1 - wy, bottom=hx, top=1 - hy)
     @property
     def padding_left(self):
         return self._padding[0][0]
-
     @padding_left.setter
     def padding_left(self, p):
         wx, wy = self._padding[0]
         hx, hy = self._padding[1]
         self.padding = ((p, wy), (hx, hy))
-
     @property
     def padding_right(self):
         return self._padding[0][1]
-
     @padding_right.setter
     def padding_right(self, p):
         wx, wy = self._padding[0]
         hx, hy = self._padding[1]
         self.padding = ((wx, p), (hx, hy))
-
     @property
     def padding_top(self):
         return self._padding[1][1]
-
     @padding_top.setter
     def padding_top(self, p):
         wx, wy = self._padding[0]
         hx, hy = self._padding[1]
         self.padding = ((wx, wy), (hx, p))
-
     @property
     def padding_bottom(self):
         return self._padding[1][0]
-
     @padding_bottom.setter
     def padding_bottom(self, p):
         wx, wy = self._padding[0]
         hx, hy = self._padding[1]
         self.padding = ((wx, wy), (p, hy))
+
+    @property
+    def spacings(self):
+        return self._spacings
+    @spacings.setter
+    def spacings(self, spacings):
+        try:
+            w, h = spacings
+        except ValueError:
+            w = h = spacings
+
+        W, H = self.image_size
+        if w < 1:
+            wp = round(w * W)
+        else:
+            wp = w
+        if h < 1:
+            hp = round(h * H)
+        else:
+            hp = h
+        self._spacings = (wp, hp)
+        w = wp / W
+        h = hp / H
+        if not self.managed:
+            self.figure.subplots_adjust(wspace=w, hspace=h)
+
 
     @property
     def colorbar(self):

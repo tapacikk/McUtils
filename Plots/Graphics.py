@@ -28,20 +28,23 @@ class GraphicsBase(metaclass=ABCMeta):
     Defines the common parts of the interface with some calling into matplotlib
     """
     opt_keys = {
+        'background',
         'axes_labels',
         'plot_label',
         'plot_range',
         'plot_legend',
         'ticks',
+        'ticks_style',
+        'ticks_label_style',
         'scale',
+        'padding',
+        'spacings',
+        'aspect_ratio',
         'image_size',
         'event_handlers',
         'animated',
-        'background',
         'epilog'
-        'prolog',
-        'aspect_ratio',
-        'padding'
+        'prolog'
     }
     def _get_def_opt(self, key, val):
         if val is None:
@@ -73,6 +76,7 @@ class GraphicsBase(metaclass=ABCMeta):
                  theme=None,
                  prop_manager = GraphicsPropertyManager,
                  theme_manager = ThemeManager,
+                 managed = None,
                  **opts
                  ):
         """
@@ -100,7 +104,7 @@ class GraphicsBase(metaclass=ABCMeta):
         aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio)
         image_size = self._get_def_opt('image_size', image_size)
         padding = self._get_def_opt('padding', padding)
-        if image_size is not None and 'figsize' not in subplot_kw:
+        if figure is None and image_size is not None and 'figsize' not in subplot_kw:
             try:
                 w, h = image_size
             except TypeError:
@@ -132,12 +136,19 @@ class GraphicsBase(metaclass=ABCMeta):
                 self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
         else:
             self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
-        self._prop_manager = prop_manager(self, self.figure, self.axes)
+
+        if managed is None:
+            if figure is not None and isinstance(figure, GraphicsBase):
+                managed = figure.managed
+            else:
+                managed = False
+        self.managed = managed
+        self.parent = parent
+        self._prop_manager = prop_manager(self, self.figure, self.axes, managed=managed)
         self.set_options(padding=padding, aspect_ratio=aspect_ratio, image_size=image_size, **opts)
 
         self.event_handler = None
         self._shown = False
-        self.parent = parent
         self.animator = None
         self.tighten = tighten
 
@@ -343,14 +354,16 @@ class GraphicsBase(metaclass=ABCMeta):
         else:
             import matplotlib.pyplot as plt
 
-            if self.non_interactive:
-                plt.ioff()
-            elif self.non_interactive is False:
-                plt.ion()
+            if not self.managed:
+                if self.non_interactive:
+                    plt.ioff()
+                elif self.non_interactive is False:
+                    plt.ion()
 
             if reshow or not self._shown:
                 self.prep_show()
-                plt.show()
+                if not self.managed:
+                    plt.show()
             else:
                 self._shown = False
                 self.refresh().show()
@@ -413,6 +426,7 @@ class Graphics(GraphicsBase):
                     ticks=None,
                     scale=None,
                     padding=None,
+                    spacings=None,
                     ticks_style=None,
                     image_size=None,
                     aspect_ratio=None,
@@ -437,6 +451,7 @@ class Graphics(GraphicsBase):
             ('aspect_ratio', aspect_ratio),
             ('image_size', image_size),
             ('padding', padding),
+            ('spacings', spacings),
             ('background', background),
             ('colorbar', colorbar)
         )
@@ -521,6 +536,37 @@ class Graphics(GraphicsBase):
     @padding.setter
     def padding(self, value):
         self._prop_manager.padding = value
+    @property
+    def padding_left(self):
+        return self._prop_manager.padding_left
+    @padding_left.setter
+    def padding_left(self, value):
+        self._prop_manager.padding_left = value
+    @property
+    def padding_right(self):
+        return self._prop_manager.padding_right
+    @padding_right.setter
+    def padding_right(self, value):
+        self._prop_manager.padding_right = value
+    @property
+    def padding_top(self):
+        return self._prop_manager.padding_top
+    @padding_top.setter
+    def padding_top(self, value):
+        self._prop_manager.padding_top = value
+    @property
+    def padding_bottom(self):
+        return self._prop_manager.padding_bottom
+    @padding_bottom.setter
+    def padding_bottom(self, value):
+        self._prop_manager.padding_bottom = value
+
+    @property
+    def spacings(self):
+        return self._prop_manager.spacings
+    @spacings.setter
+    def spacings(self, value):
+        self._prop_manager.spacings = value
 
     @property
     def background(self):
@@ -548,7 +594,7 @@ class Graphics(GraphicsBase):
 #                                               Graphics3D
 #
 class Graphics3D(Graphics):
-    """A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with"""
+    """Extends the standard matplotlib 3D plotting to use all the Graphics extensions"""
     def __init__(self, *args,
                  figure=None,
                  axes=None,
@@ -754,8 +800,8 @@ class Graphics3D(Graphics):
 #
 class GraphicsGrid(GraphicsBase):
     default_style = dict(
-        spacings=(.2, .2),
-        padding=((30, 10), (30, 10))
+        spacings=(20, 0),
+        padding=((20, 20), (20, 10))
     )
     def __init__(self,
                  *args,
@@ -773,65 +819,29 @@ class GraphicsGrid(GraphicsBase):
         # if mpl_backend is None and platform.system() == "Darwin":
         #     mpl_backend = "TkAgg"
         self.mpl_backend = mpl_backend
+        if subplot_kw is None:
+            subplot_kw={}
+        else:
+            subplot_kw={'subplot_kw':subplot_kw}
+        subplot_kw.update(dict(
+            nrows=nrows, ncols=ncols,
+            graphics_class=graphics_class,
+            _subplot_init=graphics_class._subplot_init if _subplot_init is None else _subplot_init
+        ))
         super().__init__(
             figure=figure, axes=axes,
-            graphics_class=graphics_class
-        )
-        self.figure, self.axes = self._init_suplots(
-            nrows, ncols,
-            figure, axes,
-            graphics_class,
-            *args,
-            subplot_kw=subplot_kw,
-            _subplot_init=graphics_class._subplot_init if _subplot_init is None else _subplot_init,
-            mpl_backend = mpl_backend,
-            **opts
+            graphics_class=graphics_class,
+            subplot_kw=subplot_kw
         )
         self.shape = (nrows, ncols)
         self._colorbar_axis = None # necessary hack for only GraphicsGrid
-        self.tighten = tighten
-
-    def _get_def_opt(self, key, val):
-        if val is None:
-            try:
-                v = object.__getattribute__(self, '_'+key) # we overloaded getattr
-            except AttributeError:
-                if key in self.default_style:
-                    v = self.default_style[key]
-                else:
-                    v = None
-            return v
-        else:
-            return val
-    def set_options(self,
-                    image_size = None,
-                    colorbar = None,
-                    spacings = None,
-                    padding = None,
-                    tight = None,
-                    **ignored
-                    ):
-
-        self._image_size = self._get_def_opt('image_size', image_size)
-        if self._image_size is not None:
-            self.image_size = self._image_size
-
-        self._colorbar = colorbar
-        if colorbar is not None:
-            self.colorbar = colorbar
-
-        self._spacings = self._get_def_opt('spacings', spacings)
-        if self._spacings is not None:
-            self.spacings = self._spacings
-
-        self._padding = self._get_def_opt('padding', padding)
-        if self._padding is not None:
-            self.padding = self._padding
 
     def _init_suplots(self,
-                      nrows, ncols, figure, axes, graphics_class, *args,
+                      figure, axes, *args,
+                      nrows=None, ncols=None, graphics_class=None,
                       subplot_kw=None, _subplot_init=None,
                       fig_kw=None, mpl_backend = None,
+                      padding = None, spacings=None,
                       **kw
                       ):
         """Initializes the subplots for the Graphics object
@@ -853,14 +863,41 @@ class GraphicsGrid(GraphicsBase):
             matplotlib.use(mpl_backend)
 
         if figure is None:
+            padding = self._get_def_opt('padding', padding)
+            spacings = self._get_def_opt('spacings', spacings)
             if subplot_kw is None:
                 subplot_kw = {}
             if fig_kw is None:
                 fig_kw = {}
             if 'figsize' not in fig_kw:
-                w = nrows * 300
-                h = ncols * 300
-                fig_kw['figsize'] = (w/72., h/72.) #(4*ncols, 4*nrows)
+                try:
+                    base_imsize = graphics_class.default_style['image_size']
+                except (AttributeError, KeyError):
+                    base_imsize = 300
+                try:
+                    dw, dh = base_imsize
+                except (ValueError, TypeError):
+                    dw = dh = base_imsize
+                w = ncols * dw
+                h = nrows * dh
+                if padding is not None:
+                    pw, ph = padding
+                    try:
+                        pwx, pwy = pw
+                    except (TypeError, ValueError):
+                        pwx = pwy = pw
+                    try:
+                        phx, phy = ph
+                    except (TypeError, ValueError):
+                        phx = phy = ph
+                    w += pwx + pwy
+                    h += phx + phy
+                if spacings is not None:
+                    sw, sh = spacings
+                    w += ncols-1 * sw
+                    h += nrows-1 * sh
+                fig_kw['figsize'] = (w/72., h/72.)
+
             figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, **fig_kw)
 
             if isinstance(axes, matplotlib.axes.Axes):
@@ -871,11 +908,9 @@ class GraphicsGrid(GraphicsBase):
                 else:
                     axes = [axes]
 
-            # if 'image_size' not in kw:
-            #     kw['image_size'] = (300, 300)
             for i in range(nrows):
                 for j in range(ncols):
-                    axes[i][j] = graphics_class(figure=figure, axes=axes[i][j], **kw)
+                    axes[i][j] = graphics_class(figure=figure, axes=axes[i][j], managed=True, **kw)
         elif isinstance(figure, GraphicsGrid):
             axes = figure.axes  # type: matplotlib.axes.Axes
             figure = figure.figure  # type: matplotlib.figure.Figure
@@ -884,11 +919,34 @@ class GraphicsGrid(GraphicsBase):
             axes = [
                 graphics_class(
                     figure.add_subplot(nrows, ncols, i),
+                    managed=True,
                     **kw
                 ) for i in range(nrows * ncols)
             ]
 
         return figure, axes
+
+    def set_options(self,
+                    padding=None,
+                    spacings=None,
+                    background=None,
+                    colorbar=None,
+                    **parent_opts
+                    ):
+
+        super().set_options(**parent_opts)
+
+        self.image_size = None
+        opts = (
+            ('padding', padding),
+            ('spacings', spacings),
+            ('background', background),
+            ('colorbar', colorbar)
+        )
+        for oname, oval in opts:
+            oval = self._get_def_opt(oname, oval)
+            if oval is not None:
+                setattr(self, oname, oval)
 
     def __iter__(self):
         import itertools as ip
@@ -900,7 +958,6 @@ class GraphicsGrid(GraphicsBase):
             return self.axes[item]
         else:
             return self.axes[i][j]
-
     def __setitem__(self, item, val):
         try:
             i, j = item
@@ -909,41 +966,132 @@ class GraphicsGrid(GraphicsBase):
         else:
             self.axes[i][j] = val
 
+    def __getattr__(self, item):
+        reraise_error = None
+        figure = object.__getattribute__(self, 'figure')
+        try:
+            meth = getattr(figure, item)
+        except AttributeError as e:
+            if 'Figure' not in e.args[0]:
+                reraise_error = e
+            else:
+                reraise_error = AttributeError("'{}' object has no attribute '{}'".format(
+                    type(self).__name__,
+                    item
+                ))
+
+        if reraise_error is not None:
+            raise reraise_error
+
+        return meth
+
     # set size
     def calc_image_size(self):
         w=0; h=0
-        for f in self:
-            wh = f.image_size
-            if wh is not None:
-                w += wh[0]
-                h += wh[1]
+        for l in self.axes:
+            mh = 0
+            mw = 0
+            for f in l:
+                wh = f.image_size
+                if wh is not None:
+                    mw += wh[0]
+                    if wh[1] > mh:
+                        mh = wh[1]
+            h += mh
+            if w < mw:
+                w = mw
+
+        spacings = self.spacings
+        if spacings is not None:
+            sw, sh = spacings
+            w += self.ncols - 1 * sw
+            h += self.ncols - 1 * sh
         return w, h
+
     @property
     def image_size(self):
-        if self._image_size is None:
-            self._image_size = self.calc_image_size()
-        return self._image_size
+        s = self.calc_image_size()
+        self._prop_manager.image_size = s
+        return s
+    @image_size.setter
+    def image_size(self, value):
+        self._prop_manager.image_size = self.calc_image_size()
+
+    @property
+    def padding(self):
+        return self._prop_manager.padding
+    @padding.setter
+    def padding(self, value):
+        self._prop_manager.padding = value
+
+    @property
+    def padding_left(self):
+        return self._prop_manager.padding_left
+
+    @padding_left.setter
+    def padding_left(self, value):
+        self._prop_manager.padding_left = value
+
+    @property
+    def padding_right(self):
+        return self._prop_manager.padding_right
+
+    @padding_right.setter
+    def padding_right(self, value):
+        self._prop_manager.padding_right = value
+
+    @property
+    def padding_top(self):
+        return self._prop_manager.padding_top
+
+    @padding_top.setter
+    def padding_top(self, value):
+        self._prop_manager.padding_top = value
+
+    @property
+    def padding_bottom(self):
+        return self._prop_manager.padding_bottom
+
+    @padding_bottom.setter
+    def padding_bottom(self, value):
+        self._prop_manager.padding_bottom = value
+
+    @property
+    def spacings(self):
+        return self._prop_manager.spacings
+    @spacings.setter
+    def spacings(self, value):
+        self._prop_manager.spacings = value
+
+    @property
+    def background(self):
+        return self._prop_manager.background
+    @background.setter
+    def background(self, value):
+        self._prop_manager.background = value
 
     @property
     def colorbar(self):
-        return self._colorbar
+        return self._prop_manager.colorbar
     @colorbar.setter
-    def colorbar(self, c):
-        self._colorbar = c
-        if self._colorbar is True:
-            self.add_colorbar()
-        elif isinstance(self._colorbar, dict):
-            self.add_colorbar(**self.colorbar)
+    def colorbar(self, value):
+        self._prop_manager.colorbar = value
 
     def add_colorbar(self, graphics=None, norm=None, cmap=None, **kw):
         fig = self.figure  # type: matplotlib.figure.Figure
-        ax = self.axes  # type: matplotlib.axes.Axes
         if graphics is None:
             import matplotlib.cm as cm
             graphics = cm.ScalarMappable(norm=norm, cmap=cmap)
         if 'cax' not in kw:
             if self._colorbar_axis is None:
-                self.padding_right = .1
+                cur_padding = self.padding
+                self.padding_right = .08
+                # increase spacings to account for decrease in actual space
+                new_padding = self.padding
+                wpad_old = cur_padding[0][0] + cur_padding[0][1]
+                wpad_new = new_padding[0][0] + new_padding[0][1]
+                wdiff = wpad_new - wpad_old
+                print(wdiff)
                 self._colorbar_axis = fig.add_axes([0.93, 0.15, 0.02, 0.7])
             kw['cax'] = self._colorbar_axis
 
@@ -951,14 +1099,16 @@ class GraphicsGrid(GraphicsBase):
 
     def prep_show(self):
         self.image_size = self.image_size
-        self.spacings = self.spacings
-        self.padding = self.padding
+        if self.spacings is not None:
+            self.spacings = self.spacings
+        if self.padding is not None:
+            self.padding = self.padding
         if self.tighten:
             self.figure.tight_layout()
 
-    def show(self):
+    def show(self, **kwargs):
         for f in self:
             if isinstance(f, GraphicsBase):
                 f.prep_show()
-        self.prep_show()
-        f.show()
+        super().show(**kwargs)
+
