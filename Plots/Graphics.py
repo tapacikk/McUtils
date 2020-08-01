@@ -101,6 +101,11 @@ class GraphicsBase(metaclass=ABCMeta):
         # if mpl_backend is None and platform.system() == "Darwin":
         #     mpl_backend = "TkAgg"
         self.mpl_backend = mpl_backend
+        if isinstance(figure, GraphicsBase):
+            parent = figure
+        self.parent = parent
+        if image_size is None and parent is not None: # gotta copy in some layout stuff..
+            image_size = self.parent.image_size
         aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio)
         image_size = self._get_def_opt('image_size', image_size)
         padding = self._get_def_opt('padding', padding)
@@ -129,6 +134,8 @@ class GraphicsBase(metaclass=ABCMeta):
             subplot_kw['figsize'] = (w/72., h/72.)
 
         theme = self._get_def_opt('theme', theme)
+        self.theme = theme
+        self.theme_manager =theme_manager
         if theme is not None:
             if isinstance(theme, (str, dict)):
                 theme = [theme]
@@ -143,7 +150,6 @@ class GraphicsBase(metaclass=ABCMeta):
             else:
                 managed = False
         self.managed = managed
-        self.parent = parent
         self._prop_manager = prop_manager(self, self.figure, self.axes, managed=managed)
         self.set_options(padding=padding, aspect_ratio=aspect_ratio, image_size=image_size, **opts)
 
@@ -800,8 +806,8 @@ class Graphics3D(Graphics):
 #
 class GraphicsGrid(GraphicsBase):
     default_style = dict(
-        spacings=(20, 0),
-        padding=((20, 20), (20, 10))
+        spacings=(50, 0),
+        padding=((30, 10), (40, 10))
     )
     def __init__(self,
                  *args,
@@ -812,7 +818,9 @@ class GraphicsGrid(GraphicsBase):
                  subplot_kw=None,
                  _subplot_init=None,
                  mpl_backend = None,
-                 tighten = False,
+                 subimage_size=(200, 200),
+                 padding=None,
+                 spacings=None,
                  **opts
                  ):
 
@@ -826,12 +834,18 @@ class GraphicsGrid(GraphicsBase):
         subplot_kw.update(dict(
             nrows=nrows, ncols=ncols,
             graphics_class=graphics_class,
-            _subplot_init=graphics_class._subplot_init if _subplot_init is None else _subplot_init
+            _subplot_init=graphics_class._subplot_init if _subplot_init is None else _subplot_init,
+            subimage_size=subimage_size,
+            padding=padding,
+            spacings=spacings
         ))
         super().__init__(
             figure=figure, axes=axes,
             graphics_class=graphics_class,
-            subplot_kw=subplot_kw
+            subplot_kw=subplot_kw,
+            padding=padding,
+            spacings=spacings,
+            **opts
         )
         self.shape = (nrows, ncols)
         self._colorbar_axis = None # necessary hack for only GraphicsGrid
@@ -842,6 +856,7 @@ class GraphicsGrid(GraphicsBase):
                       subplot_kw=None, _subplot_init=None,
                       fig_kw=None, mpl_backend = None,
                       padding = None, spacings=None,
+                      subimage_size=None,
                       **kw
                       ):
         """Initializes the subplots for the Graphics object
@@ -862,6 +877,10 @@ class GraphicsGrid(GraphicsBase):
             import matplotlib
             matplotlib.use(mpl_backend)
 
+        if 'image_size' not in kw:
+            kw['image_size'] = subimage_size
+        else:
+            subimage_size = kw['image_size']
         if figure is None:
             padding = self._get_def_opt('padding', padding)
             spacings = self._get_def_opt('spacings', spacings)
@@ -871,13 +890,9 @@ class GraphicsGrid(GraphicsBase):
                 fig_kw = {}
             if 'figsize' not in fig_kw:
                 try:
-                    base_imsize = graphics_class.default_style['image_size']
-                except (AttributeError, KeyError):
-                    base_imsize = 300
-                try:
-                    dw, dh = base_imsize
+                    dw, dh = subimage_size
                 except (ValueError, TypeError):
-                    dw = dh = base_imsize
+                    dw = dh = subimage_size
                 w = ncols * dw
                 h = nrows * dh
                 if padding is not None:
@@ -890,12 +905,13 @@ class GraphicsGrid(GraphicsBase):
                         phx, phy = ph
                     except (TypeError, ValueError):
                         phx = phy = ph
+
                     w += pwx + pwy
                     h += phx + phy
                 if spacings is not None:
                     sw, sh = spacings
-                    w += ncols-1 * sw
-                    h += nrows-1 * sh
+                    w += (ncols-1) * sw
+                    h += (nrows-1) * sh
                 fig_kw['figsize'] = (w/72., h/72.)
 
             figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, **fig_kw)
@@ -931,6 +947,7 @@ class GraphicsGrid(GraphicsBase):
                     spacings=None,
                     background=None,
                     colorbar=None,
+                    figure_label=None,
                     **parent_opts
                     ):
 
@@ -938,6 +955,7 @@ class GraphicsGrid(GraphicsBase):
 
         self.image_size = None
         opts = (
+            ('figure_label', figure_label),
             ('padding', padding),
             ('spacings', spacings),
             ('background', background),
@@ -1004,8 +1022,14 @@ class GraphicsGrid(GraphicsBase):
         spacings = self.spacings
         if spacings is not None:
             sw, sh = spacings
-            w += self.ncols - 1 * sw
-            h += self.ncols - 1 * sh
+            w += (self.shape[1] - 1) * sw
+            h += (self.shape[0] - 1) * sh
+
+        pad = self.padding
+        if pad is not None:
+            pw, ph = pad
+            w += pw[0] + pw[1]
+            h += ph[0] + ph[1]
         return w, h
 
     @property
@@ -1015,43 +1039,42 @@ class GraphicsGrid(GraphicsBase):
         return s
     @image_size.setter
     def image_size(self, value):
-        self._prop_manager.image_size = self.calc_image_size()
+        s = self.calc_image_size()
+        self._prop_manager.image_size = s
 
+    @property
+    def figure_label(self):
+        return self._prop_manager.figure_label
+    @figure_label.setter
+    def figure_label(self, value):
+        self._prop_manager.figure_label = value
     @property
     def padding(self):
         return self._prop_manager.padding
     @padding.setter
     def padding(self, value):
         self._prop_manager.padding = value
-
     @property
     def padding_left(self):
         return self._prop_manager.padding_left
-
     @padding_left.setter
     def padding_left(self, value):
         self._prop_manager.padding_left = value
-
     @property
     def padding_right(self):
         return self._prop_manager.padding_right
-
     @padding_right.setter
     def padding_right(self, value):
         self._prop_manager.padding_right = value
-
     @property
     def padding_top(self):
         return self._prop_manager.padding_top
-
     @padding_top.setter
     def padding_top(self, value):
         self._prop_manager.padding_top = value
-
     @property
     def padding_bottom(self):
         return self._prop_manager.padding_bottom
-
     @padding_bottom.setter
     def padding_bottom(self, value):
         self._prop_manager.padding_bottom = value
@@ -1077,28 +1100,58 @@ class GraphicsGrid(GraphicsBase):
     def colorbar(self, value):
         self._prop_manager.colorbar = value
 
-    def add_colorbar(self, graphics=None, norm=None, cmap=None, **kw):
+    def add_colorbar(self, graphics=None, norm=None, cmap=None,
+                     size=(20, 200),
+                     tick_padding = 40,
+                     **kw
+                     ):
         fig = self.figure  # type: matplotlib.figure.Figure
         if graphics is None:
             import matplotlib.cm as cm
             graphics = cm.ScalarMappable(norm=norm, cmap=cmap)
         if 'cax' not in kw:
             if self._colorbar_axis is None:
+                # TODO: I'd like to have better control over how much space this colorbar takes in the future
+                #   it might be a mistake to make this not percentage based...
+                W, H = self.image_size
+                if size[0] < 1:
+                    size = (W*size[0], H*size[1])
+                size = (size[0] + tick_padding, size[1])
                 cur_padding = self.padding
-                self.padding_right = .08
-                # increase spacings to account for decrease in actual space
+                self.padding_right = size[0]+5
                 new_padding = self.padding
                 wpad_old = cur_padding[0][0] + cur_padding[0][1]
                 wpad_new = new_padding[0][0] + new_padding[0][1]
                 wdiff = wpad_new - wpad_old
-                print(wdiff)
-                self._colorbar_axis = fig.add_axes([0.93, 0.15, 0.02, 0.7])
+                # we need to now shrink the spacing by enough to compensate for this
+                # it would be best to mess with the figure sizes themselves, but this is the easier
+                # solution for the moment...
+                sp = self.spacings
+                if sp is not None:
+                    ws, hs = sp
+                    nspaces = self.shape[1]-1
+                    ws = ws - (wdiff/nspaces)
+                    ws = max(ws, 0)
+                    self.spacings = (ws, hs)
+                cbw = size[0]/W
+                tw = tick_padding/W
+                cbh = size[1]/H
+                xpos = 1 - cbw
+                ypos = .5 - cbh/2 #new_padding[1][0]/H
+                theme = self.theme
+                if self.theme is not None:
+                    if isinstance(theme, (str, dict)):
+                        theme = [theme]
+                    with self.theme_manager(*theme):
+                        self._colorbar_axis = fig.add_axes([xpos, ypos, cbw - tw, cbh])
+                else:
+                    self._colorbar_axis = fig.add_axes([xpos, ypos, cbw-tw, cbh])
             kw['cax'] = self._colorbar_axis
 
         fig.colorbar(graphics, **kw)
 
     def prep_show(self):
-        self.image_size = self.image_size
+        self.image_size = None
         if self.spacings is not None:
             self.spacings = self.spacings
         if self.padding is not None:

@@ -20,6 +20,7 @@ class GraphicsPropertyManager:
         self.managed = managed # if there's an external manager
         self.figure = figure
         self.axes = axes
+        self._figure_label = None
         self._plot_label = None
         self._plot_legend = None
         self._axes_labels = None
@@ -36,6 +37,20 @@ class GraphicsPropertyManager:
         self._colorbar = None
         self._cbar_obj = None
         self._spacings = None
+
+    @property
+    def figure_label(self):
+        return self._figure_label
+    @figure_label.setter
+    def figure_label(self, label):
+        self._figure_label = label
+        if not self.managed:
+            if label is None:
+                self.figure.suptitle("")
+            elif isinstance(label, Styled):
+                self.figure.suptitle(*label.val, **label.opts)
+            else:
+                self.figure.suptitle(label)
 
     @property
     def plot_label(self):
@@ -441,6 +456,7 @@ class GraphicsPropertyManager:
         else:
             hp = h
         self._spacings = (wp, hp)
+
         w = wp / W
         h = hp / H
         if not self.managed:
