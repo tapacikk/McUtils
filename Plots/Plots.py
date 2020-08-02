@@ -201,8 +201,7 @@ class Plot(Graphics):
         :type opts:
         """
 
-        super().__init__(figure=figure, axes=axes, theme=theme, subplot_kw=subplot_kw, **opts)
-        self.method = getattr(self.axes, method)
+        self.graphics = None
 
         # we're gonna set things up so that we can have delayed evaluation of the plotting.
         # i.e. a Plot can be initialized but then do all its plotting later
@@ -212,6 +211,9 @@ class Plot(Graphics):
         self.plot_opts = opts
         self._initialized = False
         self._data = None
+
+        super().__init__(figure=figure, axes=axes, theme=theme, subplot_kw=subplot_kw, **opts)
+        self.method = getattr(self.axes, method)
 
         if len(params) > 0:
             self.plot(*params)
@@ -258,9 +260,10 @@ class Plot(Graphics):
         return style
 
     def add_colorbar(self, graphics = None, norm = None,  **kw):
-        if graphics is None and norm is None:
-            graphics = self.graphics
-        super().add_colorbar(graphics = graphics, **kw)
+        if self._initialized:
+            if graphics is None and norm is None:
+                graphics = self.graphics
+            return super().add_colorbar(graphics = graphics, **kw)
 
 class ScatterPlot(Plot):
     """Plots a bunch of x values against a bunch of y values"""
@@ -659,10 +662,9 @@ class Plot3D(Graphics3D):  # basically a mimic of the Plot class but inheriting 
         if self._initialized:
             fig = self.figure  # type: matplotlib.figure.Figure
             ax = self.axes  # type: matplotlib.axes.Axes
-            fig.colorbar(self.graphics, **kw)
+            return fig.colorbar(self.graphics, **kw)
         else:
             self._colorbar = kw
-
 
 class ScatterPlot3D(Plot3D):
     """

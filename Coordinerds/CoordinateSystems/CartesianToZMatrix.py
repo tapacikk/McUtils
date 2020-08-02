@@ -210,7 +210,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 dist_derivs = dist_deriv(coords, ix, jx)
                 drang = np.arange(nol-1)
                 nreps = int(len(ix)/(nol-1))
-                drang = np.broadcast_to(drang[:, np.newaxis], drang.shape + (nreps,)).flatten()
+                drang = np.broadcast_to(drang[np.newaxis], (nreps,) + drang.shape).flatten()
                 derivs[ix, :, drang, 0] = dist_derivs[0]
                 derivs[jx, :, drang, 0] = dist_derivs[1]
 
@@ -229,12 +229,12 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                     angles = np.rad2deg(angles)
                 if return_derivs:
                     # we might need to mess with the masks akin to the insert call...
-                    angle_derivs = angle_deriv(coords, ix, jx, kx)
+                    angle_derivs = angle_deriv(coords, jx, ix, kx)
                     drang = 1+np.arange(nol-2)
                     nreps = int(len(ix)/(nol-2))
-                    drang = np.broadcast_to(drang[:, np.newaxis], drang.shape + (nreps,)).flatten()
-                    derivs[ix, :, drang, 1] = angle_derivs[0]
-                    derivs[jx, :, drang, 1] = angle_derivs[1]
+                    drang = np.broadcast_to(drang[np.newaxis], (nreps,) + drang.shape).flatten()
+                    derivs[jx, :, drang, 1] = angle_derivs[0]
+                    derivs[ix, :, drang, 1] = angle_derivs[1]
                     derivs[kx, :, drang, 1] = angle_derivs[2]
             else:
                 angles = np.zeros(ncoords-steps)
@@ -257,11 +257,10 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 if not use_rad:
                     diheds = np.rad2deg(diheds)
                 if return_derivs:
-                    dihed_derivs = dihed_deriv(coords, ix, jx, kx, lx)
+                    dihed_derivs = -dihed_deriv(coords, ix, jx, kx, lx)
                     drang = 2+np.arange(nol-3)
                     nreps = int(len(ix)/(nol-3))
-                    # raise Exception([ol.shape, orig_ol.shape, coords.shape, nol, drang, ix])
-                    drang = np.broadcast_to(drang[:, np.newaxis], drang.shape + (nreps,)).flatten()
+                    drang = np.broadcast_to(drang[np.newaxis], (nreps,) + drang.shape).flatten()
                     derivs[ix, :, drang, 2] = dihed_derivs[0]
                     derivs[jx, :, drang, 2] = dihed_derivs[1]
                     derivs[kx, :, drang, 2] = dihed_derivs[2]

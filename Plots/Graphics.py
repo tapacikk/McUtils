@@ -50,7 +50,7 @@ class GraphicsBase(metaclass=ABCMeta):
         if val is None:
             try:
                 v = object.__getattribute__(self, '_'+key) # we overloaded getattr
-            except AttributeError:
+            except AttributeError as e:
                 try:
                     v = object.__getattribute__(self._prop_manager, '_' + key)  # we overloaded getattr
                 except AttributeError:
@@ -151,6 +151,7 @@ class GraphicsBase(metaclass=ABCMeta):
                 managed = False
         self.managed = managed
         self._prop_manager = prop_manager(self, self.figure, self.axes, managed=managed)
+        self._colorbar_axis = None
         self.set_options(padding=padding, aspect_ratio=aspect_ratio, image_size=image_size, **opts)
 
         self.event_handler = None
@@ -277,13 +278,13 @@ class GraphicsBase(metaclass=ABCMeta):
         try:
             meth = getattr(axes, item)
         except AttributeError as e:
-            if 'Axes' not in e.args[0]:
+            if 'Axes' not in e.args[0] or item not in e.args[0]:
                 reraise_error = e
             else:
                 try:
                     meth = getattr(self.figure, item)
                 except AttributeError as e:
-                    if 'Figure' not in e.args[0]:
+                    if 'Figure' not in e.args[0] or item not in e.args[0]:
                         reraise_error = e
                     else:
                         reraise_error = AttributeError("'{}' object has no attribute '{}'".format(
@@ -406,6 +407,62 @@ class GraphicsBase(metaclass=ABCMeta):
     def _repr_png_(self):
         # currently assumes a matplotlib backend...
         return self.to_png().read()
+
+    def add_colorbar(self, graphics=None, norm=None, cmap=None,
+                     size=(20, 200),
+                     tick_padding=40,
+                     **kw
+                     ):
+        fig = self.figure  # type: matplotlib.figure.Figure
+        ax = self.axes  # type: matplotlib.axes.Axes
+        if graphics is None:
+            import matplotlib.cm as cm
+            graphics = cm.ScalarMappable(norm=norm, cmap=cmap)
+
+        if 'cax' not in kw:
+            if self._colorbar_axis is None:
+                # TODO: I'd like to have better control over how much space this colorbar takes in the future
+                #   it might be a mistake to make this not percentage based...
+                W, H = self.image_size
+                if size[0] < 1:
+                    size = (W * size[0], H * size[1])
+                size = (size[0] + tick_padding, size[1])
+                cur_padding = self.padding
+                if cur_padding[0][1] < size[0] + 5:
+                    self.padding_right = size[0] + 5
+                    new_padding = self.padding
+                    wpad_old = cur_padding[0][0] + cur_padding[0][1]
+                    wpad_new = new_padding[0][0] + new_padding[0][1]
+                    wdiff = wpad_new - wpad_old
+                else:
+                    wdiff = 0
+                # we need to now shrink the spacing by enough to compensate for this
+                # it would be best to mess with the figure sizes themselves, but this is the easier
+                # solution for the moment...
+                sp = self.spacings
+                if sp is not None:
+                    ws, hs = sp
+                    nspaces = self.shape[1] - 1
+                    ws = ws - (wdiff / nspaces)
+                    ws = max(ws, 0)
+                    self.spacings = (ws, hs)
+                cbw = size[0] / W
+                tw = tick_padding / W
+                cbh = size[1] / H
+                xpos = 1 - cbw
+                ypos = .5 - cbh / 2  # new_padding[1][0]/H
+
+                theme = self.theme
+                if self.theme is not None:
+                    if isinstance(theme, (str, dict)):
+                        theme = [theme]
+                    with self.theme_manager(*theme):
+                        self._colorbar_axis = fig.add_axes([xpos, ypos, cbw - tw, cbh])
+                else:
+                    self._colorbar_axis = fig.add_axes([xpos, ypos, cbw - tw, cbh])
+            kw['cax'] = self._colorbar_axis
+
+        return fig.colorbar(graphics, **kw)
 
 ########################################################################################################################
 #
@@ -587,13 +644,6 @@ class Graphics(GraphicsBase):
     @colorbar.setter
     def colorbar(self, value):
         self._prop_manager.colorbar = value
-    def add_colorbar(self, graphics=None, norm=None, cmap=None, **kw):
-        fig = self.figure  # type: matplotlib.figure.Figure
-        ax = self.axes  # type: matplotlib.axes.Axes
-        if graphics is None:
-            import matplotlib.cm as cm
-            graphics = cm.ScalarMappable(norm=norm, cmap=cmap)
-        fig.colorbar(graphics, **kw)
 
 ########################################################################################################################
 #
@@ -990,7 +1040,7 @@ class GraphicsGrid(GraphicsBase):
         try:
             meth = getattr(figure, item)
         except AttributeError as e:
-            if 'Figure' not in e.args[0]:
+            if 'Figure' not in e.args[0] or item not in e.args[0]:
                 reraise_error = e
             else:
                 reraise_error = AttributeError("'{}' object has no attribute '{}'".format(
@@ -1099,56 +1149,6 @@ class GraphicsGrid(GraphicsBase):
     @colorbar.setter
     def colorbar(self, value):
         self._prop_manager.colorbar = value
-
-    def add_colorbar(self, graphics=None, norm=None, cmap=None,
-                     size=(20, 200),
-                     tick_padding = 40,
-                     **kw
-                     ):
-        fig = self.figure  # type: matplotlib.figure.Figure
-        if graphics is None:
-            import matplotlib.cm as cm
-            graphics = cm.ScalarMappable(norm=norm, cmap=cmap)
-        if 'cax' not in kw:
-            if self._colorbar_axis is None:
-                # TODO: I'd like to have better control over how much space this colorbar takes in the future
-                #   it might be a mistake to make this not percentage based...
-                W, H = self.image_size
-                if size[0] < 1:
-                    size = (W*size[0], H*size[1])
-                size = (size[0] + tick_padding, size[1])
-                cur_padding = self.padding
-                self.padding_right = size[0]+5
-                new_padding = self.padding
-                wpad_old = cur_padding[0][0] + cur_padding[0][1]
-                wpad_new = new_padding[0][0] + new_padding[0][1]
-                wdiff = wpad_new - wpad_old
-                # we need to now shrink the spacing by enough to compensate for this
-                # it would be best to mess with the figure sizes themselves, but this is the easier
-                # solution for the moment...
-                sp = self.spacings
-                if sp is not None:
-                    ws, hs = sp
-                    nspaces = self.shape[1]-1
-                    ws = ws - (wdiff/nspaces)
-                    ws = max(ws, 0)
-                    self.spacings = (ws, hs)
-                cbw = size[0]/W
-                tw = tick_padding/W
-                cbh = size[1]/H
-                xpos = 1 - cbw
-                ypos = .5 - cbh/2 #new_padding[1][0]/H
-                theme = self.theme
-                if self.theme is not None:
-                    if isinstance(theme, (str, dict)):
-                        theme = [theme]
-                    with self.theme_manager(*theme):
-                        self._colorbar_axis = fig.add_axes([xpos, ypos, cbw - tw, cbh])
-                else:
-                    self._colorbar_axis = fig.add_axes([xpos, ypos, cbw-tw, cbh])
-            kw['cax'] = self._colorbar_axis
-
-        fig.colorbar(graphics, **kw)
 
     def prep_show(self):
         self.image_size = None

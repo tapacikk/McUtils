@@ -469,10 +469,13 @@ class GraphicsPropertyManager:
     @colorbar.setter
     def colorbar(self, c):
         self._colorbar = c
-        if self._colorbar is True:
-            self._cbar_obj = self.graphics.add_colorbar()
-        elif isinstance(self._colorbar, dict):
-            self._cbar_obj = self.graphics.add_colorbar(**self.colorbar)
+        # if self._cbar_obj is not None:
+        #     self.graphics.remove(self._cbar_obj)
+        if self._cbar_obj is None:
+            if self._colorbar is True:
+                self._cbar_obj = self.graphics.add_colorbar()
+            elif isinstance(self._colorbar, dict):
+                self._cbar_obj = self.graphics.add_colorbar(**self.colorbar)
         elif self._colorbar is None:
             pass
             #self.graphics.remove(self._cbar_obj)
