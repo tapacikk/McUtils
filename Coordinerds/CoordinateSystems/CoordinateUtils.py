@@ -25,7 +25,6 @@ def mc_safe_apply(fun, coords):
     :rtype:
     """
 
-
     if is_multiconfig(coords):
         base_shape = coords.shape
         new_shape = (np.product(base_shape[:-2]),) + base_shape[-2:]

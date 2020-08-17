@@ -60,6 +60,12 @@ class CoordinateSet(np.ndarray):
     def __str__(self):
         return "{}({}, {})".format(type(self).__name__, self.system.name, super().__str__())
 
+    def __eq__(self, other):
+        if isinstance(other, CoordinateSet) and self.system is not other.system:
+            return False
+        else:
+            return super().__eq__(other)
+
     @property
     def multiconfig(self):
         """Determines whether self.coords represents multiple configurations of the coordinates

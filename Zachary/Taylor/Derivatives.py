@@ -107,6 +107,7 @@ class DerivativeGenerator:
                  prep = None,
                  lazy = False,
                  mesh_spacing = .001,
+                 cache_evaluations = True,
                  **fd_opts
                  ):
         """
@@ -123,6 +124,8 @@ class DerivativeGenerator:
         :type mesh_spacing: float
         :param symmetric:
         :type symmetric:
+        :param cache_evaluations: whether or not to cache function evaluations for reuse in other derivatives
+        :type cache_evaluations: bool
         :param fd_opts:
         :type fd_opts:
         """
@@ -181,9 +184,13 @@ class DerivativeGenerator:
         self.mesh_spacing = mesh_spacing
         self._fdfs = {}
 
+        self.cache_evaluations = cache_evaluations
+        self._cache = {}
+
     def _get_fdf(self, ci, mesh_spacing):
         # create the different types of finite differences we'll compute for the different coordinates of interest
         dorder = self._dorder(ci)
+
         try:
             fdf = self._fdfs[(dorder, mesh_spacing)]
         except KeyError:
@@ -198,8 +205,8 @@ class DerivativeGenerator:
             )
             self._fdfs[(dorder, mesh_spacing)] = fdf
 
-        stencil_widths = tuple( len(cf[1]) if cf is not None else cf for cf in fdf.weights )
-        stencil_shapes = tuple( w[1] if w is not None else w for w in fdf.widths )
+        stencil_widths = tuple(len(cf[1]) if cf is not None else cf for cf in fdf.weights)
+        stencil_shapes = tuple(w[1] if w is not None else w for w in fdf.widths)
         finite_difference = fdf#.get_FDF(shape = stencil_widths)
 
         return stencil_widths, stencil_shapes, finite_difference, dorder
@@ -307,7 +314,9 @@ class DerivativeGenerator:
             np.broadcast_to(displacements, full_target_shape)
         )
 
-        return displacements, displaced_coords
+        disp_spec = (tuple(tuple(x for x in c) for c in coord), displacement_shape)
+
+        return disp_spec, displacements, displaced_coords
 
     def _get_fd_data(self, specs):
         """Takes the specs and returns a generator that will create the appropriate derivatives along each coordinate
@@ -324,7 +333,6 @@ class DerivativeGenerator:
         """
 
         for spec in specs: # dumb for now but allows me to pick some optimal ordering in the future
-
             ci = self._coord_index(spec)
             fd_data = self._get_fdf(ci, self.mesh_spacing)
             disp_data = self._get_displaced_coords(spec, fd_data[0], fd_data[1])
@@ -350,41 +358,68 @@ class DerivativeGenerator:
 
     def _get_single_deriv(self, spec, disp_data, fd_data, return_coords):
 
+        if self.cache_evaluations:
+            # we assume that evaluating the hash of the array will be faster
+            # than evaluating f itself
+            # this might not aways be the case,
+            # but if it fails to be so that's likely not a cause for concern because it
+            # means the overall process is already fast
+            cache_key = disp_data[0]
+            cached = cache_key in self._cache
+            # if uncached:
+            #     if not hasattr(self, "_cache_fails"):
+            #         self._cache_fails = 0
+            #     else:
+            #         self._cache_fails += 1
+            #     print(spec, disp_data[0], disp_data[1].shape)
+            #     if self._cache_fails > 20:
+            #         raise Exception("wat")
+        else:
+            cache_key = None
+            cached = False
+
+
         f = self.f
-        displacements, displaced_coords = disp_data
+        disp_spec, displacements, displaced_coords = disp_data
         stencil_widths, stencil_shapes, finite_difference, dorder = fd_data
 
-        # TODO: sit down and add comments to this compact implementation...
+            # TODO: sit down and add comments to this compact implementation...
 
-        config_shape = self.config_shape
-        cdim = len(config_shape)
-        roll = [cdim] + [a for a in np.arange(displaced_coords.ndim) if a != cdim]
-        dcoords = displaced_coords.transpose(roll)
-        function_values = f(dcoords)
-        unroll = tuple(np.arange(cdim) + 1) + (0,) + tuple(np.arange(cdim+1, function_values.ndim))
-        function_values = function_values.transpose(unroll)
-        disp, fvals = self.prep(spec, displacements, function_values)
+        if cached:
+            (disp, fvals) = self._cache[cache_key]
+        else:
+            config_shape = self.config_shape
+            cdim = len(config_shape)
+            roll = [cdim] + [a for a in np.arange(displaced_coords.ndim) if a != cdim]
+            dcoords = displaced_coords.transpose(roll)
+            function_values = f(dcoords)
+            unroll = tuple(np.arange(cdim) + 1) + (0,) + tuple(np.arange(cdim+1, function_values.ndim))
+            function_values = function_values.transpose(unroll)
+            disp, fvals = self.prep(spec, displacements, function_values)
 
-        # TODO: handle stuff like dipoles where we have an x, y, z component each of which should be handled separately...
-        #       this might actually be handled naturally, though? I'm actually pretty hopeful it will be...
+            # TODO: handle stuff like dipoles where we have an x, y, z component each of which should be handled separately...
+            #       this might actually be handled naturally, though? I'm actually pretty hopeful it will be...
 
-        # we now need to reformat the fvals so that they respect the stencil_shapes
-        # not sure where the extra 1 is coming from here...?
-        # I think maybe from the transpose call...?
-        # Actually no that just puts the displacement back in the right spot...
-        #   seems that it comes out of the way the coordinates get fed in/come out...
-        #   the tested stuff all has an extra '1' because of the way the displacement
-        #   gets generated
-        out_shape = fvals.shape[1+len(self.config_shape):]
-        out_dim = 1 if isinstance(out_shape, (int, np.integer)) else len(out_shape)
-        fvals_shape = self.config_shape + stencil_widths
-        if out_dim > 0:
-            fvals_shape = fvals_shape + fvals.shape[-out_dim:]
-        fvals = fvals.reshape(fvals_shape)
+            # we now need to reformat the fvals so that they respect the stencil_shapes
+            # not sure where the extra 1 is coming from here...?
+            # I think maybe from the transpose call...?
+            # Actually no that just puts the displacement back in the right spot...
+            #   seems that it comes out of the way the coordinates get fed in/come out...
+            #   the tested stuff all has an extra '1' because of the way the displacement
+            #   gets generated
+            out_shape = fvals.shape[1+len(self.config_shape):]
+            out_dim = 1 if isinstance(out_shape, (int, np.integer)) else len(out_shape)
+            fvals_shape = self.config_shape + stencil_widths
+            if out_dim > 0:
+                fvals_shape = fvals_shape + fvals.shape[-out_dim:]
+            fvals = fvals.reshape(fvals_shape)
 
         h = [self._get_diff(c, disp) for c in spec]
 
         derivs = finite_difference(fvals, axes=len(self.config_shape), mesh_spacing=h)
+
+        if self.cache_evaluations and not cached:
+            self._cache[cache_key] = (disp, fvals)
 
         if return_coords:
             return displaced_coords, derivs
@@ -456,22 +491,34 @@ class DerivativeGenerator:
         :return:
         :rtype:
         """
-        specs, raw = self._get_specs(order, pos, coordinates)
-        lazy = self.lazy if lazy is None else lazy
-        derivs = self._spec_derivs(specs)
-        if lazy:
-            def lazy_derivs(ders):
-                for d in ders:
-                    yield d
-            return lazy_derivs(derivs)
+
+        if isinstance(order, int):
+            single = True
+            order = [order]
         else:
-            return list(derivs)
+            single = False
+
+        res = [None]*len(order)
+        def lazy_derivs(ders):
+            for d in ders:
+                yield d
+        for which, o in enumerate(order):
+            specs, raw = self._get_specs(o, pos, coordinates)
+            lazy = self.lazy if lazy is None else lazy
+            derivs = self._spec_derivs(specs)
+            if lazy:
+                res[which] = lazy_derivs(derivs)
+            else:
+                res[which] = list(derivs)
+        if single:
+            res = res[0]
+        return res
 
     def derivative_tensor(self, order, pos=(), coordinates=None):
         """Computes a given derivative tensor
 
         :param order:
-        :type order:
+        :type order: int | Iterable[int]
         :param pos:
         :type pos:
         :param coordinates:
@@ -480,28 +527,41 @@ class DerivativeGenerator:
         :rtype:
         """
 
-        pos = [slice(None, None, None) if a is None else a for a in pos]
-        if coordinates is None:
-            coordinates = np.arange(np.product(self.coord_shape))
-        elif not isinstance(coordinates[0], (int, np.integer)):
-            coordinates = self._fidx(coordinates)
-        sub_specs = [coordinates[a] if not isinstance(a, int) else (coordinates[a],) for a in pos]
-        sub_specs = sub_specs + [coordinates for i in range(order - len(pos))]
-        specs, raw = self._get_specs(order, pos, coordinates)
-        derivs = self._spec_derivs(specs)
+        if isinstance(order, int):
+            single = True
+            order = [order]
+        else:
+            single = False
 
-        d_tensor = None
-        for s, d in zip(raw, derivs):
-            if d_tensor is None:
-                d_tensor = np.ones(tuple(len(s) for s in sub_specs) + d.shape)
+        res = [None]*len(order)
+        for which, o in enumerate(order):
+            pos = [slice(None, None, None) if a is None else a for a in pos]
+            if coordinates is None:
+                coordinates = np.arange(np.product(self.coord_shape))
+            elif not isinstance(coordinates[0], (int, np.integer)):
+                coordinates = self._fidx(coordinates)
+            sub_specs = [coordinates[a] if not isinstance(a, int) else (coordinates[a],) for a in pos]
+            sub_specs = sub_specs + [coordinates for i in range(o - len(pos))]
+            specs, raw = self._get_specs(o, pos, coordinates)
+            derivs = self._spec_derivs(specs)
 
-            for p in it.permutations(s, len(s)):
-                try:
-                    d_tensor[p] = d
-                except IndexError:
-                    pass
+            d_tensor = None
+            # apply symmetry
+            for s, d in zip(raw, derivs):
+                if d_tensor is None:
+                    d_tensor = np.ones(tuple(len(s) for s in sub_specs) + d.shape)
 
-        return d_tensor
+                for p in it.permutations(s, len(s)):
+                    try:
+                        d_tensor[p] = d
+                    except IndexError:
+                        pass
+
+            res[which] = d_tensor
+
+        if single:
+            res = res[0]
+        return res
 
     def _idx(self, c, coord_shape = None):
         if coord_shape is None:

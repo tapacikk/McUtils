@@ -165,11 +165,14 @@ class SparseArray:
         return type(self)(data, shape = new_shape, layout = self.fmt)
 
     def reshape(self, shp):
+        # this is an in-place operation which feels kinda dangerous?
         if np.prod(shp) != np.prod(self.shape):
             raise ValueError("Can't reshape {} into {}".format(self.shape, shp))
         self._shape = tuple(shp)
+        return self
     def squeeze(self):
         self.reshape([x for x in self.shape if x != 1])
+        return self
 
     def __matmul__(self, other):
         return self.dot(other)

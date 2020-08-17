@@ -126,12 +126,12 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         zorks = np.arange(len(ia))
 
         nv = vec_norms(v)
-        v = v/nv
+        v = v/nv[..., np.newaxis]
         if i > 0:
             nu = vec_norms(u)
-            u = u/nu
+            u = u/nu[..., np.newaxis]
             nn = vec_norms(n)
-            n = n/nn
+            n = n/nn[..., np.newaxis]
             if R1 is None:
                 Q = R2
             else:
@@ -146,14 +146,14 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
                 if i > 0:
                     dx2 = derivs[zorks, z, m, ib]
                     dv = dx2 - dx1
-                    # print("|", ib, dx1.shape, dx2.shape, dv.shape, v.shape)
-                    dv = 1/nv*(dv - v*vec_dots(dv, v))
+
+                    dv = (1/nv[..., np.newaxis])*(dv - v*vec_dots(dv, v)[..., np.newaxis])
 
                     # Get derivatives for the u-vector
                     if i > 1:
                         dx3 = derivs[zorks, z, m, ic]
                         du = dx3 - dx2
-                        du = 1/nu*(du - u*vec_dots(du, u))
+                        du = 1/nu[..., np.newaxis]*(du - u*vec_dots(du, u)[..., np.newaxis])
                     else:
                         du = np.zeros(dx1.shape)
                 else:
@@ -164,25 +164,30 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
                 delta_qn = z==i and m==1
                 delta_fn = z==i and m==2
 
-                if i > 0:
-                    dn = vec_crosses(dv, u) + vec_crosses(v, du)
-                    dn = 1/nn*(dn - n*vec_dots(dn, n))
 
+                if i > 0:
+                    sq = np.sin(q)[..., np.newaxis]
+                    cq = np.cos(q)[..., np.newaxis]
+
+                    dn = vec_crosses(dv, u) + vec_crosses(v, du)
+                    dn = 1/nn[..., np.newaxis]*(dn - n*vec_dots(dn, n)[..., np.newaxis])
                     dR2 = (
-                            (vec_outer(dn, n) + vec_outer(n, dn))*(1-np.cos(q))
-                            - vec_tdot(e3, dn)*np.sin(q)
+                            (vec_outer(dn, n) + vec_outer(n, dn))*(1-cq)[..., np.newaxis]
+                            - vec_tdot(e3, dn)*sq[..., np.newaxis]
                     )
                     if delta_qn:
                         # component that only gets subtracted if m==1
-                        dR2 -= (i3 - vec_outer(n, n))*np.sin(q) + vec_tdot(e3, n)*np.cos(q)
+                        dR2 -= (i3 - vec_outer(n, n))*sq[..., np.newaxis] + vec_tdot(e3, n)*cq[..., np.newaxis]
 
                     if i > 1:
+                        sf = np.sin(f)[..., np.newaxis]
+                        cf = np.cos(f)[..., np.newaxis]
                         dR1 = (
-                                (vec_outer(dv, v) + vec_outer(v, dv)) * (1 - np.cos(f))
-                                - vec_tdot(e3, dv) * np.sin(f)
+                                (vec_outer(dv, v) + vec_outer(v, dv)) * (1 - cf)[..., np.newaxis]
+                                - vec_tdot(e3, dv)*sf[..., np.newaxis]
                         )
                         if delta_fn:
-                            dR1 -= (i3 - vec_outer(v, v)) * np.sin(f) + vec_tdot(e3, v) * np.cos(f)
+                            dR1 -= (i3 - vec_outer(v, v))*sf[..., np.newaxis] + vec_tdot(e3, v) * cf[..., np.newaxis]
 
                         dQ = np.matmul(dR1, R2) + np.matmul(R1, dR2)
                     elif i == 1:

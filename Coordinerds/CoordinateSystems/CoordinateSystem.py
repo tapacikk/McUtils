@@ -20,8 +20,9 @@ class CoordinateSystem:
 
     """
     def __init__(self,
-                 name=None, basis=None, matrix=None, dimension=None,
-                 jacobian_prep=None, coordinate_shape=None,
+                 name=None, basis=None, matrix=None, inverse=None,
+                 dimension=None, origin=None, coordinate_shape=None,
+                 jacobian_prep=None,
                  converter_options=None
                  ):
         """Sets up the CoordinateSystem object
@@ -40,18 +41,22 @@ class CoordinateSystem:
         :type coordinate_shape: iterable[int]
         """
 
-        if dimension is None and matrix is not None:
-            dimension = (matrix.shape[-1],)
+        if dimension is None:
+            if origin is not None:
+                dimension = origin.shape
+            elif matrix is not None:
+                dimension = (matrix.shape[-1],)
+
         if coordinate_shape is None:
             coordinate_shape = dimension
-        if matrix is not None and (coordinate_shape is not None and coordinate_shape[-1] != matrix.shape[-1]):
-            raise CoordinateSystemError(
-                "{}: expansion matrix shape {} must be compatible with coordinate shape {}".format(
-                    type(self).__name__,
-                    matrix.shape,
-                    coordinate_shape
-                )
-            )
+        # if matrix is not None and (coordinate_shape is not None and coordinate_shape[-1] != matrix.shape[-1]):
+        #     raise CoordinateSystemError(
+        #         "{}: expansion matrix shape {} must be compatible with coordinate shape {}".format(
+        #             type(self).__name__,
+        #             matrix.shape,
+        #             coordinate_shape
+        #         )
+        #     )
 
         if converter_options is None:
             converter_options = {}
@@ -59,6 +64,8 @@ class CoordinateSystem:
         self.name = name
         self._basis = basis
         self._matrix = matrix
+        self._inv = inverse
+        self._origin = origin
         self._dimension = dimension
         self.jacobian_prep = jacobian_prep
         self.coordinate_shape = coordinate_shape
@@ -77,26 +84,47 @@ class CoordinateSystem:
 
     @property
     def basis(self):
-        """The basis for the representation of CoordinateSystem.matrix
+        """The basis for the representation of `matrix`
 
         :return:
         :rtype: CoordinateSystem
         """
         return self._basis
+    @property
+    def origin(self):
+        """
+        The origin for the expansion defined by `matrix`
+        :return:
+        :rtype: np.ndarray
+        """
 
+        return self._origin
     @property
     def matrix(self):
         """The matrix representation in the CoordinateSystem.basis
         None is shorthand for the identity matrix
 
         :return:
-        :rtype:
+        :rtype:  np.ndarray
         """
         return self._matrix
+    @property
+    def inverse(self):
+        """
+        The inverse of the representation in the `basis`
+        None is shorthand for the inverse or pseudoinverse of `matrix`
 
+        :return:
+        :rtype:  np.ndarray
+        """
+        if self._inv is None and self._matrix is not None:
+            square_Q=self.matrix.shape[0] == self.matrix.shape[1]
+            self._inv = (np.linalg.inv if square_Q else np.linalg.pinv)(self.matrix)
+        return self._inv
     @property
     def dimension(self):
-        """The dimension of the coordinate system
+        """
+        The dimension of the coordinate system
         None means unspecified dimension
 
         :return:
@@ -105,7 +133,8 @@ class CoordinateSystem:
         return self._dimension
 
     def converter(self, system):
-        """Gets the converter from the current system to a new system
+        """
+        Gets the converter from the current system to a new system
 
         :param system: the target CoordinateSystem
         :type system: CoordinateSystem
@@ -140,17 +169,28 @@ class CoordinateSystem:
                     matrix.shape
                 ))
             pos=pos[0]
+            excess_shape = shape[:-(pos+1)]
             new_shape = shape[:-(pos+1)]+(n,)
             coords = np.reshape(coords, new_shape)
+        else:
+            pos = -1
+            excess_shape = shape[:-1]
 
-        coords = np.tensordot(coords, matrix, axes=((-1,), (1,)))
         # set up the basic expansion coordinates in the more primitive system
+        coords = np.tensordot(coords, matrix, axes=((-1,), (1,)))
+        # then reshape so as to actually fit the shape of the basis
+        out_shape = excess_shape + target_coordinate_shape
+        if nones == 1:
+            the_stuff = np.product([z for z in out_shape if z is not None])
+            leftover = int(np.product(coords.shape) / the_stuff)
+            out_shape = tuple(z if z is not None else leftover for z in out_shape)
+        coords = np.reshape(coords, out_shape)
 
-        return coords  # reshape so as to actually fit the dimension of the basis
+        return coords
 
     def convert_coords(self, coords, system, **kw):
         """
-
+        Converts coordiantes from the current coordinate system to _system_
         :param coords:
         :type coords: CoordinateSet
         :param system:
@@ -161,21 +201,40 @@ class CoordinateSystem:
         :rtype:
         """
         if system is self:
-            return coords, {}
+            return coords, self.converter_options
 
         ops = dict(system.converter_options, **self.converter_options)
         kw = dict(ops, **kw)
         if self.matrix is not None:
-            coords = self._apply_system_matrix(self.basis, coords, self.matrix, self.coordinate_shape,
-                                               self.basis.coordinate_shape)
+            # This very commonly means that we're doing an expansion in some coordinate set,
+            #   but there's an equilibrium value or 'origin' that we need to shift off...
+            # For example, with normal modes we need to shift by the equilibrium value of the coordinates
+            #   both when we convert _to_ normal modes (in which case the modes are `system`) and when we convert _from_
+            #   normal modes (in which case the modes are `self`)
+            coords = self._apply_system_matrix(self.basis, coords,
+                                               self.matrix,
+                                               self.coordinate_shape,
+                                               self.basis.coordinate_shape
+                                               )
+            orig = self.origin
+            if orig is not None:
+                extra = coords.ndim-orig.ndim
+                if extra>0:
+                    orig = np.reshape(orig, (1,)*extra+orig.shape)
+                coords = coords + orig
             return self.basis.convert_coords(coords, system, **kw)
 
         elif system.matrix is not None:
             coords, convs = self.convert_coords(coords, system.basis, **kw)
-            square_Q=system.matrix.shape[0] == system.matrix.shape[1]
-            inv = (np.linalg.inv if square_Q else np.linalg.pinv)(system.matrix)
-
-            coords = self._apply_system_matrix(system, coords, inv,
+            inv = system.inverse
+            orig = system.origin
+            if orig is not None:
+                extra = coords.ndim - orig.ndim
+                if extra > 0:
+                    orig = np.reshape(orig, (1,) * extra + orig.shape)
+                coords = coords - orig
+            coords = self._apply_system_matrix(system, coords,
+                                               inv,
                                                system.basis.coordinate_shape,
                                                system.coordinate_shape
                                                )
@@ -290,7 +349,7 @@ class CoordinateSystem:
         :param system: the target CoordinateSystem
         :type system: CoordinateSystem
         :param order: the order of the Jacobian to compute, 1 for a standard, 2 for the Hessian, etc.
-        :type order: int
+        :type order: int | Iterable[int]
         :param coordinates: a spec of which coordinates to generate derivatives for (None means all)
         :type coordinates: None | iterable[iterable[int] | None
         :param mesh_spacing: the spacing to use when displacing
@@ -323,7 +382,10 @@ class CoordinateSystem:
                 converter_options[ret_d_key] = rd
             deriv_key = 'derivs'
             if deriv_key in test_opts and test_opts[deriv_key] is not None:
-                order = order-1
+                if isinstance(order, int):
+                    order = order-1
+                else:
+                    order = [o-1 for o in order]
                 deriv_tensor = test_opts[deriv_key]
                 kw = converter_options.copy()
                 if ret_d_key in kw:
@@ -342,8 +404,9 @@ class CoordinateSystem:
                 convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
         else:
             convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
-            
-        if order > 0:
+
+        need_derivs = max(order)>0 if not isinstance(order, int) else order > 0
+        if need_derivs:
             self_shape = self.coordinate_shape
             if self_shape is None:
                 self_shape = coords.shape[1:]
@@ -365,8 +428,8 @@ class CoordinateSystem:
             #         ))
 
             for k, v in zip(
-                    ('mesh_spacing', 'prep'),
-                    (.001, system.jacobian_prep, None)
+                    ('mesh_spacing', 'prep', 'stencil'),
+                    (.001, system.jacobian_prep, 7)
             ):
                 if k not in finite_difference_options:
                     finite_difference_options[k] = v
@@ -377,12 +440,31 @@ class CoordinateSystem:
                 **finite_difference_options
             )(coords)
 
-            deriv_tensor = deriv.derivative_tensor(order, coordinates=coordinates)
+            if not isinstance(order, int):
+                if 0 in order:
+                    if order[0] != 0:
+                        raise NotImplementedError("I don't want to mess with ordering so just put the 1 or 0 first...")
+                    else:
+                        ordo = order[1:]
+                else:
+                    ordo = order
+            else:
+                ordo = [order]
+            derivs = deriv.derivative_tensor(ordo, coordinates=coordinates)
+            if isinstance(order, int):
+                deriv_tensor = derivs[0]
+            elif deriv_tensor is None:
+                deriv_tensor = derivs
+            else:
+                deriv_tensor = [deriv_tensor] + derivs # currently assuming you'd put
 
         if deriv_tensor is None:
             raise CoordinateSystemError("derivative order '{}' less than 0".format(order))
 
         return deriv_tensor
+
+    def __repr__(self):
+        return "CoordinateSystem({}, dimension={}, matrix={})".format(self.name, self.dimension, self.matrix)
 
 
 ######################################################################################################

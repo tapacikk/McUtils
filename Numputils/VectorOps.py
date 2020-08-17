@@ -90,6 +90,9 @@ def vec_normalize(vecs, axis=-1):
     :rtype:
     """
     norms = vec_norms(vecs)[..., np.newaxis]
+    # avoid divide-by-zero warning, basically defining 0/0 = 0
+    norms[norms == 0] = 1
+
     return vecs/norms
 
 ################################################
