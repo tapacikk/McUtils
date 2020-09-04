@@ -792,21 +792,47 @@ def named(p, n, no_capture=False):
 # wrapper patterns
 grp_p = group # capturing group
 Capturing = RegexPattern(grp_p, "Capturing", capturing=True)
+Capturing.__name__ ="Capturing"
+Capturing.__doc__ = """
+    Represents a capturing group in a RegexPattern
+    """
+
 non_cap_p = non_capturing # non-capturing group
 NonCapturing = RegexPattern(non_cap_p, "NonCapturing", dtype=DisappearingType)
+NonCapturing.__name__ ="NonCapturing"
+NonCapturing.__doc__ = """
+    Represents something that should not be captured in a RegexPattern
+    """
 
 op_p = optional # optional group
 opnb_p = lambda p, no_capture = False: r"(?:"+p+r")?" # optional non-binding group
 Optional = RegexPattern(optional,
                         "Optional"
                         )
+Optional.__name__ ="Optional"
+Optional.__doc__ = """
+    Represents something that should be optional in a RegexPattern
+    """
+
 Alternatives = RegexPattern(alternatives, joiner="|")
+Alternatives.__name__ ="Alternatives"
+Alternatives.__doc__ = """
+    Represents a set of alternatives in a RegexPattern
+    """
 
 lm_p = repeating
 Longest = RegexPattern(lm_p, "Longest")
+Longest.__name__ = "Longest"
+Longest.__doc__ = """
+    Represents that the longest match of the enclosed pattern should be searched for
+    """
 
 sm_p = shortest
 Shortest = RegexPattern(sm_p, "Shortest")
+Shortest.__name__ = "Shortest"
+Shortest.__doc__ = """
+    Represents that the shortest match of the enclosed pattern should be searched for
+    """
 
 def wrap_repeats(self, min = None, max = None, no_capture=None):
     self.repetitions = (min, max)
@@ -814,6 +840,11 @@ Repeating = RegexPattern(repeating,
                          "Repeating",
                          wrapper_function=wrap_repeats
                          )
+Repeating.__name__ = "Repeating"
+Repeating.__doc__ = """
+    Represents that the patten can be repeated
+    """
+
 def wrap_name(self, n):
     self.key = n
     if self.name is None:
@@ -824,6 +855,11 @@ Named = RegexPattern(
     wrapper_function = lambda self, n: setattr(self, "key", n),
     capturing=True
 )
+Named.__name__ = "Named"
+Named.__doc__ = """
+    Represents a named group. These are _always_ captured, to the exclusion of all else.
+    """
+
 def wrap_duplicate_type(self, n, riffle = ""):
     dt = self._dtype
     if isinstance(dt, tuple):
@@ -839,64 +875,155 @@ Duplicated = RegexPattern(duplicated,
                           "Duplicated",
                           wrapper_function = wrap_duplicate_type
                           )
+Duplicated.__name__ = "Duplicated"
+Duplicated.__doc__ = """
+    Represents an explicitly duplicated pattern
+    """
 
 pc_p = lambda p, no_capture = False: r"["+p+r"]" # pattern class
 PatternClass = RegexPattern(pc_p, "PatternClass")
+PatternClass.__name__ = "PatternClass"
+PatternClass.__doc__ = """
+    Represents a pattern class, for wrapping other patterns
+"""
 
 parened_p = lambda p, no_capture = False: r"\("+p+"\)"
 Parenthesized = RegexPattern(parened_p, "Parenthesized")
+Parenthesized.__name__ = "Parenthesized"
+Parenthesized.__doc__ = """
+    Represents that something should be wrapped in parentheses, not treated as Capturing
+    """
 
 # raw declarative patters
 any_p = "."
 Any = RegexPattern(any_p, "Any")
+Any.__name__ = "Any"
+Any.__doc__ = """
+    Represents any character
+    """
 
 sign_p = r"[\+\-]"
 Sign = RegexPattern(sign_p, "Sign")
+Sign.__name__ = "Sign"
+Sign.__doc__ = """
+    Represents a +/- sign
+    """
 
 paren_p = r"\("+".*?"+"\)"
 
 num_p = opnb_p(sign_p)+r"\d*\.\d+" # real number
 Number = RegexPattern(num_p, "Number", dtype=float)
+Number.__name__ = "Number"
+Number.__doc__ = """
+    Represents a real number, like -1.23434; doesn't support "E" notation
+    """
 
 int_p = opnb_p(sign_p)+r"\d+" # integer
 Integer = RegexPattern(int_p, "Integer", dtype=int)
+Integer.__name__ = "Integer"
+Integer.__doc__ = """
+    Represents an integer
+    """
 
 posint_p = r"\d+" # only positive integer
 PositiveInteger = RegexPattern(posint_p, "PositiveInteger", dtype=int)
+PositiveInteger.__name__ = "PositiveInteger"
+PositiveInteger.__doc__ = """
+    Represents a positive integer (i.e. just a string of digits)
+    """
 
 ascii_p = "[a-zA-Z]"
 ASCIILetter = RegexPattern(ascii_p, "ASCIILetter", dtype=str)
+ASCIILetter.__name__ = "ASCIILetter"
+ASCIILetter.__doc__ = """
+    Represents a single ASCII letter
+    """
 
 name_p = ascii_p+"{1,2}" # atom name
 AtomName = RegexPattern(name_p, "AtomName", dtype=str)
+AtomName.__name__ = "AtomName"
+AtomName.__doc__ = """
+    Represents an atom symbol like Cl or O (this is misnamed, I know)
+    """
 
 ws_char_class = r"(?!\n)\s" # probably excessive... but w/e I'm not winning awards for speed here
 WhitespaceCharacter = RegexPattern(ws_char_class, "WhitespaceCharacter", dtype=str)
+WhitespaceCharacter.__name__ = "WhitespaceCharacter"
+WhitespaceCharacter.__doc__ = """
+    Represents a single whitespace character
+    """
 
 ws_p = non_capturing(ws_char_class)+"*" # whitespace
 wsr_p = non_capturing(ws_char_class)+"+" # real whitespace
 Whitespace = RegexPattern(ws_p, "Whitespace", dtype=str)
+Whitespace.__name__ = "WhitespaceCharacter"
+Whitespace.__doc__ = """
+    Represents a block of whitespace
+    """
 
 WordCharacter = RegexPattern("\w", "WordCharacter", dtype=str)
+WordCharacter.__name__ = "WordCharacter"
+WordCharacter.__doc__ = """
+    Represents a single number or letter (i.e. non-whitespace)
+    """
+
 Word = RegexPattern("\w+", "Word", dtype=str)
+Word.__name__ = "Word"
+Word.__doc__ = """
+    Represents a block of WordCharacters
+    """
 
 VariableName = RegexPattern((ASCIILetter, Word), joiner="", dtype=str)
+VariableName.__name__ = "VariableName"
+VariableName.__doc__ = """
+    Represents a possible variable name sans underscored, basically an ASCIILetter and then a word
+    """
 
 ascii_punc_char_class = r"\.,<>?/'\";:{}\[\]\+=\(\)\*&\^%$#@!~`"
 ASCIIPunctuation = RegexPattern(ascii_punc_char_class, "ASCIIPunctuation", dtype=str)
+ASCIIPunctuation.__name__ = "ASCIIPunctuation"
+ASCIIPunctuation.__doc__ = """
+    Represents a single piece of punctuation
+    """
 
 cart_p = ws_p.join([ grp_p(num_p) ]*3) # cartesian coordinate
 CartesianPoint = RegexPattern(cart_p, "CartesianPoint", dtype=(float, (3,)))
+CartesianPoint.__name__ = "CartesianPoint"
+CartesianPoint.__doc__ = """
+    Represents a 'point', i.e. 3 numbers separated by whitespace
+    """
 
 acart_p = "("+int_p+")"+ws_p+cart_p # atom coordinate as comes from a XYZ table
 IntXYZLine = RegexPattern(acart_p, "IntXYZLine", dtype=(int, (float, (3,))))
+IntXYZLine.__name__ = "IntXYZLine"
+IntXYZLine.__doc__ = """
+    Represents a line in an XYZ file that starts with an int, like
+    ```
+    1   -1.232323 2.23212421 43.44343434
+    ```
+    """
 
 aNcart_p = "("+name_p+")"+ws_p+cart_p # atom coordinate as comes from a XYZ table
 XYZLine = RegexPattern(aNcart_p, "XYZLine", dtype=(str, (float, (3,))))
+XYZLine.__name__ = "XYZLine"
+XYZLine.__doc__ = """
+    Represents a line in an XYZ file that starts with an atom name, like
+    ```
+    Cl   -1.232323 2.23212421 43.44343434
+    ```
+    """
 
 Empty = RegexPattern("", "Empty")
+Empty.__name__ = "Empty"
+Empty.__doc__ = """
+    Represents an empty pattern...I can't remember why this is here
+    """
 
 Newline = RegexPattern(r"\n", "Newline", dtype=str)
+Newline.__name__ = "Newline"
+Newline.__doc__ = """
+    Represents a newline character
+    """
 
 ZMatPattern = Capturing(AtomName)
 for i in range(3):
@@ -905,3 +1032,7 @@ for i in range(3):
         Repeating(Whitespace, 1) + Capturing(Number) # ref value
     ))
 ZMatPattern.name = "ZMatPattern"
+ZMatPattern.__name__ = "ZMatPattern"
+ZMatPattern.__doc__ = """
+    Represents Z-matrix block
+    """

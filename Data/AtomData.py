@@ -3,9 +3,13 @@ Provides a class for handling a compiled set of atomic data
 """
 from .CommonData import DataHandler
 
-__all__ = [ "AtomData" ]
+__all__ = [ "AtomData", "AtomDataHandler" ]
 
 class AtomDataHandler(DataHandler):
+    """
+    A DataHandler that's built for use with the atomic data we've collected.
+    Usually used through the `AtomData` object.
+    """
     def __init__(self):
         super().__init__("AtomData", alternate_keys=("Name", "Symbol", "CanonicalSymbol"))
     def load(self):
@@ -18,3 +22,5 @@ class AtomDataHandler(DataHandler):
                 maxIsos[num] = (v["IsotopeFraction"], v)
         self._data.update(((k, v[1]) for k, v in maxIsos.items()))
 AtomData = AtomDataHandler()
+AtomData.__doc__ = """An instance of AtomDataHandler that can be used for looking up atom data"""
+AtomData.__name__ = "AtomData"

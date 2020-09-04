@@ -1,8 +1,12 @@
 from .CommonData import DataHandler, DataError
 
-__all__ = [ "BondData" ]
+__all__ = [ "BondData", "BondDataHandler" ]
 
 class BondDataHandler(DataHandler):
+    """
+    A DataHandler that's built for use with the bond data we've collected.
+    Usually used through the `BondData` object.
+    """
     def __init__(self):
         super().__init__("BondData", getter=lambda d,k:self.get_distance(k))
     def load(self):
@@ -74,4 +78,4 @@ class BondDataHandler(DataHandler):
 
 BondData=BondDataHandler()
 BondData.__doc__ = """An instance of BondDataHandler that can be used for looking up bond distances"""
-BondData.__name__ = "BondDataHandler"
+BondData.__name__ = "BondData"

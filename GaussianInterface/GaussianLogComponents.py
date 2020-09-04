@@ -26,23 +26,6 @@ GaussianLogComponents = OrderedDict()  # we'll register on this bit by bit
 #                                           Header
 #
 
-"""
- ******************************************
- Gaussian 16:  ES64L-G16RevA.03 25-Dec-2016
-                 7-Mar-2020 
- ******************************************
- %cpu=0-27
- SetSPE:  set environment variable "MP_BIND" = "yes"
- SetSPE:  set environment variable "MP_BLIST" = "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27"
- Will use up to   28 processors via shared memory.
- %mem=72GB
- %chk=input.chk
- ----------------------------------------------------------------------
- # scf=verytight integral=ultrafine freq=(restart,anharm) b2plypd3/cc-p
- vtz
- ----------------------------------------------------------------------
- """
-
 tag_start = "******************************************"
 tag_end   = FileStreamerTag(
     """ --------""",
@@ -540,7 +523,6 @@ tag_end = FileStreamerTag(
         """-"""*25
     )
 )
-
 
 eigsPattern = RegexPattern(
     (

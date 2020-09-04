@@ -4,7 +4,7 @@ Provides constants data and conversions between units and unit systems
 from .CommonData import DataHandler
 from collections import OrderedDict, deque
 
-__all__ = [ "UnitsData" ]
+__all__ = [ "UnitsData", "UnitsDataHandler" ]
 
 class ConversionError(Exception):
     pass
@@ -58,6 +58,10 @@ class UnitGraph:
             return list(reversed(path))
 
 class UnitsDataHandler(DataHandler):
+    """
+    A DataHandler that's built for use with the units data we've collected.
+    Usually used through the `UnitsData` object.
+    """
     prefix_map=OrderedDict((
         # most common
         ('Kilo', 1E3), ('Milli', 1E-3), ('Centi', 1E-2),

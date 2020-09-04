@@ -23,7 +23,7 @@ __all__ = [
 ]
 
 ##
-# NOTE: The design of a lot of this stuff needs a bit of work
+# TODO: The design of a lot of this stuff needs a bit of work
 #       Like should it work with things that aren't just stacks of vectors?
 #       Or should it all be specifically for vector-vector operations?
 #       Lots of it doesn't even make sense in a non-vector context...

@@ -14,7 +14,8 @@ __all__ = [
 
 class SparseArray:
     """
-    Array class that generalize the regular scipy.sparse.
+    Array class that generalize the regular `scipy.sparse`
+    Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
     """
 
     def __init__(self, a, shape = None, layout = sp.csc_matrix, initialize = True):
@@ -328,7 +329,7 @@ def asCOO(a):
         a = sp.coo_matrix(a)
     return a
 def sparse_tensordot(a, b, axes=2):
-    """Defines a version of tensordot that uses sparse arrays, pulled from the sparse package on PyPI
+    """Defines a version of tensordot that uses sparse arrays, adapted from the sparse package on PyPI
 
     :param a: the array to contract from
     :type a: SparseArray | sp.spmatrix | np.ndarray

@@ -13,7 +13,6 @@ __all__ = [
 #                                                 rotation_matrix
 #
 
-#TODO: I'm pretty sure all of my rotation
 def rotation_matrix_basic(xyz, theta):
     """rotation matrix about x, y, or z axis
 

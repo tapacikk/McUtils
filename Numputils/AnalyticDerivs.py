@@ -18,6 +18,11 @@ levi_cevita3 = np.array([
     [[0, 0,-1], [ 0,0,0],[1, 0,0]],
     [[0, 1, 0], [-1,0,0],[0, 0,0]]
 ])
+# levi_cevita3.__name__ = "levi_cevita3"
+# levi_cevita3.__doc__ = """
+#     The 3D Levi-Cevita tensor.
+#     Used to turn cross products into matmuls
+#     """
 
 def rot_deriv(angle, axis, dAngle, dAxis):
     """
@@ -32,11 +37,11 @@ def rot_deriv(angle, axis, dAngle, dAxis):
     :type dAngle: float
     :param dAxis: chain rule axis deriv.
     :type dAxis: np.ndarray
-    :return:
-    :rtype:
+    :return: derivatives of the rotation matrices with respect to both the angle and the axis
+    :rtype: np.ndarray
     """
 
-    # Will still need work to be appropriately vectorized
+    # Will still need work to be appropriately vectorized (can't remember if I did this or not?)
 
     vdOdv = vec_outer(dAxis, axis) + vec_outer(axis, dAxis)
     c = np.cos(angle)
@@ -53,13 +58,13 @@ def dist_deriv(coords, i, j):
     Gives the derivative of the distance between i and j with respect to coords i and coords j
 
     :param coords:
-    :type coords:
-    :param i:
-    :type i:
-    :param j:
-    :type j:
-    :return:
-    :rtype:
+    :type coords: np.ndarray
+    :param i: index of one of the atoms
+    :type i: int | Iterable[int]
+    :param j: index of the other atom
+    :type j: int | Iterable[int]
+    :return: derivatives of the distance with respect to atoms i, j, and k
+    :rtype: np.ndarray
     """
     v = vec_normalize(coords[j]-coords[i])
 
@@ -70,13 +75,15 @@ def angle_deriv(coords, i, j, k):
     Gives the derivative of the angle between i, j, and k with respect to the Cartesians
 
     :param coords:
-    :type coords:
-    :param i:
-    :type i:
-    :param j:
-    :type j:
-    :return:
-    :rtype:
+    :type coords: np.ndarray
+    :param i: index of the central atom
+    :type i: int | Iterable[int]
+    :param j: index of one of the outside atoms
+    :type j: int | Iterable[int]
+    :param k: index of the other outside atom
+    :type k: int | Iterable[int]
+    :return: derivatives of the angle with respect to atoms i, j, and k
+    :rtype: np.ndarray
     """
 
     dot = vec_dots
@@ -103,15 +110,21 @@ def angle_deriv(coords, i, j, k):
 def dihed_deriv(coords, i, j, k, l):
     """
     Gives the derivative of the dihedral between i, j, k, and l with respect to the Cartesians
+    Currently gives what are sometimes called the `psi` angles.
+    Will be extended to also support more traditional `phi` angles
 
     :param coords:
-    :type coords:
+    :type coords: np.ndarray
     :param i:
-    :type i:
+    :type i: int | Iterable[int]
     :param j:
-    :type j:
-    :return:
-    :rtype:
+    :type j: int | Iterable[int]
+    :param k:
+    :type k: int | Iterable[int]
+    :param l:
+    :type l: int | Iterable[int]
+    :return: derivatives of the dihedral with respect to atoms i, j, k, and l
+    :rtype: np.ndarray
     """
     # needs to be vectorized, still
 

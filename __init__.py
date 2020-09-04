@@ -13,6 +13,7 @@ import McUtils.Plots
 import McUtils.Zachary
 import McUtils.Coordinerds
 import McUtils.ExternalPrograms
+import McUtils.Extensions
 
 __all__ = [
     "Data",
@@ -22,5 +23,7 @@ __all__ = [
     "Plots",
     "Zachary",
     "Coordinerds",
-    "ExternalPrograms"
+    "ExternalPrograms",
+    "Extensions",
+    "Numputils"
 ]

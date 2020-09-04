@@ -1,5 +1,6 @@
 """
-Provides a bunch of utilities to work with NumPy vectors and stuff
+Provides utilities to work with pretty low-level stuff.
+Any lowish-level numerical operations that need to be shared go here.
 """
 
 from .EulerSystem import *
