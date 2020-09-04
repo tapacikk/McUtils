@@ -481,8 +481,8 @@ class GraphicsPropertyManager:
             #self.graphics.remove(self._cbar_obj)
 
 class GraphicsPropertyManager3D(GraphicsPropertyManager):
-    def __init__(self, graphics, figure, axes):
-        super().__init__(graphics, figure, axes)
+    def __init__(self, graphics, figure, axes, managed=False):
+        super().__init__(graphics, figure, axes, managed=managed)
 
     @property
     def axes_labels(self):
