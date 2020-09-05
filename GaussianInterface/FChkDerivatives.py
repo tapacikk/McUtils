@@ -4,6 +4,11 @@ Lazy class for holding force constants and higher derivative tensors pulled from
 import numpy as np
 from ..Numputils import SparseArray
 
+__all__ = [
+    "FchkForceConstants",
+    "FchkForceDerivatives"
+]
+
 class FchkForceConstants:
     """
     Holder class for force constants coming out of an fchk file.
