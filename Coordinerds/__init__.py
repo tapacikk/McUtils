@@ -9,3 +9,9 @@ provided.
 from .CoordinateSystems import *
 from .CoordinateTransformations import *
 from .Conveniences import *
+
+__all__ = []
+from .CoordinateSystems import __all__ as exposed
+__all__ += exposed
+from .CoordinateTransformations import __all__ as exposed
+__all__ += exposed

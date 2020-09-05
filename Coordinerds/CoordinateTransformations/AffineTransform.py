@@ -9,6 +9,10 @@ from ...Numputils import merge_transformation_matrix
 ##
 ######################################################################################################
 
+__all__ = [
+    "AffineTransform"
+]
+
 class AffineTransform(TransformationFunction):
     """A simple AffineTranform implementation of the TransformationFunction abstract base class
 

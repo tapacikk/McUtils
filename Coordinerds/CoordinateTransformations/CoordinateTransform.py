@@ -1,5 +1,5 @@
-"""The coordinate mats class defines an architecture to mats coordinates
-
+"""
+The coordinate mats class defines an architecture to mats coordinates
 """
 import numpy as np
 from collections import namedtuple
@@ -15,6 +15,10 @@ from .AffineTransform import AffineTransform
 from .RotationTransform import RotationTransform
 from .ScalingTransform import ScalingTransform
 from .TranslationTransform import TranslationTransform
+
+__all__ = [
+    "CoordinateTransform"
+]
 
 class CoordinateTransform:
     """

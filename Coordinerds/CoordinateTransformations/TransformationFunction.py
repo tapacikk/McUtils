@@ -6,8 +6,13 @@ from abc import ABCMeta
 ##
 ######################################################################################################
 
+__all__ = [
+    "TransformationFunction"
+]
+
 class TransformationFunction(metaclass=ABCMeta):
-    """The TransformationFunction class is an abstract class
+    """
+    The TransformationFunction class is an abstract class
     It provides the scaffolding for representing a single transformation operation
 
 

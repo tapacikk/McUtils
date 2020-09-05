@@ -7,6 +7,10 @@ import numpy as np
 ##
 ######################################################################################################
 
+__all__ = [
+    "ScalingTransform"
+]
+
 class ScalingTransform(AffineTransform):
     """A simple ScalingTransform from the basic AffineTransformation class
 

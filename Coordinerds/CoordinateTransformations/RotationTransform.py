@@ -7,6 +7,10 @@ import numpy as np
 ##
 ######################################################################################################
 
+__all__ = [
+    "RotationTransform"
+]
+
 class RotationTransform(AffineTransform):
     """A simple AffineTransform implementation of the TransformationFunction abstract base class
 

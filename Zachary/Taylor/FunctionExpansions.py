@@ -151,14 +151,14 @@ class FunctionExpansion:
             term = self._derivs[i]
         elif i == 0:
             d0=self._derivs[0]
-            term = self._transf[0]*d0 if d0 is not 0 else 0
+            term = self._transf[0]*d0 if d0 != 0 else 0
         elif i == 1:
             terms = []
             d0 = self._derivs[0]
             d1 = self._derivs[1]
-            if d0 is not 0: # we can be a bit clever about non-existant derivatives...
+            if d0 != 0: # we can be a bit clever about non-existant derivatives...
                 terms.append(self._transf[1]*d0)
-            if d1 is not 0:
+            if d1 != 0:
                 terms.append((self._transf[0] ** 2) * d1)
 
             term = sum(terms) if len(terms) > 0 else 0
@@ -169,14 +169,14 @@ class FunctionExpansion:
             d0 = self._derivs[0]
             d1 = self._derivs[1]
             d2 = self._derivs[2]
-            if d0 is not 0:
+            if d0 != 0:
                 terms.append(self._transf[2] * d0)
-            if d1 is not 0:
+            if d1 != 0:
                 terms.append(
                     2 * ( self._transf[1] * self._transf[0] * d1 ) +
                         self._transf[0] * self._transf[1] * d1
                 )
-            if d2 is not 0:
+            if d2 != 0:
                 terms.append((self._transf[0] ** 3) * d2)
 
             term = sum(terms) if len(terms) > 0 else 0
@@ -189,21 +189,21 @@ class FunctionExpansion:
             d2 = self._derivs[2]
             d3 = self._derivs[3]
 
-            if d0 is not 0:
+            if d0 != 0:
                 terms.append(self._transf[3]*d0)
-            if d1 is not 0:
+            if d1 != 0:
                 terms.append(
                     3*self._transf[2]*self._transf[0]*d1+
                     3*(self._transf[1]**2)*d1+
                     self._transf[0]*self._transf[2]*d1
                 )
-            if d2 is not 0:
+            if d2 != 0:
                 terms.append(
                     2*self._transf[0]*self._transf[1]*self._transf[0]*d2+
                     3*self._transf[1]*(self._transf[0]**2)*d2+
                     (self._transf[0]**2)*self._transf[1]*d2
                 )
-            if d3 is not 0:
+            if d3 != 0:
                 terms.append((self._transf[0]**4)*d3)
 
             term = sum(terms) if len(terms) > 0 else 0
