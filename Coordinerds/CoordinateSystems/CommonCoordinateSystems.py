@@ -32,8 +32,8 @@ class CartesianCoordinateSystem(BaseCoordinateSystem):
 ##
 ######################################################################################################
 class InternalCoordinateSystem(BaseCoordinateSystem):
-    """Represents Internal coordinates generally
-
+    """
+    Represents Internal coordinates generally
     """
 
     name = "Internal"
@@ -57,6 +57,10 @@ class CartesianCoordinateSystem3D(CartesianCoordinateSystem):
             converter_options = opts
         super().__init__(dimension=dimension, converter_options=converter_options)
 CartesianCoordinates3D = CartesianCoordinateSystem3D()
+CartesianCoordinates3D.__name__ = "CartesianCoordinates3D"
+CartesianCoordinates3D.__doc__ = """
+    A concrete instance of `CartesianCoordinateSystem3D`
+    """
 
 ######################################################################################################
 ##
@@ -81,6 +85,10 @@ class ZMatrixCoordinateSystem(InternalCoordinateSystem):
     #     # we will want to make sure all angles and dihedrals stay within a range of eachother...
     #     return displacements, values
 ZMatrixCoordinates = ZMatrixCoordinateSystem()
+ZMatrixCoordinates.__name__ = "ZMatrixCoordinates"
+ZMatrixCoordinates.__doc__ = """
+    A concrete instance of `ZMatrixCoordinateSystem`
+    """
 
 ######################################################################################################
 ##
@@ -97,3 +105,7 @@ class SphericalCoordinateSystem(BaseCoordinateSystem):
             converter_options = opts
         super().__init__(self.name, dimension=3, converter_options=converter_options)
 SphericalCoordinates = SphericalCoordinateSystem()
+SphericalCoordinates.__name__ = "SphericalCoordinates"
+SphericalCoordinates.__doc__ = """
+    A concrete instance of `SphericalCoordinateSystem`
+    """
