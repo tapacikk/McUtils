@@ -7,6 +7,9 @@ __all__ = [
 ]
 
 class OpenBabelInterface:
+    """
+    A simple class to support operations that make use of the OpenBabel toolkit (which is installed with anaconda)
+    """
     PYBEL_SUPPORTED = None
     OB_SUPPORTED = None
     def __init__(self):

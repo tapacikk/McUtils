@@ -1,5 +1,5 @@
 """
-Experimental module that provides a FiniteDifferenceDerivative class that does finite-difference derivatives
+Module that provides a FiniteDifferenceDerivative class that does finite-difference derivatives
 """
 
 from .FiniteDifferenceFunction import FiniteDifferenceFunction
@@ -11,12 +11,14 @@ __all__ = [
 
 
 class FiniteDifferenceDerivative:
-    """Provides derivatives for a function (scalar or vector valued)
-    Can be indexed into or the entire tensor of derivatives may be requested
     """
-    def __init__(self, f, function_shape = (0, 0), **fd_opts):
+    Provides derivatives for a function (scalar or vector valued).
+    Can be indexed into or the entire tensor of derivatives may be requested.
+    The potential for optimization undoubtedly exists, but the idea is to provide as _simple_ an interface as possible.
+    Robustification needs to be done, but is currently used in `CoordinateSystem.jacobian` to good effect.
+    """
+    def __init__(self, f, function_shape=(0, 0), **fd_opts):
         """
-
         :param f: the function we would like to take derivatives of
         :type f: FunctionSpec | callable
         :param function_shape: the shape of the function we'd like to take the derivatives of
@@ -39,7 +41,8 @@ class FiniteDifferenceDerivative:
                     mesh_spacing=None,
                     **fd_opts
                     ):
-        """Generates a differencer object that can be used to get derivs however your little heart desires
+        """
+        Generates a differencer object that can be used to get derivs however your little heart desires
 
         :param center: the center point around which to generate differences
         :type center: np.ndarray
@@ -238,7 +241,8 @@ class DerivativeGenerator:
         return tuple(orders)
 
     def get_displacement(self, coord, mesh_spacing = None):
-        """Computes the displacement for the passed mesh spacing
+        """
+        Computes the displacement for the passed mesh spacing
 
         :param coord:
         :type coord:
@@ -258,7 +262,8 @@ class DerivativeGenerator:
         return displacement
 
     def _get_displaced_coords(self, coord, stencil_widths, stencil_shapes, use_sparse = False):
-        """Provides enough displacements of along `coord` to satisfy `stencil_widths` and `stencil_shapes`
+        """
+        Provides enough displacements of along `coord` to satisfy `stencil_widths` and `stencil_shapes`
         Does this by generating a big tensor of zeros, assigning parts of this for each displacement, then adding that
 
         :param coord:
@@ -319,7 +324,8 @@ class DerivativeGenerator:
         return disp_spec, displacements, displaced_coords
 
     def _get_fd_data(self, specs):
-        """Takes the specs and returns a generator that will create the appropriate derivatives along each coordinate
+        """
+        Takes the specs and returns a generator that will create the appropriate derivatives along each coordinate
         I should add an optimization that allows displacements along single coordinates to happen fast...
 
         :param specs:
@@ -427,10 +433,11 @@ class DerivativeGenerator:
             return derivs
 
     def _spec_derivs(self, specs, return_coords=False):
-        """Computes a specific derivative
+        """
+        Computes a specific derivative
         The derivative is specified by repeating a coordinate the number of times we'd like its derivative:
-            e.g. [[0], [0]] for dx_1^2 or [[0], [N]] for dx_1dx_N if we have a function f:R_N->R
-                or [[0, 1], [1, 0]] for dA_1_2dA_2_1 if we have a function f:(R_M, R_N)->R
+            e.g. `[[0], [0]]` for $dx_1^2$ or `[[0], [N]]` for $dx_1dx_N$ if we have a function $f:R_N \rightarrow R$
+                or `[[0, 1], [1, 0]]` for $dA_1_2dA_2_1$ if we have a function $f:(R_M, R_N) \rightarrow R$
 
         :param spec: the derivative to take as specified by the given indices
         :type spec: Iterable[Iterable[int]]
@@ -442,7 +449,8 @@ class DerivativeGenerator:
             yield self._get_single_deriv(spec, disp_data, fd_data, return_coords)
 
     def _get_specs(self, order, pos = (), coordinates = None):
-        """We compute the positions defined by the total order of the derivative as they would show up in the total tensor
+        """
+        We compute the positions defined by the total order of the derivative as they would show up in the total tensor
         If a given block of derivatives is specified
 
         :param order:
@@ -478,10 +486,11 @@ class DerivativeGenerator:
         return [self._idx(s) for s in specs], specs
 
     def compute_derivatives(self, order, pos=(), coordinates=None, lazy=None):
-        """Computes the derivatives up to `order` filtered by `pos` over the `coordinates`
+        """
+        Computes the derivatives up to `order` filtered by `pos` over the `coordinates`
 
-        :param order:
-        :type order:
+        :param order: the maximum total order of the derivatives to calculate
+        :type order: int | Iterable[int]
         :param pos: the positions to filter on
         :type pos:
         :param coordinates: the coordinates to compute the tensor of derivatives over
@@ -515,7 +524,8 @@ class DerivativeGenerator:
         return res
 
     def derivative_tensor(self, order, pos=(), coordinates=None):
-        """Computes a given derivative tensor
+        """
+        Computes a given derivative tensor
 
         :param order:
         :type order: int | Iterable[int]
@@ -573,6 +583,14 @@ class DerivativeGenerator:
         return np.ravel_multi_index(c, coord_shape)
 
     def __getitem__(self, item):
+        """
+        Returns a single derivative or block of derivatives, depending on how `item` is defined
+
+        :param item: position spec
+        :type item: int | tuple[int] | slice | tuple[int | slice]
+        :return: derivs
+        :rtype: float | np.ndarray
+        """
         if isinstance(item, (int, np.integer, slice)):
             item = (item,)
         if any(not isinstance(i, (int, np.integer)) for i in item):

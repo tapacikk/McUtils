@@ -23,7 +23,8 @@ __all__ = [
 class FiniteDifferenceError(Exception):
     pass
 class FiniteDifferenceFunction:
-    """The FiniteDifferenceFunction encapsulates a bunch of functionality extracted from Fornberger's
+    """
+    The FiniteDifferenceFunction encapsulates a bunch of functionality extracted from Fornberger's
     Calculation of Wieghts in Finite Difference Formulas (https://epubs.siam.org/doi/pdf/10.1137/S0036144596322507)
 
     Only applies to direct product grids, but each subgrid can be regular or irregular
@@ -43,7 +44,8 @@ class FiniteDifferenceFunction:
         self.contract = contract
 
     def apply(self, vals, axes=None, mesh_spacing = None, contract = None):
-        """Iteratively applies the stored finite difference objects to the vals
+        """
+        Iteratively applies the stored finite difference objects to the vals
 
         :param vals: The tensor of values to take the difference on
         :type vals: np.ndarray
@@ -80,14 +82,26 @@ class FiniteDifferenceFunction:
 
     @property
     def order(self):
+        """
+        :return: the order of the derivative requested
+        :rtype: tuple[int]
+        """
         return tuple(d.order for d in self.differences)
 
     @property
     def weights(self):
+        """
+        :return: the weights for the specified stencil
+        :rtype: tuple[np.array[float]]
+        """
         return tuple(d.weights for d in self.differences)
 
     @property
     def widths(self):
+        """
+        :return: the number of points in each dimension, left and right, for the specified stencil
+        :rtype: tuple[(int, int)]
+        """
         return tuple(d.widths for d in self.differences)
 
     @classmethod
@@ -101,6 +115,28 @@ class FiniteDifferenceFunction:
                            contract=True,
                            **kwargs
                            ):
+        """
+        Constructs a `FiniteDifferenceFunction` appropriate for a _regular grid_ with the given stencil
+
+        :param order: the order of the derivative
+        :type order: tuple[int]
+        :param mesh_spacing: the spacing between grid points in the regular grid `h`
+        :type mesh_spacing: None | float | tuple[float]
+        :param accuracy: the accuracy of the derivative that we'll try to achieve as a power on `h`
+        :type accuracy: None | int | tuple[int]
+        :param stencil: the stencil to use for the derivative (overrides `accuracy`)
+        :type stencil: None | int | tuple[int]
+        :param end_point_accuracy: the amount of extra accuracy to use at the edges of the grid
+        :type end_point_accuracy: None | int | tuple[int]
+        :param axes: the axes of the passed array for the derivative to be applied along
+        :type axes: None | int | tuple[int]
+        :param contract: whether to eliminate any axes of size `1` from the results
+        :type contract: bool
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
         dim = len(order)
         if isinstance(stencil, (int, np.integer)) or stencil is None:
             stencil = [stencil]*dim
@@ -136,7 +172,8 @@ class FiniteDifferenceFunction:
                   contract = True,
                   **kwargs
                   ):
-        """Constructs a FiniteDifferenceFunction from a grid and order.
+        """
+        Constructs a `FiniteDifferenceFunction` from a grid and order.
          Deconstructs the grid into its subgrids and builds a different differencer for each dimension
 
         :param grid: The grid to use as input data when defining the derivative
@@ -145,8 +182,8 @@ class FiniteDifferenceFunction:
         :type order: int or list of ints
         :param stencil: number of points to use in the stencil
         :type stencil: int or list of ints
-        :return:
-        :rtype:
+        :return: deriv func
+        :rtype: FiniteDifferenceFunction
         """
 
         if isinstance(order, (int, np.integer)):
@@ -220,6 +257,10 @@ class FiniteDifferenceFunction:
 #
 ##########################################################################################
 class FiniteDifference1D:
+    """
+    A one-dimensional finite difference derivative object.
+    Higher-dimensional derivatives are built by chaining these.
+    """
     def __init__(self, finite_difference_data, matrix):
         self.data = finite_difference_data
         self.mat = matrix
@@ -243,16 +284,19 @@ class FiniteDifference1D:
         return sten
 
     def apply(self, vals, val_dim = None, axis = 0, mesh_spacing = None):
-        """Applies the held FiniteDifferenceMatrix to the array of values
+        """
+        Applies the held `FiniteDifferenceMatrix` to the array of values
 
         :param vals: values to do the difference over
         :type vals: np.ndarray | sparse.csr_matrix
         :param val_dim: dimensions of the vals
         :type val_dim: int
-        :param axis:
-        :type axis:
+        :param axis: the axis to apply along
+        :type axis: int | tuple[int]
+        :param mesh_spacing: the mesh spacing for the weights
+        :type mesh_spacing: float
         :return:
-        :rtype:
+        :rtype: np.ndarray
         """
         if val_dim is None:
             val_dim = len(vals.shape)
@@ -673,8 +717,8 @@ class FiniteDifferenceMatrix:
                  ...
                  ...
                     .... b3 b2 b1
-        :return:
-        :rtype:
+        :return: fd_mat
+        :rtype: np.ndarray | sp.csr_matrix
         """
         npts = int(self.npts)
         only_core = self.only_core

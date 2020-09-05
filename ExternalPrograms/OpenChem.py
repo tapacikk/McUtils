@@ -8,6 +8,9 @@ __all__ = [
 
 
 class OpenChemInterface:
+    """
+    A simple class to support operations that make use of the OpenChemistry toolkit
+    """
     OC_SUPPORTED = None
     def __init__(self):
         self._lib = None

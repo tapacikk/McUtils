@@ -25,7 +25,8 @@ class CoordinateSystem:
                  jacobian_prep=None,
                  converter_options=None
                  ):
-        """Sets up the CoordinateSystem object
+        """
+        Sets up the CoordinateSystem object
 
         :param name: a name to give to the coordinate system
         :type name: str
@@ -84,37 +85,36 @@ class CoordinateSystem:
 
     @property
     def basis(self):
-        """The basis for the representation of `matrix`
-
-        :return:
+        """
+        :return: The basis for the representation of `matrix`
         :rtype: CoordinateSystem
         """
         return self._basis
     @property
     def origin(self):
         """
-        The origin for the expansion defined by `matrix`
-        :return:
+        :return: The origin for the expansion defined by `matrix`
         :rtype: np.ndarray
         """
 
         return self._origin
     @property
     def matrix(self):
-        """The matrix representation in the CoordinateSystem.basis
-        None is shorthand for the identity matrix
+        """
+        The matrix representation in the `CoordinateSystem.basis`
+        `None` is shorthand for the identity matrix
 
-        :return:
+        :return: mat
         :rtype:  np.ndarray
         """
         return self._matrix
     @property
     def inverse(self):
         """
-        The inverse of the representation in the `basis`
-        None is shorthand for the inverse or pseudoinverse of `matrix`
+        The inverse of the representation in the `basis`.
+        `None` is shorthand for the inverse or pseudoinverse of `matrix`.
 
-        :return:
+        :return: inv
         :rtype:  np.ndarray
         """
         if self._inv is None and self._matrix is not None:
@@ -124,10 +124,10 @@ class CoordinateSystem:
     @property
     def dimension(self):
         """
-        The dimension of the coordinate system
-        None means unspecified dimension
+        The dimension of the coordinate system.
+        `None` means unspecified dimension
 
-        :return:
+        :return: dim
         :rtype: int or None
         """
         return self._dimension
@@ -138,7 +138,7 @@ class CoordinateSystem:
 
         :param system: the target CoordinateSystem
         :type system: CoordinateSystem
-        :return:
+        :return: converter object
         :rtype: CoordinateSystemConverter
         """
 
@@ -191,14 +191,15 @@ class CoordinateSystem:
     def convert_coords(self, coords, system, **kw):
         """
         Converts coordiantes from the current coordinate system to _system_
+
         :param coords:
         :type coords: CoordinateSet
         :param system:
         :type system: CoordinateSystem
-        :param kw:
+        :param kw: options to be passed through to the converter object
         :type kw:
-        :return:
-        :rtype:
+        :return: the converted coordiantes
+        :rtype: tuple(np.ndarray, dict)
         """
         if system is self:
             return coords, self.converter_options
@@ -250,7 +251,9 @@ class CoordinateSystem:
             return new_coords
 
     def displacement(self, amts):
-        """Generates a displacement or matrix of displacements based on the vector or matrix amts
+        """
+        Generates a displacement or matrix of displacements based on the vector or matrix amts
+        The relevance of this method has become somewhat unclear...
 
         :param amts:
         :type amts: np.ndarray
@@ -278,7 +281,8 @@ class CoordinateSystem:
                     **finite_difference_options
                     ):
         """
-        Computes derivatives for an arbitrary function with respect to this coordinate system
+        Computes derivatives for an arbitrary function with respect to this coordinate system.
+        Basically a more flexible version of `jacobian`.
 
         :param function:
         :type function:
@@ -288,8 +292,8 @@ class CoordinateSystem:
         :type coordinates:
         :param finite_difference_options:
         :type finite_difference_options:
-        :return:
-        :rtype:
+        :return: derivative tensor
+        :rtype: np.ndarray
         """
 
         from McUtils.Zachary import FiniteDifferenceDerivative
@@ -344,7 +348,8 @@ class CoordinateSystem:
                  all_numerical=False,
                  **finite_difference_options
                  ):
-        """Computes the Jacobian between the current coordinate system and a target coordinate system
+        """
+        Computes the Jacobian between the current coordinate system and a target coordinate system
 
         :param system: the target CoordinateSystem
         :type system: CoordinateSystem
@@ -358,8 +363,8 @@ class CoordinateSystem:
         :type prep: None | function
         :param fd_options: options to be passed straight through to FiniteDifferenceFunction
         :type fd_options:
-        :return:
-        :rtype:
+        :return: derivative tensor
+        :rtype: np.ndarray
         """
 
         from McUtils.Zachary import FiniteDifferenceDerivative
@@ -464,6 +469,11 @@ class CoordinateSystem:
         return deriv_tensor
 
     def __repr__(self):
+        """
+        Provides a clean representation of a `CoordinateSystem` for printing
+        :return:
+        :rtype: str
+        """
         return "CoordinateSystem({}, dimension={}, matrix={})".format(self.name, self.dimension, self.matrix)
 
 
@@ -473,6 +483,9 @@ class CoordinateSystem:
 ##
 ######################################################################################################
 class CoordinateSystemError(Exception):
+    """
+    An exception that happens inside a `CoordinateSystem` method
+    """
     pass
 
 ######################################################################################################
@@ -482,9 +495,10 @@ class CoordinateSystemError(Exception):
 ######################################################################################################
 
 class BaseCoordinateSystem(CoordinateSystem):
-    """A CoordinateSystem object that can't be reduced further.
-    A common choice might be Cartesian coordinates or internal coordinates
-
+    """
+    A CoordinateSystem object that can't be reduced further.
+    A common choice might be Cartesian coordinates or internal coordinates.
+    This allows us to define flexible `CoordinateSystem` subclasses that we _don't_ expect to be used as a base
     """
 
     def __init__(self, name, dimension=None, matrix=None, coordinate_shape=None, converter_options=None):

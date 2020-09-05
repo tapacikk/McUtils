@@ -5,8 +5,9 @@ import numpy as np
 from ..Numputils import SparseArray
 
 class FchkForceConstants:
-    """Holder class for force constants coming out of an fchk file
-    Allows us to construct the force constant matrix in lazy fashion if we want
+    """
+    Holder class for force constants coming out of an fchk file.
+    Allows us to construct the force constant matrix in lazy fashion if we want.
     """
     def __init__(self, fcs):
         self.fcs = fcs

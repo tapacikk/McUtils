@@ -5,3 +5,9 @@ Mostly relevant for doing format conversions/parsing, but other utilities do exi
 
 from .Babel import *
 from .OpenChem import *
+
+__all__ = []
+from .Babel import __all__ as exposed
+__all__ += exposed
+from .OpenChem import __all__ as exposed
+__all__ += exposed
