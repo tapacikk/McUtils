@@ -171,8 +171,9 @@ def _get_3D_plotdata(func, xrange, yrange):
 #
 class Plot(Graphics):
     """
-    The base plotting class to interface into matplotlib or (someday) VTK or another backend
-    Builds off of the Graphics system to make a unified and convenient interface to generating plots
+    The base plotting class to interface into matplotlib or (someday 3D) VTK.
+    In the future hopefully we'll be able to make a general-purpose `PlottingBackend` class that doesn't need to be `matplotlib` .
+    Builds off of the `Graphics` class to make a unified and convenient interface to generating plots
     """
 
     def __init__(self,
