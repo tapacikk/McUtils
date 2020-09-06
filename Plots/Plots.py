@@ -173,7 +173,9 @@ class Plot(Graphics):
     """
     The base plotting class to interface into matplotlib or (someday 3D) VTK.
     In the future hopefully we'll be able to make a general-purpose `PlottingBackend` class that doesn't need to be `matplotlib` .
-    Builds off of the `Graphics` class to make a unified and convenient interface to generating plots
+    Builds off of the `Graphics` class to make a unified and convenient interface to generating plots.
+    Some sophisticated legwork unfortunately has to be done vis-a-vis tracking constructed lines and other plotting artefacts,
+    since `matplotlib` is designed to infuriate.
     """
 
     def __init__(self,
@@ -231,6 +233,11 @@ class Plot(Graphics):
         return self.method(*self._get_plot_data(*data), **plot_style)
 
     def plot(self, *params, **plot_style):
+        """
+        Plots a set of data & stores the result
+        :return: the graphics that matplotlib made
+        :rtype:
+        """
         plot_style = dict(self.plot_style, **plot_style)
         self._data = (params, plot_style)
         self.graphics = self._plot_data(*params, **plot_style)
@@ -239,21 +246,35 @@ class Plot(Graphics):
         return self.graphics
 
     def clear(self):
+        """
+        Removes the plotted data
+        """
         for g in self.graphics:
             self.axes.remove(g)
         self.graphics=None
 
     def restyle(self, **plot_style):
+        """
+        Replots the data with updated plot styling
+        :param plot_style:
+        :type plot_style:
+        """
         self.clear()
         self.plot(*self.data, **plot_style)
 
     @property
     def data(self):
+        """
+        The data that we plotted
+        """
         if self._data is None:
             raise ValueError("{} hasn't been plotted in the first place...")
         return self._data[0]
     @property
     def plot_style(self):
+        """
+        The styling options applied to the plot
+        """
         if self._data is None:
             style = self._plot_style
         else:
@@ -261,23 +282,35 @@ class Plot(Graphics):
         return style
 
     def add_colorbar(self, graphics = None, norm = None,  **kw):
+        """
+        Adds a colorbar to the plot
+        """
         if self._initialized:
             if graphics is None and norm is None:
                 graphics = self.graphics
             return super().add_colorbar(graphics = graphics, **kw)
 
 class ScatterPlot(Plot):
-    """Plots a bunch of x values against a bunch of y values"""
+    """
+    Inherits from `Plot`.
+    Plots a bunch of x values against a bunch of y values using the `scatter` method.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, method="scatter", **kwargs)
 
 class ListScatterPlot(ScatterPlot):
-    """Plots a bunch of (x, y) points"""
+    """
+    Inherits from `Plot`.
+    Plots a bunch of (x, y) points using the `scatter` method.
+    """
     def __init__(self, griddata, **opts):
         super().__init__(griddata[:, 0], griddata[:, 1], **opts)
 
 class ErrorBarPlot(Plot):
-    """A Plot object that plots error bars"""
+    """
+    Inherits from `Plot`.
+    Plots error bars using the `errorbar` method.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, method="errorbar", **kwargs)
 
