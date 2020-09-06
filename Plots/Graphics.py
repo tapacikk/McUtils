@@ -880,6 +880,12 @@ class Graphics3D(Graphics):
 #                                               GraphicsGrid
 #
 class GraphicsGrid(GraphicsBase):
+    """
+    A class for easily building sophisticated multi-panel figures.
+    Robustification work still needs to be done, but the core interface is there.
+    Supports themes & direct, easy access to the panels, among other things.
+    Builds off of `GraphicsBase`.
+    """
     default_style = dict(
         theme='mccoy',
         spacings=(50, 0),
