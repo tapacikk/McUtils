@@ -27,7 +27,9 @@ class ThemeManager:
         'mccoy': (
             ('seaborn-dark-palette'),
             {
-
+                'axes.labelsize': 13,
+                'xtick.labelsize':13,
+                'ytick.labelsize':13
             }
         )
 
@@ -40,6 +42,25 @@ class ThemeManager:
         self.extra_styles = extra_styles
         self.backend=backend
         self.context_manager = None
+    @classmethod
+    def from_spec(cls, theme):
+        if isinstance(theme, (str, dict)):
+            theme = [theme]
+        if len(theme) > 0:
+            try:
+                theme_names, theme_properties = theme
+            except ValueError:
+                theme_names = theme[0]
+                theme_properties = {}
+            if isinstance(theme_names, dict):
+                theme_properties = theme_names
+                theme_names = []
+            elif isinstance(theme_names, str):
+                theme_names = [theme_names]
+        else:
+            theme_names = []
+            theme_properties = {}
+        return cls(*theme_names, **theme_properties)
     def __enter__(self):
         if self.backend == Backends.MPL:
             import matplotlib.pyplot as plt
@@ -52,6 +73,13 @@ class ThemeManager:
         if self.context_manager is not None:
             self.context_manager.__exit__(exc_type, exc_val, exc_tb)
             self.context_manager = None
+    @property
+    def theme(self):
+        if self.backend == Backends.MPL:
+            import matplotlib.pyplot as plt
+            return self.resolve_theme(None, *self.main_theme_names, **self.extra_styles)
+        else:
+            raise NotImplemented("Haven't implemented themes for anything other than MPL right now...")
     @classmethod
     def add_theme(self, theme_name, *base_theme, **extra_styles):
         """

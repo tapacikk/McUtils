@@ -25,6 +25,7 @@ class GraphicsPropertyManager:
         self._plot_legend = None
         self._axes_labels = None
         self._frame = None
+        self._frame_style = None
         self._plot_range = None
         self._ticks = None
         self._scale = None
@@ -226,6 +227,37 @@ class GraphicsPropertyManager:
                 axis='y',
                 **y
             )
+    @property
+    def frame_style(self):
+        return self._frame_style
+    @frame_style.setter
+    def frame_style(self, f_style):
+        if self._frame_style is None:
+            self._frame_style = ((None,) * 2)*2
+        if isinstance(f_style, dict):
+            f_style = ((f_style, f_style), (f_style, f_style))
+        try:
+            x, y = f_style
+        except ValueError:
+            x, y = f_style = (f_style, f_style)
+        if isinstance(y, dict):
+            y = (y, y)
+        if isinstance(x, dict):
+            x = (x, x)
+        if len(y) == 2:
+            b, t = y
+        else:
+            b = t = y
+        if len(x) == 2:
+            l, r = x
+        else:
+            l = r = x
+
+        self._ticks_label_style = ((l, r), (b, t))
+        lax, rax, bax, tax = self.axes.spines.values()
+        for a,o in zip((lax, rax, bax, tax), (l, r, b, t)):
+            if o is not None:
+                a.set(**o)
 
     @property
     def ticks_label_style(self):

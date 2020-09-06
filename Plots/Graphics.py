@@ -106,6 +106,8 @@ class GraphicsBase(metaclass=ABCMeta):
         self.parent = parent
         if image_size is None and parent is not None: # gotta copy in some layout stuff..
             image_size = self.parent.image_size
+        if aspect_ratio is None and parent is not None:
+            aspect_ratio = self.parent.aspect_ratio
         aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio)
         image_size = self._get_def_opt('image_size', image_size)
         padding = self._get_def_opt('padding', padding)
@@ -137,9 +139,7 @@ class GraphicsBase(metaclass=ABCMeta):
         self.theme = theme
         self.theme_manager =theme_manager
         if theme is not None:
-            if isinstance(theme, (str, dict)):
-                theme = [theme]
-            with theme_manager(*theme):
+            with theme_manager.from_spec(theme):
                 self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
         else:
             self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
@@ -387,6 +387,17 @@ class GraphicsBase(metaclass=ABCMeta):
         return self.figure._repr_html_()
 
     def savefig(self, where, format='png', **kw):
+        """
+        Saves the image to file
+        :param where:
+        :type where:
+        :param format:
+        :type format:
+        :param kw:
+        :type kw:
+        :return: file it was saved to (I think...?)
+        :rtype: str
+        """
         if 'facecolor' not in kw:
             kw['facecolor'] = self.background# -_- stupid MPL
         return self.figure.savefig(where,
@@ -394,8 +405,15 @@ class GraphicsBase(metaclass=ABCMeta):
                     **kw
                     )
     def to_png(self):
+        """
+        Used by Jupyter and friends to make a version of the image that they can display, hence the extra 'tight_layout' call
+        :return:
+        :rtype:
+        """
         import io
         buf = io.BytesIO()
+        self.prep_show()
+        self.figure.tight_layout()
         fig = self.figure
         fig.savefig(buf,
                     format='png',
@@ -454,9 +472,7 @@ class GraphicsBase(metaclass=ABCMeta):
 
                 theme = self.theme
                 if self.theme is not None:
-                    if isinstance(theme, (str, dict)):
-                        theme = [theme]
-                    with self.theme_manager(*theme):
+                    with self.theme_manager.from_spec(theme):
                         self._colorbar_axis = fig.add_axes([xpos, ypos, cbw - tw, cbh])
                 else:
                     self._colorbar_axis = fig.add_axes([xpos, ypos, cbw - tw, cbh])
@@ -486,6 +502,7 @@ class Graphics(GraphicsBase):
                     plot_range=None,
                     plot_legend=None,
                     frame=None,
+                    frame_style=None,
                     ticks=None,
                     scale=None,
                     padding=None,
@@ -507,6 +524,7 @@ class Graphics(GraphicsBase):
             ('plot_legend', plot_legend),
             ('axes_labels', axes_labels),
             ('frame', frame),
+            ('frame_style', frame_style),
             ('plot_range', plot_range),
             ('ticks', ticks),
             ('ticks_style', ticks_style),
@@ -550,6 +568,13 @@ class Graphics(GraphicsBase):
     @frame.setter
     def frame(self, value):
         self._prop_manager.frame = value
+
+    @property
+    def frame_style(self):
+        return self._prop_manager.frame_style
+    @frame.setter
+    def frame_style(self, value):
+        self._prop_manager.frame_style = value
 
     @property
     def plot_range(self):
