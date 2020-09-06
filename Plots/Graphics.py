@@ -881,6 +881,7 @@ class Graphics3D(Graphics):
 #
 class GraphicsGrid(GraphicsBase):
     default_style = dict(
+        theme='mccoy',
         spacings=(50, 0),
         padding=((30, 10), (40, 10))
     )
