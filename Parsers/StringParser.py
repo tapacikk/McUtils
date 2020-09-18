@@ -254,7 +254,7 @@ class StringParser:
         else:
             matches = list(match_iter)
 
-        if len(matches)==0:
+        if matches is None or len(matches)==0:
             raise StringParserException("Pattern {} not found in {}".format(regex, txt))
 
         self._handle_parse_match(matches, res, block_handlers, append = append, single = single)
@@ -581,7 +581,7 @@ class StringParser:
             single_match = False
             if single is None:
                 single = single_match
-            if len(match) == 0:
+            if match is None or len(match) == 0:
                 raise StringParserException("Can't handle series of matches if there are no matches")
             first_match = match[0] # indicates we were fed a series of matches
             # indicates we were fed a single group
