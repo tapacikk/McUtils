@@ -563,7 +563,7 @@ def parser(pars):
         return None
 
     par_data = OptScanPat.parse_all(pars)
-    energies_array = np.concatenate(par_data["Eigenvalues"])
+    energies_array = np.concatenate(par_data["Eigenvalues"]).flatten()
     coords = OrderedDict()
     cdz = [a.array for a in par_data["Coordinates"].array]
     for coord_names, coord_values in zip(*cdz):
@@ -575,9 +575,9 @@ def parser(pars):
     for k in coords:
         coords[k] = np.concatenate(coords[k])
 
-    return namedtuple("OptimizedScanEnergies", ["coords", "energies"])(
-        coords,
-        energies_array
+    return namedtuple("OptimizedScanEnergies", ["energies", "coords"])(
+        energies_array,
+        coords
     )
 
 

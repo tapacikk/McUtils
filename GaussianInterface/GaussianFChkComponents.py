@@ -2,6 +2,7 @@
 
 from ..Parsers.RegexPatterns import *
 from .FChkDerivatives import *
+import numpy as np
 
 ########################################################################################################################
 #
@@ -35,6 +36,8 @@ FormattedCheckpointComponents["Int Atom Types"] = get_names
 #region Current cartesian coordinates
 
 def reformat(coords):
+    import numpy as np
+
     ncoords = len(coords)
     return np.reshape(coords, (int(ncoords/3), 3))
 FormattedCheckpointComponents["Current cartesian coordinates"] = reformat
@@ -79,6 +82,8 @@ def split_vib_modes(mcoeffs):
     :return:
     :rtype:
     """
+    import numpy as np
+
     l = len(mcoeffs)
     n = int(1 + np.sqrt(1 + l/9))
     return np.reshape(mcoeffs, (3*n-6, 3*n))
