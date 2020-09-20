@@ -554,6 +554,20 @@ OptScanPat = StringParser(
     )
 )
 
+# Gaussian16 started subtracting any uniform shift off of the energies
+# we'd like to get it back
+
+eigsShift = RegexPattern(
+    (
+        "add",
+        Whitespace,
+        Named(Number, "Shift")
+    ),
+    joiner=Whitespace
+)
+
+EigsShiftPat = StringParser(eigsShift)
+
 def parser(pars):
     """Parses the scan summary block and returns only the energies"""
     from collections import OrderedDict
@@ -562,8 +576,15 @@ def parser(pars):
     if pars is None:
         return None
 
+    try:
+        shift = EigsShiftPat.parse(pars)["Shift"]
+        #TODO: might need to make this _not_ be a `StructuredTypeArray` at some point, but seems fine for now
+    except StringParserException:
+        shift = 0
     par_data = OptScanPat.parse_all(pars)
-    energies_array = np.concatenate(par_data["Eigenvalues"]).flatten()
+    energies_array = np.concatenate(par_data["Eigenvalues"]).flatten()\
+    # when there isn't a value, for shape reasons we get extra nans
+    energies_array = energies_array[np.logical_not(np.isnan(energies_array))] + shift
     coords = OrderedDict()
     cdz = [a.array for a in par_data["Coordinates"].array]
     for coord_names, coord_values in zip(*cdz):
@@ -573,13 +594,13 @@ def parser(pars):
             else:
                 coords[k].append(v)
     for k in coords:
-        coords[k] = np.concatenate(coords[k])
+        coords[k] = np.concatenate(coords[k]).flatten()
+        coords[k] = coords[k][np.logical_not(np.isnan(coords[k]))]
 
     return namedtuple("OptimizedScanEnergies", ["energies", "coords"])(
         energies_array,
         coords
     )
-
 
 mode = "Single"
 
