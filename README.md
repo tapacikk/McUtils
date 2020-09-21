@@ -1,0 +1,17 @@
+# McUtils
+
+McUtils is a set of utilities written by the McCoy group for the McCoy group to handle common things we do, like pulling data from electronic structure calculations, doing unit conversions, interpolating functions, making attractive plots, getting finite difference derivatives, performing fast, vectorized operations, etc.
+
+We're working on [documenting the package](https://mccoygroup.github.io/References/Documentation/McUtils.html), but writing good documentation takes more time than writing good code.
+
+### Installation & Requirements
+
+McUtils is written in pure python. A small amount of C++ code has been added in the past, but we are trying to walk back from that, as it decreases ease of installation/portability.
+We make use of `numpy`, `scipy`, and `matplotlib`, but have worked to avoid any dependencies beyond those two.
+
+It is unlikely that McUtils will even find its way onto PyPI, so the best thing to do is install from GitHub via `git clone`. The `master` branch _should_ be stable. Other branches are intended to be development branches. 
+
+### Contributing
+
+If you'd like to help out with this, we'd love contributions.
+The easiest way to get started with it is to try it out
