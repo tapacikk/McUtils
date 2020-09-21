@@ -161,6 +161,7 @@ class DerivativeGenerator:
         if multiconfig:
             flattened_dims = configs_dims
             num_flattened = np.product(flattened_dims)
+            # I think by being smarter I could have avoided this reshape and avoided a bunch of hassle
             coords = coords.reshape((num_flattened, ) + coord_shape)
 
         # configure the function for handling displacements
@@ -223,7 +224,10 @@ class DerivativeGenerator:
         :rtype:
         """
         # gotta re-linearize coord so we can use it to index into like fdfs and stuff...
-        raveled = [ np.ravel_multi_index(c, self.coord_shape) for c in coord ]
+        if coord.ndim == 1:
+            raveled = np.ravel_multi_index(coord, self.coord_shape)
+        else:
+            raveled = [ np.ravel_multi_index(c, self.coord_shape) for c in coord ]
         return raveled
 
     def _dorder(self, raveled):
@@ -295,6 +299,7 @@ class DerivativeGenerator:
             stencil_shape, c = sc
             # coord can be like ((1, 1), (1, 2)) or ((0,), (1,)) in which case we have a 2D derivative
             # creates single displacement matrix
+            # it can also just be like ((0,)) in which case we're working in 1D
             ctup = tuple(c)
 
             disp = displacement[ctup]
@@ -313,7 +318,15 @@ class DerivativeGenerator:
 
         # then we broadcast *this* up to the total number of walkers we have
         full_target_shape = self.config_shape + displacement_shape
-        coords_expanded = np.expand_dims(coords, len(self.config_shape))
+        coords_expanded = coords.reshape(
+            self.config_shape
+            + (1,) * (len(displacement_shape) - len(self.coord_shape))
+            + self.coord_shape
+        )
+        displacements = displacements.reshape(
+            (1,) * len(self.config_shape)
+            + displacement_shape
+        )
         displaced_coords = (
             np.broadcast_to(coords_expanded, full_target_shape) +
             np.broadcast_to(displacements, full_target_shape)
@@ -451,7 +464,7 @@ class DerivativeGenerator:
     def _get_specs(self, order, pos = (), coordinates = None):
         """
         We compute the positions defined by the total order of the derivative as they would show up in the total tensor
-        If a given block of derivatives is specified
+        If a given block of derivatives is specified **[NOTE: I didn't finish this docstring and have no idea what it was supposed to say...]**
 
         :param order:
         :type order: int
@@ -468,19 +481,28 @@ class DerivativeGenerator:
             coordinates = self._fidx(coordinates)
 
         pos = [slice(None, None, None) if a is None else a for a in pos]
-        if len(pos) == order and not any(not isinstance(i, (int, np.integer)) for i in pos):
-            specs = [coordinates[c] for c in pos]
+        if len(pos) == order and all(isinstance(i, (int, np.integer)) for i in pos):
+            # we're just asking for a single derivative (I think?)
+            # basically when we have a derivative of order `n` and have something like `[i_1, i_2, ..., i_n]`
+            # as the `pos`
+            specs = [tuple(coordinates[c] for c in pos)]
         else:
-            sub_specs = [ tuple(coordinates[a]) if not isinstance(a, int) else (coordinates[a],) for a in pos]
+            # we need to broadcast our specs
+            sub_specs = [ tuple(coordinates[a]) if not isinstance(a, (int, np.integer)) else (coordinates[a],) for a in pos]
             sub_specs = sub_specs + [coordinates for i in range(order - len(pos))]
             unique = set()
             def test(p):
+                # assumes derivative tensors are totally symmetric (good assumption in science)
+                # filters out permutations by whether or not they are equivalent under sorting
                 s = tuple(sorted(p))
                 if s in unique:
                     return False
                 else:
                     unique.add(s)
                     return True
+            # we take the product space of the provided specs, since each spec targets a specific dimension
+            # this is basically numpy broadcasting
+            # then we filter by symmetry
             specs = [p for p in it.product(*sub_specs) if test(p)]
 
         return [self._idx(s) for s in specs], specs
@@ -501,7 +523,7 @@ class DerivativeGenerator:
         :rtype:
         """
 
-        if isinstance(order, int):
+        if isinstance(order, (int, np.integer)):
             single = True
             order = [order]
         else:
@@ -537,7 +559,7 @@ class DerivativeGenerator:
         :rtype:
         """
 
-        if isinstance(order, int):
+        if isinstance(order, (int, np.integer)):
             single = True
             order = [order]
         else:
@@ -550,7 +572,7 @@ class DerivativeGenerator:
                 coordinates = np.arange(np.product(self.coord_shape))
             elif not isinstance(coordinates[0], (int, np.integer)):
                 coordinates = self._fidx(coordinates)
-            sub_specs = [coordinates[a] if not isinstance(a, int) else (coordinates[a],) for a in pos]
+            sub_specs = [coordinates[a] if not isinstance(a, (int, np.integer)) else (coordinates[a],) for a in pos]
             sub_specs = sub_specs + [coordinates for i in range(o - len(pos))]
             specs, raw = self._get_specs(o, pos, coordinates)
             derivs = self._spec_derivs(specs)
@@ -591,7 +613,9 @@ class DerivativeGenerator:
         :return: derivs
         :rtype: float | np.ndarray
         """
-        if isinstance(item, (int, np.integer, slice)):
+        if isinstance(item, (int, np.integer)):
+            item = (item,) # though the branches might differ...
+        elif isinstance(item, slice):
             item = (item,)
         if any(not isinstance(i, (int, np.integer)) for i in item):
             return self.derivative_tensor(len(item), item)

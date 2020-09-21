@@ -295,6 +295,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         ref_points_1 += origins
         total_points[:, 1] = ref_points_1
 
+
         if return_derivs:
             i = 0
             r = dists
@@ -314,13 +315,12 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         for i in range(1, coordnum):
             # Get the distances away
             # raise Exception(coordlist[:, i, [0, 2, 4]])
-            # raise Exception(ordering)
             ref_coords1 = ordering[:, i, 0] # reference atom numbers for first coordinate
-            refs1 = total_points[np.arange(sysnum), ref_coords1] # get the actual reference coordinates
+            refs1 = total_points[np.arange(sysnum), ref_coords1.astype(int)] # get the actual reference coordinates
             dists = np.reshape(coordlist[:, i, 0], (sysnum, 1)) # pull the requisite distances
 
             ref_coords2 = ordering[:, i, 1] # reference atom numbers for second coordinate
-            refs2 = total_points[np.arange(sysnum), ref_coords2] # get the actual reference coordinates for the angle
+            refs2 = total_points[np.arange(sysnum), ref_coords2.astype(int)] # get the actual reference coordinates for the angle
             angle = coordlist[:, i, 1] # pull the requisite angle values
             if not use_rad:
                 angle = np.deg2rad(angle)
@@ -331,7 +331,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
                 ref_coords3 = None
             else:
                 ref_coords3 = ordering[:, i, 2] # reference atom numbers for dihedral ref coordinate
-                refs3 = total_points[np.arange(sysnum), ref_coords3] # get the actual reference coordinates for the dihed
+                refs3 = total_points[np.arange(sysnum), ref_coords3.astype(int)] # get the actual reference coordinates for the dihed
                 dihed = coordlist[:, i, 2] # pull proper dihedral values
                 if not use_rad:
                     dihed = np.deg2rad(dihed)

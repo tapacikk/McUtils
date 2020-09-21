@@ -75,20 +75,19 @@ class ConverterTest(TestCase):
     def test_CartesianToZMatrix(self):
         coord_set = CoordinateSet(DataGenerator.coords(10))
         coord_set = coord_set.convert(ZMatrixCoordinates, use_rad = False)
-        self.assertEqual(coord_set.shape, (9, 6))
+        self.assertEqual(coord_set.shape, (9, 3))
     @validationTest
     def test_CartesianToZMatrixMulti(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         coord_set = coord_set.convert(ZMatrixCoordinates, use_rad = False)
-        self.assertEqual(coord_set.shape, (10, 9, 6))
+        self.assertEqual(coord_set.shape, (10, 9, 3))
 
     @validationTest
     def test_CartesianToZMatrixAndBack(self):
-        cs1 = coord_set = CoordinateSet([self.zm_conv_test_structure]*4)
+        cs1 = coord_set = CoordinateSet([self.zm_conv_test_structure]*4, CartesianCoordinates3D)
         coord_set = coord_set.convert(ZMatrixCoordinates)
         coord_set = coord_set.convert(CartesianCoordinates3D)
         cs2 = coord_set
-        # print(np.round(cs2[0], 3))
         self.assertEqual(round(np.linalg.norm(cs2 - cs1), 8), 0.)
 
     @validationTest
@@ -132,7 +131,7 @@ class ConverterTest(TestCase):
     #     self.assertEqual(coords.shape, (self.n, 16, 3))
 
     #region Jacobians
-    @debugTest
+    @validationTest
     def test_CartesianToZMatrixJacobian(self):
         n = 5
         test_coords = DataGenerator.coords(n)
@@ -199,7 +198,7 @@ class ConverterTest(TestCase):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, stencil = 5)
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (10*3, 10, 10 - 1, 3 )) # we always lose one atom
+        self.assertEquals(jacob.shape, (10, 10, 3, 10 - 1, 3 )) # we always lose one atom
 
     @validationTest
     def test_CH5ZMatJacobian(self):
@@ -231,14 +230,24 @@ class ConverterTest(TestCase):
         jacob = coord_set.jacobian(
             zmat_system,
             stencil=5,
-            prep=lambda coord, disps, zmcs: (disps, zmcs[..., :, 1])
+            prep=lambda coord, disps, zmcs: (disps, zmcs[..., :, 1]),
+            all_numerical = True
         )
         self.assertEquals(jacob.shape, (np.product(coord_set.shape[1:]), 100, 5)) # I requested 5 bond lengths
+
+        # the analytic derivs. track a slightly different shape
+        jacob = coord_set.jacobian(
+            zmat_system,
+            stencil=5,
+            prep=lambda coord, disps, zmcs: (disps, zmcs[..., :, 1])
+        )
+        self.assertEquals(jacob.shape, (100,) + coord_set.shape[1:] + (5, 3)) # I requested 5 bond lengths
+        
 
     @validationTest
     def test_CartesianToZMatrixMultiJacobian2(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
-        jacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil = 5)
+        jacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil = 5, all_numerical=True)
         # TensorPlot(jacob[0],
         #            ticks_style = [
         #                dict(
@@ -253,7 +262,10 @@ class ConverterTest(TestCase):
         #                )
         #            ]
         #            ).show()
-        self.assertEquals(jacob.shape, (10, 10*3, 10*3, 10 * 3 - 3 )) # we always lose one atom
+        self.assertEquals(jacob.shape, (10*3, 10*3, 10, 10 - 1, 3)) # we always lose one atom
+
+        jacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil = 5) # semi-analytic
+        self.assertEquals(jacob.shape, (10*3, 10, 10, 3, 10 - 1, 3)) # we always lose one atom
 
     @timeitTest(number=1)
     def test_CartesianToZMatrixMultiJacobian1(self):
@@ -291,14 +303,14 @@ class ConverterTest(TestCase):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, 3, stencil=5)
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (10, 10 * 3, 10 * 3, 10 * 3, 10 * 3 - 3))  # we always lose one atom
+        self.assertEquals(jacob.shape, (10 * 3, 10 * 3, 10, 10, 3, 10 - 1, 3))  # we always lose one atom
 
     @validationTest
     def test_CartesianToZMatrixMultiJacobianTargeted(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, stencil=5, coordinates=[[1, 2, 3], None])
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (10, 3, 10 * 3 - 3))  # we always lose one atom
+        self.assertEquals(jacob.shape, (10, 10, 3, 10 - 1, 3))  # we always lose one atom
 
     #endregion
 
@@ -326,6 +338,7 @@ class ConverterTest(TestCase):
             matrix=expansion
         )
         disp = system.displacement(.1)
-        self.assertEquals(disp.shape, (3,))
+        self.assertEquals(disp, .1)
+        # self.assertEquals(disp.shape, (3,))
 
     #endregion
