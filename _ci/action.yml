@@ -3,4 +3,4 @@ name: 'Run CI'
 description: 'Runs McUtils CI'
 runs:
   using: 'docker'
-  image: '_ci/Dockerfile'
+  image: 'Dockerfile'
