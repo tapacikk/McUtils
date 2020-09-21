@@ -10,7 +10,7 @@ class ZacharyHigherTests(TestCase):
     # I don't have unit tests for this yet...
     ...
 
-    @debugTest
+    @validationTest
     def test_ExpandFunction(self):
         dtype = np.float32
 

@@ -40,7 +40,7 @@ class NumputilsTests(TestCase):
         self.assertEquals(td.shape, (4, 3, 4, 3))
         self.assertEquals(array.tensordot(array, axes=[[1, 2], [1, 2]]).shape, (4, 4))
 
-    @debugTest
+    @validationTest
     def test_AngleDeriv(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)

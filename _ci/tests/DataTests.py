@@ -38,7 +38,7 @@ class DataTests(TestCase):
         # print(UnitsData["AtomicUnitOfMass"])
         self.assertAlmostEqual(UnitsData.convert("AtomicMassUnits", "AtomicUnitOfMass"), 1822.888486217313)
 
-    @debugTest
+    @validationTest
     def test_BondData(self):
         self.assertIsInstance(BondData["H"], dict)
         self.assertLess(BondData["H", "H", 1], 1)

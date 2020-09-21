@@ -76,7 +76,7 @@ class PlotsTests(TestCase):
         plot.savefig(self.result_file("test_PlotStyling.png"))
         plot.close()
 
-    @debugTest
+    @validationTest
     def test_PlotGridStyling(self):
         main = GraphicsGrid(ncols=3, nrows=1, theme='Solarize_Light2', figure_label='my beuatufil triptych',
                             padding=((35, 60), (35, 40)))

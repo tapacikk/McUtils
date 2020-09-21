@@ -82,7 +82,7 @@ class ConverterTest(TestCase):
         coord_set = coord_set.convert(ZMatrixCoordinates, use_rad = False)
         self.assertEqual(coord_set.shape, (10, 9, 3))
 
-    @validationTest
+    @debugTest
     def test_CartesianToZMatrixAndBack(self):
         cs1 = coord_set = CoordinateSet([self.zm_conv_test_structure]*4, CartesianCoordinates3D)
         coord_set = coord_set.convert(ZMatrixCoordinates)

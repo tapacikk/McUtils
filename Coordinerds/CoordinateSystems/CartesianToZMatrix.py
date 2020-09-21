@@ -138,6 +138,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 np.reshape(np.arange(0, ncoords, nol), (steps, 1, 1)),
                 (ncoords, 4)
             )
+            mc_ol = ol.copy()
 
         # we define an order map that we'll index into to get the new indices for a
         # given coordinate
@@ -286,13 +287,13 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
 
         if multiconfig:
             # figure out what to use for the axes
-            origins = coords[ol[ ::nol,  1]] # whatever was referenced by the first atom in the spec
-            x_axes  = coords[ol[ ::nol,  0]] - origins # the first displacement vector
-            y_axes  = coords[ol[1::nol,  0]] - origins # the second displacement vector (just defines the x-y plane, not the real y-axis)
+            origins = coords[mc_ol[1::nol,  1]]
+            x_axes  = coords[mc_ol[1::nol,  0]] - origins # the first displacement vector
+            y_axes  = coords[mc_ol[2::nol,  0]] - origins # the second displacement vector (just defines the x-y plane, not the real y-axis)
             axes = np.array([x_axes, y_axes]).transpose((1, 0, 2))
+
             # raise Exception([x_axes, y_axes])
             # print(origins.shape, axes.shape)
-            # print(origins)
             # print(axes)
 
         else:
