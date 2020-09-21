@@ -376,6 +376,10 @@ class GraphicsBase(metaclass=ABCMeta):
                 self.refresh().show()
                 # raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
 
+    def close(self):
+        import matplotlib.pyplot as plt
+        return plt.close(self.figure)
+
     def clear(self):
         ax = self.axes  # type: matplotlib.axes.Axes
         all_things = ax.artists + ax.patches
@@ -1191,9 +1195,9 @@ class GraphicsGrid(GraphicsBase):
         if self.tighten:
             self.figure.tight_layout()
 
-    def close(self):
-        import matplotlib.pyplot as plt
-        return plt.close(self.figure)
+    # def close(self):
+    #     import matplotlib.pyplot as plt
+    #     return plt.close(self.figure)
     def show(self, **kwargs):
         for f in self:
             if isinstance(f, GraphicsBase):
