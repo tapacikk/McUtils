@@ -1,5 +1,6 @@
 # Misc
 
+_ci/tests/test_results
 Tests/TestData
 .DS_Store
 .idea

@@ -24,7 +24,7 @@ class GaussianInterfaceTests(TestCase):
     def test_DefaultLogParse(self):
         with GaussianLogReader(TestManager.test_data("tbhp_030.log")) as reader:
             parse = reader.parse()
-        self.assertLess(parse["OptimizedScanEnergies"][1][0], -308)
+        self.assertLess(parse["OptimizedScanEnergies"][0][1], -308)
 
     @validationTest
     def test_GetDipoles(self):

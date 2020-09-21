@@ -44,4 +44,5 @@ class NumputilsTests(TestCase):
     def test_AngleDeriv(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
-        raise Exception(angle_deriv(coords, [5], [4], [6]))
+        deriv = angle_deriv(coords, [5], [4], [6])
+        self.assertEquals(deriv.shape, (3, 1, 3))

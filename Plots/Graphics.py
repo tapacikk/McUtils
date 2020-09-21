@@ -1191,6 +1191,9 @@ class GraphicsGrid(GraphicsBase):
         if self.tighten:
             self.figure.tight_layout()
 
+    def close(self):
+        import matplotlib.pyplot as plt
+        return plt.close(self.figure)
     def show(self, **kwargs):
         for f in self:
             if isinstance(f, GraphicsBase):

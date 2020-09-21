@@ -10,7 +10,8 @@ RUN apt-get update \
 RUN pip install \
               numpy \
               matplotlib \
-              scipy
+              scipy \
+              h5py
 
 LABEL "name"="McCoyGroup/McUtilsCI"
 LABEL "maintainer"="Mark Boyer <b3m2a1uw.edu>"
