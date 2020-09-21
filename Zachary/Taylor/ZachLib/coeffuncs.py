@@ -150,13 +150,54 @@ def EvenFiniteDifferenceWeights(m, s, n):
 
     return coeffs
 
-_UnevenFiniteDifferenceWeights = None
+# _UnevenFiniteDifferenceWeights = None
 def UnevenFiniteDifferenceWeights(m, z, x):
-    global _UnevenFiniteDifferenceWeights
-    if _UnevenFiniteDifferenceWeights is None:
-        try:
-            from .lib import UnevenFiniteDifferenceWeights as _UnevenFiniteDifferenceWeights
-        except ImportError:
-            def _UnevenFiniteDifferenceWeights(m, s, n):
-                raise NotImplementedError("Need to translate the C implementation to pure python; don't want to use an extension for something so minimal")
-    return _UnevenFiniteDifferenceWeights(m, z, x)
+    # global _UnevenFiniteDifferenceWeights
+    # if _UnevenFiniteDifferenceWeights is None:
+    #     try:
+    #         from .lib import UnevenFiniteDifferenceWeights as _UnevenFiniteDifferenceWeights
+    #     except ImportError:
+    #         def _UnevenFiniteDifferenceWeights(m, s, n):
+    #
+    #             raise NotImplementedError("Need to translate the C implementation to pure python; don't want to use an extension for something so minimal")
+    # return _UnevenFiniteDifferenceWeights(m, z, x)
+
+    # We're gonna provide an inefficient imp, but this function is so cheap to start out that who cares
+
+
+    # Py_ssize_t n = PyObject_Length(xArray) - 1;
+    # int dims[2] = {n+1, m+1};
+    # PyObject *cArray = _CreateArray(2, dims, "zeros");
+    # double *c = _GetDataArray<double>(cArray);
+
+    # this is basically just copied directly from the OG source
+    n = len(x) - 1
+    dims = [n+1, m+1]
+    c = np.zeros(dims)
+    dxProdOld = 1.
+    dz = x[0] - z
+    c[0] = 1.
+    for i in range(1, n+1):
+        mn = min(i, m)
+        dxProd = 1.
+        dzOld = dz
+        dz = x[i] - z
+        for j in range(0, i):
+            dx = x[i] - x[j]
+            dxProd *= dx
+            if j == i-1:
+                for k in range(mn, 0, -1):
+                    c2 = c[i-1, k-1]
+                    c3 = c[i-1, k]
+                    weight = (k*c2 - dzOld * c3)*dxProdOld/dxProd
+                    c[i, k] = weight
+                c[i, 0] = -dzOld*c[i-1, 0]*dxProdOld/dxProd
+
+            for k in range(mn, 0, -1):
+                weight = (dz*c[j, k] - k*c[j, k-1])/dx
+                c[j, k] = weight
+            weight = dz*c[j, 0]/dx
+            c[j, 0] = weight
+        dxProdOld = dxProd
+
+    return c
