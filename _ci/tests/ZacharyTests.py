@@ -120,8 +120,7 @@ class FiniteDifferenceTests(TestCase):
             norm = np.linalg.norm(e-w[-1])
             if norm > .000001:
                 passed = False
-                for x in (norm, e, w[-1]):
-                    print(x, file=sys.stderr)
+                print((norm, e, w[-1]), file=sys.stderr)
         self.assertIs(passed, True)
 
     # @dataGenTest

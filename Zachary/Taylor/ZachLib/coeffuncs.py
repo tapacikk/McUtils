@@ -176,7 +176,7 @@ def UnevenFiniteDifferenceWeights(m, z, x):
     c = np.zeros(dims)
     dxProdOld = 1.
     dz = x[0] - z
-    c[0] = 1.
+    c[0, 0] = 1.
     for i in range(1, n+1):
         mn = min(i, m)
         dxProd = 1.
