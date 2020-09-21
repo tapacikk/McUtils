@@ -21,6 +21,8 @@ LABEL "com.github.actions.description"="Runs CI for the McUtils package"
 LABEL "com.github.actions.icon"="git"
 LABEL "com.github.actions.color"="orange"
 
-COPY . /home/McUtils
+RUN \
+    cd /home &&
+    git clone https://github.com/McCoyGroup/McUtils.git
 
 ENTRYPOINT ["sh", "/home/McUtils/_ci/run_ci.sh"]
