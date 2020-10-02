@@ -160,12 +160,30 @@ class SparseArray:
             res = np.unravel_index(n, dims)
             cache[n_hash] = res
         return res
+
+    _ravel_cache = {}  # hopefully faster than bunches of unravel_index calls...
+    @classmethod
+    def _ravel_indices(cls, mult, dims):
+        # we're hoping that we call with `n` often enough that we get a performance benefit
+        if dims not in cls._ravel_cache:
+            cls._ravel_cache[dims] = {}
+        cache = cls._ravel_cache[dims]
+        if isinstance(mult[0], np.ndarray):
+            n_hash = hash(tuple(m.data.tobytes() for m in mult))
+        else:
+            n_hash = hash(mult)
+        if n_hash in cache:
+            res = cache[n_hash]
+        else:
+            res = np.ravel_multi_index(mult, dims)
+            cache[n_hash] = res
+        return res
     @property
     def block_vals(self):
         if self._block_vals is None:
             d = self.data
             row_inds, col_inds, data = sp.find(d)
-            flat = np.ravel_multi_index((row_inds, col_inds), d.shape)
+            flat = self._ravel_indices((row_inds, col_inds), d.shape)
             unflat = self._unravel_indices(flat, self.shape)
             self._block_inds = (flat, unflat)
             self._block_vals = data
@@ -181,14 +199,14 @@ class SparseArray:
             flat, unflat = bi
             if isinstance(unflat[0], int):
                 row_inds, col_inds = bi
-                flat = np.ravel_multi_index((row_inds, col_inds), self.data.shape)
+                flat = self._ravel_indices((row_inds, col_inds), self.data.shape)
                 unflat = self._unravel_indices(flat, self.shape)
         elif isinstance(bi[0], int):
             flat = bi
             unflat = self._unravel_indices(flat, self.shape)
         else:
             unflat = bi
-            flat = np.ravel_multi_index(bi, self.shape)
+            flat = self._ravel_indices(bi, self.shape)
         self._block_inds = (flat, unflat)
     @property
     def block_data(self):
@@ -207,10 +225,10 @@ class SparseArray:
         shp = self.shape
         data, inds = self.block_data
         new_inds = [inds[i] for i in transp]
-        new_shape = [shp[i] for i in transp]
+        new_shape = tuple(shp[i] for i in transp)
         if len(new_shape) > 2:
             total_shape = (np.prod(new_shape[:-2])*new_shape[-2], new_shape[-1])
-            flat = np.ravel_multi_index(new_inds, new_shape)
+            flat = self._ravel_indices(new_inds, new_shape)
             unflat = self._unravel_indices(flat, total_shape)
         else:
             flat = None
@@ -319,7 +337,7 @@ class SparseArray:
                 e1 = len(idx[0])
                 pull_elements = all(len(x) == e1 for x in idx)
         if pull_elements:
-            flat = np.ravel_multi_index(idx, self.shape)
+            flat = self._ravel_indices(idx, self.shape)
             unflat = self._unravel_indices(flat, self.data.shape)
             res = self.data[unflat]
             if not isinstance(flat, int):
@@ -354,7 +372,7 @@ class SparseArray:
 
             if len(new_shape) > 2:
                 total_shape = (np.prod(new_shape[:-2]) * new_shape[-2], new_shape[-1])
-                flat = np.ravel_multi_index(inds, new_shape)
+                flat = self._ravel_indices(inds, new_shape)
                 unflat = self._unravel_indices(flat, total_shape)
             elif len(new_shape) == 1:
                 flat = None
