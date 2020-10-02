@@ -219,26 +219,8 @@ class SparseArray:
         data = self._build_data(data, unflat, total_shape)
         new = type(self)(data, shape = new_shape, layout = self.fmt)
         if self._block_vals is not None:
-            # there's got to be a way to map the old indices onto the new ones & hence sort stuff...
-            # and the trick is that _unflat_ ends up being sorted and so we need to first sort
-            #
             arr = np.lexsort(unflat)
             new_v = self._block_vals[arr]
-            # find_old = sp.find(self.data)
-            # old_flat = np.ravel_multi_index(find_old[:2], self.data.shape)
-            # find_new = sp.find(data)
-            # new_flat = np.ravel_multi_index(find_new[:2], new.data.shape)
-            # find_v = find_new[2]
-            # raise Exception(
-            #     np.max(np.abs(find_v - new_v))
-            #     # find_new[1][100:110],
-            #     # unflat[1][100:110],
-            #     # np.max(np.abs(np.sort(unflat[1]) - np.sort(find_new[1]))),
-            #     # np.max(np.abs(np.sort(unflat[0]) - np.sort(find_new[0]))),
-            #     # np.max(np.abs(new_flat - flat)),
-            #     # old_flat[100:110], flat[100:110],
-            #     # find_v[100:110], self._block_vals[100:110]
-            # )
             new._block_vals = new_v
         if flat is None:
             new.block_inds = unflat
