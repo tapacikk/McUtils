@@ -165,13 +165,20 @@ class SparseArray:
     @classmethod
     def _ravel_indices(cls, mult, dims):
         # we're hoping that we call with `n` often enough that we get a performance benefit
+        if isinstance(dims, list):
+            dims = tuple(dims)
         if dims not in cls._ravel_cache:
             cls._ravel_cache[dims] = {}
         cache = cls._ravel_cache[dims]
         if isinstance(mult[0], np.ndarray):
             n_hash = hash(tuple(m.data.tobytes() for m in mult))
         else:
-            n_hash = hash(mult)
+            try:
+                n_hash = hash(mult)
+            except TypeError:
+                # means hashing failed so we just shortcut out rather than try to be clever
+                # raise Exception([mult, dims])
+                return np.ravel_multi_index(mult, dims)
         if n_hash in cache:
             res = cache[n_hash]
         else:
@@ -207,10 +214,23 @@ class SparseArray:
         else:
             unflat = bi
             flat = self._ravel_indices(bi, self.shape)
+        if len(unflat) != len(self.shape):
+            raise ValueError("{}: block indices must have same dimension as array ({}); was given {}".format(
+                type(self).__name__,
+                len(self.shape),
+                len(unflat)
+            ))
+        if self._block_vals is not None and len(flat) != len(self._block_vals):
+                raise ValueError("{}: number of block indices must match number of non-zero elements ({}); was given {}".format(
+                    type(self).__name__,
+                    len(self._block_vals),
+                    len(flat)
+                ))
         self._block_inds = (flat, unflat)
     @property
     def block_data(self):
-        return self.block_vals, self.block_inds[1]
+        res = self.block_vals, self.block_inds[1]
+        return res
 
     def transpose(self, transp):
         """
@@ -236,14 +256,18 @@ class SparseArray:
             total_shape = new_shape
         data = self._build_data(data, unflat, total_shape)
         new = type(self)(data, shape = new_shape, layout = self.fmt)
+        arr = np.lexsort(unflat)
+        new_inds = [inds[arr] for inds in new_inds]
         if self._block_vals is not None:
-            arr = np.lexsort(unflat)
             new_v = self._block_vals[arr]
             new._block_vals = new_v
         if flat is None:
-            new.block_inds = unflat
+            new.block_inds = new_inds
         else:
-            new.block_inds = (flat, unflat)
+            # try:
+            new.block_inds = (flat, new_inds)
+            # except:
+            #     raise Exception(new_shape, len(total_shape))
         return new
 
     def reshape(self, shp):
@@ -327,7 +351,6 @@ class SparseArray:
         :rtype:
         """
 
-        # print(">>>>", idx, self.shape)
         if isinstance(idx, (int, np.integer)):
             idx = (idx,)
         pull_elements = len(idx) == len(self.shape) and all(isinstance(x, (int, np.integer)) for x in idx)
@@ -344,32 +367,42 @@ class SparseArray:
                 res = np.array(res)
             return res
         else:
-            # need to compute the shape of the resultant block _and_ keep it as
-            blocks = [np.array([i]) if isinstance(i, (int, np.integer)) else np.arange(s)[i] for i, s in zip(idx, self.shape)]
-            # print(blocks)
+            # need to compute the shape of the resultant block
+            blocks = [
+                np.array([i]) if isinstance(i, (int, np.integer)) else np.arange(s)[i].flatten()
+                for i, s in zip(idx, self.shape)
+            ]
             new_shape = [len(x) for x in blocks if len(x) > 1] + list(self.shape[len(blocks):])
-            # print(new_shape)
+
+            # now we iterate over each block and use it as a successive filter on our non-zero positions
             data, inds = self.block_data
             inds = list(inds)
+            # raise Exception(len(inds), self.shape)
+            def g(b, j):
+                """
+                finds the positions where the block & index align
+                """
+                w = np.argwhere(b == j)
+                if len(w) > 0:
+                    w = w.flatten()[0]
+                else:
+                    w = -1
+                return w
             for i, b, s in zip(range(len(blocks)), blocks, self.shape):
                 k = 0
-                def g(b, j):
-                    w = np.argwhere(b == j)
-                    if len(w) > 0:
-                        w = w.flatten()[0]
-                    else:
-                        w = -1
-                    return w
                 mapping = np.array([g(b, j) for j in range(s)])
                 ixs = inds[i]
+                # we add up the indices to give a list of 0 & 1 to use as a mask
                 filter = np.sum(ixs == j for j in b).astype(bool)
                 inds = [ix[filter] for ix in inds]
                 inds[i] = mapping[inds[i]]
                 data = data[filter]
 
+            # now that we've filtered our data, we filter out axes of size 1
             inds = [ix for ix,j in zip(inds, new_shape) if j > 1 ]
-            new_shape = [j for j in new_shape if j > 1]
+            new_shape = tuple(j for j in new_shape if j > 1)
 
+            # finally, we track our indices so that we don't need to recompute anything later
             if len(new_shape) > 2:
                 total_shape = (np.prod(new_shape[:-2]) * new_shape[-2], new_shape[-1])
                 flat = self._ravel_indices(inds, new_shape)
@@ -382,6 +415,8 @@ class SparseArray:
                 flat = None
                 unflat = inds
                 total_shape = new_shape
+
+            # raise Exception(blocks, new_shape, len(inds), len(unflat))
 
             try:
                 data = self._build_data(data, unflat, total_shape)
@@ -396,10 +431,10 @@ class SparseArray:
                     data
                 ))
             new = type(self)(data, shape=new_shape, layout=self.fmt)
-            # if flat is None:
-            #     new.block_inds = unflat
-            # else:
-            #     new.block_inds = flat, unflat
+            if flat is None:
+                new.block_inds = inds
+            else:
+                new.block_inds = flat, inds
             return new
     def __getitem__(self, item):
         return self._get_element(item)
