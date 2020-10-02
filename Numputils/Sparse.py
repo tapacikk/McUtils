@@ -162,7 +162,7 @@ class SparseArray:
         return res
     @property
     def block_vals(self):
-        if True:#self._block_vals is None:
+        if self._block_vals is None:
             d = self.data
             row_inds, col_inds, data = sp.find(d)
             flat = np.ravel_multi_index((row_inds, col_inds), d.shape)
@@ -172,7 +172,7 @@ class SparseArray:
         return self._block_vals
     @property
     def block_inds(self):
-        if True:#self._block_inds is None:
+        if self._block_inds is None:
             vals = self.block_vals
         return self._block_inds
     @block_inds.setter
