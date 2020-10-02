@@ -6,7 +6,9 @@ from ..Numputils import SparseArray
 
 __all__ = [
     "FchkForceConstants",
-    "FchkForceDerivatives"
+    "FchkForceDerivatives",
+    "FchkDipoleDerivatives",
+    "FchkDipoleHigherDerivatives"
 ]
 
 class FchkForceConstants:
@@ -111,31 +113,19 @@ class FchkForceDerivatives:
         dim_1 = (3*n)
         mode_n = 3*n-6
 
-        # it is unclear to me _which_ way this data is ordered... but I think it's in blocks
-        modes_blocks = True
-        if modes_blocks: # assumes that we get mode_n blocks of lower-triangle data
-            full_array_1 = np.zeros((mode_n, dim_1, dim_1))
-            # set the lower triangle
-            inds_1, inds_2 = np.tril_indices(dim_1)
-            l_per = len(inds_1)
-            main_ind = np.broadcast_to(np.arange(mode_n)[:, np.newaxis], (mode_n, l_per)).flatten()
-            sub_ind_1 = np.broadcast_to(inds_1, (mode_n, l_per)).flatten()
-            sub_ind_2 = np.broadcast_to(inds_2, (mode_n, l_per)).flatten()
-            inds = ( main_ind, sub_ind_1, sub_ind_2 )
-            full_array_1[inds] = derivs
-            # set the upper triangle
-            inds2 = ( main_ind, sub_ind_2, sub_ind_1 ) # basically just taking a transpose
-            full_array_1[inds2] = derivs
-        else: # assumes we get a big lower triangle with each element a vector of length mode_n
-            full_array_1 = np.zeros((dim_1, dim_1, mode_n))
-            sub_1, sub_2 = np.tril_indices(dim_1)
-            l_per = len(sub_1)
-            main_ind = np.broadcast_to(np.arange(mode_n), (l_per, mode_n)).flatten()
-            sub_1 = np.broadcast_to(sub_1[:, np.newaxis], (l_per, mode_n)).flatten()
-            sub_2 = np.broadcast_to(sub_2[:, np.newaxis], (l_per, mode_n)).flatten()
-            full_array_1[sub_1, sub_2, main_ind] = derivs
-            full_array_1[sub_2, sub_1, main_ind] = derivs
-            full_array_1 = full_array_1.T
+        full_array_1 = np.zeros((mode_n, dim_1, dim_1))
+        # set the lower triangle
+        inds_1, inds_2 = np.tril_indices(dim_1)
+        l_per = len(inds_1)
+        main_ind = np.broadcast_to(np.arange(mode_n)[:, np.newaxis], (mode_n, l_per)).flatten()
+        sub_ind_1 = np.broadcast_to(inds_1, (mode_n, l_per)).flatten()
+        sub_ind_2 = np.broadcast_to(inds_2, (mode_n, l_per)).flatten()
+        inds = ( main_ind, sub_ind_1, sub_ind_2 )
+        full_array_1[inds] = derivs
+        # set the upper triangle
+        inds2 = ( main_ind, sub_ind_2, sub_ind_1 ) # basically just taking a transpose
+        full_array_1[inds2] = derivs
+
         return full_array_1
     def _get_third_deriv_array(self):
         """we make the appropriate 3D tensor from a bunch of 2D tensors
@@ -162,4 +152,70 @@ class FchkForceDerivatives:
     @property
     def fourth_deriv_array(self):
         return self._get_fourth_deriv_array()
+
+class FchkDipoleDerivatives:
+    """Holder class for dipole derivatives coming out of an fchk file"""
+    def __init__(self, derivs):
+        self.derivs = derivs
+        self._n = None
+
+    def _get_n(self):
+        """
+        :return:
+        :rtype: int
+        """
+        # derivatives with respect to 3N Cartesians...
+        if self._n is None:
+            self._n = int(len(self.derivs)/9) # solving 3*3n == l
+        return self._n
+
+    @property
+    def n(self):
+        return self._get_n()
+
+    @property
+    def shape(self):
+        return (3*self.n, 3)
+    @property
+    def array(self):
+        return np.reshape(self.derivs, self.shape)
+
+class FchkDipoleHigherDerivatives:
+    """Holder class for dipole derivatives coming out of an fchk file"""
+    def __init__(self, derivs):
+        self.derivs = derivs
+        self._n = None
+
+    def _get_n(self):
+        """
+        :return:
+        :rtype: int
+        """
+        # numerical derivatives with respect to the 3n-6 normal modes of derivatives with respect to 3N Cartesians...
+        # Gaussian gives us stuff out like d^2mu/dQdx and d^3mu/dQ^2dx
+        if self._n is None:
+            l = len(self.derivs)
+            self._n = int(1 + np.sqrt(1 + l/54)) # solving 3n*(3n-6) == l/6
+        return self._n
+
+    @property
+    def n(self):
+        return self._get_n()
+
+    @property
+    def shape(self):
+        return (3*self.n - 6, 3*self.n, 3)
+
+    @property
+    def second_deriv_array(self):
+        nels = int(np.prod(self.shape))
+        return np.reshape(self.derivs[:nels], self.shape)
+    @property
+    def third_deriv_array(self):
+        nels = int(np.prod(self.shape))
+        base_array = np.reshape(self.derivs[:nels], self.shape)
+        full_array = np.zeros((3*self.n - 6, 3*self.n - 6, 3*self.n, 3))
+        for i in range(3*self.n - 6):
+            full_array[i, i] = base_array[i]
+        return full_array
 

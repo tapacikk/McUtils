@@ -4,6 +4,10 @@ The existing `ExtensionLoader` will be moving here, and will be supplemented by 
 """
 
 from .SharedLibraryManager import *
+from .ArgumentSignature import *
 
 __all__ = []
-__all__ += SharedLibraryManager.__all__
+from .ArgumentSignature import __all__ as exposed
+__all__ += exposed
+from .SharedLibraryManager import __all__ as exposed
+__all__ += exposed

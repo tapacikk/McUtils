@@ -177,7 +177,7 @@ class Plot(Graphics):
     Some sophisticated legwork unfortunately has to be done vis-a-vis tracking constructed lines and other plotting artefacts,
     since `matplotlib` is designed to infuriate.
     """
-
+    default_plot_style = {}
     def __init__(self,
                  *params,
                  method='plot',
@@ -210,6 +210,9 @@ class Plot(Graphics):
         # i.e. a Plot can be initialized but then do all its plotting later
         if plot_style is None:
             plot_style = {}
+        for k in self.default_plot_style:
+            if k not in plot_style:
+                plot_style[k] = self.default_plot_style[k]
         self._plot_style = plot_style
         self.plot_opts = opts
         self._initialized = False
@@ -323,6 +326,8 @@ class ListErrorBarPlot(ErrorBarPlot):
 
 class StickPlot(Plot):
     """A Plot object that plots sticks"""
+
+    default_plot_style = {'basefmt': " ", 'use_line_collection':True, 'markerfmt': " "}
     def __init__(self, *args, **kwargs):
         super().__init__(*args, method="stem", **kwargs)
 

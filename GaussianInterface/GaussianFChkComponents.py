@@ -68,6 +68,28 @@ FormattedCheckpointComponents["Cartesian 3rd/4th derivatives"] = FchkForceDeriva
 
 ########################################################################################################################
 #
+#                                           Dipole Derivatives
+#
+
+#region Dipole Derivatives
+
+FormattedCheckpointComponents["Dipole Derivatives"] = FchkDipoleDerivatives
+
+#endregion
+
+########################################################################################################################
+#
+#                                           Dipole Derivatives num derivs
+#
+
+#region Dipole Derivatives num derivs
+
+FormattedCheckpointComponents["Dipole Derivatives num derivs"] = FchkDipoleHigherDerivatives
+
+#endregion
+
+########################################################################################################################
+#
 #                                           Vib-Modes
 #
 
@@ -108,7 +130,12 @@ def split_vib_e2(e2):
     """
 
     l = len(e2)
-    n = int(1 + np.sqrt(1 + l/9))
+    n = 1 + np.sqrt(1 + l/9) # I thought this was the way it was defined but...seems like not exactly
+    if n != int(n):
+        n = l/14
+        if n != int(n):
+            raise ValueError("Gaussian FChk Vib-E2 block malformatted")
+    n = int(n)
 
     freq = e2[:n]
     red_m = e2[n:2*n]
@@ -140,6 +167,9 @@ FormattedCheckpointCommonNames = {
     "Cartesian Gradient": "Gradient",
     "Cartesian Force Constants" : "ForceConstants",
     "Cartesian 3rd/4th derivatives" : "ForceDerivatives",
+    "Dipole Moment" : "DipoleMoment",
+    "Dipole Derivatives" : "DipoleDerivatives",
+    "Dipole Derivatives num derivs" : "DipoleHigherDerivatives",
     "Vib-E2" : "VibrationalData",
     "Vib-Modes" : "VibrationalModes",
     "Vib-AtMass" : "VibrationalAtomicMasses",

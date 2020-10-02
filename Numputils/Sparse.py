@@ -26,6 +26,8 @@ class SparseArray:
         if initialize:
             self._init_matrix()
             self._validate()
+        self._block_inds = None # cached to speed things up?
+        self._block_vals = None # cached to speed things up?
     def _init_matrix(self):
         a = self._a
         if isinstance(a, sp.spmatrix):
@@ -45,8 +47,10 @@ class SparseArray:
                 self._init_matrix()
             else:
                 self._shape = non_sparse + sparse
-                data = self._get_data(non_sparse, sparse)
+                data, inds, total_shape = self._get_data(non_sparse, sparse)
                 self._a = data
+                flat = np.ravel_multi_index(inds, data.shape)
+                self._block_inds = flat, inds
     def _validate(self):
         shp1 = self._a.shape
         shp2 = self._shape
@@ -94,7 +98,9 @@ class SparseArray:
         row_inds = np.concatenate([b[0] for b in blocks])
         col_inds = np.concatenate([b[1] for b in blocks])
         total_shape = (sparse[0], bits[-1]*sparse[1])
-        return self._build_data(block_data, (row_inds, col_inds), total_shape)
+        inds = (row_inds, col_inds)
+        data = self._build_data(block_data, inds, total_shape)
+        return data, (block_data, inds, total_shape)
     def _build_data(self, block_data, inds, total_shape):
         try:
             data = self.fmt((block_data, inds), shape=total_shape)
@@ -135,16 +141,63 @@ class SparseArray:
     def ndim(self):
         return len(self.shape)
 
+    # this saves time when we have to do a bunch of reshaping into similarly sized arrays,
+    # but won't help as much when the shape changes
+    _unravel_cache = {}  # hopefully faster than bunches of unravel_index calls...
+    @classmethod
+    def _unravel_indices(cls, n, dims):
+        # we're hoping that we call with `n` often enough that we get a performance benefit
+        if dims not in cls._unravel_cache:
+            cls._unravel_cache[dims] = {}
+        cache = cls._unravel_cache[dims]
+        if isinstance(n, np.ndarray):
+            n_hash = hash(n.data.tobytes())
+        else:
+            n_hash = hash(n)
+        if n_hash in cache:
+            res = cache[n_hash]
+        else:
+            res = np.unravel_index(n, dims)
+            cache[n_hash] = res
+        return res
+    @property
+    def block_vals(self):
+        if True:#self._block_vals is None:
+            d = self.data
+            row_inds, col_inds, data = sp.find(d)
+            flat = np.ravel_multi_index((row_inds, col_inds), d.shape)
+            unflat = self._unravel_indices(flat, self.shape)
+            self._block_inds = (flat, unflat)
+            self._block_vals = data
+        return self._block_vals
+    @property
+    def block_inds(self):
+        if True:#self._block_inds is None:
+            vals = self.block_vals
+        return self._block_inds
+    @block_inds.setter
+    def block_inds(self, bi):
+        if isinstance(bi, tuple) and len(bi) == 2:
+            flat, unflat = bi
+            if isinstance(unflat[0], int):
+                row_inds, col_inds = bi
+                flat = np.ravel_multi_index((row_inds, col_inds), self.data.shape)
+                unflat = self._unravel_indices(flat, self.shape)
+        elif isinstance(bi[0], int):
+            flat = bi
+            unflat = self._unravel_indices(flat, self.shape)
+        else:
+            unflat = bi
+            flat = np.ravel_multi_index(bi, self.shape)
+        self._block_inds = (flat, unflat)
     @property
     def block_data(self):
-        d = self.data
-        row_inds, col_inds, data = sp.find(d)
-        flat = np.ravel_multi_index((row_inds, col_inds), d.shape)
-        unflat = np.unravel_index(flat, self.shape)
-        return data, unflat
+        return self.block_vals, self.block_inds[1]
+
     def transpose(self, transp):
         """
-        Transposes the array and returns a new one. Not necessarily a cheap operation.
+        Transposes the array and returns a new one.
+        Not necessarily a cheap operation.
 
         :param transp: the transposition to do
         :type transp: Iterable[int]
@@ -158,18 +211,50 @@ class SparseArray:
         if len(new_shape) > 2:
             total_shape = (np.prod(new_shape[:-2])*new_shape[-2], new_shape[-1])
             flat = np.ravel_multi_index(new_inds, new_shape)
-            unflat = np.unravel_index(flat, total_shape)
+            unflat = self._unravel_indices(flat, total_shape)
         else:
+            flat = None
             unflat = new_inds
             total_shape = new_shape
         data = self._build_data(data, unflat, total_shape)
-        return type(self)(data, shape = new_shape, layout = self.fmt)
+        new = type(self)(data, shape = new_shape, layout = self.fmt)
+        if self._block_vals is not None:
+            # there's got to be a way to map the old indices onto the new ones & hence sort stuff...
+            # and the trick is that _unflat_ ends up being sorted and so we need to first sort
+            #
+            arr = np.lexsort(unflat)
+            new_v = self._block_vals[arr]
+            # find_old = sp.find(self.data)
+            # old_flat = np.ravel_multi_index(find_old[:2], self.data.shape)
+            # find_new = sp.find(data)
+            # new_flat = np.ravel_multi_index(find_new[:2], new.data.shape)
+            # find_v = find_new[2]
+            # raise Exception(
+            #     np.max(np.abs(find_v - new_v))
+            #     # find_new[1][100:110],
+            #     # unflat[1][100:110],
+            #     # np.max(np.abs(np.sort(unflat[1]) - np.sort(find_new[1]))),
+            #     # np.max(np.abs(np.sort(unflat[0]) - np.sort(find_new[0]))),
+            #     # np.max(np.abs(new_flat - flat)),
+            #     # old_flat[100:110], flat[100:110],
+            #     # find_v[100:110], self._block_vals[100:110]
+            # )
+            new._block_vals = new_v
+        if flat is None:
+            new.block_inds = unflat
+        else:
+            new.block_inds = (flat, unflat)
+        return new
 
     def reshape(self, shp):
         # this is an in-place operation which feels kinda dangerous?
         if np.prod(shp) != np.prod(self.shape):
             raise ValueError("Can't reshape {} into {}".format(self.shape, shp))
         self._shape = tuple(shp)
+        bi = self._block_inds
+        if bi is not None:
+            flat, unflat = bi
+            self._block_inds = flat
         return self
     def squeeze(self):
         self.reshape([x for x in self.shape if x != 1])
@@ -253,7 +338,7 @@ class SparseArray:
                 pull_elements = all(len(x) == e1 for x in idx)
         if pull_elements:
             flat = np.ravel_multi_index(idx, self.shape)
-            unflat = np.unravel_index(flat, self.data.shape)
+            unflat = self._unravel_indices(flat, self.data.shape)
             res = self.data[unflat]
             if not isinstance(flat, int):
                 res = np.array(res)
@@ -288,18 +373,20 @@ class SparseArray:
             if len(new_shape) > 2:
                 total_shape = (np.prod(new_shape[:-2]) * new_shape[-2], new_shape[-1])
                 flat = np.ravel_multi_index(inds, new_shape)
-                unflat = np.unravel_index(flat, total_shape)
+                unflat = self._unravel_indices(flat, total_shape)
             elif len(new_shape) == 1:
+                flat = None
                 unflat = inds+[np.zeros((len(inds[0]),))]
                 total_shape = new_shape+[1]
             else:
+                flat = None
                 unflat = inds
                 total_shape = new_shape
 
             try:
                 data = self._build_data(data, unflat, total_shape)
             except Exception as e:
-                print(data.shape, unflat)
+                # print(data.shape, unflat)
                 data = e
             if isinstance(data, Exception):
                 raise IndexError("{}: couldn't take element {} of array {} (Got Error: '{}')".format(
@@ -308,7 +395,12 @@ class SparseArray:
                     self,
                     data
                 ))
-            return type(self)(data, shape=new_shape, layout=self.fmt)
+            new = type(self)(data, shape=new_shape, layout=self.fmt)
+            # if flat is None:
+            #     new.block_inds = unflat
+            # else:
+            #     new.block_inds = flat, unflat
+            return new
     def __getitem__(self, item):
         return self._get_element(item)
 
