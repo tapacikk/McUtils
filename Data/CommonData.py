@@ -3,7 +3,7 @@ Defines a common data handler
 """
 import os, sys
 
-__all__ = [ "DataHandler", "DataError" ]
+__all__ = [ "DataHandler", "DataError", "DataRecord" ]
 
 default_data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 default_data_package = "TheRealMcCoy"
@@ -26,7 +26,8 @@ class DataHandler:
                  data_dir = None,
                  data_pkg = None,
                  alternate_keys = None,
-                 getter = None
+                 getter = None,
+                 record_type = None
                  ):
         if data_dir is None:
             data_dir = default_data_dir
@@ -44,6 +45,7 @@ class DataHandler:
         self._src_key = source_key
         self._pkg = data_pkg
         self._alts = alternate_keys
+        self.record_type = DataRecord if record_type is None else record_type
         self._loaded = False
         self.getter = getter
     @property
@@ -60,7 +62,7 @@ class DataHandler:
             self._data.update(extras)
     def load(self):
         # currently we only load python data
-        # TODO: I should rewrite this to use a Loader object...
+        # TODO: I should rewrite this to use a Deserializer object...
         env = {}
         import sys
         sys.path.insert(0, self._dir) #name needs to be unique enough...
@@ -86,7 +88,7 @@ class DataHandler:
         if self._src is None and not self._loaded:
             self.load()
         return self._src
-    def __getitem__(self, key):
+    def _get_data(self, key):
         def _get(a, k):
             if k not in a:
                 raise DataError("{}: data source {} doesn't have key {}".format(
@@ -95,6 +97,7 @@ class DataHandler:
                     key
                 ))
             return a[k]
+
         data = self.data
         if self.getter is None:
             if isinstance(key, tuple):
@@ -110,7 +113,67 @@ class DataHandler:
                 return data[key]
         else:
             return self.getter(data, key)
+    def __getitem__(self, key):
+        data = self._get_data(key)
+        return self.record_type(self, key, data)
     def __len__(self):
         return len(self.data)
     def __iter__(self):
         return iter(self.data.items())
+
+    # implementing to make pickling of data objects possible...
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['_data'] = None
+        state['_src'] = None
+        state['_loaded'] = False
+
+        # raise Exception(state)
+        return state
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._loaded = False
+
+    def __repr__(self):
+        return "{}('{}', file='{}')".format(
+            type(self).__name__,
+            self._name,
+            self._src
+        )
+
+class DataRecord:
+    """
+    Represents an individual record that might be accessed from a `DataHandler`.
+    Implements _most_ of the `dict` interface, but to make things a bit easier when
+    pickling is not implemented as a proper subclass of `dict`.
+    """
+    def __init__(self, data_handler, key, records):
+        self.data = records
+        self.handler = data_handler
+        self.key = key
+
+    def keys(self):
+        return self.data.keys()
+    def values(self):
+        return self.data.keys()
+    def items(self):
+        return self.data.keys()
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def __repr__(self):
+        return '{}({})'.format(
+            type(self).__name__,
+            super().__repr__()
+        )
+
+    # implementing to make pickling of data objects possible...
+    def __getstate__(self):
+        # it turns out we really need the dict.copy()...?
+        state = self.__dict__.copy()
+        del state['data']
+        return state
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.data = self.handler._get_data(self.key)

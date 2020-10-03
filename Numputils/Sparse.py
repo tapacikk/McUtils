@@ -1,4 +1,4 @@
-import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp
+import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os
 
 __all__ = [
     "SparseArray",
@@ -26,11 +26,21 @@ class SparseArray:
         if initialize:
             self._init_matrix()
             self._validate()
-        self._block_inds = None # cached to speed things up?
-        self._block_vals = None # cached to speed things up?
+        self._block_inds = None # cached to speed things up
+        self._block_vals = None # cached to speed things up
     def _init_matrix(self):
         a = self._a
-        if isinstance(a, sp.spmatrix):
+        if isinstance(a, SparseArray):
+            if self.fmt is not a.fmt:
+                self._a = self.fmt(a._a, shape=a.shape)
+            else:
+                self._a = a._a
+            shp = self._shape
+            if shp is not None:
+                self.reshape(a.shape)
+            else:
+                self._shape = a.shape
+        elif isinstance(a, sp.spmatrix):
             if self._shape is None:
                 self._shape = a.shape
         elif isinstance(a, np.ndarray):
@@ -47,7 +57,8 @@ class SparseArray:
                 self._init_matrix()
             else:
                 self._shape = non_sparse + sparse
-                data, inds, total_shape = self._get_data(non_sparse, sparse)
+                data, other = self._get_data(non_sparse, sparse)
+                block_data, inds, total_shape = other
                 self._a = data
                 flat = np.ravel_multi_index(inds, data.shape)
                 self._block_inds = flat, inds
@@ -61,6 +72,10 @@ class SparseArray:
             ))
         self._validated = True
     def _get_shape(self):
+        """
+        Walks through the array data we're holding onto and determines
+        where the sparse blocks start
+        """
         non_sp = []
         elm = self._a
         while not isinstance(elm, sp.spmatrix):
@@ -140,6 +155,11 @@ class SparseArray:
     @property
     def ndim(self):
         return len(self.shape)
+    @property
+    def non_zero_count(self):
+        return self.data.nnz
+    # def __len__(self):
+    #     return self.shape[0]
 
     # this saves time when we have to do a bunch of reshaping into similarly sized arrays,
     # but won't help as much when the shape changes
@@ -410,7 +430,7 @@ class SparseArray:
             elif len(new_shape) == 1:
                 flat = None
                 unflat = inds+[np.zeros((len(inds[0]),))]
-                total_shape = new_shape+[1]
+                total_shape = new_shape+(1,)
             else:
                 flat = None
                 unflat = inds
@@ -436,11 +456,69 @@ class SparseArray:
             else:
                 new.block_inds = flat, inds
             return new
+    def savez(self, file, compressed=True):
+        """
+        Saves a SparseArray to a file (must have the npz extension)
+        :param file:
+        :type file:
+        :param compressed:
+        :type compressed:
+        :return: the saved file
+        :rtype: str
+        """
+
+        # sp.save_npz already sticks the extension on so it doesn't hurt to explicitly add it...
+        if isinstance(file, str) and os.path.splitext(file)[1] != ".npz":
+            file += ".npz"
+        sp.save_npz(file, self.data, compressed=compressed)
+        bleh = np.load(file)
+        flat, unflat = self.block_inds
+        bv = self.block_vals
+        if compressed:
+            np.savez_compressed(
+                file,
+                _block_shape=np.array(self.shape),
+                _block_inds_flat=np.array(flat),
+                _block_inds_unflat=np.array(unflat),
+                _block_vals=bv,
+                compressed=compressed,
+                **bleh
+            )
+        else:
+            np.savez(
+                file,
+                _block_shape=np.array(self.shape),
+                _block_inds_flat=np.array(flat),
+                _block_inds_unflat=np.array(unflat),
+                _block_vals=bv,
+                compressed=compressed,
+                **bleh
+                )
+        return file
+    @classmethod
+    def loadz(cls, file):
+        """
+        Loads a SparseArray from an npz file
+        :param file:
+        :type file:
+        :return:
+        :rtype: SparseArray
+        """
+        data = sp.load_npz(file) #type: sp.spmatrix
+        other = np.load(file)
+        new = cls(data, shape=other['_block_shape'], layout=type(data), initialize=False)
+        new._block_inds = (other['_block_inds_flat'], other['_block_inds_unflat'])
+        new._block_inds = other['_block_vals']
+        return new
+
     def __getitem__(self, item):
         return self._get_element(item)
 
     def __repr__(self):
-        return "{}(<{}>)".format(type(self).__name__, ", ".join([str(x) for x in self.shape]))
+        return "{}(<{}> nonzero={})".format(type(self).__name__,
+                                           ", ".join([str(x) for x in self.shape]),
+                                          self.non_zero_count
+                                           )
 
 def _dot(a, b):
     if isinstance(a, SparseArray):
