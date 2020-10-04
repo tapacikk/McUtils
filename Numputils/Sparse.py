@@ -389,7 +389,7 @@ class SparseArray:
         else:
             # need to compute the shape of the resultant block
             blocks = [
-                np.array([i]) if isinstance(i, (int, np.integer)) else np.arange(s)[i].flatten()
+                np.array([i]) if isinstance(i, (int, np.integer)) else np.arange(s)[i,].flatten()
                 for i, s in zip(idx, self.shape)
             ]
             new_shape = [len(x) for x in blocks if len(x) > 1] + list(self.shape[len(blocks):])
