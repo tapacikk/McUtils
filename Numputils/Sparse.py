@@ -319,14 +319,30 @@ class SparseArray:
 
     def __add__(self, other):
         return self.plus(other)
+    def __radd__(self, other):
+        return self.plus(other)
     def plus(self, other):
-        if isinstance(other, (int, float, np.integer, np.floating)) and other == 0.:
-            return self
         d = self.data
+        if isinstance(other, (int, float, np.integer, np.floating)):
+            if other == 0.:
+                return self.copy()
+            else:
+                d = other + d
+                new = type(self)(d, shape=self.shape, layout=self.fmt)
+                if self._block_vals is not None:
+                    bvs = self._block_vals
+                    bi = self._block_inds
+                    new._block_vals = other + bvs
+                    new._block_inds = bi
+                return new
+
         if isinstance(other, SparseArray):
-            # should do error checking to make sure the shapes work out...
-            other = other.data.reshape(d.shape)
-        new = d+other
+            other = other.data
+        if isinstance(other, sp.spmatrix):
+            other = other.reshape(d.shape)
+        elif isinstance(other, np.ndarray):
+            other = np.broadcast_to(other, self.shape).reshape(d.shape)
+        new = d.__add__(other)
         if isinstance(new, sp.spmatrix):
             return type(self)(new, shape=self.shape, layout=self.fmt)
         else:
@@ -334,6 +350,7 @@ class SparseArray:
 
     def floopy_flop(self):
         return type(self)(1/self.data, shape = self.shape, layout=self.fmt)
+
     def __truediv__(self, other):
         return self.multiply(1/other)
     def __rtruediv__(self, other):
@@ -346,9 +363,21 @@ class SparseArray:
         return self.multiply(other)
     def multiply(self, other):
         d = self.data
-        if isinstance(other, (int, float, np.integer, np.floating)) and other == 0.:
-            new = self.fmt(d.shape)
-            return type(self)(new, shape=self.shape, layout=self.fmt)
+        if isinstance(other, (int, float, np.integer, np.floating)):
+            if other == 0.:
+                new = self.fmt(d.shape)
+                return type(self)(new, shape=self.shape, layout=self.fmt)
+            elif other == 1.:
+                return self.copy()
+            else:
+                d = other * self.data
+                new = type(self)(d, shape=self.shape, layout=self.fmt)
+                if self._block_vals is not None:
+                    bvs = self._block_vals
+                    bi = self._block_inds
+                    new._block_vals = other * bvs
+                    new._block_inds = bi
+                return new
 
         if isinstance(other, SparseArray):
             other = other.data
@@ -362,15 +391,22 @@ class SparseArray:
         else:
             return np.array(new).reshape(self.shape)
 
+    def copy(self):
+        import copy
+        return copy.copy(self)
+
     def _get_element(self, idx):
         """
         Convert idx into a 1D index or slice or whatever and then convert it back to the appropriate 2D shape
+
         :param i:
         :type i:
         :return:
         :rtype:
         """
 
+        # we check first to see if we were asked for just a single vector of elements
+        # the detection heuristic is basically: is everything just a slice of ints or nah
         if isinstance(idx, (int, np.integer)):
             idx = (idx,)
         pull_elements = len(idx) == len(self.shape) and all(isinstance(x, (int, np.integer)) for x in idx)
@@ -379,6 +415,7 @@ class SparseArray:
             if pull_elements:
                 e1 = len(idx[0])
                 pull_elements = all(len(x) == e1 for x in idx)
+
         if pull_elements:
             flat = self._ravel_indices(idx, self.shape)
             unflat = self._unravel_indices(flat, self.data.shape)
@@ -389,38 +426,55 @@ class SparseArray:
         else:
             # need to compute the shape of the resultant block
             blocks = [
-                np.array([i]) if isinstance(i, (int, np.integer)) else np.arange(s)[i,].flatten()
+                (
+                    np.array([i]) if isinstance(i, (int, np.integer)) else (
+                        np.arange(s)[i,].flatten()
+                    )
+                )
                 for i, s in zip(idx, self.shape)
             ]
-            new_shape = [len(x) for x in blocks if len(x) > 1] + list(self.shape[len(blocks):])
+            # we filter out places where new_shape[i] == 1 at a later stage
+            # for now we just build out the total shape it _would_ have with axes of len 1
+            new_shape = [len(x) for x in blocks] + list(self.shape[len(blocks):])
 
             # now we iterate over each block and use it as a successive filter on our non-zero positions
             data, inds = self.block_data
             inds = list(inds)
-            # raise Exception(len(inds), self.shape)
+
             def g(b, j):
                 """
                 finds the positions where the block & index align
                 """
                 w = np.argwhere(b == j)
                 if len(w) > 0:
-                    w = w.flatten()[0]
+                    w = w[0][0]
                 else:
                     w = -1
                 return w
             for i, b, s in zip(range(len(blocks)), blocks, self.shape):
                 k = 0
-                mapping = np.array([g(b, j) for j in range(s)])
                 ixs = inds[i]
                 # we add up the indices to give a list of 0 & 1 to use as a mask
+                # we use sum because sum is boolean OR
+                # this will give us the elements of ixs where
                 filter = np.sum(ixs == j for j in b).astype(bool)
+                # we then apply this to the non-zero indices and values we're tracking
                 inds = [ix[filter] for ix in inds]
-                inds[i] = mapping[inds[i]]
                 data = data[filter]
+                # finally, we remap the current set of indices so that indices that are
+                # disappearing get removed and the ones that are staying get shifted down
+                # to match that change
+                mapping = np.array([g(b, j) for j in range(s)])
+                inds[i] = mapping[inds[i]]
 
             # now that we've filtered our data, we filter out axes of size 1
-            inds = [ix for ix,j in zip(inds, new_shape) if j > 1 ]
+            # print(inds, new_shape)
+            inds = [ix for ix, j in zip(inds, new_shape) if j > 1]
             new_shape = tuple(j for j in new_shape if j > 1)
+            # we also apply this to the indices that we're filtering on
+
+            # if idx[0] == 0 and isinstance(idx[2], slice):
+            #     raise Exception(blocks)
 
             # finally, we track our indices so that we don't need to recompute anything later
             if len(new_shape) > 2:
@@ -437,12 +491,13 @@ class SparseArray:
                 total_shape = new_shape
 
             # raise Exception(blocks, new_shape, len(inds), len(unflat))
-
+            od = data
             try:
                 data = self._build_data(data, unflat, total_shape)
             except Exception as e:
                 # print(data.shape, unflat)
                 data = e
+            # raise Exception(unflat, od, data, inds, total_shape)
             if isinstance(data, Exception):
                 raise IndexError("{}: couldn't take element {} of array {} (Got Error: '{}')".format(
                     type(self).__name__,
@@ -450,6 +505,7 @@ class SparseArray:
                     self,
                     data
                 ))
+
             new = type(self)(data, shape=new_shape, layout=self.fmt)
             if flat is None:
                 new.block_inds = inds
