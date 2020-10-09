@@ -367,6 +367,7 @@ class CoordinateSystem:
         :rtype: np.ndarray
         """
 
+        # print(system)
         from McUtils.Zachary import FiniteDifferenceDerivative
 
         if converter_options is None:

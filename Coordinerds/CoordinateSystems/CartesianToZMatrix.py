@@ -172,6 +172,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 if return_derivs:
                     angle_derivs = angle_deriv(coords, jx, ix, kx)
                     drang = 1+np.arange(len(ix))
+                    # print(">>>>", np.max(np.abs(angle_derivs)))
                     derivs[jx, :, drang, 1] = angle_derivs[0]
                     derivs[ix, :, drang, 1] = angle_derivs[1]
                     derivs[kx, :, drang, 1] = angle_derivs[2]
@@ -190,6 +191,8 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                     diheds = np.rad2deg(diheds)
                 if return_derivs:
                     dihed_derivs = -dihed_deriv(coords, ix, jx, kx, lx)
+
+                    # print(">>>>", np.max(np.abs(dihed_derivs)))
                     drang = 2+np.arange(len(ix))
                     derivs[ix, :, drang, 2] = dihed_derivs[0]
                     derivs[jx, :, drang, 2] = dihed_derivs[1]

@@ -119,7 +119,7 @@ def angle_deriv(coords, i, j, k):
     db = dsb-dcb
     return np.array([-(da+db), da, db])
 
-def dihed_deriv(coords, i, j, k, l):
+def dihed_deriv(coords, i, j, k, l, zero_thresh=1.0e-14):
     """
     Gives the derivative of the dihedral between i, j, k, and l with respect to the Cartesians
     Currently gives what are sometimes called the `psi` angles.
@@ -138,7 +138,6 @@ def dihed_deriv(coords, i, j, k, l):
     :return: derivatives of the dihedral with respect to atoms i, j, k, and l
     :rtype: np.ndarray
     """
-    # needs to be vectorized, still
 
     a = coords[j] - coords[i]
     b = coords[k] - coords[j]
@@ -149,16 +148,39 @@ def dihed_deriv(coords, i, j, k, l):
 
     tdo = vec_tdot
 
-    # build all the necessary components for the derivatives
-    axb = vec_crosses(a, b); bxc = vec_crosses(b, c)
+    # get the norms of the vectors so that we can handle zeros
     na = vec_norms(a); nb = vec_norms(b); nc = vec_norms(c)
+    a_zeros = np.abs(na) < zero_thresh
+    a = a * (1 - a_zeros.astype(int))[:, np.newaxis]
+    b_zeros = np.abs(nb) < zero_thresh
+    b = b * (1 - b_zeros.astype(int))[:, np.newaxis]
+    c_zeros = np.abs(nc) < zero_thresh
+    c = c * (1 - c_zeros.astype(int))[:, np.newaxis]
+
+    # build all the necessary orientation vectors for the derivatives
+    axb = vec_crosses(a, b); bxc = vec_crosses(b, c)
     naxb = vec_norms(axb); nbxc = vec_norms(bxc)
+    # also make sure cross-vectors aren't zero
+    axb_zeros = np.abs(naxb) < zero_thresh
+    axb = axb * (1 - axb_zeros.astype(int))[:, np.newaxis]
+    bxc_zeros = np.abs(nbxc) < zero_thresh
+    bxc = bxc * (1 - bxc_zeros.astype(int))[:, np.newaxis]
+
+    # if axb_zeros.any():
+    #     print(np.min(na))
+    #     print(np.min(nb))
+    #     raise ValueError("can't take dihedral derivative when a, b, and c vectors are coplanar")
+    #
+    # print("> ???? naxb", np.min(np.abs(naxb)), np.min(np.abs(naxb)) < zero_thresh)
+
     naxb = naxb[..., np.newaxis]
     nbxc = nbxc[..., np.newaxis]
     nb = nb[..., np.newaxis]
     n1 = axb / naxb
     n2 = bxc / nbxc
     bu = b / nb
+
+    # compute displacement vectors
     i3n1 = i3 - vec_outer(n1, n1); i3n2 = i3 - vec_outer(n2, n2)
     dn1a = -np.matmul(vec_tdot(e3, b), i3n1) / naxb[..., np.newaxis]
     dn1b = np.matmul(vec_tdot(e3, a), i3n1) / naxb[..., np.newaxis]
@@ -181,6 +203,12 @@ def dihed_deriv(coords, i, j, k, l):
             - (tdo(dn1b, n2) + tdo(dn2b, n1)) * nxbdn2
     )
     dtc = tdo(dn2c, n1xb) * n1dn2 - tdo(dn2c, n1) * nxbdn2
+
+    # print("> na", np.min(np.abs(na)))
+    # print("> nb", np.min(np.abs(nb)))
+    # print("> nc", np.min(np.abs(nc)))
+    # print("> naxb", np.min(np.abs(naxb)))
+    # print("> nbxc", np.min(np.abs(nbxc)))
 
     return np.array([-dta, dta-dtb, dtb-dtc, dtc])
 
