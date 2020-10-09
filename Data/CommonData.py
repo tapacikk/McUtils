@@ -163,9 +163,10 @@ class DataRecord:
         return self.data[item]
 
     def __repr__(self):
-        return '{}({})'.format(
+        return "{}('{}', {})".format(
             type(self).__name__,
-            super().__repr__()
+            self.key,
+            self.handler
         )
 
     # implementing to make pickling of data objects possible...

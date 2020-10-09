@@ -50,6 +50,34 @@ class SparseArray:
             elif len(a.shape) == 1:
                 a = a.reshape(a.shape + (1,))
             self._a = self.fmt(a, shape=a.shape)
+        # we're gonna support the (vals, (i_1, i_2, i_3, ...)) syntax for constructing
+        # an array based on its non-zero positions
+        elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1]):
+            block_vals, block_inds = a
+            block_inds = tuple(np.array(i, dtype=int) for i in block_inds)
+            if self._shape is None:
+                self._shape = tuple(np.max(x) for x in block_inds)
+            if len(block_inds) != len(self._shape):
+                raise ValueError("{}: can't initialize array of shape {} from non-zero indices of dimension {}".format(
+                    type(self).__name__,
+                    self._shape,
+                    len(block_inds)
+                ))
+            # gotta make sure our inds are sorted so we don't run into sorting issues later...
+            flat = self._ravel_indices(a, self._shape)
+            sort = np.argsort(flat)
+            flat = flat[sort]
+            block_vals = block_vals[sort]
+            block_inds = tuple(i[sort] for i in block_inds)
+            total_shape = (1, len(block_vals))
+            init_inds = (np.zeros(len(block_vals)), flat)
+            try:
+                data = self.fmt((block_vals, init_inds))
+            except TypeError:
+                data = self.fmt(sp.csc_matrix((block_vals, init_inds)))
+            self._a = data
+            self._block_vals = block_vals
+            self._block_inds = block_inds
         else:
             non_sparse, sparse = self._get_shape()
             if non_sparse is None:

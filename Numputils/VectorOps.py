@@ -241,7 +241,7 @@ def vec_outer(a, b, axes=None):
 #
 #   vec_tensordot
 #
-def vec_tensordot(tensa, tensb, axes=2):
+def vec_tensordot(tensa, tensb, axes=2, shared=None):
     """Defines a version of tensordot that uses matmul to operate over stacks of things
     Basically had to duplicate the code for regular tensordot but then change the final call
 
@@ -251,6 +251,8 @@ def vec_tensordot(tensa, tensb, axes=2):
     :type tensb:
     :param axes:
     :type axes:
+    :param shared: the axes that should be treated as shared (for now just an int)
+    :type shared: int | None
     :return:
     :rtype:
     """
@@ -277,11 +279,14 @@ def vec_tensordot(tensa, tensb, axes=2):
     axes_b = [ax if ax >= 0 else b.ndim + ax for ax in axes_b]
     a_shape = tensa.shape
     b_shape = tensb.shape
-    shared = 0
-    for shared, s in enumerate(zip(a_shape, b_shape)):
-        if s[0] != s[1]:
-            break
-        shared = shared + 1
+
+    if shared is None:
+        shared = 0
+        for shared, s in enumerate(zip(a_shape, b_shape)):
+            if s[0] != s[1]:
+                break
+            shared = shared + 1
+    # else:
 
     # the minimum number of possible shared axes
     # is constrained by the contraction of axes
@@ -342,6 +347,7 @@ def vec_tensordot(tensa, tensb, axes=2):
     bt = b.transpose(newaxes_b).reshape(newshape_b)
     res = np.matmul(at, bt)
     final_shape = list(a_shape[:shared]) + olda + oldb
+    # raise Exception(res.shape, final_shape)
     return res.reshape(final_shape)
 def vec_tdot(tensa, tensb, axes=[[-1], [1]]):
     """
