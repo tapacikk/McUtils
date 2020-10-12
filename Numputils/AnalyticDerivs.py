@@ -82,7 +82,7 @@ def dist_deriv(coords, i, j):
 
     return np.array([-v, v])
 
-def angle_deriv(coords, i, j, k):
+def angle_deriv(coords, i, j, k, zero_thresh=1.0e-14):
     """
     Gives the derivative of the angle between i, j, and k with respect to the Cartesians
 
@@ -105,7 +105,18 @@ def angle_deriv(coords, i, j, k):
     e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
     axb = vec_crosses(a, b)
     adb = vec_dots(a, b)
+
+    #if any of these vectors are properly zero we make sure that they get handled as such
     naxb = vec_norms(axb); na = vec_norms(a); nb = vec_norms(b)
+    a_zeros = np.abs(na) < zero_thresh
+    a = a * (1 - a_zeros.astype(int))[:, np.newaxis]
+    b_zeros = np.abs(nb) < zero_thresh
+    b = b * (1 - b_zeros.astype(int))[:, np.newaxis]
+    axb_zeros = np.abs(naxb) < zero_thresh
+    axb = axb * (1 - axb_zeros.astype(int))[:, np.newaxis]
+    adb_zeros = np.abs(adb) < zero_thresh
+    adb = adb * (1 - adb_zeros.astype(int))
+
     axbu = axb/naxb[..., np.newaxis]
     c = (adb/(na*nb))[..., np.newaxis]; s = (naxb/(na*nb))[..., np.newaxis]
     na = na[..., np.newaxis]; nb = nb[..., np.newaxis]
