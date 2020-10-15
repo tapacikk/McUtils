@@ -12,6 +12,9 @@ __all__ = [
     'dihed_deriv'
 ]
 
+# threshold for what should be called "0" as a vector norm...
+NORM_ZERO_THRESH = 1.0e-10
+
 # felt too lazy to look up some elegant formula
 levi_cevita3 = np.array([
     [
@@ -82,7 +85,7 @@ def dist_deriv(coords, i, j):
 
     return np.array([-v, v])
 
-def angle_deriv(coords, i, j, k, zero_thresh=1.0e-14):
+def angle_deriv(coords, i, j, k, zero_thresh=None):
     """
     Gives the derivative of the angle between i, j, and k with respect to the Cartesians
 
@@ -98,6 +101,8 @@ def angle_deriv(coords, i, j, k, zero_thresh=1.0e-14):
     :rtype: np.ndarray
     """
 
+    zero_thresh = NORM_ZERO_THRESH if zero_thresh is None else zero_thresh
+
     dot = vec_dots
     tdo = vec_tdot
     a = coords[j] - coords[i]
@@ -109,10 +114,13 @@ def angle_deriv(coords, i, j, k, zero_thresh=1.0e-14):
     #if any of these vectors are properly zero we make sure that they get handled as such
     naxb = vec_norms(axb); na = vec_norms(a); nb = vec_norms(b)
     a_zeros = np.abs(na) < zero_thresh
+    # na = na * (1 - a_zeros.astype(int))
     a = a * (1 - a_zeros.astype(int))[:, np.newaxis]
     b_zeros = np.abs(nb) < zero_thresh
+    # nb = nb * (1 - b_zeros.astype(int))
     b = b * (1 - b_zeros.astype(int))[:, np.newaxis]
     axb_zeros = np.abs(naxb) < zero_thresh
+    # naxb = naxb * (1 - axb_zeros.astype(int))
     axb = axb * (1 - axb_zeros.astype(int))[:, np.newaxis]
     adb_zeros = np.abs(adb) < zero_thresh
     adb = adb * (1 - adb_zeros.astype(int))
@@ -130,7 +138,7 @@ def angle_deriv(coords, i, j, k, zero_thresh=1.0e-14):
     db = dsb-dcb
     return np.array([-(da+db), da, db])
 
-def dihed_deriv(coords, i, j, k, l, zero_thresh=1.0e-14):
+def dihed_deriv(coords, i, j, k, l, zero_thresh=None):
     """
     Gives the derivative of the dihedral between i, j, k, and l with respect to the Cartesians
     Currently gives what are sometimes called the `psi` angles.
@@ -150,6 +158,8 @@ def dihed_deriv(coords, i, j, k, l, zero_thresh=1.0e-14):
     :rtype: np.ndarray
     """
 
+    zero_thresh = NORM_ZERO_THRESH if zero_thresh is None else zero_thresh
+
     a = coords[j] - coords[i]
     b = coords[k] - coords[j]
     c = coords[l] - coords[k]
@@ -162,10 +172,13 @@ def dihed_deriv(coords, i, j, k, l, zero_thresh=1.0e-14):
     # get the norms of the vectors so that we can handle zeros
     na = vec_norms(a); nb = vec_norms(b); nc = vec_norms(c)
     a_zeros = np.abs(na) < zero_thresh
+    # na = na * (1 - a_zeros.astype(int))
     a = a * (1 - a_zeros.astype(int))[:, np.newaxis]
     b_zeros = np.abs(nb) < zero_thresh
+    # nb = nb * (1 - b_zeros.astype(int))
     b = b * (1 - b_zeros.astype(int))[:, np.newaxis]
     c_zeros = np.abs(nc) < zero_thresh
+    # nc = nc * (1 - b_zeros.astype(int))
     c = c * (1 - c_zeros.astype(int))[:, np.newaxis]
 
     # build all the necessary orientation vectors for the derivatives
@@ -173,8 +186,10 @@ def dihed_deriv(coords, i, j, k, l, zero_thresh=1.0e-14):
     naxb = vec_norms(axb); nbxc = vec_norms(bxc)
     # also make sure cross-vectors aren't zero
     axb_zeros = np.abs(naxb) < zero_thresh
+    # naxb = naxb * (1 - axb_zeros.astype(int))
     axb = axb * (1 - axb_zeros.astype(int))[:, np.newaxis]
     bxc_zeros = np.abs(nbxc) < zero_thresh
+    # nbxc = nbxc * (1 - bxc_zeros.astype(int))
     bxc = bxc * (1 - bxc_zeros.astype(int))[:, np.newaxis]
 
     # if axb_zeros.any():

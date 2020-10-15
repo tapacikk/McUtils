@@ -18,16 +18,23 @@ class SparseArray:
     Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
     """
 
-    def __init__(self, a, shape = None, layout = sp.csc_matrix, initialize = True):
+    def __init__(self, a, shape=None, layout=sp.csc_matrix, dtype=None, initialize = True):
         self._shape = tuple(shape) if shape is not None else shape
         self._a = a
         self._fmt = layout
+        self._dtype = dtype
         self._validated = False
         if initialize:
             self._init_matrix()
             self._validate()
         self._block_inds = None # cached to speed things up
         self._block_vals = None # cached to speed things up
+    @classmethod
+    def empty(cls, shape, dtype=None, **kw):
+        matshape = (int(np.prod(shape[:-1])), shape[-1])
+        if dtype is None:
+            dtype=np.float64
+        return cls(sp.csr_matrix(matshape, dtype=dtype), shape=shape, **kw)
     def _init_matrix(self):
         a = self._a
         if isinstance(a, SparseArray):
@@ -52,7 +59,7 @@ class SparseArray:
             self._a = self.fmt(a, shape=a.shape)
         # we're gonna support the (vals, (i_1, i_2, i_3, ...)) syntax for constructing
         # an array based on its non-zero positions
-        elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1]):
+        elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1][0]):
             block_vals, block_inds = a
             block_inds = tuple(np.array(i, dtype=int) for i in block_inds)
             if self._shape is None:
@@ -64,17 +71,18 @@ class SparseArray:
                     len(block_inds)
                 ))
             # gotta make sure our inds are sorted so we don't run into sorting issues later...
-            flat = self._ravel_indices(a, self._shape)
+            flat = self._ravel_indices(a[1], self._shape)
+            nels = int(np.prod(self._shape))
             sort = np.argsort(flat)
             flat = flat[sort]
             block_vals = block_vals[sort]
             block_inds = tuple(i[sort] for i in block_inds)
-            total_shape = (1, len(block_vals))
+            total_shape = (1, nels)
             init_inds = (np.zeros(len(block_vals)), flat)
             try:
-                data = self.fmt((block_vals, init_inds))
+                data = self.fmt((block_vals, init_inds), shape=total_shape)
             except TypeError:
-                data = self.fmt(sp.csc_matrix((block_vals, init_inds)))
+                data = self.fmt(sp.csc_matrix((block_vals, init_inds)), shape=total_shape)
             self._a = data
             self._block_vals = block_vals
             self._block_inds = block_inds
@@ -146,18 +154,35 @@ class SparseArray:
         return data, (block_data, inds, total_shape)
     def _build_data(self, block_data, inds, total_shape):
         try:
-            data = self.fmt((block_data, inds), shape=total_shape)
+            data = self.fmt((block_data, inds), shape=total_shape, dtype=self.dtype)
         except (ValueError, TypeError):
-            data = self.fmt(sp.csc_matrix((block_data, inds), shape=total_shape))
+            data = self.fmt(sp.csc_matrix((block_data, inds), shape=total_shape, dtype=self.dtype))
         return data
+
+    @property
+    def dtype(self):
+        return self.data.dtype
+
+    @property
+    def diag(self):
+        if len(self.shape) != 2:
+            raise NotImplementedError("haven't decided what I want to do for tensors")
+        N = np.min(self.shape)
+        diag = self[np.arange(N), np.arange(N)]
+        return diag.flatten()
 
     @classmethod
     def from_diag(cls, diags, **kw):
-        data = sp.block_diag(diags, format='csr')
-        block_size = diags[0].shape
-        if 'shape' not in kw:
-            kw['shape'] = (len(diags), block_size[0], len(diags), block_size[1])
-        return cls(data, **kw).transpose((0, 2, 1, 3))
+        if isinstance(diags[0], (int, np.integer, float, np.floating)):
+            # just a plain old diagonal matrix
+            N = len(diags)
+            return cls((diags, (np.arange(N), np.arange(N))), shape=(N, N), **kw)
+        else:
+            data = sp.block_diag(diags, format='csr')
+            block_size = diags[0].shape
+            if 'shape' not in kw:
+                kw['shape'] = (len(diags), block_size[0], len(diags), block_size[1])
+            return cls(data, **kw).transpose((0, 2, 1, 3))
 
     def toarray(self):
         return np.reshape(self.data.toarray(), self.shape)
@@ -294,6 +319,10 @@ class SparseArray:
         data, inds = self.block_data
         new_inds = [inds[i] for i in transp]
         new_shape = tuple(shp[i] for i in transp)
+
+        if len(data) == 0:
+            return type(self).empty(new_shape, layout=self.fmt, dtype=data.dtype)
+
         if len(new_shape) > 2:
             total_shape = (np.prod(new_shape[:-2])*new_shape[-2], new_shape[-1])
             flat = self._ravel_indices(new_inds, new_shape)
@@ -302,7 +331,11 @@ class SparseArray:
             flat = None
             unflat = new_inds
             total_shape = new_shape
-        data = self._build_data(data, unflat, total_shape)
+
+        try:
+            data = self._build_data(data, unflat, total_shape)
+        except:
+            raise Exception(data, unflat, new_shape, total_shape)
         new = type(self)(data, shape = new_shape, layout = self.fmt)
         arr = np.lexsort(unflat)
         new_inds = [inds[arr] for inds in new_inds]
@@ -336,9 +369,9 @@ class SparseArray:
         return self.dot(other)
     def dot(self, b, reverse=False):
         if reverse:
-            return sparse_tensordot(b, self, axes=(-1, 1))
+            return sparse_tensordot(b, self, axes=(-1, 0))
         else:
-            return sparse_tensordot(self, b, axes=(-1, 1))
+            return sparse_tensordot(self, b, axes=(-1, 0))
     def tensordot(self, b, axes=2, reverse=False):
         if reverse:
             return sparse_tensordot(b, self, axes=axes)
@@ -693,14 +726,22 @@ def sparse_tensordot(a, b, axes=2):
             res = res.todense()
         return res
 
-    at = a.transpose(newaxes_a)
+    if a.ndim > 1:
+        at = a.transpose(newaxes_a)
+    else:
+        at = a
     if isinstance(at, SparseArray):
         at = at.data
     at = at.reshape(newshape_a)
-    bt = b.transpose(newaxes_b)
+
+    if b.ndim > 1:
+        bt = b.transpose(newaxes_b)
+    else:
+        bt = b
     if isinstance(bt, SparseArray):
         bt = bt.data
     bt = bt.reshape(newshape_b)
+
     res = _dot(at, bt)
     if isinstance(res, sp.spmatrix):
         if isinstance(a, SparseArray):
