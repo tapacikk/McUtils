@@ -1,10 +1,10 @@
-import importlib.abc, os, importlib.util
+import importlib.abc, os, importlib.util, sys
 
 __all__ = [
-    "ExtensionLoader"
+    "ModuleLoader"
 ]
 
-class ExtensionLoader(importlib.abc.SourceLoader):
+class ModuleLoader(importlib.abc.SourceLoader):
     """An ExtensionLoader creates a Loader object that can load a python module from a file path
 
     """
@@ -26,8 +26,13 @@ class ExtensionLoader(importlib.abc.SourceLoader):
 
     def get_filename(self, fullname):
         if not os.path.exists(fullname):
-            basename = os.path.splitext(fullname.split(".")[-1])[0]
-            fullname = os.path.join(self._dir, basename+".py")
+            basename, ext = os.path.splitext(fullname.split(".")[-1])
+            if ext != "":
+                fullname = os.path.join(self._dir, basename+ext)
+            else:
+                fullname = os.path.join(self._dir, basename+".py")
+                if not os.path.exists(fullname):
+                    fullname = os.path.join(self._dir, basename)
         if os.path.isdir(fullname):
             fullname = os.path.join(fullname, "__init__.py")
         return fullname
@@ -39,7 +44,10 @@ class ExtensionLoader(importlib.abc.SourceLoader):
             pkg = self._pkg
         if pkg is None:
             raise ImportError("{}: package name required to load file".format(type(self)))
-        package_name = pkg + "." + base_name
+        if pkg == "":
+            package_name = base_name
+        else:
+            package_name = pkg + "." + base_name
         spec = importlib.util.spec_from_loader(
             package_name,
             self,
@@ -57,9 +65,18 @@ class ExtensionLoader(importlib.abc.SourceLoader):
         :return:
         :rtype: module
         """
-        spec = self.get_spec(file, pkg)
-        module = importlib.util.module_from_spec(spec)
-        if module is None:
-            module = importlib.util.module_from_spec(None)
-        self.exec_module(module)
+        d = self._dir
+        try:
+            if os.path.exists(file):
+                self._dir = os.path.dirname(file)
+            # print(file, self._dir)
+            spec = self.get_spec(file, pkg)
+            module = importlib.util.module_from_spec(spec)
+            if module is None:
+                module = importlib.util.module_from_spec(None)
+            self.exec_module(module)
+            sys.modules["DynamicImports."+module.__name__] = module
+        finally:
+            self._dir = d
         return module
+

@@ -3,9 +3,12 @@ A module of useful math for handling coordinate transformations and things
 """
 
 import numpy as np
+from .Options import Options
 
 __all__ = [
     "vec_dots",
+    "vec_handle_zero_norms",
+    "vec_apply_zero_threshold",
     "vec_normalize",
     "vec_norms",
     "vec_tensordot",
@@ -72,14 +75,52 @@ def vec_norms(vecs, axis=-1):
     :return:
     :rtype:
     """
+    if axis != -1:
+        raise NotImplementedError("Norm along not-the-last axis not there yet...")
     return np.linalg.norm(vecs, axis=-1)
 
 ################################################
 #
 #       vec_normalize
 #
+def vec_apply_zero_threshold(vecs, zero_thresh=None):
+    """
+    Applies a threshold to cast nearly-zero vectors to proper zero
 
-def vec_normalize(vecs, axis=-1):
+    :param vecs:
+    :type vecs:
+    :param zero_thresh:
+    :type zero_thresh:
+    :return:
+    :rtype:
+    """
+    norms = vec_norms(vecs)
+    vecs, zeros = vec_handle_zero_norms(vecs, norms, zero_thresh=zero_thresh)
+    norms = norms[..., np.newaxis]
+    norms[zeros] = Options.zero_placeholder
+
+    return vecs, norms
+
+def vec_handle_zero_norms(vecs, norms, zero_thesh=None):
+    """
+    Tries to handle zero-threshold application to vectors
+
+    :param vecs:
+    :type vecs:
+    :param norms:
+    :type norms:
+    :param zero_thesh:
+    :type zero_thesh:
+    :return:
+    :rtype:
+    """
+    norms = norms[..., np.newaxis]
+    zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
+    zeros = np.abs(norms) < zero_thresh
+    vecs = vecs * (1 - zeros.astype(int))
+    return vecs, zeros
+
+def vec_normalize(vecs, axis=-1, zero_thresh=None):
     """
 
     :param vecs:
@@ -89,9 +130,13 @@ def vec_normalize(vecs, axis=-1):
     :return:
     :rtype:
     """
-    norms = vec_norms(vecs)[..., np.newaxis]
-    # avoid divide-by-zero warning, basically defining 0/0 = 0
-    norms[norms == 0] = 1
+    if axis != -1:
+        raise NotImplementedError("Normalization along not-the-last axis not there yet...")
+
+    norms = vec_norms(vecs, axis=axis)
+    vecs, zeros = vec_handle_zero_norms(vecs, norms, zero_thresh=zero_thresh)
+    norms = norms[..., np.newaxis]
+    norms[zeros] = Options.zero_placeholder # since we already zeroed out the vector
 
     return vecs/norms
 

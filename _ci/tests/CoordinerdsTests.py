@@ -190,6 +190,8 @@ class ConverterTest(TestCase):
         # ArrayPlot((ijacob@jacob)-(nijacob@jacob), figure=g[1, 2])
         # g.show()
 
+        self.assertEquals(np.sum(np.abs(jacob - njacob)), 0.)
+        self.assertEquals(np.sum(np.abs(ijacob-nijacob)), 0.)
         self.assertEquals(jacob.shape, (n*3, (n-1)*3)) # we always lose one atom
         self.assertAlmostEqual(np.sum((ijacob@jacob)), 3*n-6, 3)
 

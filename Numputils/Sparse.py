@@ -11,10 +11,13 @@ __all__ = [
 #
 #   And actually by providing a constructor like np.array that dispatches to the appropriate class
 #   for a given data type we'd be able to avoid the need to explicitly declare our data-type
+#
+#   This would also allow us to more conveniently swap out the backend for our different arrays, in
+#   case we want to use a different sparse matrix format.
 
 class SparseArray:
     """
-    Array class that generalize the regular `scipy.sparse`
+    Array class that generalize the regular `scipy.sparse.spmatrix`.
     Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
     """
 
@@ -573,6 +576,110 @@ class SparseArray:
             else:
                 new.block_inds = flat, inds
             return new
+    def _set_element(self, idx, val):
+        """
+        Convert idx into a 1D index or slice or whatever and then convert it back to the appropriate 2D shape.
+        Then hope that the val can be set on the sp.spmatrix backend...
+
+        :param i:
+        :type i:
+        :return:
+        :rtype:
+        """
+
+        # we check first to see if we were asked for just a single vector of elements
+        # the detection heuristic is basically: is everything just a slice of ints or nah
+        if isinstance(idx, (int, np.integer)):
+            idx = (idx,)
+        set_elements = len(idx) == len(self.shape) and all(isinstance(x, (int, np.integer)) for x in idx)
+        if not set_elements:
+            set_elements = all(not isinstance(x, (int, np.integer, slice)) for x in idx)
+            if set_elements:
+                e1 = len(idx[0])
+                set_elements = all(len(x) == e1 for x in idx)
+
+        if set_elements:
+            flat = self._ravel_indices(idx, self.shape)
+            unflat = self._unravel_indices(flat, self.data.shape)
+            self.data[unflat] = val
+            # TODO: figure out how to resolve the collisions
+            #       more efficiently
+            self._block_vals = None
+            self._block_inds = None
+        else:
+            # need to compute the proper block indices, unfortunately
+            # so that they can be down-converted to their 2D equivalents
+            blocks = [
+                (
+                    np.array([i]) if isinstance(i, (int, np.integer)) else (
+                        np.arange(s)[i,].flatten()
+                    )
+                )
+                for i, s in zip(idx, self.shape)
+            ]
+
+            block_inds = np.array(ip.product(blocks)).T
+
+            flat = self._ravel_indices(block_inds, self.shape)
+            unflat = self._unravel_indices(flat, self.data.shape)
+            self.data[unflat] = val
+            # TODO: figure out how to resolve the collisions
+            #       more efficiently
+            self._block_vals = None
+            self._block_inds = None
+
+    def _del_element(self, idx):
+        """
+        Convert idx into a 1D index or slice or whatever and then convert it back to the appropriate 2D shape.
+        Then hope that the val can be deleted on the sp.spmatrix backend...
+
+        :param i:
+        :type i:
+        :return:
+        :rtype:
+        """
+
+        # we check first to see if we were asked for just a single vector of elements
+        # the detection heuristic is basically: is everything just a slice of ints or nah
+        if isinstance(idx, (int, np.integer)):
+            idx = (idx,)
+        set_elements = len(idx) == len(self.shape) and all(isinstance(x, (int, np.integer)) for x in idx)
+        if not set_elements:
+            set_elements = all(not isinstance(x, (int, np.integer, slice)) for x in idx)
+            if set_elements:
+                e1 = len(idx[0])
+                set_elements = all(len(x) == e1 for x in idx)
+
+        if set_elements:
+            flat = self._ravel_indices(idx, self.shape)
+            unflat = self._unravel_indices(flat, self.data.shape)
+            del self.data[unflat]
+            # TODO: figure out how to resolve the collisions
+            #       more efficiently
+            self._block_vals = None
+            self._block_inds = None
+        else:
+            # need to compute the proper block indices, unfortunately
+            # so that they can be down-converted to their 2D equivalents
+            blocks = [
+                (
+                    np.array([i]) if isinstance(i, (int, np.integer)) else (
+                        np.arange(s)[i,].flatten()
+                    )
+                )
+                for i, s in zip(idx, self.shape)
+            ]
+
+            block_inds = np.array(ip.product(blocks)).T
+
+            flat = self._ravel_indices(block_inds, self.shape)
+            unflat = self._unravel_indices(flat, self.data.shape)
+            del self.data[unflat]
+            # TODO: figure out how to resolve the collisions
+            #       more efficiently
+            self._block_vals = None
+            self._block_inds = None
+
     def savez(self, file, compressed=True):
         """
         Saves a SparseArray to a file (must have the npz extension)
@@ -630,6 +737,10 @@ class SparseArray:
 
     def __getitem__(self, item):
         return self._get_element(item)
+    def __setitem__(self, item, val):
+        return self._set_element(item, val)
+    def __delitem__(self, item):
+        return self._del_element(item)
 
     def __repr__(self):
         return "{}(<{}> nonzero={})".format(type(self).__name__,

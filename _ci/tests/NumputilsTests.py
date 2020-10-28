@@ -42,7 +42,14 @@ class NumputilsTests(TestCase):
 
     @validationTest
     def test_AngleDeriv(self):
+        # need some proper values to test this against...
         np.random.seed(0)
         coords = np.random.rand(16, 3)
         deriv = angle_deriv(coords, [5], [4], [6])
         self.assertEquals(deriv.shape, (3, 1, 3))
+
+    @debugTest
+    def test_DistanceDeriv2(self):
+        ...
+
+

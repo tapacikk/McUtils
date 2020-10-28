@@ -3,6 +3,7 @@ Provides analytic derivatives for some common base terms with the hope that we c
 """
 import numpy as np
 from .VectorOps import *
+from .Options import Options
 
 __all__ = [
     'levi_cevita3',
@@ -11,9 +12,6 @@ __all__ = [
     'angle_deriv',
     'dihed_deriv'
 ]
-
-# threshold for what should be called "0" as a vector norm...
-NORM_ZERO_THRESH = 1.0e-10
 
 # felt too lazy to look up some elegant formula
 levi_cevita3 = np.array([
@@ -68,7 +66,250 @@ def rot_deriv(angle, axis, dAngle, dAxis):
     et = np.dot(e3, (dAxis*s + axis*c*dAngle))
     return ct - st - et
 
-def dist_deriv(coords, i, j):
+def vec_norm_derivs(a, order=1, zero_thresh=None):
+    """
+    Derivative of the norm of `a` with respect to its components
+
+    :param a: vector
+    :type a: np.ndarray
+    :param order: number of derivatives to return
+    :type order: int
+    :param zero_thresh:
+    :type zero_thresh:
+    :return: derivative tensors
+    :rtype: list
+    """
+
+    if order > 2:
+        raise NotImplementedError("derivatives currently only up to order {}".format(2))
+
+    derivs = []
+
+    na = vec_norms(a)
+    derivs.append(np.copy(na)) # we return the value itself for Taylor-series reasons
+
+    a, zeros = vec_handle_zero_norms(a, na, zero_thresh=zero_thresh)
+    na = na[..., np.newaxis]
+    na[zeros] = Options.zero_placeholder
+
+    if order >= 1:
+        d1 = a / na
+        derivs.append(d1)
+
+    if order >= 2:
+        i3 = np.broadcast_to(np.eye(3), (len(a), 3, 3))
+        d2 = (i3 - vec_outer(d1, d1)) / na
+        derivs.append(d2)
+
+    return derivs
+
+def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
+    """
+    Derivative of `sin(a, b)` and `cos(a, b)` with respect to both vector components
+
+    :param a: vector
+    :type a: np.ndarray
+    :param a: other vector
+    :type a: np.ndarray
+    :param order: number of derivatives to return
+    :type order: int
+    :param zero_thresh: threshold for when a norm should be called 0. for numerical reasons
+    :type zero_thresh: None | float
+    :return: derivative tensors
+    :rtype: list
+    """
+
+    if order > 2:
+        raise NotImplementedError("derivatives currently only up to order {}".format(2))
+
+    sin_derivs = []
+    cos_derivs = []
+
+    a, n_a = vec_apply_zero_threshold(a, zero_thresh=zero_thresh)
+    b, n_b = vec_apply_zero_threshold(b, zero_thresh=zero_thresh)
+
+    n = vec_crosses(a, b)
+    n, n_n = vec_apply_zero_threshold(n, zero_thresh=zero_thresh)
+
+    s = n_n / (n_a * n_b)
+    c = vec_dots(a, b) / (n_a * n_b)
+
+    sin_derivs.append(s)
+    cos_derivs.append(c)
+
+    bxn = vec_crosses(b, n)
+    bxn, n_bxn = vec_apply_zero_threshold(bxn, zero_thresh=zero_thresh)
+
+    nxa = vec_crosses(n, a)
+    nxa, n_nxa = vec_apply_zero_threshold(nxa, zero_thresh=zero_thresh)
+
+    if order <= 1:
+        _, na_da = vec_norm_derivs(a, order=1)
+        _, nb_db = vec_norm_derivs(b, order=1)
+    else:
+        _, na_da, na_daa = vec_norm_derivs(a, order=2)
+        _, nb_db, nb_dbb = vec_norm_derivs(b, order=2)
+        _, nn_dn, nn_dnn = vec_norm_derivs(n, order=2)
+
+    if order >= 1:
+        s_da = (bxn - s * na_da) / n_a
+        s_db = (nxa - s * nb_db) / n_b
+
+        sin_derivs.append([s_da, s_db])
+
+        c_da = (nb_db - c * na_da) / n_a
+        c_db = (na_da - c * nb_db) / n_b
+
+    if order >= 2:
+        e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
+
+        # compute terms we'll need for various cross-products
+        e3b = vec_tensordot(e3, b)
+        e3a = vec_tensordot(e3, a)
+
+        e3ndb = vec_tensordot(e3, nb_db)
+        e3nda = vec_tensordot(e3, na_da)
+
+        n_da = -vec_tensordot(e3ndb, nn_dnn)
+        bxdna = vec_tensordot(n_da, e3b)
+
+        s_daa = (
+            - vec_outer(na_da / n_a, s_da)
+            + (bxdna - vec_outer(s_da, na_da) - s * na_daa) / n_a
+        )
+
+        dnaxa = -vec_tensordot(n_da, e3a)
+        nxdaa = vec_tensordot(vec_tensordot(na_daa, e3), n)
+
+        s_dab = (
+            dnaxa + nxdaa - vec_outer(s_da, nb_db)
+        ) / n_b
+
+        n_db = vec_tensordot(e3nda, nn_dnn)
+
+        bxdnb = vec_tensordot(n_db, e3b)
+        dbbxn = -vec_tensordot(vec_tensordot(nb_dbb, e3), n)
+        s_dba = (
+                dbbxn + bxdnb - vec_outer(s_db, na_da)
+        ) / n_a
+
+        s_dbb = (
+            - vec_outer(nb_db / n_b, s_db)
+            + (bxdnb - vec_outer(s_db, nb_db) - s * nb_dbb ) / n_b
+        )
+
+        sin_derivs.append([
+            [ s_daa, s_dba ],
+            [ s_dab, s_dbb ]
+        ])
+
+
+        c_daa = (
+            - vec_outer(na_da / n_a, c_da)
+            - ( vec_outer(c_da, na_da) + c * na_daa ) / n_a
+        )
+
+        c_dab = (
+            na_daa - vec_outer(c_da, b)
+        ) / n_b
+
+        c_dba = (
+                        nb_dbb - vec_outer(c_db, a)
+                ) / n_a
+
+        c_dbb = (
+                - vec_outer(nb_db / n_b, c_db)
+                - (vec_outer(c_db, nb_db) + c * nb_dbb) / n_b
+        )
+
+        cos_derivs.append([
+            [c_daa, c_dba],
+            [c_dab, c_dbb]
+        ])
+
+    return sin_derivs, cos_derivs
+
+def vec_angle_derivs(a, b, order=1, zero_thresh=None):
+    """
+    Returns the derivatives of the angle between `a` and `b` with respect to their components
+
+    :param a: vector
+    :type a: np.ndarray
+    :param b: vector
+    :type b: np.ndarray
+    :param order: order of derivatives to go up to
+    :type order: int
+    :param zero_thresh: threshold for what is zero in a vector norm
+    :type zero_thresh: float | None
+    :return: derivative tensors
+    :rtype: list
+    """
+
+    if order > 2:
+        raise NotImplementedError("derivatives currently only up to order {}".format(2))
+
+    derivs = []
+
+    sin_derivs, cos_derivs = vec_sin_cos_derivs(a, b, order=order, zero_thresh=zero_thresh)
+
+    s = sin_derivs[0]
+    c = cos_derivs[0]
+
+    q = np.arctan2(s, c)
+
+    derivs.append(q)
+
+    if order >= 1:
+        s_da, s_db = sin_derivs[1]
+        c_da, c_db = cos_derivs[1]
+
+        q_da = c * s_da - s * c_da
+        q_db = c * s_db - s * c_db
+
+        derivs.append([q_da, q_db])
+
+    if order >= 2:
+        s_daa, s_dba = sin_derivs[2][0]
+        s_dab, s_dbb = sin_derivs[2][1]
+        c_daa, c_dba = cos_derivs[2][0]
+        c_dab, c_dbb = cos_derivs[2][1]
+
+        q_daa = (
+            vec_outer(c_da, s_da)
+            + c * s_daa
+            - vec_outer(s_da, c_da)
+            - s * c_daa
+        )
+
+        q_dba = (
+                vec_outer(c_da, s_db)
+                + c * s_dba
+                - vec_outer(s_da, c_db)
+                - s * c_dba
+        )
+
+        q_dab = (
+                vec_outer(c_db, s_da)
+                + c * s_dab
+                - vec_outer(s_db, c_da)
+                - s * c_dab
+        )
+
+        q_dbb = (
+                vec_outer(c_db, s_db)
+                + c * s_dbb
+                - vec_outer(s_db, c_db)
+                - s * c_dbb
+        )
+
+        derivs.append([
+            [q_daa, q_dba],
+            [q_dab, q_dbb]
+        ])
+
+    return derivs
+
+def dist_deriv(coords, i, j, order=1, zero_thresh=None):
     """
     Gives the derivative of the distance between i and j with respect to coords i and coords j
 
@@ -81,9 +322,29 @@ def dist_deriv(coords, i, j):
     :return: derivatives of the distance with respect to atoms i, j, and k
     :rtype: np.ndarray
     """
-    v = vec_normalize(coords[j]-coords[i])
 
-    return np.array([-v, v])
+    # zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
+    #
+    # a = coords[j]-coords[i]
+    #
+    # # if any of the vectors are properly zero we make sure that they get handled as such
+    # na = vec_norms(a)
+    # a_zeros = np.abs(na) < zero_thresh
+    # # na = na * (1 - a_zeros.astype(int))
+    # a = a * (1 - a_zeros.astype(int))[:, np.newaxis]
+    # ah = a / na[:, np.newaxis]
+    #
+    # i3 = np.broadcast_to(np.eye(3), (len(a), 3, 3))
+    # e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
+    #
+    # d1 = np.array([-ah, ah])
+    # # d2 = np.array([
+    # #     [-ah, ...],
+    # #     [...,  ah]
+    # # ])
+
+    a = coords[j] - coords[i]
+    return vec_norm_derivs(a, order=order, zero_thresh=zero_thresh)
 
 def angle_deriv(coords, i, j, k, zero_thresh=None):
     """
@@ -101,7 +362,7 @@ def angle_deriv(coords, i, j, k, zero_thresh=None):
     :rtype: np.ndarray
     """
 
-    zero_thresh = NORM_ZERO_THRESH if zero_thresh is None else zero_thresh
+    zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
 
     dot = vec_dots
     tdo = vec_tdot
@@ -158,7 +419,7 @@ def dihed_deriv(coords, i, j, k, l, zero_thresh=None):
     :rtype: np.ndarray
     """
 
-    zero_thresh = NORM_ZERO_THRESH if zero_thresh is None else zero_thresh
+    zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
 
     a = coords[j] - coords[i]
     b = coords[k] - coords[j]

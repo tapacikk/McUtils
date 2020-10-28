@@ -261,6 +261,8 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 if not use_rad:
                     diheds = np.rad2deg(diheds)
                 if return_derivs:
+                    # Negative sign because my dihed_deriv code is for slightly different
+                    # ordering than expected
                     dihed_derivs = -dihed_deriv(coords, ix, jx, kx, lx)
                     drang = 2+np.arange(nol-3)
                     nreps = int(len(ix)/(nol-3))

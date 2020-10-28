@@ -4,7 +4,7 @@ Provides the conversion framework between coordinate systems
 
 from collections import OrderedDict as odict
 import os, abc, numpy as np
-from McUtils.Misc import ExtensionLoader
+from McUtils.Extensions import ModuleLoader
 
 __all__ = [
     "CoordinateSystemConverters",
@@ -51,7 +51,7 @@ class CoordinateSystemConverters:
     def load_converter(self, converter):
 
         file = self._get_converter_file(converter)
-        loader = ExtensionLoader(self.converters_dir, self.converters_package)
+        loader = ModuleLoader(self.converters_dir, self.converters_package)
         env = loader.load(file)
 
         try:
