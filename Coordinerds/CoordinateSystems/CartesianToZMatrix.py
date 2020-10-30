@@ -195,7 +195,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                     diheds = np.rad2deg(diheds)
                 if return_derivs:
                     _diheds, dihed_derivs = dihed_deriv(coords, ix, jx, kx, lx, order=1)
-                    dihed_derivs = -dihed_derivs
+                    # print("DIHEDS:", diheds.flatten(), _diheds.flatten())
 
                     # print(">>>>", np.max(np.abs(dihed_derivs)))
                     drang = 2+np.arange(len(ix))

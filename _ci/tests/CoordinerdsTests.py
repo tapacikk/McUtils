@@ -133,7 +133,7 @@ class ConverterTest(TestCase):
     #region Jacobians
     @debugTest
     def test_CartesianToZMatrixJacobian(self):
-        n = 5
+        n = 10
         test_coords = DataGenerator.coords(n)
         # test_coords = np.array([[0, 0, 0], [1, 1, 0], [1, 2, 0], [0, 2, 1], [0, -2, -1]])
         coord_set = CoordinateSet(test_coords)
@@ -146,7 +146,7 @@ class ConverterTest(TestCase):
         #           ]
 
         icrds = coord_set.convert(ZMatrixCoordinates)#, ordering=ordr)
-        # print(icrds.converter_options)
+        # print(icrds)
         # wat = icrds.convert(CartesianCoordinates3D)
 
         internals = ZMatrixCoordinateSystem(**icrds.converter_options)
@@ -179,18 +179,16 @@ class ConverterTest(TestCase):
         # # g.padding_bottom=0
         # g.show()
 
-        # g = GraphicsGrid(ncols=3, nrows=2, image_size=(900, 600))
-        # ArrayPlot(jacob,          figure=g[0, 0])
-        # ArrayPlot(njacob,         figure=g[1, 0])
-        # ArrayPlot(nijacob,        figure=g[0, 1])
-        # ArrayPlot(ijacob,         figure=g[1, 1])
-        # ArrayPlot(nijacob@jacob,  figure=g[0, 2])
-        # ArrayPlot(ijacob@jacob,   figure=g[1, 2])
-        # ArrayPlot(nijacob-ijacob, figure=g[0, 3])
-        # ArrayPlot((ijacob@jacob)-(nijacob@jacob), figure=g[1, 2])
-        # g.show()
+        g = GraphicsGrid(ncols=3, nrows=2, image_size=(900, 600))
+        ArrayPlot(jacob,          figure=g[0, 0])
+        ArrayPlot(njacob,         figure=g[1, 0])
+        ArrayPlot(jacob - njacob, figure=g[0, 1])
+        ArrayPlot(ijacob,         figure=g[1, 1])
+        ArrayPlot(nijacob@jacob,  figure=g[0, 2])
+        ArrayPlot(ijacob@jacob,   figure=g[1, 2])
+        g.show()
 
-        self.assertTrue(np.allclose(jacob,  njacob))
+        self.assertTrue(np.allclose(jacob,  njacob), msg="{} too large".format(np.sum(np.abs(jacob-njacob))))
         self.assertTrue(np.allclose(ijacob,  nijacob))
         self.assertEquals(jacob.shape, (n*3, (n-1)*3)) # we always lose one atom
         self.assertAlmostEqual(np.sum((ijacob@jacob)), 3*n-6, 3)

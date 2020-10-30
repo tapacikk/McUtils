@@ -155,17 +155,17 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
         _, nn_dn, nn_dnn = vec_norm_derivs(n, order=2)
 
     if order >= 1:
-        s_da = (bxn - s * na_da) / n_a
-        s_db = (nxa - s * nb_db) / n_b
+        s_da = (bxn / (n_b * n_n) - s * na_da) / n_a
+        s_db = (nxa / (n_n * n_a) - s * nb_db) / n_b
 
         sin_derivs.append([s_da, s_db])
 
-        print(
-            nb_db.shape,
-            na_da.shape,
-            c.shape,
-            n_a.shape
-        )
+        # print(
+        #     nb_db.shape,
+        #     na_da.shape,
+        #     c.shape,
+        #     n_a.shape
+        # )
 
         c_da = (nb_db - c * na_da) / n_a
         c_db = (na_da - c * nb_db) / n_b
@@ -435,6 +435,8 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
     n1 = vec_crosses(a, b)
     n2 = vec_crosses(b, c)
 
+    sign = np.sign(vec_dots(b, vec_crosses(n1, n2)))
+
     d = vec_angle_derivs(n1, n2, order=order, zero_thresh=zero_thresh)
 
     derivs = []
@@ -448,11 +450,11 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
         dn1, dn2 = d[1]
 
         di = vec_crosses(b, dn1)
-        dj = vec_crosses((a - b), dn1) - vec_crosses(c, dn2)
-        dk = vec_crosses(a, dn1) + vec_crosses(b-c, dn2)
+        dj = vec_crosses(c, dn2) - vec_crosses(a+b, dn1)
+        dk = vec_crosses(a, dn1) - vec_crosses(b+c, dn2)
         dl = vec_crosses(b, dn2)
 
-        derivs.append(np.array([di, dj, dk, dl]))
+        derivs.append(sign[np.newaxis, ..., np.newaxis]*np.array([di, dj, dk, dl]))
 
     if order >= 2:
         d11, d12 = d[2][0]
@@ -493,12 +495,12 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
         dlk = dot(CbCa, d12) - dot(CbCbc, d22)
         dll = dot(CbCb, d22)
 
-        derivs.append([
+        derivs.append(sign[np.newaxis, np.newaxis, ..., np.newaxis]**np.array([
             [dii, dij, dik, dil],
             [dji, djj, djk, djl],
             [dki, dkj, dkk, dkl],
             [dli, dlj, dlk, dll]
-        ])
+        ]))
 
     return derivs
 

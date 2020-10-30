@@ -14,7 +14,7 @@ class OptionsContainer:
     """
 
     NORM_ZERO_THRESH = None
-    ZERO_THRESHOLD = 1.0e-10
+    ZERO_THRESHOLD = 1.0e-17
     ZERO_PLACEHOLDER = np.nan
 
     @property
