@@ -342,7 +342,7 @@ class CoordinateSystem:
     def jacobian(self,
                  coords,
                  system,
-                 order = 1,
+                 order=1,
                  coordinates = None,
                  converter_options = None,
                  all_numerical=False,
@@ -373,11 +373,11 @@ class CoordinateSystem:
         if converter_options is None:
             converter_options = {} # convert_coords tracks the other conversion options for us
 
-        deriv_tensor = None # default return value
+        deriv_tensors = None # default return value
 
         if not all_numerical:
             # sort of a hack right now: if the conversion returns 'derivs', then we use those for the FD
-            # we clearly need to allow for higher derivatives, but I haven't figured out what I want to do at this stage
+            # unless we got enough analytic derivatives to not need to do any more FD
             ret_d_key = 'return_derivs'
             rd = converter_options[ret_d_key] if ret_d_key in converter_options else None
             converter_options[ret_d_key] = True
@@ -388,20 +388,34 @@ class CoordinateSystem:
                 converter_options[ret_d_key] = rd
             deriv_key = 'derivs'
             if deriv_key in test_opts and test_opts[deriv_key] is not None:
+                deriv_tensors = test_opts[deriv_key]
+                # we now check to see how many derivs we got
+                # so that we can decrement the order by that amount
+                # if we just get back one numpy array of derivatives
+                # we assume that we got back the analytic first derivatives
+                if isinstance(deriv_tensors, np.ndarray):
+                    deriv_tensors = [deriv_tensors]
+                num_derivs = len(deriv_tensors)
+
                 if isinstance(order, int):
-                    order = order-1
+                    order = order-num_derivs
                 else:
-                    order = [o-1 for o in order]
-                deriv_tensor = test_opts[deriv_key]
+                    order = [o-num_derivs for o in order]
+
                 kw = converter_options.copy()
                 if ret_d_key in kw:
                     del kw[ret_d_key]
-                def convert(c, s=system, dk=deriv_key, self=self, convert_kwargs=kw):
+                def convert(c, s=system, dk=deriv_key, self=self, num_derivs=num_derivs, convert_kwargs=kw):
                     crds, opts = self.convert_coords(c, s, return_derivs=True, **convert_kwargs)
                     # we now have to reshape the derivatives because mc_safe_apply is only applied to the coords -_-
                     # should really make that function manage deriv shapes too, but don't know how to _tell_ it that I
                     # want it to
                     derivs = opts[dk]
+                    # we also want to only do the derivatives on the highest-order analytical
+                    # derivative that we have
+                    if isinstance(derivs, np.ndarray): # just protection for the next step, basically if we only get firsts out
+                        derivs = [derivs]
+                    derivs = derivs[-1]
 
                     new_deriv_shape = c.shape + derivs.shape[len(c.shape) - 1:]
                     derivs = derivs.reshape(new_deriv_shape)
@@ -411,7 +425,7 @@ class CoordinateSystem:
         else:
             convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
 
-        need_derivs = max(order)>0 if not isinstance(order, int) else order > 0
+        need_derivs = max(order) > 0 if not isinstance(order, int) else order > 0
         if need_derivs:
             self_shape = self.coordinate_shape
             if self_shape is None:
@@ -457,17 +471,20 @@ class CoordinateSystem:
             else:
                 ordo = [order]
             derivs = deriv.derivative_tensor(ordo, coordinates=coordinates)
-            if isinstance(order, int):
-                deriv_tensor = derivs[0]
-            elif deriv_tensor is None:
-                deriv_tensor = derivs
+            # if isinstance(order, int):
+            #     deriv_tensors = derivs[0]
+            if deriv_tensors is None:
+                deriv_tensors = derivs
             else:
-                deriv_tensor = [deriv_tensor] + derivs # currently assuming you'd put
+                deriv_tensors = deriv_tensors + derivs # currently assuming you'd put
 
-        if deriv_tensor is None:
+        if isinstance(order, int):
+            deriv_tensors = deriv_tensors[0]
+
+        if deriv_tensors is None:
             raise CoordinateSystemError("derivative order '{}' less than 0".format(order))
 
-        return deriv_tensor
+        return deriv_tensors
 
     def __repr__(self):
         """

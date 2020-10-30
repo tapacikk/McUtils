@@ -87,9 +87,13 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
         new_coords = np.reshape(new_coords, new_shape)
         if return_derivs:
             ders = ops['derivs']
-            ders_shape = coords.shape + single_coord_shape
-            ders = ders.reshape(ders_shape)
-            ops['derivs'] = ders
+            # we assume we get a list of derivatives?
+            reshaped_ders = [None]*len(ders)
+            for i, v in enumerate(ders):
+                ders_shape = coords.shape*(i+1) + single_coord_shape
+                v = v.reshape(ders_shape)
+                reshaped_ders[i] = v
+                ops['derivs'] = reshaped_ders
         return new_coords, ops
 
     def convert(self, coords, ordering=None, use_rad=True, return_derivs=False, **kw):
@@ -156,7 +160,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 coords[jx]
             )
             if return_derivs:
-                dist_derivs = dist_deriv(coords,ix, jx)
+                _dists, dist_derivs = dist_deriv(coords, ix, jx, order=1)
                 drang = np.arange(len(ix))
                 derivs[ix, :, drang, 0] = dist_derivs[0]
                 derivs[jx, :, drang, 0] = dist_derivs[1]
@@ -170,7 +174,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 if not use_rad:
                     angles = np.rad2deg(angles)
                 if return_derivs:
-                    angle_derivs = angle_deriv(coords, jx, ix, kx)
+                    _angles, angle_derivs = angle_deriv(coords, jx, ix, kx, order=1)
                     drang = 1+np.arange(len(ix))
                     # print(">>>>", np.max(np.abs(angle_derivs)))
                     derivs[jx, :, drang, 1] = angle_derivs[0]
@@ -190,7 +194,8 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 if not use_rad:
                     diheds = np.rad2deg(diheds)
                 if return_derivs:
-                    dihed_derivs = -dihed_deriv(coords, ix, jx, kx, lx)
+                    _diheds, dihed_derivs = dihed_deriv(coords, ix, jx, kx, lx, order=1)
+                    dihed_derivs = -dihed_derivs
 
                     # print(">>>>", np.max(np.abs(dihed_derivs)))
                     drang = 2+np.arange(len(ix))

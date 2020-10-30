@@ -101,7 +101,7 @@ def vec_apply_zero_threshold(vecs, zero_thresh=None):
 
     return vecs, norms
 
-def vec_handle_zero_norms(vecs, norms, zero_thesh=None):
+def vec_handle_zero_norms(vecs, norms, zero_thresh=None):
     """
     Tries to handle zero-threshold application to vectors
 

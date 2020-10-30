@@ -88,12 +88,15 @@ def vec_norm_derivs(a, order=1, zero_thresh=None):
     na = vec_norms(a)
     derivs.append(np.copy(na)) # we return the value itself for Taylor-series reasons
 
+    # print(a.shape)
     a, zeros = vec_handle_zero_norms(a, na, zero_thresh=zero_thresh)
     na = na[..., np.newaxis]
     na[zeros] = Options.zero_placeholder
 
     if order >= 1:
         d1 = a / na
+        # print(a.shape, na.shape)
+
         derivs.append(d1)
 
     if order >= 2:
@@ -132,7 +135,7 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
     n, n_n = vec_apply_zero_threshold(n, zero_thresh=zero_thresh)
 
     s = n_n / (n_a * n_b)
-    c = vec_dots(a, b) / (n_a * n_b)
+    c = vec_dots(a, b)[..., np.newaxis] / (n_a * n_b)
 
     sin_derivs.append(s)
     cos_derivs.append(c)
@@ -157,8 +160,17 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
 
         sin_derivs.append([s_da, s_db])
 
+        print(
+            nb_db.shape,
+            na_da.shape,
+            c.shape,
+            n_a.shape
+        )
+
         c_da = (nb_db - c * na_da) / n_a
         c_db = (na_da - c * nb_db) / n_b
+
+        cos_derivs.append([c_da, c_db])
 
     if order >= 2:
         e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
@@ -303,8 +315,8 @@ def vec_angle_derivs(a, b, order=1, zero_thresh=None):
         )
 
         derivs.append([
-            [q_daa, q_dba],
-            [q_dab, q_dbb]
+            [q_daa, q_dab],
+            [q_dba, q_dbb]
         ])
 
     return derivs
@@ -320,33 +332,35 @@ def dist_deriv(coords, i, j, order=1, zero_thresh=None):
     :param j: index of the other atom
     :type j: int | Iterable[int]
     :return: derivatives of the distance with respect to atoms i, j, and k
-    :rtype: np.ndarray
+    :rtype: list
     """
 
-    # zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
-    #
-    # a = coords[j]-coords[i]
-    #
-    # # if any of the vectors are properly zero we make sure that they get handled as such
-    # na = vec_norms(a)
-    # a_zeros = np.abs(na) < zero_thresh
-    # # na = na * (1 - a_zeros.astype(int))
-    # a = a * (1 - a_zeros.astype(int))[:, np.newaxis]
-    # ah = a / na[:, np.newaxis]
-    #
-    # i3 = np.broadcast_to(np.eye(3), (len(a), 3, 3))
-    # e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
-    #
-    # d1 = np.array([-ah, ah])
-    # # d2 = np.array([
-    # #     [-ah, ...],
-    # #     [...,  ah]
-    # # ])
+    if order > 2:
+        raise NotImplementedError("derivatives currently only up to order {}".format(2))
 
     a = coords[j] - coords[i]
-    return vec_norm_derivs(a, order=order, zero_thresh=zero_thresh)
+    d = vec_norm_derivs(a, order=order, zero_thresh=zero_thresh)
 
-def angle_deriv(coords, i, j, k, zero_thresh=None):
+    derivs = []
+
+    derivs.append(d[0])
+
+    if order >= 1:
+        da = d[1]
+        derivs.append(np.array([-da, da]))
+
+    if order >= 2:
+        daa = d[2]
+        # ii ij
+        # ji jj
+        derivs.append(np.array([
+            [ daa, -daa],
+            [-daa,  daa]
+        ]))
+
+    return derivs
+
+def angle_deriv(coords, i, j, k, order=1, zero_thresh=None):
     """
     Gives the derivative of the angle between i, j, and k with respect to the Cartesians
 
@@ -362,44 +376,36 @@ def angle_deriv(coords, i, j, k, zero_thresh=None):
     :rtype: np.ndarray
     """
 
-    zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
+    if order > 2:
+        raise NotImplementedError("derivatives currently only up to order {}".format(2))
 
-    dot = vec_dots
-    tdo = vec_tdot
     a = coords[j] - coords[i]
     b = coords[k] - coords[i]
-    e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
-    axb = vec_crosses(a, b)
-    adb = vec_dots(a, b)
+    d = vec_angle_derivs(a, b, order=order, zero_thresh=zero_thresh)
 
-    #if any of these vectors are properly zero we make sure that they get handled as such
-    naxb = vec_norms(axb); na = vec_norms(a); nb = vec_norms(b)
-    a_zeros = np.abs(na) < zero_thresh
-    # na = na * (1 - a_zeros.astype(int))
-    a = a * (1 - a_zeros.astype(int))[:, np.newaxis]
-    b_zeros = np.abs(nb) < zero_thresh
-    # nb = nb * (1 - b_zeros.astype(int))
-    b = b * (1 - b_zeros.astype(int))[:, np.newaxis]
-    axb_zeros = np.abs(naxb) < zero_thresh
-    # naxb = naxb * (1 - axb_zeros.astype(int))
-    axb = axb * (1 - axb_zeros.astype(int))[:, np.newaxis]
-    adb_zeros = np.abs(adb) < zero_thresh
-    adb = adb * (1 - adb_zeros.astype(int))
+    derivs = []
 
-    axbu = axb/naxb[..., np.newaxis]
-    c = (adb/(na*nb))[..., np.newaxis]; s = (naxb/(na*nb))[..., np.newaxis]
-    na = na[..., np.newaxis]; nb = nb[..., np.newaxis]
-    au = a / na; bu = b / nb
-    dsa = c/na*(-tdo(tdo(e3, bu), axbu) - au*s)
-    dca = s/na*(bu - au*c)
-    dsb = c/nb*( tdo(tdo(e3, au), axbu) - bu*s)
-    dcb = s/nb*(au - bu*c)
+    derivs.append(d[0])
 
-    da = dsa-dca
-    db = dsb-dcb
-    return np.array([-(da+db), da, db])
+    if order >= 1:
+        da, db = d[1]
+        derivs.append(np.array([-(da + db), da, db]))
 
-def dihed_deriv(coords, i, j, k, l, zero_thresh=None):
+    if order >= 2:
+        daa, dab = d[2][0]
+        dba, dbb = d[2][1]
+        # ii ij ik
+        # ji jj jk
+        # ki kj kk
+        derivs.append(np.array([
+            [daa + dba + dab + dbb, -(daa + dab), -(dba + dbb)],
+            [-(daa + dba), daa, dba],
+            [-(dab + dbb), dab, dbb]
+        ]))
+
+    return derivs
+
+def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
     """
     Gives the derivative of the dihedral between i, j, k, and l with respect to the Cartesians
     Currently gives what are sometimes called the `psi` angles.
@@ -419,83 +425,196 @@ def dihed_deriv(coords, i, j, k, l, zero_thresh=None):
     :rtype: np.ndarray
     """
 
-    zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
+    if order > 2:
+        raise NotImplementedError("derivatives currently only up to order {}".format(2))
 
     a = coords[j] - coords[i]
     b = coords[k] - coords[j]
     c = coords[l] - coords[k]
 
+    n1 = vec_crosses(a, b)
+    n2 = vec_crosses(b, c)
+
+    d = vec_angle_derivs(n1, n2, order=order, zero_thresh=zero_thresh)
+
+    derivs = []
+
+    derivs.append(d[0])
+
     i3 = np.broadcast_to(np.eye(3), (len(a), 3, 3))
     e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
 
-    tdo = vec_tdot
+    if order >= 1:
+        dn1, dn2 = d[1]
 
-    # get the norms of the vectors so that we can handle zeros
-    na = vec_norms(a); nb = vec_norms(b); nc = vec_norms(c)
-    a_zeros = np.abs(na) < zero_thresh
-    # na = na * (1 - a_zeros.astype(int))
-    a = a * (1 - a_zeros.astype(int))[:, np.newaxis]
-    b_zeros = np.abs(nb) < zero_thresh
-    # nb = nb * (1 - b_zeros.astype(int))
-    b = b * (1 - b_zeros.astype(int))[:, np.newaxis]
-    c_zeros = np.abs(nc) < zero_thresh
-    # nc = nc * (1 - b_zeros.astype(int))
-    c = c * (1 - c_zeros.astype(int))[:, np.newaxis]
+        di = vec_crosses(b, dn1)
+        dj = vec_crosses((a - b), dn1) - vec_crosses(c, dn2)
+        dk = vec_crosses(a, dn1) + vec_crosses(b-c, dn2)
+        dl = vec_crosses(b, dn2)
 
-    # build all the necessary orientation vectors for the derivatives
-    axb = vec_crosses(a, b); bxc = vec_crosses(b, c)
-    naxb = vec_norms(axb); nbxc = vec_norms(bxc)
-    # also make sure cross-vectors aren't zero
-    axb_zeros = np.abs(naxb) < zero_thresh
-    # naxb = naxb * (1 - axb_zeros.astype(int))
-    axb = axb * (1 - axb_zeros.astype(int))[:, np.newaxis]
-    bxc_zeros = np.abs(nbxc) < zero_thresh
-    # nbxc = nbxc * (1 - bxc_zeros.astype(int))
-    bxc = bxc * (1 - bxc_zeros.astype(int))[:, np.newaxis]
+        derivs.append(np.array([di, dj, dk, dl]))
 
-    # if axb_zeros.any():
-    #     print(np.min(na))
-    #     print(np.min(nb))
-    #     raise ValueError("can't take dihedral derivative when a, b, and c vectors are coplanar")
-    #
-    # print("> ???? naxb", np.min(np.abs(naxb)), np.min(np.abs(naxb)) < zero_thresh)
+    if order >= 2:
+        d11, d12 = d[2][0]
+        d21, d22 = d[2][1]
 
-    naxb = naxb[..., np.newaxis]
-    nbxc = nbxc[..., np.newaxis]
-    nb = nb[..., np.newaxis]
-    n1 = axb / naxb
-    n2 = bxc / nbxc
-    bu = b / nb
+        # explicit write out of chain-rule transformations to isolate different Kron-delta terms
+        dot = vec_tensordot
 
-    # compute displacement vectors
-    i3n1 = i3 - vec_outer(n1, n1); i3n2 = i3 - vec_outer(n2, n2)
-    dn1a = -np.matmul(vec_tdot(e3, b), i3n1) / naxb[..., np.newaxis]
-    dn1b = np.matmul(vec_tdot(e3, a), i3n1) / naxb[..., np.newaxis]
-    dn2b = -np.matmul(vec_tdot(e3, c), i3n2) / nbxc[..., np.newaxis]
-    dn2c = np.matmul(vec_tdot(e3, b), i3n2) / nbxc[..., np.newaxis]
-    dbu = 1/nb[..., np.newaxis]*(i3 - vec_outer(bu, bu))
-    n1xb = vec_crosses(bu, n1)
-    n1dn2 = vec_dots(n1, n2)
-    nxbdn2 = vec_dots(n1xb, n2)
+        Ca = dot(e3, a)
+        Cb = dot(e3, b)
+        Cc = dot(e3, c)
+        Cab = Ca+Cb
+        Cbc = Cb+Cc
 
-    # compute the actual derivs w/r/t the vectors
-    n1dn2 = n1dn2[..., np.newaxis]
-    nxbdn2 = nxbdn2[..., np.newaxis]
-    dta_1 = tdo(tdo(dn1a, e3), bu)
-    dta_2 = tdo(dta_1, n2)*n1dn2
-    dta = dta_2 - tdo(dn1a, n2)*nxbdn2
-    dtb = (
-            ( tdo(tdo(tdo(dn1b, e3), bu)-tdo(tdo(dbu, e3), n1), n2)
-              + tdo(dn2b, n1xb) ) * n1dn2
-            - (tdo(dn1b, n2) + tdo(dn2b, n1)) * nxbdn2
-    )
-    dtc = tdo(dn2c, n1xb) * n1dn2 - tdo(dn2c, n1) * nxbdn2
+        CaCa, CaCb, CaCc, CaCab, CaCbc = [dot(Ca, x) for x in (Ca, Cb, Cc, Cab, Cbc)]
+        CbCa, CbCb, CbCc, CbCab, CbCbc = [dot(Cb, x) for x in (Ca, Cb, Cc, Cab, Cbc)]
+        CcCa, CcCb, CcCc, CcCab, CcCbc = [dot(Cc, x) for x in (Ca, Cb, Cc, Cab, Cbc)]
+        CabCa, CabCb, CabCc, CabCab, CabCbc = [dot(Cab, x) for x in (Ca, Cb, Cc, Cab, Cbc)]
+        CbcCa, CbcCb, CbcCc, CbcCab, CbcCbc = [dot(Cab, x) for x in (Ca, Cb, Cc, Cab, Cbc)]
 
-    # print("> na", np.min(np.abs(na)))
-    # print("> nb", np.min(np.abs(nb)))
-    # print("> nc", np.min(np.abs(nc)))
-    # print("> naxb", np.min(np.abs(naxb)))
-    # print("> nbxc", np.min(np.abs(nbxc)))
+        dii = dot(CbCb, d11)
+        dij = dot(CbCc, d21) - dot(CbCab, d11)
+        dik = dot(CbCa, d11) - dot(CbCbc, d21)
+        dil = dot(CbCb, d21)
 
-    return np.array([-dta, dta-dtb, dtb-dtc, dtc])
+        dji = dot(CcCb, d12) - dot(CabCb, d11)
+        djj = dot(CabCab, d11) - dot(CabCc, d21) - dot(CcCab, d12) + dot(CcCc, d22)
+        djk = dot(CabCbc, d21) - dot(CcCbc, d22) - dot(CabCa, d11) + dot(CcCa, d12)
+        djl = dot(CcCb, d22) - dot(CabCb, d21)
 
+        dki = dot(CaCb, d11) - dot(CbcCb, d12)
+        dkj = dot(CbcCab, d12) - dot(CbcCc, d22) - dot(CaCab, d11) + dot(CaCc, d21)
+        dkk = dot(CaCa, d11) - dot(CaCbc, d21) - dot(CbcCa, d12) + dot(CbcCbc, d22)
+        dkl = dot(CaCb, d21) - dot(CbcCb, d22)
+
+        dli = dot(CbCb, d12)
+        dlj = dot(CbCc, d22) - dot(CbCab, d12)
+        dlk = dot(CbCa, d12) - dot(CbCbc, d22)
+        dll = dot(CbCb, d22)
+
+        derivs.append([
+            [dii, dij, dik, dil],
+            [dji, djj, djk, djl],
+            [dki, dkj, dkk, dkl],
+            [dli, dlj, dlk, dll]
+        ])
+
+    return derivs
+
+# debug implementations
+# def dist_deriv(coords, i, j, order=1):
+#     """
+#     Gives the derivative of the distance between i and j with respect to coords i and coords j
+#     :param coords:
+#     :type coords: np.ndarray
+#     :param i: index of one of the atoms
+#     :type i: int | Iterable[int]
+#     :param j: index of the other atom
+#     :type j: int | Iterable[int]
+#     :return: derivatives of the distance with respect to atoms i, j, and k
+#     :rtype: np.ndarray
+#     """
+#     v = vec_normalize(coords[j]-coords[i])
+#
+#     return None, np.array([-v, v])
+
+# def angle_deriv(coords, i, j, k, order=1):
+#     """
+#     Gives the derivative of the angle between i, j, and k with respect to the Cartesians
+#     :param coords:
+#     :type coords: np.ndarray
+#     :param i: index of the central atom
+#     :type i: int | Iterable[int]
+#     :param j: index of one of the outside atoms
+#     :type j: int | Iterable[int]
+#     :param k: index of the other outside atom
+#     :type k: int | Iterable[int]
+#     :return: derivatives of the angle with respect to atoms i, j, and k
+#     :rtype: np.ndarray
+#     """
+#
+#     dot = vec_dots
+#     tdo = vec_tdot
+#     a = coords[j] - coords[i]
+#     b = coords[k] - coords[i]
+#     e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
+#     axb = vec_crosses(a, b)
+#     adb = vec_dots(a, b)
+#     naxb = vec_norms(axb); na = vec_norms(a); nb = vec_norms(b)
+#     axbu = axb/naxb[..., np.newaxis]
+#     c = (adb/(na*nb))[..., np.newaxis]; s = (naxb/(na*nb))[..., np.newaxis]
+#     na = na[..., np.newaxis]; nb = nb[..., np.newaxis]
+#     au = a / na; bu = b / nb
+#     dsa = c/na*(-tdo(tdo(e3, bu), axbu) - au*s)
+#     dca = s/na*(bu - au*c)
+#     dsb = c/nb*( tdo(tdo(e3, au), axbu) - bu*s)
+#     dcb = s/nb*(au - bu*c)
+#
+#     da = dsa-dca
+#     db = dsb-dcb
+#     return None, np.array([-(da+db), da, db])
+#
+# def dihed_deriv(coords, i, j, k, l, order=1):
+#     """
+#     Gives the derivative of the dihedral between i, j, k, and l with respect to the Cartesians
+#     Currently gives what are sometimes called the `psi` angles.
+#     Will be extended to also support more traditional `phi` angles
+#     :param coords:
+#     :type coords: np.ndarray
+#     :param i:
+#     :type i: int | Iterable[int]
+#     :param j:
+#     :type j: int | Iterable[int]
+#     :param k:
+#     :type k: int | Iterable[int]
+#     :param l:
+#     :type l: int | Iterable[int]
+#     :return: derivatives of the dihedral with respect to atoms i, j, k, and l
+#     :rtype: np.ndarray
+#     """
+#     # needs to be vectorized, still
+#
+#     a = coords[j] - coords[i]
+#     b = coords[k] - coords[j]
+#     c = coords[l] - coords[k]
+#
+#     i3 = np.broadcast_to(np.eye(3), (len(a), 3, 3))
+#     e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
+#
+#     tdo = vec_tdot
+#
+#     # build all the necessary components for the derivatives
+#     axb = vec_crosses(a, b); bxc = vec_crosses(b, c)
+#     na = vec_norms(a); nb = vec_norms(b); nc = vec_norms(c)
+#     naxb = vec_norms(axb); nbxc = vec_norms(bxc)
+#     naxb = naxb[..., np.newaxis]
+#     nbxc = nbxc[..., np.newaxis]
+#     nb = nb[..., np.newaxis]
+#     n1 = axb / naxb
+#     n2 = bxc / nbxc
+#     bu = b / nb
+#     i3n1 = i3 - vec_outer(n1, n1); i3n2 = i3 - vec_outer(n2, n2)
+#     dn1a = -np.matmul(vec_tdot(e3, b), i3n1) / naxb[..., np.newaxis]
+#     dn1b = np.matmul(vec_tdot(e3, a), i3n1) / naxb[..., np.newaxis]
+#     dn2b = -np.matmul(vec_tdot(e3, c), i3n2) / nbxc[..., np.newaxis]
+#     dn2c = np.matmul(vec_tdot(e3, b), i3n2) / nbxc[..., np.newaxis]
+#     dbu = 1/nb[..., np.newaxis]*(i3 - vec_outer(bu, bu))
+#     n1xb = vec_crosses(bu, n1)
+#     n1dn2 = vec_dots(n1, n2)
+#     nxbdn2 = vec_dots(n1xb, n2)
+#
+#     # compute the actual derivs w/r/t the vectors
+#     n1dn2 = n1dn2[..., np.newaxis]
+#     nxbdn2 = nxbdn2[..., np.newaxis]
+#     dta_1 = tdo(tdo(dn1a, e3), bu)
+#     dta_2 = tdo(dta_1, n2)*n1dn2
+#     dta = dta_2 - tdo(dn1a, n2)*nxbdn2
+#     dtb = (
+#             ( tdo(tdo(tdo(dn1b, e3), bu)-tdo(tdo(dbu, e3), n1), n2)
+#               + tdo(dn2b, n1xb) ) * n1dn2
+#             - (tdo(dn1b, n2) + tdo(dn2b, n1)) * nxbdn2
+#     )
+#     dtc = tdo(dn2c, n1xb) * n1dn2 - tdo(dn2c, n1) * nxbdn2
+#
+#     return None, np.array([-dta, dta-dtb, dtb-dtc, dtc])
