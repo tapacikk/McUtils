@@ -156,6 +156,8 @@ class SparseArray:
         data = self._build_data(block_data, inds, total_shape)
         return data, (block_data, inds, total_shape)
     def _build_data(self, block_data, inds, total_shape):
+        if len(block_data) == 0 or np.prod(block_data.shape) == 0.: # empty array
+            return self.fmt(sp.csc_matrix(total_shape, dtype=self.dtype))
         try:
             data = self.fmt((block_data, inds), shape=total_shape, dtype=self.dtype)
         except (ValueError, TypeError):
@@ -559,7 +561,7 @@ class SparseArray:
             try:
                 data = self._build_data(data, unflat, total_shape)
             except Exception as e:
-                # print(data.shape, unflat)
+                # print(data, data.shape, unflat, total_shape)
                 data = e
             # raise Exception(unflat, od, data, inds, total_shape)
             if isinstance(data, Exception):

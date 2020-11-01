@@ -187,7 +187,7 @@ def vec_sins(vectors1, vectors2, axis=-1):
     norms1 = vec_norms(vectors1, axis=axis)
     norms2 = vec_norms(vectors2, axis=axis)
 
-    return crosses/(norms1*norms2)
+    return vec_norms(crosses)/(norms1*norms2)
 
 
 ################################################

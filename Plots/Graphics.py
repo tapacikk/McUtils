@@ -905,6 +905,7 @@ class GraphicsGrid(GraphicsBase):
                  _subplot_init=None,
                  mpl_backend = None,
                  subimage_size=(200, 200),
+                 subimage_aspect_ratio='auto',
                  padding=None,
                  spacings=None,
                  **opts
@@ -922,6 +923,7 @@ class GraphicsGrid(GraphicsBase):
             graphics_class=graphics_class,
             _subplot_init=graphics_class._subplot_init if _subplot_init is None else _subplot_init,
             subimage_size=subimage_size,
+            subimage_aspect_ratio=subimage_aspect_ratio,
             padding=padding,
             spacings=spacings
         ))
@@ -942,7 +944,7 @@ class GraphicsGrid(GraphicsBase):
                       subplot_kw=None, _subplot_init=None,
                       fig_kw=None, mpl_backend = None,
                       padding = None, spacings=None,
-                      subimage_size=None,
+                      subimage_size=None, subimage_aspect_ratio=None,
                       **kw
                       ):
         """Initializes the subplots for the Graphics object
@@ -969,6 +971,7 @@ class GraphicsGrid(GraphicsBase):
             subimage_size = kw['image_size']
         if figure is None:
             padding = self._get_def_opt('padding', padding)
+            subimage_aspect_ratio = self._get_def_opt('padding', subimage_aspect_ratio)
             spacings = self._get_def_opt('spacings', spacings)
             if subplot_kw is None:
                 subplot_kw = {}
@@ -1009,7 +1012,8 @@ class GraphicsGrid(GraphicsBase):
                     axes = [[ax] for ax in axes]
                 else:
                     axes = [axes]
-
+            if 'aspect_ratio' not in kw:
+                kw['aspect_ratio'] = subimage_aspect_ratio
             for i in range(nrows):
                 for j in range(ncols):
                     axes[i][j] = graphics_class(figure=figure, axes=axes[i][j], managed=True, **kw)

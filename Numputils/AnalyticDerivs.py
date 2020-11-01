@@ -10,7 +10,10 @@ __all__ = [
     'rot_deriv',
     'dist_deriv',
     'angle_deriv',
-    'dihed_deriv'
+    'dihed_deriv',
+    'vec_norm_derivs',
+    'vec_sin_cos_derivs',
+    'vec_angle_derivs'
 ]
 
 # felt too lazy to look up some elegant formula
@@ -100,8 +103,11 @@ def vec_norm_derivs(a, order=1, zero_thresh=None):
         derivs.append(d1)
 
     if order >= 2:
-        i3 = np.broadcast_to(np.eye(3), (len(a), 3, 3))
-        d2 = (i3 - vec_outer(d1, d1)) / na
+        i3 = np.broadcast_to(np.eye(3), (1, 3, 3))
+        v = vec_outer(d1, d1)
+        if v.shape == (3,): # single config case needs special care
+            v = [np.newaxis]
+        d2 = (i3 - v) / na[..., np.newaxis]
         derivs.append(d2)
 
     return derivs
@@ -134,8 +140,9 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
     n = vec_crosses(a, b)
     n, n_n = vec_apply_zero_threshold(n, zero_thresh=zero_thresh)
 
+    adb = vec_dots(a, b)[..., np.newaxis]
     s = n_n / (n_a * n_b)
-    c = vec_dots(a, b)[..., np.newaxis] / (n_a * n_b)
+    c = adb / (n_a * n_b)
 
     sin_derivs.append(s)
     cos_derivs.append(c)
@@ -158,7 +165,7 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
         s_da = (bxn / (n_b * n_n) - s * na_da) / n_a
         s_db = (nxa / (n_n * n_a) - s * nb_db) / n_b
 
-        sin_derivs.append([s_da, s_db])
+        sin_derivs.append(np.array([s_da, s_db]))
 
         # print(
         #     nb_db.shape,
@@ -170,74 +177,104 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
         c_da = (nb_db - c * na_da) / n_a
         c_db = (na_da - c * nb_db) / n_b
 
-        cos_derivs.append([c_da, c_db])
+        cos_derivs.append(np.array([c_da, c_db]))
 
     if order >= 2:
-        e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
+
+        extra_shape = a.ndim - 1
+        if extra_shape > 0:
+            e3 = np.broadcast_to(levi_cevita3,  (1,)*extra_shape + (3, 3, 3))
+            td = np.tensordot
+            outer = vec_outer
+            vec_td = vec_tensordot
+        else:
+            e3 = levi_cevita3
+            td = np.tensordot
+            vec_td = np.tensordot
+            outer = np.outer
+            a = a.squeeze()
+            nb_db = nb_db.squeeze()
+            na_da = na_da.squeeze()
+            nn_dn = nn_dn.squeeze()
+            na_daa = na_daa.squeeze()
+            nb_dbb = nb_dbb.squeeze()
+            nn_dnn = nn_dnn.squeeze()
 
         # compute terms we'll need for various cross-products
-        e3b = vec_tensordot(e3, b)
-        e3a = vec_tensordot(e3, a)
+        e3b = vec_td(e3, b, axes=[-1, -1])
+        e3a = vec_td(e3, a, axes=[-1, -1])
+        e3n = vec_td(e3, n, axes=[-1, -1])
 
-        e3ndb = vec_tensordot(e3, nb_db)
-        e3nda = vec_tensordot(e3, na_da)
+        e3nbdb = vec_td(e3, nb_db, axes=[-1, -1])
+        e3nada = vec_td(e3, na_da, axes=[-1, -1])
+        e3nndn = vec_td(e3, nn_dn, axes=[-1, -1])
 
-        n_da = -vec_tensordot(e3ndb, nn_dnn)
-        bxdna = vec_tensordot(n_da, e3b)
+        n_da = -vec_td(e3b, nn_dnn, axes=[-1, -2])
+        bxdna = vec_td(n_da, e3nbdb, axes=[-1, -2])
 
-        s_daa = (
-            - vec_outer(na_da / n_a, s_da)
-            + (bxdna - vec_outer(s_da, na_da) - s * na_daa) / n_a
-        )
+        # raise Exception(
+        #     n_da.shape,
+        #     bxdna.shape,
+        #     n_a.shape,
+        #     bxdna.shape,
+        #                 (na_da / n_a).shape,
+        #                 s_da.shape
+        #                 )
+        #
+        # raise Exception(bxdna.shape,
+        #                 (na_da / n_a).shape,
+        #                 vec_outer(na_da / n_a, s_da).shape,
+        #                 vec_outer(s_da, na_da).shape
+        #                 )
 
-        dnaxa = -vec_tensordot(n_da, e3a)
-        nxdaa = vec_tensordot(vec_tensordot(na_daa, e3), n)
-
-        s_dab = (
-            dnaxa + nxdaa - vec_outer(s_da, nb_db)
-        ) / n_b
-
-        n_db = vec_tensordot(e3nda, nn_dnn)
-
-        bxdnb = vec_tensordot(n_db, e3b)
-        dbbxn = -vec_tensordot(vec_tensordot(nb_dbb, e3), n)
-        s_dba = (
-                dbbxn + bxdnb - vec_outer(s_db, na_da)
+        s_daa = - (
+            outer(na_da, s_da) + outer(s_da, na_da) + s * na_daa - bxdna
         ) / n_a
 
-        s_dbb = (
-            - vec_outer(nb_db / n_b, s_db)
-            + (bxdnb - vec_outer(s_db, nb_db) - s * nb_dbb ) / n_b
-        )
+        ndaXnada = -vec_td(n_da, e3nada, axes=[-1, -2])
+        nndnXnadaa = vec_td(na_daa, e3nndn, axes=[-1, -2])
 
-        sin_derivs.append([
-            [ s_daa, s_dba ],
-            [ s_dab, s_dbb ]
-        ])
-
-
-        c_daa = (
-            - vec_outer(na_da / n_a, c_da)
-            - ( vec_outer(c_da, na_da) + c * na_daa ) / n_a
-        )
-
-        c_dab = (
-            na_daa - vec_outer(c_da, b)
+        s_dab =  (
+                     ndaXnada + nndnXnadaa - outer(s_da, nb_db)
         ) / n_b
 
-        c_dba = (
-                        nb_dbb - vec_outer(c_db, a)
-                ) / n_a
+        n_db = vec_td(e3a, nn_dnn, axes=[-1, -2])
 
-        c_dbb = (
-                - vec_outer(nb_db / n_b, c_db)
-                - (vec_outer(c_db, nb_db) + c * nb_dbb) / n_b
-        )
+        nbdbXnda = vec_td(n_db, e3nbdb, axes=[-1, -2])
+        nbdbbXnndn = -vec_td(nb_dbb, e3nndn, axes=[-1, -2])
 
-        cos_derivs.append([
-            [c_daa, c_dba],
-            [c_dab, c_dbb]
-        ])
+        s_dba = (
+                nbdbXnda + nbdbbXnndn - outer(s_db, na_da)
+        ) / n_a
+
+        dnbxa = - vec_td(n_db, e3nada, axes=[-1, -2])
+
+        s_dbb = - (
+            outer(nb_db, s_db) + outer(s_db, nb_db) + s * nb_dbb - dnbxa
+        ) / n_b
+
+        sin_derivs.append(np.array([
+            [ s_daa, s_dab ],
+            [ s_dba, s_dbb ]
+        ]))
+
+
+        c_daa = - (
+            outer(na_da, c_da) + outer(c_da, na_da) + c * na_daa
+        ) / n_a
+
+        c_dab = ( na_daa - outer(c_da, nb_db) ) / n_b
+
+        c_dba = ( nb_dbb - outer(c_db, na_da) ) / n_a
+
+        c_dbb = - (
+            outer(nb_db, c_db) + outer(c_db, nb_db) + c * nb_dbb
+        ) / n_b
+
+        cos_derivs.append(np.array([
+            [c_daa, c_dab],
+            [c_dba, c_dbb]
+        ]))
 
     return sin_derivs, cos_derivs
 
@@ -269,6 +306,8 @@ def vec_angle_derivs(a, b, order=1, zero_thresh=None):
 
     q = np.arctan2(s, c)
 
+    # raise Exception(q)
+
     derivs.append(q)
 
     if order >= 1:
@@ -278,13 +317,13 @@ def vec_angle_derivs(a, b, order=1, zero_thresh=None):
         q_da = c * s_da - s * c_da
         q_db = c * s_db - s * c_db
 
-        derivs.append([q_da, q_db])
+        derivs.append(np.array([q_da, q_db]))
 
     if order >= 2:
-        s_daa, s_dba = sin_derivs[2][0]
-        s_dab, s_dbb = sin_derivs[2][1]
-        c_daa, c_dba = cos_derivs[2][0]
-        c_dab, c_dbb = cos_derivs[2][1]
+        s_daa, s_dab = sin_derivs[2][0]
+        s_dba, s_dbb = sin_derivs[2][1]
+        c_daa, c_dab = cos_derivs[2][0]
+        c_dba, c_dbb = cos_derivs[2][1]
 
         q_daa = (
             vec_outer(c_da, s_da)
@@ -314,10 +353,10 @@ def vec_angle_derivs(a, b, order=1, zero_thresh=None):
                 - s * c_dbb
         )
 
-        derivs.append([
+        derivs.append(np.array([
             [q_daa, q_dab],
             [q_dba, q_dbb]
-        ])
+        ]))
 
     return derivs
 
