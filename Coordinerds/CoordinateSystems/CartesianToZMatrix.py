@@ -90,7 +90,8 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
             # we assume we get a list of derivatives?
             reshaped_ders = [None]*len(ders)
             for i, v in enumerate(ders):
-                ders_shape = coords.shape*(i+1) + single_coord_shape
+                single_base_shape = (base_shape[-2], new_coords.shape[-1])
+                ders_shape = coords.shape + single_base_shape*i + single_coord_shape
                 v = v.reshape(ders_shape)
                 reshaped_ders[i] = v
                 ops['derivs'] = reshaped_ders
@@ -153,7 +154,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
         if return_derivs:
             derivs = [
                 np.zeros(coords.shape + (nol-1, 3)),
-                np.zeros(coords.shape + (nol - 1, 3)*2)
+                np.zeros(coords.shape + (nol, 3) + (nol - 1, 3))
             ]
         if not multiconfig:
             ix = ol[1:, 0]
@@ -163,10 +164,14 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 coords[jx]
             )
             if return_derivs:
-                _dists, dist_derivs = dist_deriv(coords, ix, jx, order=1)
+                _dists, dist_derivs, dist_derivs_2 = dist_deriv(coords, ix, jx, order=2)
                 drang = np.arange(len(ix))
                 derivs[0][ix, :, drang, 0] = dist_derivs[0]
                 derivs[0][jx, :, drang, 0] = dist_derivs[1]
+
+                for i, x1 in enumerate([ix, jx]):
+                    for j, x2 in enumerate([ix, jx]):
+                        derivs[1][x1, :, x2, :, drang, 0] = dist_derivs_2[i, j]
             if len(ol) > 2:
                 ix = ol[2:, 0]
                 jx = ol[2:, 1]
@@ -177,12 +182,16 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 if not use_rad:
                     angles = np.rad2deg(angles)
                 if return_derivs:
-                    _angles, angle_derivs = angle_deriv(coords, jx, ix, kx, order=1)
+                    _angles, angle_derivs, angle_derivs_2 = angle_deriv(coords, jx, ix, kx, order=2)
                     drang = 1+np.arange(len(ix))
                     # print(">>>>", np.max(np.abs(angle_derivs)))
                     derivs[0][jx, :, drang, 1] = angle_derivs[0]
                     derivs[0][ix, :, drang, 1] = angle_derivs[1]
                     derivs[0][kx, :, drang, 1] = angle_derivs[2]
+
+                    for i, x1 in enumerate([ix, jx, kx]):
+                        for j, x2 in enumerate([ix, jx, kx]):
+                            derivs[1][x1, :, x2, :, drang, 0] = angle_derivs_2[i, j]
             else:
                 angles = np.array([0.])
             if len(ol) > 3:
@@ -197,15 +206,16 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 if not use_rad:
                     diheds = np.rad2deg(diheds)
                 if return_derivs:
-                    _diheds, dihed_derivs = dihed_deriv(coords, ix, jx, kx, lx, order=1)
-                    # print("DIHEDS:", diheds.flatten(), _diheds.flatten())
-
-                    # print(">>>>", np.max(np.abs(dihed_derivs)))
+                    _diheds, dihed_derivs, dihed_derivs_2 = dihed_deriv(coords, ix, jx, kx, lx, order=2)
                     drang = 2+np.arange(len(ix))
                     derivs[0][ix, :, drang, 2] = dihed_derivs[0]
                     derivs[0][jx, :, drang, 2] = dihed_derivs[1]
                     derivs[0][kx, :, drang, 2] = dihed_derivs[2]
                     derivs[0][lx, :, drang, 2] = dihed_derivs[3]
+
+                    for i, x1 in enumerate([ix, jx, kx, lx]):
+                        for j, x2 in enumerate([ix, jx, kx, lx]):
+                            derivs[1][x1, :, x2, :, drang, 0] = dihed_derivs_2[i, j]
             else:
                 diheds = np.array([0, 0])
             ol = ol[1:]
@@ -219,12 +229,16 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
             jx = ol[mask, 1]
             dists = self.get_dists(coords[ix], coords[jx])
             if return_derivs:
-                _, dist_derivs = dist_deriv(coords, ix, jx, order=1)
+                _, dist_derivs, dist_derivs_2 = dist_deriv(coords, ix, jx, order=2)
                 drang = np.arange(nol-1)
                 nreps = int(len(ix)/(nol-1))
                 drang = np.broadcast_to(drang[np.newaxis], (nreps,) + drang.shape).flatten()
                 derivs[0][ix, :, drang, 0] = dist_derivs[0]
                 derivs[0][jx, :, drang, 0] = dist_derivs[1]
+
+                for i, x1 in enumerate([ix, jx]):
+                    for j, x2 in enumerate([ix, jx]):
+                        derivs[1][x1, :, x2 % nol, :, drang, 0] = dist_derivs_2[i, j]
 
             if nol>2:
                 # set up the mask to drop all of the first bits
@@ -241,13 +255,17 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                     angles = np.rad2deg(angles)
                 if return_derivs:
                     # we might need to mess with the masks akin to the insert call...
-                    _, angle_derivs = angle_deriv(coords, jx, ix, kx, order=1)
+                    _, angle_derivs, angle_derivs_2 = angle_deriv(coords, jx, ix, kx, order=2)
                     drang = 1+np.arange(nol-2)
                     nreps = int(len(ix)/(nol-2))
                     drang = np.broadcast_to(drang[np.newaxis], (nreps,) + drang.shape).flatten()
                     derivs[0][jx, :, drang, 1] = angle_derivs[0]
                     derivs[0][ix, :, drang, 1] = angle_derivs[1]
                     derivs[0][kx, :, drang, 1] = angle_derivs[2]
+
+                    for i, x1 in enumerate([ix, jx, kx]):
+                        for j, x2 in enumerate([ix, jx, kx]):
+                            derivs[1][x1, :, x2 % nol, :, drang, 0] = angle_derivs_2[i, j]
             else:
                 angles = np.zeros(ncoords-steps)
 
@@ -271,7 +289,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                 if return_derivs:
                     # Negative sign because my dihed_deriv code is for slightly different
                     # ordering than expected
-                    _, dihed_derivs = dihed_deriv(coords, ix, jx, kx, lx, order=1)
+                    _, dihed_derivs, dihed_derivs_2 = dihed_deriv(coords, ix, jx, kx, lx, order=2)
                     drang = 2+np.arange(nol-3)
                     nreps = int(len(ix)/(nol-3))
                     drang = np.broadcast_to(drang[np.newaxis], (nreps,) + drang.shape).flatten()
@@ -279,6 +297,11 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                     derivs[0][jx, :, drang, 2] = dihed_derivs[1]
                     derivs[0][kx, :, drang, 2] = dihed_derivs[2]
                     derivs[0][lx, :, drang, 2] = dihed_derivs[3]
+
+                    for i, x1 in enumerate([ix, jx, kx, lx]):
+                        for j, x2 in enumerate([ix, jx, kx, lx]):
+                            derivs[1][x1, :, x2 % nol, :, drang, 0] = dihed_derivs_2[i, j]
+
             else:
                 diheds = np.zeros(ncoords-steps)
 
@@ -325,7 +348,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
 
         # if we're returning derivs, we also need to make sure that they're ordered the same way the other data is...
         if return_derivs:
-            opts['derivs'] = derivs[:1]
+            opts['derivs'] = derivs#[:1]
 
         return final_coords, opts
 

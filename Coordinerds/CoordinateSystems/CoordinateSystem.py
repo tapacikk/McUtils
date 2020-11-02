@@ -398,6 +398,10 @@ class CoordinateSystem:
                 num_derivs = len(deriv_tensors)
 
                 if isinstance(order, int):
+                    if order > num_derivs:
+                        deriv_tensors = [deriv_tensors[-1]]
+                    else:
+                        deriv_tensors = [deriv_tensors[order - 1]]
                     order = order-num_derivs
                 else:
                     order = [o-num_derivs for o in order]
