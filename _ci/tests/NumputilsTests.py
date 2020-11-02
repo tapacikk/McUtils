@@ -41,16 +41,73 @@ class NumputilsTests(TestCase):
         self.assertEquals(td.shape, (4, 3, 4, 3))
         self.assertEquals(array.tensordot(array, axes=[[1, 2], [1, 2]]).shape, (4, 4))
 
-    @validationTest
+    @debugTest
+    def test_PtsDihedralsDeriv(self):
+        # need some proper values to test this against...
+        np.random.seed(0)
+        coords = np.random.rand(16, 3)
+
+        angs, derivs, derivs_2 = dihed_deriv(coords, [4, 7], [5, 6], [6, 5], [7, 4], order=2)
+        ang = angs[0]; deriv = derivs[:, 0, :]; deriv_2 = derivs_2[:, :, 0, :, :]
+        ang2 = pts_dihedrals(coords[4],  coords[5], coords[6], coords[7])
+
+        self.assertEquals(ang2, ang[0])
+
+        fd = FiniteDifferenceDerivative(
+            lambda pt: pts_dihedrals(pt[..., 0, :], pt[..., 1, :], pt[..., 2, :], pt[..., 3, :]),
+            function_shape=((None, 4, 3), 0),
+            mesh_spacing=1.0e-5
+        )
+        dihedDeriv_fd = FiniteDifferenceDerivative(
+            lambda pts: dihed_deriv(pts, 0, 1, 2, 3, order=1)[1].squeeze().transpose((1, 0, 2)),
+            function_shape=((None, 4, 3), (None, 4, 3)),
+            mesh_spacing=1.0e-5
+        )
+
+        fd1, fd2 = fd(coords[(4, 5, 6, 7),]).derivative_tensor([1, 2])
+        fd2_22 = dihedDeriv_fd(coords[(4, 5, 6, 7),]).derivative_tensor(1)
+
+        self.assertTrue(np.allclose(deriv.flatten(), fd1.flatten()), msg="{} and {} aren't close".format(
+            deriv.flatten(), fd1.flatten()
+        ))
+
+        d2_flat = np.concatenate(
+            [
+                np.concatenate([deriv_2[0, 0], deriv_2[0, 1], deriv_2[0, 2], deriv_2[0, 3]], axis=1),
+                np.concatenate([deriv_2[1, 0], deriv_2[1, 1], deriv_2[1, 2], deriv_2[1, 3]], axis=1),
+                np.concatenate([deriv_2[2, 0], deriv_2[2, 1], deriv_2[2, 2], deriv_2[2, 3]], axis=1),
+                np.concatenate([deriv_2[3, 0], deriv_2[3, 1], deriv_2[3, 2], deriv_2[3, 3]], axis=1)
+            ],
+            axis=0
+        )
+
+        bleh = fd2_22.reshape(12, 12)
+        # raise Exception("\n"+"\n".join("{} {}".format(a, b) for a, b in zip(
+        #     np.round(deriv_2[2, 2], 3), np.round(bleh[6:9, 6:9], 3))
+        #                                ))
+        # raise Exception(np.round(d2_flat-bleh, 3))
+        # raise Exception("\n"+"\n".join("{}\n{}".format(a, b) for a, b in zip(np.round(d2_flat, 3), np.round(bleh, 3))))
+        self.assertTrue(np.allclose(d2_flat.flatten(), bleh.flatten(), atol=1.0e-7), msg="d2: {} and {} differ".format(
+            d2_flat.flatten(), bleh.flatten()
+        ))
+        self.assertTrue(np.allclose(d2_flat.flatten(), fd2.flatten(), atol=1.0e-3), msg="d2: {} and {} differ".format(
+            d2_flat.flatten(), fd2.flatten()
+        ))
+
+        # raise Exception(fd2.flatten(), deriv_2.flatten())
+
+    @debugTest
     def test_PtsAngleDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
         coords = np.random.rand(16, 3)
 
-        ang, deriv, deriv_2 = angle_deriv(coords, 5, 4, 6, order=2)
+        angs, derivs, derivs_2 = angle_deriv(coords, [5, 5], [4, 6], [6, 4], order=2)
+
+        ang = angs[0]; deriv = derivs[:, 0, :]; deriv_2 = derivs_2[:, :, 0, :, :]
         ang2 = vec_angles(coords[4] - coords[5], coords[6] - coords[5])[0]
 
-        self.assertEquals(ang2, ang.flatten()[0])
+        self.assertEquals(ang2, ang)
 
         fd = FiniteDifferenceDerivative(
             lambda pt: vec_angles(pt[..., 1, :] - pt[..., 0, :], pt[..., 2, :] - pt[..., 0, :])[0],
@@ -64,8 +121,6 @@ class NumputilsTests(TestCase):
             deriv.flatten(), fd1.flatten()
         ))
 
-        deriv_2 = deriv_2.squeeze()
-
         d2_flat = np.concatenate(
             [
                 np.concatenate([deriv_2[0, 0], deriv_2[0, 1], deriv_2[0, 2]], axis=1),
@@ -74,11 +129,6 @@ class NumputilsTests(TestCase):
             ],
             axis=0
         )
-
-        # raise Exception(deriv_2[1, 0], deriv_2[0, 1])
-        # import McUtils.Plots as plt
-
-        # plt.ArrayPlot(d2_flat).show()
 
         # raise Exception("\n"+"\n".join("{} {}".format(a, b) for a, b in zip(d2_flat, fd2)))
 
@@ -202,35 +252,6 @@ class NumputilsTests(TestCase):
             axis=1
         )
 
-        # print("???????")
-
-        # test_sin, test_cos = vec_sin_cos_derivs(a, b, order=2)
-        #
-        # tc, tc1, tc2 = test_cos
-        # ts, ts1, ts2 = test_sin
-        #
-        # tc2_flat = np.concatenate(
-        #     [
-        #         np.concatenate([tc2[0, 0], tc2[0, 1]], axis=1),
-        #         np.concatenate([tc2[1, 0], tc2[1, 1]], axis=1)
-        #     ],
-        #     axis=0
-        # )
-
-        # raise Exception(c2_flat[0] - tc2_flat)
-
-        # raise Exception("\n"+"\n".join("{} {} {}".format(a, b, c) for a, b, c in zip(s2_flat, sin_fd22.reshape((6, 6)), sin_fd2)))
-
-        # raise Exception("\n"+"\n".join("{} {} {}".format(a, b, c) for a, b, c in zip(c2_flat, cos_fd2, cos_fd22.reshape((6, 6)))))
-        # raise Exception("\n"+"\n".join("{} {}".format(a, b) for a, b in zip(c2[1, 1], cos_fd2[3:, 3:])))
-        # raise Exception(c2[1, 0], c2[0, 1].T, cos_fd2[3:, :3])
-
-        # raise Exception("\n"+"\n".join("{} {}".format(a, b) for a, b in zip(s2_flat, sin_fd2)))
-
-        # raise Exception(s2[0, 0], sin_fd2[:3, :3])
-        # raise Exception(s2[1, 0], s2[0, 1].T, sin_fd2[3:, :3], sin_fd2[:3, 3:].T)
-        # raise Exception(s2[1, 1], sin_fd2[3:, 3:])
-        # raise Exception(s2[0, 1], sin_fd2[:3, 3:])
         self.assertTrue(np.allclose(s2_flat.flatten(), sin_fd22.flatten()), msg="sin d2: {} and {} differ".format(
             s2_flat.flatten(), sin_fd22.flatten()
         ))
@@ -238,14 +259,15 @@ class NumputilsTests(TestCase):
             c2_flat.flatten(), cos_fd22.flatten()
         ))
 
-    @validationTest
+    @debugTest
     def test_AngleDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
 
         a = coords[4] - coords[5]
         b = coords[6] - coords[5]
-        ang, dang, ddang = vec_angle_derivs(a, b, order=2)
+        ang, dang, ddang = vec_angle_derivs(np.array([a, b]),
+                                            np.array([b, a]), order=2)
         ang_2 = vec_angles(a, b)[0]
 
         self.assertEquals(ang_2, ang.flatten()[0])
@@ -256,22 +278,26 @@ class NumputilsTests(TestCase):
             mesh_spacing=1.0e-4
         )
 
-        fd_ang, fd_dang = ang_fd([a, b]).derivative_tensor([1, 2])
+        fd_ang_1, fd_dang_1 = ang_fd([a, b]).derivative_tensor([1, 2])
+        fd_ang_2, fd_dang_2 = ang_fd([b, a]).derivative_tensor([1, 2])
+
+        fd_ang = np.array([fd_ang_1, fd_ang_2])
+        fd_dang = np.array([fd_dang_1, fd_dang_2])
 
         self.assertTrue(np.allclose(dang.flatten(), fd_ang.flatten()), msg="ang d1: {} and {} differ".format(
             fd_ang.flatten(), fd_ang.flatten()
         ))
 
-
         d2_flat = np.concatenate(
             [
-                np.concatenate([ddang[0, 0], ddang[0, 1]], axis=1),
-                np.concatenate([ddang[1, 0], ddang[1, 1]], axis=1)
+                np.concatenate([ddang[:, 0, 0], ddang[:, 0, 1]], axis=2),
+                np.concatenate([ddang[:, 1, 0], ddang[:, 1, 1]], axis=2)
             ],
-            axis=0
+            axis=1
         )
 
-        self.assertTrue(np.allclose(d2_flat.flatten(), fd_dang.flatten(), atol=1.0e-3), msg="cos d2: {} and {} differ".format(
-            d2_flat.flatten(), fd_dang.flatten()
+        # raise Exception("\n"+"\n".join("{} {}".format(a, b) for a, b in zip(d2_flat[0], fd_dang[0])))
+        self.assertTrue(np.allclose(d2_flat.flatten(), fd_dang.flatten(), atol=1.0e-2), msg="ang d2: {} and {} differ ({})".format(
+            d2_flat.flatten(), fd_dang.flatten(), d2_flat.flatten() - fd_dang.flatten()
         ))
 

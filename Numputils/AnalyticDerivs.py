@@ -325,29 +325,46 @@ def vec_angle_derivs(a, b, order=1, zero_thresh=None):
     derivs.append(q)
 
     if order >= 1:
-        s_da, s_db = sin_derivs[1]
-        c_da, c_db = cos_derivs[1]
+
+        d = sin_derivs[1]
+        s_da = d[..., 0, :]; s_db = d[..., 1, :];
+        d = cos_derivs[1]
+        c_da = d[..., 0, :]; c_db = d[..., 1, :];
 
         q_da = c * s_da - s * c_da
         q_db = c * s_db - s * c_db
 
-        derivs.append(np.array([q_da, q_db]))
+        extra_dims = a.ndim - 1
+        extra_shape = a.shape[:-1]
+
+        d1 = np.array([q_da, q_db])
+        d1_reshape = tuple(range(1, extra_dims + 1)) + (0, extra_dims + 1)
+        derivs.append(d1.transpose(d1_reshape))
 
     if order >= 2:
-        s_daa, s_dab = sin_derivs[2][0]
-        s_dba, s_dbb = sin_derivs[2][1]
-        c_daa, c_dab = cos_derivs[2][0]
-        c_dba, c_dbb = cos_derivs[2][1]
+        d = sin_derivs
+        s_daa = d[2][..., 0, 0, :, :]; s_dab = d[2][..., 0, 1, :, :];
+        s_dba = d[2][..., 1, 0, :, :]; s_dbb = d[2][..., 1, 1, :, :];
 
+        d = cos_derivs
+        c_daa = d[2][..., 0, 0, :, :]; c_dab = d[2][..., 0, 1, :, :];
+        c_dba = d[2][..., 1, 0, :, :]; c_dbb = d[2][..., 1, 1, :, :];
+
+        c = c[..., np.newaxis]
+        s = s[..., np.newaxis]
         q_daa = vec_outer(c_da, s_da) + c * s_daa - vec_outer(s_da, c_da) - s * c_daa
         q_dba = vec_outer(c_da, s_db) + c * s_dba - vec_outer(s_da, c_db) - s * c_dba
         q_dab = vec_outer(c_db, s_da) + c * s_dab - vec_outer(s_db, c_da) - s * c_dab
         q_dbb = vec_outer(c_db, s_db) + c * s_dbb - vec_outer(s_db, c_db) - s * c_dbb
 
-        derivs.append(np.array([
+        d2 = np.array([
             [q_daa, q_dab],
             [q_dba, q_dbb]
-        ]))
+        ])
+
+        d2_reshape = tuple(range(2, extra_dims+2)) + (0, 1, extra_dims+2, extra_dims+3)
+
+        derivs.append(d2.transpose(d2_reshape))
 
     return derivs
 
@@ -409,8 +426,8 @@ def angle_deriv(coords, i, j, k, order=1, zero_thresh=None):
     if order > 2:
         raise NotImplementedError("derivatives currently only up to order {}".format(2))
 
-    a = coords[j] - coords[i]
-    b = coords[k] - coords[i]
+    a = coords[..., j, :] - coords[..., i, :]
+    b = coords[..., k, :] - coords[..., i, :]
     d = vec_angle_derivs(a, b, order=order, zero_thresh=zero_thresh)
 
     derivs = []
@@ -418,14 +435,12 @@ def angle_deriv(coords, i, j, k, order=1, zero_thresh=None):
     derivs.append(d[0])
 
     if order >= 1:
-        da, db = d[1]
+        da = d[1][..., 0, :]; db = d[1][..., 1, :]
         derivs.append(np.array([-(da + db), da, db]))
 
     if order >= 2:
-        daa, dab = d[2][0]
-        dba, dbb = d[2][1]
-
-        # raise Exception(d[2])
+        daa = d[2][..., 0, 0, :, :]; dab = d[2][..., 0, 1, :, :]
+        dba = d[2][..., 1, 0, :, :]; dbb = d[2][..., 1, 1, :, :]
         # ii ij ik
         # ji jj jk
         # ki kj kk
@@ -460,9 +475,9 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
     if order > 2:
         raise NotImplementedError("derivatives currently only up to order {}".format(2))
 
-    a = coords[j] - coords[i]
-    b = coords[k] - coords[j]
-    c = coords[l] - coords[k]
+    a = coords[..., j, :] - coords[..., i, :]
+    b = coords[..., k, :] - coords[..., j, :]
+    c = coords[..., l, :] - coords[..., k, :]
 
     n1 = vec_crosses(a, b)
     n2 = vec_crosses(b, c)
@@ -475,11 +490,8 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
 
     derivs.append(d[0])
 
-    i3 = np.broadcast_to(np.eye(3), (len(a), 3, 3))
-    e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
-
     if order >= 1:
-        dn1, dn2 = d[1]
+        dn1 = d[1][..., 0, :]; dn2 = d[1][..., 1, :]
 
         di = vec_crosses(b, dn1)
         dj = vec_crosses(c, dn2) - vec_crosses(a+b, dn1)
@@ -489,15 +501,22 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
         derivs.append(sign[np.newaxis, ..., np.newaxis]*np.array([di, dj, dk, dl]))
 
     if order >= 2:
-        d11, d12 = d[2][0]
-        d21, d22 = d[2][1]
+
+        d11 = d[2][..., 0, 0, :, :]; d12 = d[2][..., 0, 1, :, :]
+        d21 = d[2][..., 1, 0, :, :]; d22 = d[2][..., 1, 1, :, :]
 
         # explicit write out of chain-rule transformations to isolate different Kron-delta terms
-        dot = vec_tensordot
+        extra_dims = a.ndim - 1
+        extra_shape = a.shape[:-1]
+        dot = lambda x, y, axes=(-1, -2) : vec_tensordot(x, y, axes=axes, shared=extra_dims)
+        if extra_dims > 0:
+            e3 = np.broadcast_to(levi_cevita3,  extra_shape + levi_cevita3.shape)
+        else:
+            e3 = levi_cevita3
 
-        Ca = dot(e3, a)
-        Cb = dot(e3, b)
-        Cc = dot(e3, c)
+        Ca = dot(e3, a, axes=[-1, -1])
+        Cb = dot(e3, b, axes=[-1, -1])
+        Cc = dot(e3, c, axes=[-1, -1])
         Cab = Ca+Cb
         Cbc = Cb+Cc
 
@@ -505,34 +524,37 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
         CbCa, CbCb, CbCc, CbCab, CbCbc = [dot(Cb, x) for x in (Ca, Cb, Cc, Cab, Cbc)]
         CcCa, CcCb, CcCc, CcCab, CcCbc = [dot(Cc, x) for x in (Ca, Cb, Cc, Cab, Cbc)]
         CabCa, CabCb, CabCc, CabCab, CabCbc = [dot(Cab, x) for x in (Ca, Cb, Cc, Cab, Cbc)]
-        CbcCa, CbcCb, CbcCc, CbcCab, CbcCbc = [dot(Cab, x) for x in (Ca, Cb, Cc, Cab, Cbc)]
+        CbcCa, CbcCb, CbcCc, CbcCab, CbcCbc = [dot(Cbc, x) for x in (Ca, Cb, Cc, Cab, Cbc)]
 
         dii = dot(CbCb, d11)
-        dij = dot(CbCc, d21) - dot(CbCab, d11)
-        dik = dot(CbCa, d11) - dot(CbCbc, d21)
-        dil = dot(CbCb, d21)
+        dij = dot(CcCb, d12) - dot(CabCb, d11)
+        dik = dot(CaCb, d11) - dot(CbcCb, d12)
+        dil = dot(CbCb, d12)
 
-        dji = dot(CcCb, d12) - dot(CabCb, d11)
+        dji = dot(CbCc, d21) - dot(CbCab, d11)
         djj = dot(CabCab, d11) - dot(CabCc, d21) - dot(CcCab, d12) + dot(CcCc, d22)
-        djk = dot(CabCbc, d21) - dot(CcCbc, d22) - dot(CabCa, d11) + dot(CcCa, d12)
-        djl = dot(CcCb, d22) - dot(CabCb, d21)
+        djk = dot(CbcCab, d12) - dot(CbcCc, d22) - dot(CaCab, d11) + dot(CaCc, d21)
+        djl = dot(CbCc, d22) - dot(CbCab, d12)
 
-        dki = dot(CaCb, d11) - dot(CbcCb, d12)
-        dkj = dot(CbcCab, d12) - dot(CbcCc, d22) - dot(CaCab, d11) + dot(CaCc, d21)
+        dki = dot(CbCa, d11) - dot(CbCbc, d21)
+        dkj = dot(CabCbc, d21) - dot(CcCbc, d22) - dot(CabCa, d11) + dot(CcCa, d12)
         dkk = dot(CaCa, d11) - dot(CaCbc, d21) - dot(CbcCa, d12) + dot(CbcCbc, d22)
-        dkl = dot(CaCb, d21) - dot(CbcCb, d22)
+        dkl = dot(CbCa, d12) - dot(CbCbc, d22)
 
-        dli = dot(CbCb, d12)
-        dlj = dot(CbCc, d22) - dot(CbCab, d12)
-        dlk = dot(CbCa, d12) - dot(CbCbc, d22)
+        dli = dot(CbCb, d21)
+        dlj = dot(CcCb, d22) - dot(CabCb, d21)
+        dlk = dot(CaCb, d21) - dot(CbcCb, d22)
         dll = dot(CbCb, d22)
 
-        derivs.append(sign[np.newaxis, np.newaxis, ..., np.newaxis]**np.array([
-            [dii, dij, dik, dil],
-            [dji, djj, djk, djl],
-            [dki, dkj, dkk, dkl],
-            [dli, dlj, dlk, dll]
-        ]))
+        derivs.append(
+            # sign[np.newaxis, np.newaxis, ..., np.newaxis, np.newaxis] *
+            np.array([
+                [dii, dij, dik, dil],
+                [dji, djj, djk, djl],
+                [dki, dkj, dkk, dkl],
+                [dli, dlj, dlk, dll]
+            ])
+        )
 
     return derivs
 
