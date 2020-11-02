@@ -103,10 +103,13 @@ def vec_norm_derivs(a, order=1, zero_thresh=None):
         derivs.append(d1)
 
     if order >= 2:
-        i3 = np.broadcast_to(np.eye(3), (1, 3, 3))
+        extra_shape = a.ndim - 1
+        if extra_shape > 0:
+            i3 = np.broadcast_to(np.eye(3), (1,)*extra_shape + (3, 3))
+        else:
+            i3 = np.eye(3)
         v = vec_outer(d1, d1)
-        if v.shape == (3,): # single config case needs special care
-            v = [np.newaxis]
+        # na shold have most of the extra_shape needed
         d2 = (i3 - v) / na[..., np.newaxis]
         derivs.append(d2)
 
@@ -130,6 +133,8 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
 
     if order > 2:
         raise NotImplementedError("derivatives currently only up to order {}".format(2))
+
+    extra_dims = a.ndim - 1
 
     sin_derivs = []
     cos_derivs = []
@@ -165,7 +170,12 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
         s_da = (bxn / (n_b * n_n) - s * na_da) / n_a
         s_db = (nxa / (n_n * n_a) - s * nb_db) / n_b
 
-        sin_derivs.append(np.array([s_da, s_db]))
+        # now we build our derivs, but we also need to transpose so that the OG shape comes first
+        d1 = np.array([s_da, s_db])
+        d1_reshape = tuple(range(1, extra_dims+1)) + (0, extra_dims+1)
+        meh = d1.transpose(d1_reshape)
+
+        sin_derivs.append(meh)
 
         # print(
         #     nb_db.shape,
@@ -177,20 +187,24 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
         c_da = (nb_db - c * na_da) / n_a
         c_db = (na_da - c * nb_db) / n_b
 
-        cos_derivs.append(np.array([c_da, c_db]))
+        d1 = np.array([c_da, c_db])
+        meh = d1.transpose(d1_reshape)
+
+        cos_derivs.append(meh)
 
     if order >= 2:
 
-        extra_shape = a.ndim - 1
-        if extra_shape > 0:
-            e3 = np.broadcast_to(levi_cevita3,  (1,)*extra_shape + (3, 3, 3))
+        extra_dims = a.ndim - 1
+        extra_shape = a.shape[:-1]
+        if extra_dims > 0:
+            e3 = np.broadcast_to(levi_cevita3,  extra_shape + (3, 3, 3))
             td = np.tensordot
             outer = vec_outer
-            vec_td = vec_tensordot
+            vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=extra_dims, **kw)
         else:
             e3 = levi_cevita3
             td = np.tensordot
-            vec_td = np.tensordot
+            vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=0, **kw)
             outer = np.outer
             a = a.squeeze()
             nb_db = nb_db.squeeze()
@@ -203,40 +217,31 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
         # compute terms we'll need for various cross-products
         e3b = vec_td(e3, b, axes=[-1, -1])
         e3a = vec_td(e3, a, axes=[-1, -1])
-        e3n = vec_td(e3, n, axes=[-1, -1])
+        # e3n = vec_td(e3, n, axes=[-1, -1])
 
         e3nbdb = vec_td(e3, nb_db, axes=[-1, -1])
         e3nada = vec_td(e3, na_da, axes=[-1, -1])
         e3nndn = vec_td(e3, nn_dn, axes=[-1, -1])
 
-        n_da = -vec_td(e3b, nn_dnn, axes=[-1, -2])
+        n_da = -vec_td(e3b,  nn_dnn, axes=[-1, -2])
         bxdna = vec_td(n_da, e3nbdb, axes=[-1, -2])
 
-        # raise Exception(
-        #     n_da.shape,
-        #     bxdna.shape,
-        #     n_a.shape,
-        #     bxdna.shape,
-        #                 (na_da / n_a).shape,
-        #                 s_da.shape
-        #                 )
-        #
-        # raise Exception(bxdna.shape,
-        #                 (na_da / n_a).shape,
-        #                 vec_outer(na_da / n_a, s_da).shape,
-        #                 vec_outer(s_da, na_da).shape
-        #                 )
+        # if extra_dims == 0:
+        #     print("Good:", bxdna, n_da, e3nbdb)
+        # else:
+        #     print("Wtf", np.tensordot(n_da[0], e3nbdb[0], axes=[-1, -2]))
+        #     print("Bad:", bxdna[0], n_da[0], e3nbdb[0], e3nbdb[1])
 
         s_daa = - (
-            outer(na_da, s_da) + outer(s_da, na_da) + s * na_daa - bxdna
-        ) / n_a
+            outer(na_da, s_da) + outer(s_da, na_da) + s[..., np.newaxis] * na_daa - bxdna
+        ) / n_a[..., np.newaxis]
 
         ndaXnada = -vec_td(n_da, e3nada, axes=[-1, -2])
         nndnXnadaa = vec_td(na_daa, e3nndn, axes=[-1, -2])
 
-        s_dab =  (
+        s_dab = (
                      ndaXnada + nndnXnadaa - outer(s_da, nb_db)
-        ) / n_b
+        ) / n_b[..., np.newaxis]
 
         n_db = vec_td(e3a, nn_dnn, axes=[-1, -2])
 
@@ -245,36 +250,47 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
 
         s_dba = (
                 nbdbXnda + nbdbbXnndn - outer(s_db, na_da)
-        ) / n_a
+        ) / n_a[..., np.newaxis]
 
         dnbxa = - vec_td(n_db, e3nada, axes=[-1, -2])
 
         s_dbb = - (
-            outer(nb_db, s_db) + outer(s_db, nb_db) + s * nb_dbb - dnbxa
-        ) / n_b
+            outer(nb_db, s_db) + outer(s_db, nb_db) + s[..., np.newaxis] * nb_dbb - dnbxa
+        ) / n_b[..., np.newaxis]
 
-        sin_derivs.append(np.array([
-            [ s_daa, s_dab ],
-            [ s_dba, s_dbb ]
-        ]))
+        s2 = np.array([
+            [s_daa, s_dab],
+            [s_dba, s_dbb]
+        ])
 
+        d2_reshape = tuple(range(2, extra_dims+2)) + (0, 1, extra_dims+2, extra_dims+3)
+        # raise Exception(s2.shape, d2_reshape)
+        s2 = s2.transpose(d2_reshape)
+
+        sin_derivs.append(s2)
 
         c_daa = - (
-            outer(na_da, c_da) + outer(c_da, na_da) + c * na_daa
-        ) / n_a
+            outer(na_da, c_da) + outer(c_da, na_da) + c[..., np.newaxis] * na_daa
+        ) / n_a[..., np.newaxis]
 
-        c_dab = ( na_daa - outer(c_da, nb_db) ) / n_b
+        c_dab = ( na_daa - outer(c_da, nb_db) ) / n_b[..., np.newaxis]
 
-        c_dba = ( nb_dbb - outer(c_db, na_da) ) / n_a
+        c_dba = ( nb_dbb - outer(c_db, na_da) ) / n_a[..., np.newaxis]
 
         c_dbb = - (
-            outer(nb_db, c_db) + outer(c_db, nb_db) + c * nb_dbb
-        ) / n_b
+            outer(nb_db, c_db) + outer(c_db, nb_db) + c[..., np.newaxis] * nb_dbb
+        ) / n_b[..., np.newaxis]
 
-        cos_derivs.append(np.array([
+        c2 = np.array([
             [c_daa, c_dab],
             [c_dba, c_dbb]
-        ]))
+        ])
+
+        c2 = c2.transpose(d2_reshape)
+
+        # raise Exception(c2.shape)
+
+        cos_derivs.append(c2)
 
     return sin_derivs, cos_derivs
 
@@ -306,8 +322,6 @@ def vec_angle_derivs(a, b, order=1, zero_thresh=None):
 
     q = np.arctan2(s, c)
 
-    # raise Exception(q)
-
     derivs.append(q)
 
     if order >= 1:
@@ -325,33 +339,10 @@ def vec_angle_derivs(a, b, order=1, zero_thresh=None):
         c_daa, c_dab = cos_derivs[2][0]
         c_dba, c_dbb = cos_derivs[2][1]
 
-        q_daa = (
-            vec_outer(c_da, s_da)
-            + c * s_daa
-            - vec_outer(s_da, c_da)
-            - s * c_daa
-        )
-
-        q_dba = (
-                vec_outer(c_da, s_db)
-                + c * s_dba
-                - vec_outer(s_da, c_db)
-                - s * c_dba
-        )
-
-        q_dab = (
-                vec_outer(c_db, s_da)
-                + c * s_dab
-                - vec_outer(s_db, c_da)
-                - s * c_dab
-        )
-
-        q_dbb = (
-                vec_outer(c_db, s_db)
-                + c * s_dbb
-                - vec_outer(s_db, c_db)
-                - s * c_dbb
-        )
+        q_daa = vec_outer(c_da, s_da) + c * s_daa - vec_outer(s_da, c_da) - s * c_daa
+        q_dba = vec_outer(c_da, s_db) + c * s_dba - vec_outer(s_da, c_db) - s * c_dba
+        q_dab = vec_outer(c_db, s_da) + c * s_dab - vec_outer(s_db, c_da) - s * c_dab
+        q_dbb = vec_outer(c_db, s_db) + c * s_dbb - vec_outer(s_db, c_db) - s * c_dbb
 
         derivs.append(np.array([
             [q_daa, q_dab],
@@ -433,13 +424,15 @@ def angle_deriv(coords, i, j, k, order=1, zero_thresh=None):
     if order >= 2:
         daa, dab = d[2][0]
         dba, dbb = d[2][1]
+
+        # raise Exception(d[2])
         # ii ij ik
         # ji jj jk
         # ki kj kk
         derivs.append(np.array([
             [daa + dba + dab + dbb, -(daa + dab), -(dba + dbb)],
-            [-(daa + dba), daa, dba],
-            [-(dab + dbb), dab, dbb]
+            [         -(daa + dba),          daa,   dba       ],
+            [         -(dab + dbb),          dab,   dbb       ]
         ]))
 
     return derivs

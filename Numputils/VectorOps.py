@@ -337,7 +337,7 @@ def vec_tensordot(tensa, tensb, axes=2, shared=None):
     # is constrained by the contraction of axes
     shared = min(shared, min(axes_a), min(axes_b))
 
-    if shared == 0:
+    if shared == 0: #easier to just delegate here than handle more special cases
         return np.tensordot(a, b, axes=axes)
 
     as_ = a_shape
@@ -372,16 +372,16 @@ def vec_tensordot(tensa, tensb, axes=2, shared=None):
     # Move the axes to sum over to the end of "a"
     # and to the front of "b"
     # preserve things so that the "shared" stuff remains at the fron of both of these...
-    notin_a = [k for k in range(nda) if k not in axes_a]
-    newaxes_a = notin_a + axes_a
+    notin_a = [k for k in range(shared, nda) if k not in axes_a]
+    newaxes_a = list(range(shared)) + notin_a + axes_a
     N2_a = 1
     for axis in axes_a:
         N2_a *= as_[axis]
     newshape_a = as_[:shared] + (int(np.product([as_[ax] for ax in notin_a if ax >= shared])), N2_a)
     olda = [as_[axis] for axis in notin_a if axis >= shared]
 
-    notin_b = [k for k in range(ndb) if k not in axes_b]
-    newaxes_b = notin_b + axes_b
+    notin_b = [k for k in range(shared, ndb) if k not in axes_b]
+    newaxes_b = list(range(shared)) + axes_b + notin_b
     N2_b = 1
     for axis in axes_b:
         N2_b *= bs[axis]
@@ -390,6 +390,7 @@ def vec_tensordot(tensa, tensb, axes=2, shared=None):
 
     at = a.transpose(newaxes_a).reshape(newshape_a)
     bt = b.transpose(newaxes_b).reshape(newshape_b)
+    # print(newaxes_a, newaxes_b, as_[:shared], at.shape, bt.shape)
     res = np.matmul(at, bt)
     final_shape = list(a_shape[:shared]) + olda + oldb
     # raise Exception(res.shape, final_shape)
