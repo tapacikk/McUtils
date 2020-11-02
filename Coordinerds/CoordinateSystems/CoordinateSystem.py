@@ -375,6 +375,19 @@ class CoordinateSystem:
 
         deriv_tensors = None # default return value
 
+        # print(">>>>>", order, self)
+
+        self_shape = self.coordinate_shape
+        if self_shape is None:
+            self_shape = coords.shape[1:]
+        if self_shape is None:
+            raise CoordinateSystemError(
+                "{}.{}: 'coordinate_shape' {} must be tuple of ints".format(
+                    type(self).__name__,
+                    'jacobian',
+                    self_shape
+                ))
+
         if not all_numerical:
             # sort of a hack right now: if the conversion returns 'derivs', then we use those for the FD
             # unless we got enough analytic derivatives to not need to do any more FD
@@ -404,12 +417,14 @@ class CoordinateSystem:
                         deriv_tensors = [deriv_tensors[order - 1]]
                     order = order-num_derivs
                 else:
-                    order = [o-num_derivs for o in order]
+                    order = [o-num_derivs for o in order if o > num_derivs]
 
                 kw = converter_options.copy()
                 if ret_d_key in kw:
                     del kw[ret_d_key]
-                def convert(c, s=system, dk=deriv_key, self=self, num_derivs=num_derivs, convert_kwargs=kw):
+
+
+                def convert(c, s=system, dk=deriv_key, self=self, coord_shape=self_shape, num_derivs=num_derivs, convert_kwargs=kw):
                     crds, opts = self.convert_coords(c, s, return_derivs=True, **convert_kwargs)
                     # we now have to reshape the derivatives because mc_safe_apply is only applied to the coords -_-
                     # should really make that function manage deriv shapes too, but don't know how to _tell_ it that I
@@ -421,7 +436,16 @@ class CoordinateSystem:
                         derivs = [derivs]
                     derivs = derivs[-1]
 
-                    new_deriv_shape = c.shape + derivs.shape[len(c.shape) - 1:]
+                    # print("? ... ?", derivs.shape, coord_shape, c.shape)
+                    # for reasons I can't remember we insert the coordinate shape?
+                    if c.shape == coord_shape:
+                        if derivs.shape[0] == 1:
+                            derivs = derivs[0]
+                        # print("? wat ?", derivs.shape)
+                        new_deriv_shape = c.shape + derivs.shape[len(c.shape):]
+                    else:
+                        new_deriv_shape = c.shape + derivs.shape[len(c.shape) - 1:]
+                    # print("? oh ?", c.shape, derivs.shape, new_deriv_shape)
                     derivs = derivs.reshape(new_deriv_shape)
                     return derivs
             else:
@@ -431,16 +455,6 @@ class CoordinateSystem:
 
         need_derivs = max(order) > 0 if not isinstance(order, int) else order > 0
         if need_derivs:
-            self_shape = self.coordinate_shape
-            if self_shape is None:
-                self_shape = coords.shape[1:]
-            if self_shape is None:
-                raise CoordinateSystemError(
-                    "{}.{}: 'coordinate_shape' {} must be tuple of ints".format(
-                        type(self).__name__,
-                        'jacobian',
-                        self_shape
-                    ))
 
             other_shape = system.coordinate_shape
             # if other_shape is None:
@@ -458,13 +472,16 @@ class CoordinateSystem:
                 if k not in finite_difference_options:
                     finite_difference_options[k] = v
 
+            # print("??", other_shape, coords.shape)
+            # print("?>", convert(coords).shape)
             deriv = FiniteDifferenceDerivative(
                 convert,
-                function_shape=(self_shape, other_shape),
+                function_shape=(self_shape, convert(coords).shape),
                 **finite_difference_options
             )(coords)
 
             if not isinstance(order, int):
+                # print(order)
                 if 0 in order:
                     if order[0] != 0:
                         raise NotImplementedError("I don't want to mess with ordering so just put the 1 or 0 first...")
@@ -488,6 +505,7 @@ class CoordinateSystem:
         if deriv_tensors is None:
             raise CoordinateSystemError("derivative order '{}' less than 0".format(order))
 
+        # print([(o, x.shape) for o, x in (zip([order], [deriv_tensors]) if isinstance(order, int) else zip(order, deriv_tensors))])
         return deriv_tensors
 
     def __repr__(self):
