@@ -80,30 +80,30 @@ class NumputilsTests(TestCase):
                                                            order=2
                                                            )
 
-        raise Exception([
-            diheds,
-            [np.min(dihed_derivs), np.max(dihed_derivs)],
-            [np.min(dihed_derivs_2), np.max(dihed_derivs_2)]
-            ])
+        # raise Exception([
+        #     diheds,
+        #     [np.min(dihed_derivs), np.max(dihed_derivs)],
+        #     [np.min(dihed_derivs_2), np.max(dihed_derivs_2)]
+        #     ])
+        #
+        # raise Exception(
+        #     np.array([dists.flatten(), np.round(np.rad2deg(angs.flatten()), 1), np.round(np.rad2deg(diheds.flatten()), 1)]),
+        #     [
+        #         [np.min(dist_derivs), np.max(dist_derivs)],
+        #         [np.min(dist_derivs_2), np.max(dist_derivs_2)]
+        #         ],
+        #     [
+        #         [np.min(ang_derivs), np.max(ang_derivs)],
+        #         [np.min(ang_derivs_2), np.max(ang_derivs_2)]
+        #         ],
+        #     [
+        #         [np.min(dihed_derivs), np.max(dihed_derivs)],
+        #         [np.min(dihed_derivs_2), np.max(dihed_derivs_2)]
+        #     ]
+        # )
 
-        raise Exception(
-            np.array([dists.flatten(), np.round(np.rad2deg(angs.flatten()), 1), np.round(np.rad2deg(diheds.flatten()), 1)]),
-            [
-                [np.min(dist_derivs), np.max(dist_derivs)],
-                [np.min(dist_derivs_2), np.max(dist_derivs_2)]
-                ],
-            [
-                [np.min(ang_derivs), np.max(ang_derivs)],
-                [np.min(ang_derivs_2), np.max(ang_derivs_2)]
-                ],
-            [
-                [np.min(dihed_derivs), np.max(dihed_derivs)],
-                [np.min(dihed_derivs_2), np.max(dihed_derivs_2)]
-            ]
-        )
 
-
-    @validationTest
+    @debugTest
     def test_PtsDihedralsDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -158,7 +158,7 @@ class NumputilsTests(TestCase):
 
         # raise Exception(fd2.flatten(), deriv_2.flatten())
 
-    @validationTest
+    @debugTest
     def test_PtsAngleDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -200,7 +200,7 @@ class NumputilsTests(TestCase):
 
         # raise Exception(fd2.flatten(), deriv_2.flatten())
 
-    @validationTest
+    @debugTest
     def test_PtsDistDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -242,7 +242,7 @@ class NumputilsTests(TestCase):
 
         # raise Exception(fd2.flatten(), deriv_2.flatten())
 
-    @validationTest
+    @debugTest
     def test_NormDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -273,7 +273,7 @@ class NumputilsTests(TestCase):
             na_daa.flatten(), fd_nadaa.flatten()
         ))
 
-    @validationTest
+    @debugTest
     def test_SinCosDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -363,7 +363,7 @@ class NumputilsTests(TestCase):
             c2_flat.flatten(), cos_fd22.flatten()
         ))
 
-    @validationTest
+    @debugTest
     def test_AngleDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)

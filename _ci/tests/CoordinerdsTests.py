@@ -266,13 +266,30 @@ class ConverterTest(TestCase):
         jacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil=5)  # semi-analytic
         self.assertEquals(jacob.shape, (10, 3, 10, 3, 10 - 1, 3))  # we always lose one atom
 
-        self.assertTrue(np.allclose(
-            np.reshape(njacob, (10, 3, 10, 3, 10 - 1, 3)) - jacob,
-            0.,
-            atol=1.0e-3
-        ), msg="wat: {}".format(
-            np.reshape(njacob, (10, 3, 10, 3, 10 - 1, 3)) - jacob
-        )
+        # jacob = jacob.reshape((10, 3, 10, 3, 10 - 1, 3))
+
+        import McUtils.Plots as plt
+
+        # bleh_a = np.round(np.reshape(njacob, (900, 27)), 8)
+        # bleh_b = np.round(np.reshape(jacob, (900, 27)), 8)
+        # bleh_c = np.round(bleh_a - bleh_b, 10)
+        # bleh_bleh = np.where(bleh_c != 0.)
+        #
+        # print(bleh_a[bleh_bleh][:5])
+        # print(bleh_b[bleh_bleh][:5])
+
+        # plt.ArrayPlot( ( bleh_a == 0. ).astype(int) )
+        # plt.ArrayPlot( ( bleh_b == 0. ).astype(int) )
+        # plt.ArrayPlot( bleh_c ).show()
+        njacob = njacob.reshape((10, 3, 10, 3, 10 - 1, 3))
+        diffs = njacob - jacob
+        bleh_bleh = np.where(np.round(diffs, 3) != 0.)
+        # print(bleh_bleh)
+
+        # print("???", np.round(jacob[0, :, 0, :, :, 0], 2), np.round(njacob[0, :, 0, :, :, 2], 2))
+        self.assertTrue(
+            np.allclose(diffs, 0., atol=1.0e-3),
+            msg="wat: {}".format(np.max(np.abs(np.round(diffs, 3))))
         )
 
 

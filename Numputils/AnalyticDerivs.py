@@ -568,7 +568,7 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
         dll = dot(CbCb, d22)
 
         derivs.append(
-            # sign[np.newaxis, np.newaxis, ..., np.newaxis, np.newaxis] *
+            -sign[np.newaxis, np.newaxis, ..., np.newaxis, np.newaxis] *
             np.array([
                 [dii, dij, dik, dil],
                 [dji, djj, djk, djl],

@@ -168,7 +168,12 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
 
                 for i, x1 in enumerate([ix, jx]):
                     for j, x2 in enumerate([ix, jx]):
+                        # print(i, j, x1, x2,
+                        #       # dist_derivs_2[i, j][0, 0],
+                        #       drang
+                        #       )
                         derivs[1][x1, :, x2, :, drang, 0] = dist_derivs_2[i, j]
+
             if len(ol) > 2:
                 ix = ol[2:, 0]
                 jx = ol[2:, 1]
@@ -186,9 +191,9 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
                     derivs[0][ix, :, drang, 1] = angle_derivs[1]
                     derivs[0][kx, :, drang, 1] = angle_derivs[2]
 
-                    for i, x1 in enumerate([ix, jx, kx]):
-                        for j, x2 in enumerate([ix, jx, kx]):
-                            derivs[1][x1, :, x2, :, drang, 0] = angle_derivs_2[i, j]
+                    for i, x1 in enumerate([jx, ix, kx]):
+                        for j, x2 in enumerate([jx, ix, kx]):
+                            derivs[1][x1, :, x2, :, drang, 1] = angle_derivs_2[i, j]
             else:
                 angles = np.array([0.])
             if len(ol) > 3:
@@ -212,7 +217,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
 
                     for i, x1 in enumerate([ix, jx, kx, lx]):
                         for j, x2 in enumerate([ix, jx, kx, lx]):
-                            derivs[1][x1, :, x2, :, drang, 0] = dihed_derivs_2[i, j]
+                            derivs[1][x1, :, x2, :, drang, 2] = dihed_derivs_2[i, j]
             else:
                 diheds = np.array([0, 0])
             ol = ol[1:]
