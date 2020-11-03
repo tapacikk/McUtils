@@ -146,8 +146,13 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
     n, n_n = vec_apply_zero_threshold(n, zero_thresh=zero_thresh)
 
     adb = vec_dots(a, b)[..., np.newaxis]
+
+    zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
+
     s = n_n / (n_a * n_b)
+    # s[n_n <= zero_thresh] = 0.
     c = adb / (n_a * n_b)
+    # c[adb <= zero_thresh] = 0.
 
     sin_derivs.append(s)
     cos_derivs.append(c)
@@ -207,12 +212,18 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
             vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=0, **kw)
             outer = np.outer
             a = a.squeeze()
-            nb_db = nb_db.squeeze()
-            na_da = na_da.squeeze()
-            nn_dn = nn_dn.squeeze()
-            na_daa = na_daa.squeeze()
-            nb_dbb = nb_dbb.squeeze()
-            nn_dnn = nn_dnn.squeeze()
+            b = b.squeeze()
+            nb_db = nb_db.squeeze(); na_da = na_da.squeeze(); nn_dn = nn_dn.squeeze()
+            na_daa = na_daa.squeeze(); nb_dbb = nb_dbb.squeeze(); nn_dnn = nn_dnn.squeeze()
+
+        # print(na_da, s_da, s, na_daa, bxdna)
+
+        # na_da[na_da <= zero_thresh] = 0.
+        # nb_db[nb_db <= zero_thresh] = 0.
+        # nn_dn[nn_dn <= zero_thresh] = 0.
+        # na_daa[na_daa <= zero_thresh] = 0.
+        # nb_dbb[nb_dbb <= zero_thresh] = 0.
+        # nn_dnn[nn_dnn <= zero_thresh] = 0.
 
         # compute terms we'll need for various cross-products
         e3b = vec_td(e3, b, axes=[-1, -1])
@@ -232,8 +243,18 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
         #     print("Wtf", np.tensordot(n_da[0], e3nbdb[0], axes=[-1, -2]))
         #     print("Bad:", bxdna[0], n_da[0], e3nbdb[0], e3nbdb[1])
 
+        #
+        # adb_zeros = np.where(adb <= zero_thresh)
+        # s = n_n / (n_a * n_b)
+        # s[n_n_zeros] = 0.
+        # c = adb / (n_a * n_b)
+        # c[adb_zeros] = 0.
+
+
         s_daa = - (
-            outer(na_da, s_da) + outer(s_da, na_da) + s[..., np.newaxis] * na_daa - bxdna
+            outer(na_da, s_da)
+            + outer(s_da, na_da)
+            + s[..., np.newaxis] * na_daa - bxdna
         ) / n_a[..., np.newaxis]
 
         ndaXnada = -vec_td(n_da, e3nada, axes=[-1, -2])

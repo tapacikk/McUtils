@@ -159,10 +159,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
         if not multiconfig:
             ix = ol[1:, 0]
             jx = ol[1:, 1]
-            dists = self.get_dists(
-                coords[ix],
-                coords[jx]
-            )
+            dists = self.get_dists(coords[ix], coords[jx])
             if return_derivs:
                 _dists, dist_derivs, dist_derivs_2 = dist_deriv(coords, ix, jx, order=2)
                 drang = np.arange(len(ix))

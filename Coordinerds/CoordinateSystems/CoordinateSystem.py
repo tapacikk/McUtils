@@ -423,7 +423,6 @@ class CoordinateSystem:
                 if ret_d_key in kw:
                     del kw[ret_d_key]
 
-
                 def convert(c, s=system, dk=deriv_key, self=self, coord_shape=self_shape, num_derivs=num_derivs, convert_kwargs=kw):
                     crds, opts = self.convert_coords(c, s, return_derivs=True, **convert_kwargs)
                     # we now have to reshape the derivatives because mc_safe_apply is only applied to the coords -_-
@@ -436,17 +435,20 @@ class CoordinateSystem:
                         derivs = [derivs]
                     derivs = derivs[-1]
 
-                    # print("? ... ?", derivs.shape, coord_shape, c.shape)
-                    # for reasons I can't remember we insert the coordinate shape?
-                    if c.shape == coord_shape:
-                        if derivs.shape[0] == 1:
-                            derivs = derivs[0]
-                        # print("? wat ?", derivs.shape)
-                        new_deriv_shape = c.shape + derivs.shape[len(c.shape):]
-                    else:
-                        new_deriv_shape = c.shape + derivs.shape[len(c.shape) - 1:]
-                    # print("? oh ?", c.shape, derivs.shape, new_deriv_shape)
+                    # now we figure out how much shape is in 'c'
+                    c_dims = np.prod(c.shape)
+                    # and we figure out how much of the derivs to toss out to account for it
+                    d_dims = np.cumprod(derivs.shape)
+                    pos = np.where(d_dims == c_dims)[0]
+                    if len(pos) == 0:
+                        raise ValueError("Shape mismatch in Jacobian (coordinates with shape {} returned derivatives with shape {})".format(
+                            c.shape,
+                            derivs.shape
+                        ))
+
+                    new_deriv_shape = c.shape + derivs.shape[pos[0] + 1:]
                     derivs = derivs.reshape(new_deriv_shape)
+
                     return derivs
             else:
                 convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
@@ -474,9 +476,12 @@ class CoordinateSystem:
 
             # print("??", other_shape, coords.shape)
             # print("?>", convert(coords).shape)
+            # wat = convert(coords)
+            # base_shape = wat.shape[len(coords.shape) - len(self_shape):]
+            # print("???", wat.shape, coords.shape, base_shape)
             deriv = FiniteDifferenceDerivative(
                 convert,
-                function_shape=(self_shape, convert(coords).shape),
+                function_shape=(self_shape, None),
                 **finite_difference_options
             )(coords)
 
@@ -491,10 +496,11 @@ class CoordinateSystem:
                     ordo = order
             else:
                 ordo = [order]
+            # print(ordo)
             derivs = deriv.derivative_tensor(ordo, coordinates=coordinates)
-            # if isinstance(order, int):
-            #     deriv_tensors = derivs[0]
-            if deriv_tensors is None:
+            if isinstance(order, int):
+                deriv_tensors = [derivs[0]]
+            elif deriv_tensors is None:
                 deriv_tensors = derivs
             else:
                 deriv_tensors = deriv_tensors + derivs # currently assuming you'd put

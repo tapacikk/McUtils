@@ -15,7 +15,7 @@ class OptionsContainer:
 
     NORM_ZERO_THRESH = None
     ZERO_THRESHOLD = 1.0e-17
-    ZERO_PLACEHOLDER = np.nan
+    ZERO_PLACEHOLDER = None#np.inf#None#np.nan
 
     @property
     def zero_threshold(self):
@@ -37,7 +37,10 @@ class OptionsContainer:
 
     @property
     def zero_placeholder(self):
-        return self.ZERO_PLACEHOLDER
+        if self.ZERO_PLACEHOLDER is None:
+            return self.zero_threshold
+        else:
+            return self.ZERO_PLACEHOLDER
     @zero_placeholder.setter
     def zero_placeholder(self, v):
         self.ZERO_PLACEHOLDER = v

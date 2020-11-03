@@ -7,6 +7,14 @@ import numpy as np
 
 class NumputilsTests(TestCase):
 
+    problem_coords = np.array([
+                                  [-1.86403557e-17, -7.60465240e-02,  4.62443228e-02],
+                                  [ 6.70904773e-17, -7.60465240e-02, -9.53755677e-01],
+                                  [ 9.29682337e-01,  2.92315732e-01,  4.62443228e-02],
+                                  [ 2.46519033e-32, -1.38777878e-17,  2.25076602e-01],
+                                  [-1.97215226e-31,  1.43714410e+00, -9.00306410e-01],
+                                  [-1.75999392e-16, -1.43714410e+00, -9.00306410e-01]
+    ])
     @validationTest
     def test_SparseArray(self):
         array = SparseArray([
@@ -42,6 +50,60 @@ class NumputilsTests(TestCase):
         self.assertEquals(array.tensordot(array, axes=[[1, 2], [1, 2]]).shape, (4, 4))
 
     @debugTest
+    def test_ProblemPtsAllDerivs(self):
+        import McUtils.Numputils.Options as NumOpts
+
+        NumOpts.zero_placeholder = np.inf
+
+        coords = self.problem_coords
+
+        # dists, dist_derivs, dist_derivs_2 = dist_deriv(coords, [0, 1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 0], order=2)
+        # angs, ang_derivs, ang_derivs_2 = angle_deriv(coords,
+        #                                              [0, 1, 2, 3, 4, 5],
+        #                                              [1, 2, 3, 4, 5, 0],
+        #                                              [2, 3, 4, 5, 0, 1],
+        #                                              order=2
+        #                                              )
+        # diheds, dihed_derivs, dihed_derivs_2 = dihed_deriv(coords,
+        #                                                [0, 1, 2, 3, 4, 5],
+        #                                                [1, 2, 3, 4, 5, 0],
+        #                                                [2, 3, 4, 5, 0, 1],
+        #                                                [3, 4, 5, 0, 1, 2],
+        #                                                order=2
+        #                                                )
+
+        diheds, dihed_derivs, dihed_derivs_2 = dihed_deriv(coords,
+                                                           [3],
+                                                           [4],
+                                                           [5],
+                                                           [0],
+                                                           order=2
+                                                           )
+
+        raise Exception([
+            diheds,
+            [np.min(dihed_derivs), np.max(dihed_derivs)],
+            [np.min(dihed_derivs_2), np.max(dihed_derivs_2)]
+            ])
+
+        raise Exception(
+            np.array([dists.flatten(), np.round(np.rad2deg(angs.flatten()), 1), np.round(np.rad2deg(diheds.flatten()), 1)]),
+            [
+                [np.min(dist_derivs), np.max(dist_derivs)],
+                [np.min(dist_derivs_2), np.max(dist_derivs_2)]
+                ],
+            [
+                [np.min(ang_derivs), np.max(ang_derivs)],
+                [np.min(ang_derivs_2), np.max(ang_derivs_2)]
+                ],
+            [
+                [np.min(dihed_derivs), np.max(dihed_derivs)],
+                [np.min(dihed_derivs_2), np.max(dihed_derivs_2)]
+            ]
+        )
+
+
+    @validationTest
     def test_PtsDihedralsDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -96,7 +158,7 @@ class NumputilsTests(TestCase):
 
         # raise Exception(fd2.flatten(), deriv_2.flatten())
 
-    @debugTest
+    @validationTest
     def test_PtsAngleDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -138,7 +200,49 @@ class NumputilsTests(TestCase):
 
         # raise Exception(fd2.flatten(), deriv_2.flatten())
 
-    @debugTest
+    @validationTest
+    def test_PtsDistDeriv(self):
+        # need some proper values to test this against...
+        np.random.seed(0)
+        coords = np.random.rand(16, 3)
+
+        dists, derivs, derivs_2 = dist_deriv(coords, [5, 4], [4, 5], order=2)
+
+        dist = dists[0]; deriv = derivs[:, 0, :]; deriv_2 = derivs_2[:, :, 0, :, :]
+        dists2 = vec_norms(coords[4] - coords[5])
+
+        self.assertEquals(dists2, dist)
+        # raise Exception(dist, dists2)
+
+        fd = FiniteDifferenceDerivative(
+            lambda pt: vec_norms(pt[..., 1, :] - pt[..., 0, :]),
+            function_shape=((None, 3), 0),
+            mesh_spacing=1.0e-5
+        )
+
+        fd1, fd2 = fd(coords[(5, 4),]).derivative_tensor([1, 2])
+
+        self.assertTrue(np.allclose(deriv.flatten(), fd1.flatten()), msg="{} and {} aren't close".format(
+            deriv.flatten(), fd1.flatten()
+        ))
+
+        d2_flat = np.concatenate(
+            [
+                np.concatenate([deriv_2[0, 0], deriv_2[0, 1]], axis=1),
+                np.concatenate([deriv_2[1, 0], deriv_2[1, 1]], axis=1)
+            ],
+            axis=0
+        )
+
+        # raise Exception("\n"+"\n".join("{} {}".format(a, b) for a, b in zip(d2_flat, fd2)))
+
+        self.assertTrue(np.allclose(d2_flat.flatten(), fd2.flatten(), atol=1.0e-3), msg="d2: {} and {} differ".format(
+            d2_flat.flatten(), fd2.flatten()
+        ))
+
+        # raise Exception(fd2.flatten(), deriv_2.flatten())
+
+    @validationTest
     def test_NormDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -169,7 +273,7 @@ class NumputilsTests(TestCase):
             na_daa.flatten(), fd_nadaa.flatten()
         ))
 
-    @debugTest
+    @validationTest
     def test_SinCosDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -259,7 +363,7 @@ class NumputilsTests(TestCase):
             c2_flat.flatten(), cos_fd22.flatten()
         ))
 
-    @debugTest
+    @validationTest
     def test_AngleDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
