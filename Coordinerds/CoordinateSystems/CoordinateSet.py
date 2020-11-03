@@ -137,6 +137,7 @@ class CoordinateSet(np.ndarray):
                  coordinates=None,
                  converter_options=None,
                  all_numerical=False,
+                 analytic_deriv_order=None,
                  **fd_options
                  ):
         """Delegates to the jacobian function of the current coordinate system
@@ -169,5 +170,6 @@ class CoordinateSet(np.ndarray):
                                     coordinates=coordinates,
                                     converter_options=kw,
                                     all_numerical=all_numerical,
+                                    analytic_deriv_order=analytic_deriv_order,
                                     **fd_options
                                     )

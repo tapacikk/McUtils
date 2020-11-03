@@ -157,11 +157,11 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
     sin_derivs.append(s)
     cos_derivs.append(c)
 
-    bxn = vec_crosses(b, n)
-    bxn, n_bxn = vec_apply_zero_threshold(bxn, zero_thresh=zero_thresh)
+    bxn_ = vec_crosses(b, n)
+    bxn, n_bxn = vec_apply_zero_threshold(bxn_, zero_thresh=zero_thresh)
 
-    nxa = vec_crosses(n, a)
-    nxa, n_nxa = vec_apply_zero_threshold(nxa, zero_thresh=zero_thresh)
+    nxa_ = vec_crosses(n, a)
+    nxa, n_nxa = vec_apply_zero_threshold(nxa_, zero_thresh=zero_thresh)
 
     if order <= 1:
         _, na_da = vec_norm_derivs(a, order=1)
@@ -202,6 +202,20 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
         extra_dims = a.ndim - 1
         extra_shape = a.shape[:-1]
         if extra_dims > 0:
+            bad_norms = n_n.flatten() <= zero_thresh
+            if bad_norms.any():
+                raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
+                    a[bad_norms],
+                    b[bad_norms]
+                ))
+        else:
+            if n_n <= zero_thresh:
+                raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
+                    a, b
+                ))
+
+
+        if extra_dims > 0:
             e3 = np.broadcast_to(levi_cevita3,  extra_shape + (3, 3, 3))
             td = np.tensordot
             outer = vec_outer
@@ -218,13 +232,6 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
 
         # print(na_da, s_da, s, na_daa, bxdna)
 
-        # na_da[na_da <= zero_thresh] = 0.
-        # nb_db[nb_db <= zero_thresh] = 0.
-        # nn_dn[nn_dn <= zero_thresh] = 0.
-        # na_daa[na_daa <= zero_thresh] = 0.
-        # nb_dbb[nb_dbb <= zero_thresh] = 0.
-        # nn_dnn[nn_dnn <= zero_thresh] = 0.
-
         # compute terms we'll need for various cross-products
         e3b = vec_td(e3, b, axes=[-1, -1])
         e3a = vec_td(e3, a, axes=[-1, -1])
@@ -237,24 +244,10 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
         n_da = -vec_td(e3b,  nn_dnn, axes=[-1, -2])
         bxdna = vec_td(n_da, e3nbdb, axes=[-1, -2])
 
-        # if extra_dims == 0:
-        #     print("Good:", bxdna, n_da, e3nbdb)
-        # else:
-        #     print("Wtf", np.tensordot(n_da[0], e3nbdb[0], axes=[-1, -2]))
-        #     print("Bad:", bxdna[0], n_da[0], e3nbdb[0], e3nbdb[1])
-
-        #
-        # adb_zeros = np.where(adb <= zero_thresh)
-        # s = n_n / (n_a * n_b)
-        # s[n_n_zeros] = 0.
-        # c = adb / (n_a * n_b)
-        # c[adb_zeros] = 0.
-
-
         s_daa = - (
-            outer(na_da, s_da)
-            + outer(s_da, na_da)
-            + s[..., np.newaxis] * na_daa - bxdna
+            outer(na_da, s_da) + outer(s_da, na_da)
+            + s[..., np.newaxis] * na_daa
+            - bxdna
         ) / n_a[..., np.newaxis]
 
         ndaXnada = -vec_td(n_da, e3nada, axes=[-1, -2])
@@ -502,6 +495,15 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
 
     n1 = vec_crosses(a, b)
     n2 = vec_crosses(b, c)
+
+    # coll = vec_crosses(n1, n2)
+    # coll_norms = vec_norms(coll)
+    # bad = coll_norms < 1.e-17
+    # if bad.any():
+    #     raise Exception([
+    #         bad,
+    #         i, j, k, l,
+    #         a[bad], b[bad], c[bad]])
 
     sign = np.sign(vec_dots(b, vec_crosses(n1, n2)))
 

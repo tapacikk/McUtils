@@ -131,7 +131,7 @@ class ConverterTest(TestCase):
     #     self.assertEqual(coords.shape, (self.n, 16, 3))
 
     #region Jacobians
-    @debugTest
+    @validationTest
     def test_CartesianToZMatrixJacobian(self):
         n = 10
         test_coords = DataGenerator.coords(n)
@@ -193,7 +193,7 @@ class ConverterTest(TestCase):
         self.assertEquals(jacob.shape, (n*3, (n-1)*3)) # we always lose one atom
         self.assertAlmostEqual(np.sum((ijacob@jacob)), 3*n-6, 3)
 
-    @debugTest
+    @validationTest
     def test_CartesianToZMatrixMultiJacobian(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, stencil = 5)
@@ -243,24 +243,10 @@ class ConverterTest(TestCase):
         )
         self.assertEquals(jacob.shape, (100,) + coord_set.shape[1:] + (5, 3)) # I requested 5 bond lengths
 
-    @debugTest
+    @validationTest
     def test_CartesianToZMatrixJacobian2(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10)[0])
         njacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil=5, all_numerical=True)
-        # TensorPlot(jacob[0],
-        #            ticks_style = [
-        #                dict(
-        #                    bottom = False,
-        #                    top = False,
-        #                    labelbottom = False
-        #                ),
-        #                dict(
-        #                    right = False,
-        #                    left = False,
-        #                    labelleft = False
-        #                )
-        #            ]
-        #            ).show()
         self.assertEquals(njacob.shape, (10 * 3, 10 * 3, 10 - 1, 3))  # we always lose one atom
 
         jacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil=5)  # semi-analytic
@@ -268,19 +254,17 @@ class ConverterTest(TestCase):
 
         # jacob = jacob.reshape((10, 3, 10, 3, 10 - 1, 3))
 
-        import McUtils.Plots as plt
-
+        # import McUtils.Plots as plt
+        #
         # bleh_a = np.round(np.reshape(njacob, (900, 27)), 8)
         # bleh_b = np.round(np.reshape(jacob, (900, 27)), 8)
         # bleh_c = np.round(bleh_a - bleh_b, 10)
         # bleh_bleh = np.where(bleh_c != 0.)
         #
-        # print(bleh_a[bleh_bleh][:5])
-        # print(bleh_b[bleh_bleh][:5])
-
         # plt.ArrayPlot( ( bleh_a == 0. ).astype(int) )
         # plt.ArrayPlot( ( bleh_b == 0. ).astype(int) )
-        # plt.ArrayPlot( bleh_c ).show()
+        # plt.ArrayPlot( ( np.round(bleh_c, 5) == 0. ).astype(int) ).show()
+
         njacob = njacob.reshape((10, 3, 10, 3, 10 - 1, 3))
         diffs = njacob - jacob
         bleh_bleh = np.where(np.round(diffs, 3) != 0.)
@@ -292,8 +276,63 @@ class ConverterTest(TestCase):
             msg="wat: {}".format(np.max(np.abs(np.round(diffs, 3))))
         )
 
-
     @debugTest
+    def test_CartesianToZMatrixJacobian2Planar(self):
+
+        coord_set = CoordinateSet( # water
+            np.array(
+                [[-9.84847483e-18, -1.38777878e-17, 9.91295048e-02],
+                 [-9.84847483e-18, -1.38777878e-17, 1.09912950e+00],
+                 [ 1.00000000e+00, 9.71445147e-17, 9.91295048e-02],
+                 [ 2.46519033e-32, -1.38777878e-17, 2.25076602e-01],
+                 [-1.97215226e-31, 1.43714410e+00, -9.00306410e-01],
+                 [-1.75999392e-16, -1.43714410e+00, -9.00306410e-01]]
+            )
+        )
+        coord_set_2 = CoordinateSet( # HOD
+            np.array([
+                [-1.86403557e-17, -7.60465240e-02,  4.62443228e-02],
+                [ 6.70904773e-17, -7.60465240e-02, -9.53755677e-01],
+                [ 9.29682337e-01,  2.92315732e-01,  4.62443228e-02],
+                [ 2.46519033e-32, -1.38777878e-17,  2.25076602e-01],
+                [-1.97215226e-31,  1.43714410e+00, -9.00306410e-01],
+                [-1.75999392e-16, -1.43714410e+00, -9.00306410e-01]
+            ])
+        )
+        internal_ordering = [
+            [0, -1, -1, -1],
+            [1,  0, -1, -1],
+            [2,  0,  1, -1],
+            [3,  0,  2,  1],
+            [4,  3,  1,  2],
+            [5,  3,  4,  1]
+        ]
+        coord_set.converter_options = {'ordering': internal_ordering}
+        njacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil=5, analytic_deriv_order=1) # only do analytic firsts
+        self.assertEquals(njacob.shape, (6 * 3, 6, 3, 6 - 1, 3))  # we always lose one atom
+
+        jacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil=5)  # totally-analytic
+        self.assertEquals(jacob.shape, (6, 3, 6, 3, 6 - 1, 3))  # we always lose one atom
+
+        njacob = njacob.reshape((6, 3, 6, 3, 6 - 1, 3))
+
+        diffs = njacob - jacob
+        ehhh = np.round(diffs, 3)
+        # print(
+        #     njacob[ np.abs(ehhh) > 0 ],
+        #     jacob[np.abs(ehhh) > 0],
+        # )
+
+        print(
+            np.array(np.where(np.abs(jacob) > 100)).T
+        )
+        print(np.max(np.abs(njacob)), np.max(np.abs(jacob)))
+        self.assertTrue(
+            np.allclose(diffs, 0., atol=1.0e-4),
+            msg="wat: {}".format(np.max(np.abs(np.round(diffs, 6))))
+        )
+
+    @validationTest
     def test_CartesianToZMatrixMultiJacobian2(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         njacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil = 5, all_numerical=True)

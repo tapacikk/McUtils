@@ -346,6 +346,7 @@ class CoordinateSystem:
                  coordinates = None,
                  converter_options = None,
                  all_numerical=False,
+                 analytic_deriv_order=None,
                  **finite_difference_options
                  ):
         """
@@ -408,7 +409,11 @@ class CoordinateSystem:
                 # we assume that we got back the analytic first derivatives
                 if isinstance(deriv_tensors, np.ndarray):
                     deriv_tensors = [deriv_tensors]
-                num_derivs = len(deriv_tensors)
+                if analytic_deriv_order is not None:
+                    num_derivs = min(len(deriv_tensors), analytic_deriv_order)
+                    deriv_tensors = deriv_tensors[:num_derivs]
+                else:
+                    num_derivs = len(deriv_tensors)
 
                 if isinstance(order, int):
                     if order > num_derivs:
@@ -423,7 +428,7 @@ class CoordinateSystem:
                 if ret_d_key in kw:
                     del kw[ret_d_key]
 
-                def convert(c, s=system, dk=deriv_key, self=self, coord_shape=self_shape, num_derivs=num_derivs, convert_kwargs=kw):
+                def convert(c, s=system, dk=deriv_key, self=self, num_derivs=num_derivs, convert_kwargs=kw):
                     crds, opts = self.convert_coords(c, s, return_derivs=True, **convert_kwargs)
                     # we now have to reshape the derivatives because mc_safe_apply is only applied to the coords -_-
                     # should really make that function manage deriv shapes too, but don't know how to _tell_ it that I
@@ -433,7 +438,7 @@ class CoordinateSystem:
                     # derivative that we have
                     if isinstance(derivs, np.ndarray): # just protection for the next step, basically if we only get firsts out
                         derivs = [derivs]
-                    derivs = derivs[-1]
+                    derivs = derivs[num_derivs - 1] # so that we can set the derivative order below the total possible returned...
 
                     # now we figure out how much shape is in 'c'
                     c_dims = np.prod(c.shape)
