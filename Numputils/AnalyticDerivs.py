@@ -115,7 +115,7 @@ def vec_norm_derivs(a, order=1, zero_thresh=None):
 
     return derivs
 
-def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
+def vec_sin_cos_derivs(a, b, order=1, check_derivatives=False, zero_thresh=None):
     """
     Derivative of `sin(a, b)` and `cos(a, b)` with respect to both vector components
 
@@ -201,19 +201,19 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
 
         extra_dims = a.ndim - 1
         extra_shape = a.shape[:-1]
-        if extra_dims > 0:
-            bad_norms = n_n.flatten() <= zero_thresh
-            if bad_norms.any():
-                raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
-                    a[bad_norms],
-                    b[bad_norms]
-                ))
-        else:
-            if n_n <= zero_thresh:
-                raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
-                    a, b
-                ))
-
+        if check_derivatives:
+            if extra_dims > 0:
+                bad_norms = n_n.flatten() <= zero_thresh
+                if bad_norms.any():
+                    raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
+                        a[bad_norms],
+                        b[bad_norms]
+                    ))
+            else:
+                if n_n <= zero_thresh:
+                    raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
+                        a, b
+                    ))
 
         if extra_dims > 0:
             e3 = np.broadcast_to(levi_cevita3,  extra_shape + (3, 3, 3))
@@ -308,7 +308,7 @@ def vec_sin_cos_derivs(a, b, order=1, zero_thresh=None):
 
     return sin_derivs, cos_derivs
 
-def vec_angle_derivs(a, b, order=1, zero_thresh=None):
+def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
     """
     Returns the derivatives of the angle between `a` and `b` with respect to their components
 
@@ -336,14 +336,26 @@ def vec_angle_derivs(a, b, order=1, zero_thresh=None):
 
     q = np.arctan2(s, c)
 
-    derivs.append(q)
+    if up_vectors is not None:
+        n = vec_crosses(a, b)
+        if up_vectors.ndim < n.ndim:
+            up_vectors = np.broadcast_to(up_vectors, n.shape[:-len(up_vectors.shape)] + up_vectors.shape)
+
+        # zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
+        up = vec_dots(up_vectors, n)
+        # up[np.abs(up) < zero_thresh] = 0.
+        sign = np.sign(up)
+    else:
+        sign = np.ones(a.shape[:-1])
+
+    derivs.append(sign*q)
 
     if order >= 1:
 
         d = sin_derivs[1]
-        s_da = d[..., 0, :]; s_db = d[..., 1, :];
+        s_da = d[..., 0, :]; s_db = d[..., 1, :]
         d = cos_derivs[1]
-        c_da = d[..., 0, :]; c_db = d[..., 1, :];
+        c_da = d[..., 0, :]; c_db = d[..., 1, :]
 
         q_da = c * s_da - s * c_da
         q_db = c * s_db - s * c_db
@@ -351,7 +363,10 @@ def vec_angle_derivs(a, b, order=1, zero_thresh=None):
         extra_dims = a.ndim - 1
         extra_shape = a.shape[:-1]
 
-        d1 = np.array([q_da, q_db])
+        d1 = (
+            sign[np.newaxis, ..., np.newaxis] *
+            np.array([q_da, q_db])
+        )
         d1_reshape = tuple(range(1, extra_dims + 1)) + (0, extra_dims + 1)
         derivs.append(d1.transpose(d1_reshape))
 
@@ -371,14 +386,19 @@ def vec_angle_derivs(a, b, order=1, zero_thresh=None):
         q_dab = vec_outer(c_db, s_da) + c * s_dab - vec_outer(s_db, c_da) - s * c_dab
         q_dbb = vec_outer(c_db, s_db) + c * s_dbb - vec_outer(s_db, c_db) - s * c_dbb
 
-        d2 = np.array([
-            [q_daa, q_dab],
-            [q_dba, q_dbb]
-        ])
+        d2 = (
+                sign[np.newaxis, np.newaxis, ..., np.newaxis, np.newaxis] *
+                np.array([
+                    [q_daa, q_dab],
+                    [q_dba, q_dbb]
+                ])
+        )
 
         d2_reshape = tuple(range(2, extra_dims+2)) + (0, 1, extra_dims+2, extra_dims+3)
 
-        derivs.append(d2.transpose(d2_reshape))
+        derivs.append(
+            d2.transpose(d2_reshape)
+        )
 
     return derivs
 
@@ -505,7 +525,11 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
     #         i, j, k, l,
     #         a[bad], b[bad], c[bad]])
 
-    sign = np.sign(vec_dots(b, vec_crosses(n1, n2)))
+    # zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
+
+    orient = vec_dots(b, vec_crosses(n1, n2))
+    # orient[np.abs(orient) < 1.0] = 0.
+    sign = np.sign(orient)
 
     d = vec_angle_derivs(n1, n2, order=order, zero_thresh=zero_thresh)
 

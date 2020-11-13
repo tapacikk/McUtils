@@ -49,7 +49,7 @@ class NumputilsTests(TestCase):
         self.assertEquals(td.shape, (4, 3, 4, 3))
         self.assertEquals(array.tensordot(array, axes=[[1, 2], [1, 2]]).shape, (4, 4))
 
-    @debugTest
+    @validationTest
     def test_ProblemPtsAllDerivs(self):
         import McUtils.Numputils.Options as NumOpts
 
@@ -103,7 +103,7 @@ class NumputilsTests(TestCase):
         # )
 
 
-    @debugTest
+    @validationTest
     def test_PtsDihedralsDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -158,7 +158,7 @@ class NumputilsTests(TestCase):
 
         # raise Exception(fd2.flatten(), deriv_2.flatten())
 
-    @debugTest
+    @validationTest
     def test_PtsAngleDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -200,7 +200,7 @@ class NumputilsTests(TestCase):
 
         # raise Exception(fd2.flatten(), deriv_2.flatten())
 
-    @debugTest
+    @validationTest
     def test_PtsDistDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -242,7 +242,7 @@ class NumputilsTests(TestCase):
 
         # raise Exception(fd2.flatten(), deriv_2.flatten())
 
-    @debugTest
+    @validationTest
     def test_NormDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -273,7 +273,7 @@ class NumputilsTests(TestCase):
             na_daa.flatten(), fd_nadaa.flatten()
         ))
 
-    @debugTest
+    @validationTest
     def test_SinCosDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -405,3 +405,33 @@ class NumputilsTests(TestCase):
             d2_flat.flatten(), fd_dang.flatten(), d2_flat.flatten() - fd_dang.flatten()
         ))
 
+    @inactiveTest
+    def test_AngleDerivScan(self):
+        np.random.seed(0)
+        # a = np.random.rand(3) * 2 # make it longer to avoid stability issues
+        # dump_file = "/Users/Mark/Desktop/wat2.json"
+        a = np.array([1, 0, 0]); dump_file = "/Users/Mark/Desktop/wat.json"
+
+        fd = FiniteDifferenceDerivative(
+                lambda vecs: vec_angle_derivs(vecs[..., 0, :], vecs[..., 1, :], up_vectors=up)[1],
+                function_shape=((None, 2, 3), 0),
+                mesh_spacing=1.0e-4
+            )
+
+        data = {"rotations":[], 'real_angles':[], "angles":[], 'derivs':[], 'derivs2':[], 'derivs_num2':[]}
+        for q in np.linspace(-np.pi, np.pi, 601):
+            up = np.array([0, 0, 1])
+            r = rotation_matrix(up, q)
+            b = np.dot(r, a)
+            ang, deriv, deriv_2 = vec_angle_derivs(a, b, up_vectors=up, order=2)
+            data['rotations'].append(q)
+            data['real_angles'].append(vec_angles(a, b, up_vectors=up)[0])
+            data['angles'].append(ang.tolist())
+            data['derivs'].append(deriv.tolist())
+            data['derivs2'].append(deriv_2.tolist())
+
+            data['derivs_num2'].append(fd(np.array([a, b])).derivative_tensor(1).tolist())
+
+        import json
+        with open(dump_file, 'w+') as f:
+            json.dump(data, f)

@@ -195,13 +195,16 @@ def vec_sins(vectors1, vectors2, axis=-1):
 #       vec_angles
 #
 
-def vec_angles(vectors1, vectors2, axis=-1):
-    """Gets the angles and normals between two vectors
+def vec_angles(vectors1, vectors2, up_vectors=None, axis=-1):
+    """
+    Gets the angles and normals between two vectors
 
     :param vectors1:
     :type vectors1: np.ndarray
     :param vectors2:
     :type vectors2: np.ndarray
+    :param up_vectors: orientation vectors to obtain signed angles
+    :type up_vectors: None | np.ndarray
     :return: angles and normals between two vectors
     :rtype: (np.ndarray, np.ndarray)
     """
@@ -214,7 +217,16 @@ def vec_angles(vectors1, vectors2, axis=-1):
     cross_norms = vec_norms(crosses, axis=axis)
     sin_comps = cross_norms/norm_prod
 
-    return (np.arctan2(sin_comps, cos_comps), crosses)
+    angles = np.arctan2(sin_comps, cos_comps)
+
+    # return signed angles
+    if up_vectors is not None:
+        if up_vectors.ndim < crosses.ndim:
+            up_vectors = np.broadcast_to(up_vectors, crosses.shape[:-len(up_vectors.shape)] + up_vectors.shape)
+        orientations = np.sign(vec_dots(up_vectors, crosses))
+        angles = orientations * angles
+
+    return (angles, crosses)
 
 ################################################
 #
@@ -440,7 +452,8 @@ def pts_normals(pts1, pts2, pts3, normalize=True):
 #
 
 def pts_dihedrals(pts1, pts2, pts3, pts4):
-    """Provides the dihedral angle between pts4 and the plane of the other three vectors
+    """
+    Provides the dihedral angle between pts4 and the plane of the other three vectors
 
     :param pts1:
     :type pts1: np.ndarray
@@ -451,12 +464,13 @@ def pts_dihedrals(pts1, pts2, pts3, pts4):
     :return:
     :rtype:
     """
+
     # # should I normalize these...?
     # normals = pts_normals(pts2, pts3, pts4, normalize=False)
     # off_plane_vecs = pts1 - pts4
     # return vec_angles(normals, off_plane_vecs)[0]
 
-    # # less efficient but mirrors what I did in Mathematica (and works)
+    # compute signed angle between the normals to the b1xb2 plane and b2xb3 plane
     b1 = pts2-pts1
     b2 = pts3-pts2
     b3 = pts4-pts3
@@ -466,6 +480,7 @@ def pts_dihedrals(pts1, pts2, pts3, pts4):
     m1 = vec_crosses(n1, vec_normalize(b2))
     d1 = vec_dots(n1, n2)
     d2 = vec_dots(m1, n2)
+
     return np.arctan2(d2, d1)
 
 ################################################

@@ -383,6 +383,10 @@ class SparseArray:
         else:
             return sparse_tensordot(self, b, axes=axes)
 
+    def __neg__(self):
+        return -1 * self
+    def __pos__(self):
+        return self
     def __add__(self, other):
         return self.plus(other)
     def __radd__(self, other):
