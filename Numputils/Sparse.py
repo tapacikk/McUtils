@@ -1,4 +1,5 @@
 import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os
+from McUtils.Misc import MaxSizeCache
 
 __all__ = [
     "SparseArray",
@@ -181,7 +182,8 @@ class SparseArray:
         if isinstance(diags[0], (int, np.integer, float, np.floating)):
             # just a plain old diagonal matrix
             N = len(diags)
-            return cls((diags, (np.arange(N), np.arange(N))), shape=(N, N), **kw)
+            # print(len(diags))
+            return cls(sp.csr_matrix(sp.diags([diags], [0])), shape=(N, N), **kw)
         else:
             data = sp.block_diag(diags, format='csr')
             block_size = diags[0].shape
@@ -219,9 +221,14 @@ class SparseArray:
     # def __len__(self):
     #     return self.shape[0]
 
+    @classmethod
+    def clear_ravel_caches(cls):
+        cls._unravel_cache = MaxSizeCache()
+        cls._ravel_cache = MaxSizeCache()
+
     # this saves time when we have to do a bunch of reshaping into similarly sized arrays,
     # but won't help as much when the shape changes
-    _unravel_cache = {}  # hopefully faster than bunches of unravel_index calls...
+    _unravel_cache = MaxSizeCache()  # hopefully faster than bunches of unravel_index calls...
     @classmethod
     def _unravel_indices(cls, n, dims):
         # we're hoping that we call with `n` often enough that we get a performance benefit
@@ -239,7 +246,7 @@ class SparseArray:
             cache[n_hash] = res
         return res
 
-    _ravel_cache = {}  # hopefully faster than bunches of unravel_index calls...
+    _ravel_cache = MaxSizeCache()  # hopefully faster than bunches of unravel_index calls...
     @classmethod
     def _ravel_indices(cls, mult, dims):
         # we're hoping that we call with `n` often enough that we get a performance benefit
@@ -263,6 +270,7 @@ class SparseArray:
             res = np.ravel_multi_index(mult, dims)
             cache[n_hash] = res
         return res
+
     @property
     def block_vals(self):
         if self._block_vals is None:
@@ -465,7 +473,7 @@ class SparseArray:
         import copy
         return copy.copy(self)
 
-    def _get_element(self, idx):
+    def _get_element(self, idx, pull_elements=None):
         """
         Convert idx into a 1D index or slice or whatever and then convert it back to the appropriate 2D shape
 
@@ -475,16 +483,17 @@ class SparseArray:
         :rtype:
         """
 
-        # we check first to see if we were asked for just a single vector of elements
-        # the detection heuristic is basically: is everything just a slice of ints or nah
-        if isinstance(idx, (int, np.integer)):
-            idx = (idx,)
-        pull_elements = len(idx) == len(self.shape) and all(isinstance(x, (int, np.integer)) for x in idx)
-        if not pull_elements:
-            pull_elements = all(not isinstance(x, (int, np.integer, slice)) for x in idx)
-            if pull_elements:
-                e1 = len(idx[0])
-                pull_elements = all(len(x) == e1 for x in idx)
+        if pull_elements is None:
+            # we check first to see if we were asked for just a single vector of elements
+            # the detection heuristic is basically: is everything just a slice of ints or nah
+            if isinstance(idx, (int, np.integer)):
+                idx = (idx,)
+            pull_elements = len(idx) == len(self.shape) and all(isinstance(x, (int, np.integer)) for x in idx)
+            if not pull_elements:
+                pull_elements = all(not isinstance(x, (int, np.integer, slice)) for x in idx)
+                if pull_elements:
+                    e1 = len(idx[0])
+                    pull_elements = all(len(x) == e1 for x in idx)
 
         if pull_elements:
             flat = self._ravel_indices(idx, self.shape)

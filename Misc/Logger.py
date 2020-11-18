@@ -41,9 +41,11 @@ class Logger:
     Defines a simple logger object to write log data to a file based on log levels.
     """
 
-    def __init__(self, log_file = None, verbosity = LogLevel.All):
+    def __init__(self, log_file = None, verbosity = LogLevel.All, padding="", newline="\n"):
         self.log_file = log_file
         self.verbosity = verbosity
+        self.padding = padding
+        self.newline = newline
 
     def format_message(self, message, *params, **kwargs):
         if len(kwargs) > 0:
@@ -52,10 +54,10 @@ class Logger:
             message = message.format(*params)
         return message
 
-    def log_print(self, message, *params, print_options=None, **kwargs):
+    def log_print(self, message, *params, print_options=None, padding=None, newline=None, **kwargs):
         """
-        :param message:
-        :type message:
+        :param message: message to print
+        :type message: str | Iterable[str]
         :param params:
         :type params:
         :param print_options: options to be passed through to print
@@ -65,6 +67,22 @@ class Logger:
         :return:
         :rtype:
         """
+        if padding is None:
+            padding = self.padding
+        if newline is None:
+            newline = self.newline
+
+        if not isinstance(message, str):
+            joiner = (newline + padding)
+            message = joiner.join(
+                [padding + message[0]]
+                + list(message[1:])
+            )
+        else:
+            message = padding + message
+
+        # print(">>>>", repr(message), params)
+
         if print_options is None:
             print_options={}
         if 'verbosity' in kwargs:
