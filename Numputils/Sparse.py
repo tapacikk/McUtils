@@ -378,6 +378,12 @@ class SparseArray:
         self.reshape([x for x in self.shape if x != 1])
         return self
 
+    @property
+    def T(self):
+        if len(self._shape) == 2:
+            return self.transpose((1, 0))
+        else:
+            raise ValueError("dunno what T means for high dimensional arrays")
     def __matmul__(self, other):
         return self.dot(other)
     def dot(self, b, reverse=False):
