@@ -2,7 +2,8 @@ import os, enum
 
 __all__ = [
     "Logger",
-    "LogLevel"
+    "LogLevel",
+    "NullLogger"
 ]
 
 
@@ -106,3 +107,11 @@ class Logger:
                 print(self.format_message(message, *params, **kwargs), **print_options)
             else:
                 print(self.format_message(message, *params, **kwargs), file=log, **print_options)
+
+class NullLogger(Logger):
+    """
+    A logger that implements the interface, but doesn't ever print.
+    Allows code to avoid a bunch of "if logger is not None" blocks
+    """
+    def log_print(self, message, *params, print_options=None, padding=None, newline=None, **kwargs):
+        pass

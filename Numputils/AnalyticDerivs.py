@@ -8,6 +8,7 @@ from .Options import Options
 __all__ = [
     'levi_cevita3',
     'rot_deriv',
+    ''
     'dist_deriv',
     'angle_deriv',
     'dihed_deriv',
@@ -40,10 +41,46 @@ levi_cevita3 = np.array([
 #     Used to turn cross products into matmuls
 #     """
 
+def _prod_deriv(op, a, b, da, db):
+    """
+    Simple product derivative to make apply the product rule and its analogs
+    a bit cleaner. Assumes a derivative that doesn't change dimension.
+    Should be generalized at some point to handle arbitrary outer products and shit of that sort.
+    :param op:
+    :type op:
+    :param a:
+    :type a:
+    :param b:
+    :type b:
+    :param da:
+    :type da:
+    :param db:
+    :type db:
+    :return:
+    :rtype:
+    """
+    return op(a, db) + op(da, b)
+def _prod_deriv_2(op, a, b, da1, da2, db1, db2, da12, db12):
+    """
+    2nd derivative of op(a, b) assuming it operates under a product-rule type ish
+    """
+    return op(da12, b) + op(da1, db2) + op(da2, db1) + op(a, db12)
+
+def normalized_vec_deriv(v, dv):
+    """
+    Derivative of a normalized vector w/r/t some unspecified coordinate
+    """
+    norms = vec_norms(v)[..., np.newaxis]
+    vh = v / norms
+    i3 = np.broadcast_to(np.eye(3), vh.shape[:-1] + (3, 3))
+    vXv = vec_outer(vh, vh)
+    return np.matmul(i3 - vXv, dv) / norms
+
 def rot_deriv(angle, axis, dAngle, dAxis):
     """
     Gives a rotational derivative w/r/t some unspecified coordinate
     (you have to supply the chain rule terms)
+    Assumes that axis is a unit vector.
 
     :param angle: angle for rotation
     :type angle: float
@@ -62,12 +99,318 @@ def rot_deriv(angle, axis, dAngle, dAxis):
     vdOdv = vec_outer(dAxis, axis) + vec_outer(axis, dAxis)
     c = np.cos(angle)
     s = np.sin(angle)
-    e3 = levi_cevita3
-    i3 = np.eye(3)
+    i3 = np.broadcast_to(np.eye(3), axis.shape[:-1] + (3, 3))
+    e3 = np.broadcast_to(levi_cevita3, axis.shape[:-1] + (3, 3))
+    # e3 = levi_cevita3
+    # i3 = np.eye(3)
     ct = vdOdv*(1-np.cos(angle))
     st = (i3-vec_outer(axis, axis))*np.sin(angle)*dAngle
-    et = np.dot(e3, (dAxis*s + axis*c*dAngle))
+    et = np.matmul(e3, (dAxis*s + axis*c*dAngle))
     return ct - st - et
+
+def rot_deriv2(angle, axis, dAngle1, dAxis1, dAngle2, dAxis2, d2Angle, d2Axis):
+    """
+    Gives a rotation matrix second derivative w/r/t some unspecified coordinate
+    (you have to supply the chain rule terms)
+
+    :param angle: angle for rotation
+    :type angle: float
+    :param axis: axis for rotation
+    :type axis: np.ndarray
+    :param dAngle: chain rule angle deriv.
+    :type dAngle: float
+    :param dAxis: chain rule axis deriv.
+    :type dAxis: np.ndarray
+    :return: derivatives of the rotation matrices with respect to both the angle and the axis
+    :rtype: np.ndarray
+    """
+
+    # lots of duplication since we've got the same axis twice
+    vXv = vec_outer(axis, axis)
+    dvXv1 = _prod_deriv(vec_outer, axis, axis, dAxis1, dAxis1)
+    dvXv2 = _prod_deriv(vec_outer, axis, axis, dAxis2, dAxis2)
+    d2vXv = _prod_deriv_2(vec_outer, axis, axis, dAxis1, dAxis2, dAxis1, dAxis2, d2Axis, d2Axis)
+
+    i3 = np.broadcast_to(np.eye(3), axis.shape[:-1] + (3, 3))
+    e3 = np.broadcast_to(levi_cevita3, axis.shape[:-1] + (3, 3))
+
+    c = np.cos(angle)
+    s = np.sin(angle)
+
+    dc1 = -s * dAngle1
+    dc2 = -s * dAngle2
+    d2c = -s * d2Angle - c * dAngle1 * dAngle2
+
+    cos_term = _prod_deriv_2(np.operator.mul,
+                             i3 - vXv,
+                             c,
+                             dvXv1,
+                             dvXv2,
+                             dc1,
+                             dc2,
+                             d2vXv,
+                             d2c
+                             )
+
+    ds1 = c * dAngle1
+    ds2 = c * dAngle2
+    d2s = c * d2Angle - s * dAngle1 * dAngle2
+    sin_term = np.matmul(e3,
+                         _prod_deriv_2(
+                             np.operator.mul,
+                             axis,
+                             s,
+                             dAxis1,
+                             dAxis2,
+                             ds1,
+                             ds2,
+                             d2Axis,
+                             d2s
+                         )
+                         )
+
+    return d2vXv + cos_term - sin_term
+
+
+def _fill_deriv(self, i, derivs, r, q, f, ia, ib, ic, v, u, n, R1, R2):
+    """
+    Gets the derivatives for the current set of coordinates
+
+    :param i:
+    :type i: int
+    :param derivs:
+    :type derivs: np.ndarray
+    :param r:
+    :type r: np.ndarray
+    :param q:
+    :type q: np.ndarray | None
+    :param f:
+    :type f: np.ndarray | None
+    :param ia:
+    :type ia: np.ndarray(int)
+    :param ib:
+    :type ib: np.ndarray(int) | None
+    :param ic:
+    :type ic: np.ndarray(int) | None
+    :param v:
+    :type v: np.ndarray
+    :param u:
+    :type u: np.ndarray | None
+    :param n:
+    :type n: np.ndarray | None
+    :param R1:
+    :type R1: None
+    :param R2:
+    :type R2: None
+    :return:
+    :rtype:
+    """
+
+    i3 = np.broadcast_to(np.eye(3), (len(derivs), 3, 3))
+    e3 = np.broadcast_to(levi_cevita3, (len(derivs), 3, 3, 3))
+
+    # print(i, r, q, f, ia, ib, ic)
+    zorks = np.arange(len(ia))
+
+    nv = vec_norms(v)
+    v = v/nv[..., np.newaxis]
+    if i > 0:
+        nu = vec_norms(u)
+        u = u/nu[..., np.newaxis]
+        nn = vec_norms(n)
+        n = n/nn[..., np.newaxis]
+        if R1 is None:
+            Q = R2
+        else:
+            Q = np.matmul(R1, R2)
+
+    for z in range(i+1): # Lower-triangle is 0
+        for m in range(3):
+            dx1 = derivs[zorks, z, m, ia]
+
+            # Get derivatives for the v-vector
+
+            if i > 0:
+                dx2 = derivs[zorks, z, m, ib]
+                dv = dx2 - dx1
+
+                dv = (1/nv[..., np.newaxis])*(dv - v*vec_dots(dv, v)[..., np.newaxis])
+
+                # Get derivatives for the u-vector
+                if i > 1:
+                    dx3 = derivs[zorks, z, m, ic]
+                    du = dx3 - dx2
+                    du = 1/nu[..., np.newaxis]*(du - u*vec_dots(du, u)[..., np.newaxis])
+                else:
+                    du = np.zeros(dx1.shape)
+            else:
+                dv = np.zeros(dx1.shape)
+                du = np.zeros(dx1.shape)
+
+            delta_rn = z == i and m == 0
+            delta_qn = z == i and m == 1
+            delta_fn = z == i and m == 2
+
+            if i > 0:
+                sq = np.sin(q)[..., np.newaxis]
+                cq = np.cos(q)[..., np.newaxis]
+
+                dn = vec_crosses(dv, u) + vec_crosses(v, du)
+                dn = 1/nn[..., np.newaxis]*(dn - n*vec_dots(dn, n)[..., np.newaxis])
+                dR2 = (
+                        (vec_outer(dn, n) + vec_outer(n, dn))*(1-cq)[..., np.newaxis]
+                        - vec_tdot(e3, dn)*sq[..., np.newaxis]
+                )
+                if delta_qn:
+                    # component that only gets subtracted if m==1
+                    dR2 -= (i3 - vec_outer(n, n))*sq[..., np.newaxis] + vec_tdot(e3, n)*cq[..., np.newaxis]
+
+                if i > 1:
+                    sf = np.sin(f)[..., np.newaxis]
+                    cf = np.cos(f)[..., np.newaxis]
+                    dR1 = (
+                            (vec_outer(dv, v) + vec_outer(v, dv)) * (1 - cf)[..., np.newaxis]
+                            - vec_tdot(e3, dv)*sf[..., np.newaxis]
+                    )
+                    if delta_fn:
+                        dR1 -= (i3 - vec_outer(v, v))*sf[..., np.newaxis] + vec_tdot(e3, v) * cf[..., np.newaxis]
+
+                    dQ = np.matmul(dR1, R2) + np.matmul(R1, dR2)
+                elif i == 1:
+                    if R1 is None:
+                        dQ = dR2
+                    else:
+                        dQ = np.matmul(R1, dR2)
+
+            dvr = (v if delta_rn else np.zeros(v.shape))
+            if i > 0:
+                dQr = vec_tdot(dQ, r*v)
+                Qdr = vec_tdot(Q, r*dv + dvr)
+                d = dx1 + dQr + Qdr
+                derivs[zorks, z, m, i+1] = d
+            else:
+                derivs[zorks, z, m, i+1] = dx1 + dvr
+
+def _rad_d1(i, z, m, r, a, d, v, u, n, R1, R2, Q, rv, dxa, dxb, dxc):
+
+    # derivatives of axis system vectors
+    dv = dxb - dxa
+    du = dxc - dxa
+    dn = _prod_deriv(vec_crosses, v, u, dv, du)
+    # we actually need the derivatives of the unit vectors for our rotation axes
+    dn = normalized_vec_deriv(n, dn)
+    dv = normalized_vec_deriv(v, dv)
+
+    # derivatives of rotation matrices
+    dq = 1 if (z == i and m == 1) else 0
+    dR1 = rot_deriv(a, n, dq, dn)
+    df = 1 if (z == i and m == 2) else 0
+    dR2 = rot_deriv(d, v, df, dv)
+
+    # derivative of total rotation matrix
+    dQ = _prod_deriv(np.matmul, R2, R1, dR2, dR1)
+    # derivative of vector along the main axis
+    dr = 1 if (z == i and m == 0) else 0
+
+    drv = _prod_deriv(np.operator.mul, r, v, dr, dv)
+    der = dxa + _prod_deriv(np.matmul, Q, rv, dQ, drv)
+
+    return der, (dr, dq, df, dv, du, dn, dR1, dR2, dQ, drv)
+
+
+def _rad_d2(i, z1, m1, z2, m2, # don't actually use these because all the coordinate derivatives are 0 :yay:
+            r, a, d, v, u, n, R1, R2, Q, rv,
+            dr1, dq1, df1, dv1, du1, dn1, dR11, dR21, dQ1, drv1,
+            dr2, dq2, df2, dv2, du2, dn2, dR12, dR22, dQ2, drv2,
+            d2xa, d2xb, d2xc):
+
+    # second derivatives of embedding axes
+    d2v = d2xb - d2xa
+    d2u = d2xc - d2xa
+    d2n = _prod_deriv_2(vec_crosses, v, u, dv1, dv2, du1, du2, d2v, d2u)
+
+    # second derivatives of rotation matrices
+    d2R1 = rot_deriv2(a, n, dq1, dn1, dq2, dn2, 0, d2n)
+    d2R2 = rot_deriv2(d, v, df1, dv1, df2, dv2, 0, d2v)
+    d2Q = _prod_deriv_2(np.matmul, R2, R1, dR21, dR22, dR11, dR12, d2R1, d2R2)
+
+    # second derivatives of r*v
+    d2rv = _prod_deriv_2(np.operator.mul, r, v, dr1, dr2, dv1, dv2, 0, d2v)
+
+    # new derivative
+    der = d2xa + _prod_deriv_2(np.matmul, Q, rv, dQ1, dQ2, drv1, drv2, d2Q, d2rv)
+
+    return der, (d2v, d2u, d2n, d2R1, d2R2, d2Q, d2rv)
+
+def cartesian_from_rad_derivatives(
+        r, a, d,
+        xa, xb, xc,
+        i,
+        derivs,
+        ia, ib, ic,
+        order=2
+):
+    """
+    Returns derivatives of the generated Cartesian coordinates with respect
+    to the internals
+    """
+
+    if order > 2:
+        raise NotImplementedError("bond-angle-dihedral to Cartesian derivatives only implemented up to order 2")
+
+    coord, comps = cartesian_from_rad(xa, xb, xc, r, a, d, return_comps=True)
+    v, u, n, R1, R2 = comps
+
+    Q = np.matmul(R2, R1)
+    rv = r * vec_normalize(v)
+
+    #TODO: I think I'm re-calculating terms I did for a previous value of i?
+    #       ...except I'm not because _rad_d1 has some Kronecker delta terms...
+    #       that could all be made way more efficient I bet by reusing stuff
+    new_derivs = []
+    new_derivs.append(coord)
+    if order > 0:
+        config_shape = derivs[1].shape[:-4]
+        d1 = np.zeros(config_shape + (i+1, 3, 3)) # the next block in the derivative tensor
+        d1_comps = np.full(config_shape + (i+1, 3), None) # the components used to build the derivatives
+        for z in range(i + 1):  # Lower-triangle is 0 so we do nothing with it
+            for m in range(3):
+                # we'll need to do some special casing for z < 2
+                dxa = derivs[1][..., z, m, ia, :]
+                dxb = derivs[1][..., z, m, ib, :]
+                dxc = derivs[1][..., z, m, ic, :]
+
+                der, comps1 = _rad_d1(i, z, m, r, a, d, v, u, n, R1, R2, Q, rv, dxa, dxb, dxc)
+                d1_comps[..., z, m] = comps1
+
+                d1[..., z, m, :] = der
+        new_derivs.append(d1)
+
+        if order > 1:
+            d2 = np.zeros(config_shape + (i+1, 3, i+1, 3, 3)) # the next block in the 2nd derivative tensor
+            d2_comps = np.full(config_shape + (i+1, 3, i+1, 3), None) # the components used to build the derivatives
+            for z1 in range(i + 1):
+                for m1 in range(3):
+                    for z2 in range(i + 1):
+                        for m2 in range(3):
+                                d2xa = derivs[2][..., z1, m1, z2, m2, ia, :]
+                                d2xb = derivs[2][..., z1, m1, z2, m2, ib, :]
+                                d2xc = derivs[2][..., z1, m1, z2, m2, ic, :]
+                                dr1, dq1, df1, dv1, du1, dn1, dR11, dR21, dQ1, drv1 = d1_comps[..., z1, m1]
+                                dr2, dq2, df2, dv2, du2, dn2, dR12, dR22, dQ2, drv2 = d1_comps[..., z1, m1]
+
+                                # now we feed this in
+                                der, comps2 = _rad_d2(i, z1, m1, z2, m2,
+                                                      r, a, d, v, u, n, R1, R2, Q, rv,
+                                                      dr1, dq1, df1, dv1, du1, dn1, dR11, dR21, dQ1, drv1,
+                                                      dr2, dq2, df2, dv2, du2, dn2, dR12, dR22, dQ2, drv2,
+                                                      d2xa, d2xb, d2xc
+                                                      )
+                                d2[..., z1, m1, z2, m2, :] = der
+                                d2_comps[..., z1, m1, z2, m2] = comps
+            new_derivs.append(d2)
+
+    return new_derivs
 
 def vec_norm_derivs(a, order=1, zero_thresh=None):
     """

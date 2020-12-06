@@ -22,7 +22,8 @@ __all__ = [
     "pts_dihedrals",
     "mat_vec_muls",
     "one_pad_vecs",
-    "affine_multiply"
+    "affine_multiply",
+    "cartesian_from_rad"
 ]
 
 ##
@@ -37,7 +38,6 @@ __all__ = [
 #
 #       vec_dots
 #
-
 def vec_dots(vecs1, vecs2, axis=-1):
     """
     Computes the pair-wise dot product of two lists of vecs using np.matmul
@@ -64,7 +64,6 @@ def vec_dots(vecs1, vecs2, axis=-1):
 #
 #       vec_norms
 #
-
 def vec_norms(vecs, axis=-1):
     """
 
@@ -155,7 +154,6 @@ def vec_crosses(vecs1, vecs2, normalize=False, axis=-1):
 #
 #       vec_cos
 #
-
 def vec_cos(vectors1, vectors2, axis=-1):
     """Gets the cos of the angle between two vectors
 
@@ -174,7 +172,6 @@ def vec_cos(vectors1, vectors2, axis=-1):
 #
 #       vec_sins
 #
-
 def vec_sins(vectors1, vectors2, axis=-1):
     """Gets the sin of the angle between two vectors
 
@@ -194,7 +191,6 @@ def vec_sins(vectors1, vectors2, axis=-1):
 #
 #       vec_angles
 #
-
 def vec_angles(vectors1, vectors2, up_vectors=None, axis=-1):
     """
     Gets the angles and normals between two vectors
@@ -428,7 +424,6 @@ def vec_tdot(tensa, tensb, axes=[[-1], [1]]):
 #
 #       pts_normals
 #
-
 def pts_normals(pts1, pts2, pts3, normalize=True):
     """Provides the vector normal to the plane of the three points
 
@@ -450,7 +445,6 @@ def pts_normals(pts1, pts2, pts3, normalize=True):
 #
 #       pts_dihedrals
 #
-
 def pts_dihedrals(pts1, pts2, pts3, pts4):
     """
     Provides the dihedral angle between pts4 and the plane of the other three vectors
@@ -486,7 +480,6 @@ def pts_dihedrals(pts1, pts2, pts3, pts4):
 ################################################
 #
 #       mat_vec_muls
-
 def mat_vec_muls(mats, vecs):
     """Pairwise multiplies mats and vecs
 
@@ -513,7 +506,6 @@ def one_pad_vecs(vecs):
 ################################################
 #
 #       affine_multiply
-
 def affine_multiply(mats, vecs):
     """
     Multiplies affine mats and vecs
@@ -533,3 +525,84 @@ def affine_multiply(mats, vecs):
     if vec_shape[-1] != 4:
         res = res[:, :3]
     return res
+
+###
+#
+#       cartesian_from_rad_transforms
+def cartesian_from_rad_transforms(centers, vecs1, vecs2, angles, dihedrals, return_comps=False):
+    """Builds a single set of affine transformation matrices to apply to the vecs1 to get a set of points
+
+    :param centers: central coordinates
+    :type centers: np.ndarray
+    :param vecs1: vectors coming off of the centers
+    :type vecs1: np.ndarray
+    :param vecs2: vectors coming off of the centers
+    :type vecs2: np.ndarray
+    :param angles: angle values
+    :type angles: np.ndarray
+    :param dihedrals: dihedral values
+    :type dihedrals: np.ndarray | None
+    :return:
+    :rtype:
+    """
+    crosses = vec_crosses(vecs2, vecs1)
+    rot_mats_1 = rotation_matrix(crosses, angles)
+    if dihedrals is not None:
+        rot_mats_2 = rotation_matrix(vecs1, -dihedrals)
+        rot_mat = np.matmul(rot_mats_2, rot_mats_1)
+    else:
+        rot_mat = rot_mats_1
+        rot_mats_2 = None
+    transfs = affine_matrix(rot_mat, centers)
+
+    if return_comps:
+        comps = (-crosses, rot_mats_2, rot_mats_1)
+    else:
+        comps = None
+    return transfs, comps
+
+##############################################################################
+#
+#       cartesian_from_rad
+#
+def cartesian_from_rad(xa, xb, xc, r, a, d, return_comps=False):
+    """
+    Constructs a Cartesian coordinate from a bond length, angle, and dihedral
+    and three points defining an embedding
+    :param xa: first coordinate defining the embedding
+    :type xa: np.ndarray
+    :param xb: third coordinate defining the embedding
+    :type xb: np.ndarray
+    :param xc: third coordinate defining the embedding
+    :type xc: np.ndarray
+    :param r:
+    :type r:
+    :param a:
+    :type a:
+    :param d:
+    :type d:
+    :param ref_axis:
+    :type ref_axis:
+    :param return_comps:
+    :type return_comps:
+    :return:
+    :rtype:
+    """
+
+    v = xb - xa
+    vecs1 = vec_normalize(v)
+    if a is None:
+        # no angle so all we have is a bond length to work with
+        # means we don't even really want to build an affine transformation
+        newstuff = xa + r * vecs1
+        comps = (v, None, None, None)
+    else:
+        u = xc - xa
+        vecs2 = vec_normalize(v2)
+        transfs, comps = cartesian_from_rad_transforms(refs1, vecs1, vecs2, angles, dihedrals, return_comps=return_comps)
+        newstuff = affine_multiply(transfs, dists*vecs1)
+        if return_comps:
+            comps = (v, v2) + comps
+        else:
+            comps = None
+    return newstuff, comps

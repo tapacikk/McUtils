@@ -126,6 +126,7 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
         nol = len(ol)
 
         multiconfig = nol < ncoords
+        # print(coords)
         if multiconfig:
             fsteps = ncoords / nol
             steps = int(fsteps)
