@@ -35,6 +35,15 @@ class AffineTransform(TransformationFunction):
         return self.transf[:3, :3]
 
     @property
+    def inverse(self):
+        """
+        Returns the inverse of the transformation
+        :return:
+        :rtype:
+        """
+        return self.reverse()
+
+    @property
     def shift(self):
         transf = self.transf
         transf_shape = transf.shape

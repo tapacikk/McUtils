@@ -545,8 +545,10 @@ def cartesian_from_rad_transforms(centers, vecs1, vecs2, angles, dihedrals, retu
     :return:
     :rtype:
     """
-    crosses = vec_crosses(vecs2, vecs1)
-    rot_mats_1 = rotation_matrix(crosses, angles)
+    from .TransformationMatrices import rotation_matrix, affine_matrix
+
+    crosses = vec_crosses(vecs1, vecs2)
+    rot_mats_1 = rotation_matrix(crosses, -angles)
     if dihedrals is not None:
         rot_mats_2 = rotation_matrix(vecs1, -dihedrals)
         rot_mat = np.matmul(rot_mats_2, rot_mats_1)
@@ -556,7 +558,7 @@ def cartesian_from_rad_transforms(centers, vecs1, vecs2, angles, dihedrals, retu
     transfs = affine_matrix(rot_mat, centers)
 
     if return_comps:
-        comps = (-crosses, rot_mats_2, rot_mats_1)
+        comps = (crosses, rot_mats_2, rot_mats_1)
     else:
         comps = None
     return transfs, comps
@@ -594,15 +596,16 @@ def cartesian_from_rad(xa, xb, xc, r, a, d, return_comps=False):
     if a is None:
         # no angle so all we have is a bond length to work with
         # means we don't even really want to build an affine transformation
-        newstuff = xa + r * vecs1
-        comps = (v, None, None, None)
+        newstuff = xa + r[..., np.newaxis] * vecs1
+
+        comps = (v, None, None, None, None)
     else:
-        u = xc - xa
-        vecs2 = vec_normalize(v2)
-        transfs, comps = cartesian_from_rad_transforms(refs1, vecs1, vecs2, angles, dihedrals, return_comps=return_comps)
-        newstuff = affine_multiply(transfs, dists*vecs1)
+        u = xc - xb
+        vecs2 = vec_normalize(u)
+        transfs, comps = cartesian_from_rad_transforms(xa, vecs1, vecs2, a, d, return_comps=return_comps)
+        newstuff = affine_multiply(transfs, r * vecs1)
         if return_comps:
-            comps = (v, v2) + comps
+            comps = (v, u) + comps
         else:
             comps = None
     return newstuff, comps

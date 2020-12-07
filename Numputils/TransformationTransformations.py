@@ -41,7 +41,10 @@ def merge_transformation_matrix(transf, other):
         transf = make_affine_matrix(transf, np.array([0, 0, 0], dtype=float))
     elif other_shape[-1] == 3 and self_shape[-1] == 4:
         other = make_affine_matrix(other, np.array([0, 0, 0], dtype=float))
-    else:
+    elif other_shape[-1] == 3 and self_shape[-1] == 3:
+        transf = make_affine_matrix(transf, np.array([0, 0, 0], dtype=float))
+        other = make_affine_matrix(other, np.array([0, 0, 0], dtype=float))
+    elif other_shape[-1] != 4 or self_shape[-1] != 4:
         raise ValueError("can't merge affine transforms with shape {} and {}".format(
             transf.shape,
             other.shape

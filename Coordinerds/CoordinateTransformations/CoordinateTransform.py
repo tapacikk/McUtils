@@ -60,6 +60,10 @@ class CoordinateTransform:
         for t in self._transform_list[:-1]:
             self._trans = self._trans.merge(t)
 
+    @property
+    def inverse(self):
+        return type(self)(self._trans.inverse)
+
     @staticmethod
     def parse_transform(tf):
         """

@@ -201,10 +201,16 @@ class CoordinateSystem:
         :return: the converted coordiantes
         :rtype: tuple(np.ndarray, dict)
         """
-        if system is self:
-            return coords, self.converter_options
 
-        ops = dict(system.converter_options, **self.converter_options)
+        converter_opts = self.converter_options
+        if converter_opts is None:
+            converter_opts = {}
+        if system is self:
+            return coords, converter_opts
+        sysops = system.converter_options
+        if sysops is None:
+            sysops = {}
+        ops = dict(sysops, **converter_opts)
         kw = dict(ops, **kw)
         if self.matrix is not None:
             # This very commonly means that we're doing an expansion in some coordinate set,
@@ -459,8 +465,7 @@ class CoordinateSystem:
                 convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
         else:
             convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
-
-        need_derivs = max(order) > 0 if not isinstance(order, int) else order > 0
+        need_derivs = (len(order) > 0 and max(order) > 0) if not isinstance(order, int) else order > 0
         if need_derivs:
 
             other_shape = system.coordinate_shape

@@ -14,8 +14,6 @@ class TransformationFunction(metaclass=ABCMeta):
     """
     The TransformationFunction class is an abstract class
     It provides the scaffolding for representing a single transformation operation
-
-
     """
 
     def __init__(self):
@@ -25,6 +23,15 @@ class TransformationFunction(metaclass=ABCMeta):
         :type transfdata:
         """
         pass
+
+    @property
+    def inverse(self):
+        """
+        Returns the inverse of the transformation
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("arbitrary transform inverses not implemented")
 
     def merge(self, other):
         """Tries to merge with another TransformationFunction
