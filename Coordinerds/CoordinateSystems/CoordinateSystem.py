@@ -73,6 +73,16 @@ class CoordinateSystem:
         self.converter_options = converter_options
         self._validate()
 
+    def pre_convert(self, system):
+        """
+        A hook to allow for handlign details before converting
+        :param system:
+        :type system:
+        :return:
+        :rtype:
+        """
+        pass
+
     def _validate(self):
         if self._matrix is None:
             pass
@@ -218,11 +228,7 @@ class CoordinateSystem:
             # For example, with normal modes we need to shift by the equilibrium value of the coordinates
             #   both when we convert _to_ normal modes (in which case the modes are `system`) and when we convert _from_
             #   normal modes (in which case the modes are `self`)
-            coords = self._apply_system_matrix(self.basis, coords,
-                                               self.matrix,
-                                               self.coordinate_shape,
-                                               self.basis.coordinate_shape
-                                               )
+            coords = self._apply_system_matrix(self.basis, coords, self.matrix, self.coordinate_shape, self.basis.coordinate_shape)
             orig = self.origin
             if orig is not None:
                 extra = coords.ndim-orig.ndim
@@ -246,14 +252,15 @@ class CoordinateSystem:
                                                system.coordinate_shape
                                                )
             return coords, convs
-
         else:
+            # print("> okkkay", kw['return_derivs'] if 'return_derivs' in kw else 'nooooooo')
             converter = self.converter(system)
             if is_multiconfig(coords):
-                fun = lambda coords, kw=kw: converter.convert_many(coords, **kw)
+                fun = lambda coords, kw=kw.copy(): converter.convert_many(coords, **kw)
             else:
-                fun = lambda coords, kw=kw: converter.convert(coords, **kw)
+                fun = lambda coords, kw=kw.copy(): converter.convert(coords, **kw)
             new_coords = mc_safe_apply(fun, coords=coords)
+            # print("...wtf", kw['return_derivs'] if 'return_derivs' in kw else 'nooooooo')
             return new_coords
 
     def displacement(self, amts):
@@ -345,6 +352,7 @@ class CoordinateSystem:
 
         return deriv_tensor
 
+    return_derivs_key = 'return_derivs'
     def jacobian(self,
                  coords,
                  system,
@@ -377,6 +385,9 @@ class CoordinateSystem:
         # print(system)
         from McUtils.Zachary import FiniteDifferenceDerivative
 
+        self.pre_convert(system)
+        system.pre_convert(self)
+
         if converter_options is None:
             converter_options = {} # convert_coords tracks the other conversion options for us
 
@@ -395,12 +406,14 @@ class CoordinateSystem:
                     self_shape
                 ))
 
+        all_numerical = all_numerical or analytic_deriv_order == 0
         if not all_numerical:
             # sort of a hack right now: if the conversion returns 'derivs', then we use those for the FD
             # unless we got enough analytic derivatives to not need to do any more FD
-            ret_d_key = 'return_derivs'
+            ret_d_key = self.return_derivs_key
             rd = converter_options[ret_d_key] if ret_d_key in converter_options else None
             converter_options[ret_d_key] = True if analytic_deriv_order is None else analytic_deriv_order
+            # print(">>>>", converter_options[ret_d_key])
             test_crd, test_opts = self.convert_coords(coords, system, **converter_options)
             if rd is None:
                 del converter_options[ret_d_key]
