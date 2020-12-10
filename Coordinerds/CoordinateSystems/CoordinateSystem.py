@@ -400,7 +400,7 @@ class CoordinateSystem:
             # unless we got enough analytic derivatives to not need to do any more FD
             ret_d_key = 'return_derivs'
             rd = converter_options[ret_d_key] if ret_d_key in converter_options else None
-            converter_options[ret_d_key] = True
+            converter_options[ret_d_key] = True if analytic_deriv_order is None else analytic_deriv_order
             test_crd, test_opts = self.convert_coords(coords, system, **converter_options)
             if rd is None:
                 del converter_options[ret_d_key]
@@ -435,7 +435,7 @@ class CoordinateSystem:
                     del kw[ret_d_key]
 
                 def convert(c, s=system, dk=deriv_key, self=self, num_derivs=num_derivs, convert_kwargs=kw):
-                    crds, opts = self.convert_coords(c, s, return_derivs=True, **convert_kwargs)
+                    crds, opts = self.convert_coords(c, s, return_derivs=num_derivs, **convert_kwargs)
                     # we now have to reshape the derivatives because mc_safe_apply is only applied to the coords -_-
                     # should really make that function manage deriv shapes too, but don't know how to _tell_ it that I
                     # want it to

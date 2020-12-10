@@ -78,20 +78,21 @@ def normalized_vec_deriv(v, dv):
     wat = np.matmul(i3 - vXv, dv[..., np.newaxis])[..., 0] # gotta add a 1 for matmul
     return wat / norms
 
-def normalized_vec_deriv2(v, dv, d2v):
+def normalized_vec_deriv2(v, dv1, dv2, d2v):
     """
-    Second derivative of a normalized vector w/r/t some unspecified coordinate
+    Second derivative of a normalized vector w/r/t some unspecified coordinates
     """
+    # derivative of inverse norm
     norms = vec_norms(v)[..., np.newaxis]
-    vds = vec_dots(dv, v)
-    dnorminv = -1/(norms**3) * vds
+    vds2 = vec_dots(dv2, v)[..., np.newaxis]
+    dnorminv = -1/(norms**3) * vds2
     vh = v / norms
-    i3 = np.broadcast_to(np.eye(3), dv.shape[:-1] + (3, 3))
+    i3 = np.broadcast_to(np.eye(3), dv1.shape[:-1] + (3, 3))
     vXv = vec_outer(vh, vh)
-    dvh = normalized_vec_deriv(v, dv)
-    dvXv = _prod_deriv(vec_outer, vh, vh, dvh, dvh)
-    right = np.matmul(i3 - vXv, dv[..., np.newaxis])[..., 0]  # gotta add a 1 for matmul
-    dright = _prod_deriv(np.matmul, i3 - vXv, dv, -dvXv, d2v)
+    dvh2 = normalized_vec_deriv(v, dv2)
+    dvXv2 = _prod_deriv(vec_outer, vh, vh, dvh2, dvh2)
+    right = np.matmul(i3 - vXv, dv1[..., np.newaxis])[..., 0]  # gotta add a 1 for matmul
+    dright = _prod_deriv(np.matmul, i3 - vXv, dv1[..., np.newaxis], -dvXv2, d2v[..., np.newaxis])[..., 0]
     der = _prod_deriv(np.multiply, 1/norms, right, dnorminv, dright)
     return der
 
@@ -185,17 +186,18 @@ def _rad_d1(i, z, m, r, a, d, v, u, n, R1, R2, Q, rv, dxa, dxb, dxc):
     dq = 1 if (z == i and m == 1) else 0
     df = 1 if (z == i and m == 2) else 0
 
-    dv = normalized_vec_deriv(v, dxb - dxa)
+    dv_ = dxb - dxa
+    dv = normalized_vec_deriv(v, dv_)
     v = vec_normalize(v)
     if a is None:
         # no derivative about any of the rotation shit
-        v = vec_normalize(v)
         drv = _prod_deriv(np.multiply, r[..., np.newaxis], v, dr, dv)
-        du = dn = dR1 = dR2 = dQ = None
+        du_ = dn_ = dR1 = dR2 = dQ = None
         der = dxa + drv
     else:
         # derivatives of axis system vectors
-        du = normalized_vec_deriv(u, dxc - dxb)
+        du_ = dxc - dxb
+        du = normalized_vec_deriv(u, du_)
         u = vec_normalize(u)
         dn_ = _prod_deriv(vec_crosses, v, u, dv, du)
         # we actually need the derivatives of the unit vectors for our rotation axes
@@ -209,7 +211,6 @@ def _rad_d1(i, z, m, r, a, d, v, u, n, R1, R2, Q, rv, dxa, dxb, dxc):
             dR2 = rot_deriv(d, v, df, dv)
             # derivative of total rotation matrix
             dQ = _prod_deriv(np.matmul, R2, R1, dR2, dR1)
-
         else:
             dR2 = None
             dQ = dR1
@@ -218,7 +219,7 @@ def _rad_d1(i, z, m, r, a, d, v, u, n, R1, R2, Q, rv, dxa, dxb, dxc):
         drv = _prod_deriv(np.multiply, r, v, dr, dv)
         der = dxa + _prod_deriv(np.matmul, Q, rv[..., np.newaxis], dQ, drv[..., np.newaxis])[..., 0]
 
-    return der, (dr, dq, df, dv, du, dn, dR1, dR2, dQ, drv)
+    return der, (dr, dq, df, dv_, du_, dn_, dR1, dR2, dQ, drv)
 
 def _rad_d2(i, z1, m1, z2, m2, # don't actually use these because all the coordinate 2nd derivatives are 0 :yay:
             r, a, d, v, u, n, R1, R2, Q, rv,
@@ -228,16 +229,26 @@ def _rad_d2(i, z1, m1, z2, m2, # don't actually use these because all the coordi
 
     # second derivatives of embedding axes
     # fuck this is annoying...need to get the _unnormalized_ shit too to get the norm deriv as I have it...
-    d2v_u = d2xb - d2xa
-    d2v = ...
+    d2v = normalized_vec_deriv2(v, dv1, dv2, d2xb - d2xa)
+    dv1 = normalized_vec_deriv(v, dv1)
+    dv2 = normalized_vec_deriv(v, dv2)
     v = vec_normalize(v)
+    if r.shape[-1] == 1: # shape hack for now... to flatten r I guess...
+        r = r[..., 0]
     if a is None:
         d2rv = _prod_deriv_2(np.multiply, r[..., np.newaxis], v, dr1, dr2, dv1, dv2, 0, d2v)
         der = d2xa + d2rv
         d2u = d2n = d2R1 = d2R2 = d2Q = None
     else:
-        d2u = d2xc - d2xb
-        d2n = _prod_deriv_2(vec_crosses, v, u, dv1, dv2, du1, du2, d2v, d2u)
+        d2u = normalized_vec_deriv2(u, du1, du2, d2xc - d2xb)
+        du1 = normalized_vec_deriv(u, du1)
+        du2 = normalized_vec_deriv(u, du2)
+        u = vec_normalize(u)
+        d2n_ = _prod_deriv_2(vec_crosses, v, u, dv1, dv2, du1, du2, d2v, d2u)
+        d2n = normalized_vec_deriv2(v, dn1, dn2, d2n_)
+        dn1 = normalized_vec_deriv(u, dn1)
+        dn2 = normalized_vec_deriv(u, dn2)
+        n = vec_normalize(n)
 
         # second derivatives of rotation matrices
         d2R1 = rot_deriv2(a, n, dq1, dn1, dq2, dn2, 0, d2n)
@@ -249,11 +260,13 @@ def _rad_d2(i, z1, m1, z2, m2, # don't actually use these because all the coordi
             d2Q = _prod_deriv_2(np.matmul, R2, R1, dR21, dR22, dR11, dR12, d2R1, d2R2)
 
         # second derivatives of r*v
-        d2rv = _prod_deriv_2(np.multiply, r, v, dr1, dr2, dv1, dv2, 0, d2v)
+        d2rv = _prod_deriv_2(np.multiply, r[..., np.newaxis], v, dr1, dr2, dv1, dv2, 0, d2v)
 
         # new derivative
         der = d2xa + _prod_deriv_2(np.matmul, Q, rv[..., np.newaxis], dQ1, dQ2, drv1[..., np.newaxis], drv2[..., np.newaxis], d2Q, d2rv[..., np.newaxis])[..., 0]
 
+    # if der.shape == (7, 7, 3):
+    #     raise ValueError(r.shape, d2v.shape, d2rv.shape)#, d2u.shape, d2n.shape, d2R1.shape, d2R2.shape, d2Q.shape, d2rv.shape)
     return der, (d2v, d2u, d2n, d2R1, d2R2, d2Q, d2rv)
 
 class _dumb_comps_wrapper:
@@ -332,7 +345,7 @@ def cartesian_from_rad_derivatives(
                                 d2xb = derivs[2][inds, z1, m1, z2, m2, ib, :]
                                 d2xc = derivs[2][inds, z1, m1, z2, m2, ic, :]
                                 dr1, dq1, df1, dv1, du1, dn1, dR11, dR21, dQ1, drv1 = d1_comps[z1, m1].comp
-                                dr2, dq2, df2, dv2, du2, dn2, dR12, dR22, dQ2, drv2 = d1_comps[z1, m1].comp
+                                dr2, dq2, df2, dv2, du2, dn2, dR12, dR22, dQ2, drv2 = d1_comps[z2, m2].comp
 
                                 # now we feed this in
                                 der, comps2 = _rad_d2(i, z1, m1, z2, m2,

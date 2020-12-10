@@ -80,12 +80,13 @@ class AffineTransform(TransformationFunction):
         return AffineTransform(inverse)
 
 
-    def operate(self, coords):
+    def operate(self, coords, shift=True):
         """
 
         :param coords: the array of coordinates passed in
         :type coords: np.ndarry
         """
+        translate = shift
 
         # Assumes that we're getting 3D cartesian coordinates...might not be a valid assumption
         coords = np.asarray(coords)
@@ -102,7 +103,8 @@ class AffineTransform(TransformationFunction):
         if tmat.shape[-1] == 4:
             shift = tmat[:3, -1]
             tmat = tmat[:3, :3]
-            adj_coord = adj_coord + shift[np.newaxis]
+            if translate:
+                adj_coord = adj_coord + shift[np.newaxis]
 
         adj_coord = np.tensordot(adj_coord, tmat, axes=[1, 1])
         adj_coord = adj_coord.reshape(coord_shape)

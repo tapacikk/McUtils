@@ -83,12 +83,18 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
         sysnum = len(coordlist)
         coordnum = len(coordlist[0])
         total_points = np.empty((sysnum, coordnum+1, 3))
+        if return_derivs is not True and return_derivs is not False and isinstance(return_derivs, int):
+            return_derivs = True
+            return_deriv_order = return_derivs
+        elif return_derivs:
+            return_deriv_order = 2
         if return_derivs:
             derivs = [
                 None, # no need to stoare a copy of total_points here...
                 np.zeros((sysnum, coordnum, 3, coordnum + 1, 3)),
                 np.zeros((sysnum, coordnum, 3, coordnum, 3, coordnum + 1, 3))
             ]
+
 
         # first we put the origin whereever the origins are specified
         if origins is None:
@@ -114,17 +120,19 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
 
         dists = coordlist[:, 0, 0]
         if return_derivs:
-            crd, d1 = cartesian_from_rad_derivatives(origins, x_pts, y_pts, dists, None, None,
+            der_stuff = cartesian_from_rad_derivatives(origins, x_pts, y_pts, dists, None, None,
                                                          0,
                                                          np.full((len(dists),), -1, dtype=int),
                                                          np.full((len(dists),), -1, dtype=int),
                                                          np.full((len(dists),), -1, dtype=int),
                                                          derivs,
-                                                         order=1
+                                                         order=return_deriv_order
                                                          )
-            total_points[:, 1] = crd
-            derivs[1][np.arange(sysnum), :1, :, 1, :] = d1
-            # derivs[2][np.arange(sysnum), :1, :, :1, :, 1, :] = d2
+            total_points[:, 1] = der_stuff[0]
+            if return_deriv_order > 0:
+                derivs[1][np.arange(sysnum), :1, :, 1, :] = der_stuff[1]
+            if return_deriv_order > 1:
+                derivs[2][np.arange(sysnum), :1, :, :1, :, 1, :] = der_stuff[2]
 
         else:
             ref_points_1, _ = cartesian_from_rad(origins, x_pts, y_pts, dists, None, None)
@@ -156,7 +164,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
                     dihed = np.deg2rad(dihed)
 
             if return_derivs:
-                crd, d1 = cartesian_from_rad_derivatives(
+                der_stuff = cartesian_from_rad_derivatives(
                     refs1, refs2, refs3,
                     dists, angle, dihed,
                     i,
@@ -164,12 +172,15 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
                     ref_coords2,
                     ref_coords3,
                     derivs,
-                    order=1
+                    order=return_deriv_order
                 )
                 # crd, d1, d2 = stuff
-                total_points[:, i+1] = crd
-                derivs[1][np.arange(sysnum), :i+1, :, i+1, :] = d1
-                # derivs[2][np.arange(sysnum), :i+1, :, :i+1, :, i+1, :] = d2
+
+                total_points[:, i+1] = der_stuff[0]
+                if return_deriv_order > 0:
+                    derivs[1][np.arange(sysnum), :i+1, :, i+1, :] = der_stuff[1]
+                if return_deriv_order > 1:
+                    derivs[2][np.arange(sysnum), :i+1, :, :i+1, :, i+1, :] = der_stuff[2]
 
             else:
                 ref_points_1, _ = cartesian_from_rad(refs1, refs2, refs3, dists, angle, dihed)
@@ -181,7 +192,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
 
         converter_opts = dict(use_rad=use_rad, ordering=ordering)
         if return_derivs:
-            converter_opts['derivs'] = derivs[1:2]
+            converter_opts['derivs'] = derivs[1:][:return_deriv_order]
 
         return total_points, converter_opts
 

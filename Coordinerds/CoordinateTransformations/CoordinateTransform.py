@@ -46,12 +46,12 @@ class CoordinateTransform:
     def transforms(self):
         return self._transform_list
 
-    def apply(self, coords):
+    def apply(self, coords, shift=True):
         tfunc = self.transformation_function #type: TransformationFunction
-        return tfunc.operate(coords)
-    def __call__(self, coords):
+        return tfunc.operate(coords, shift=shift)
+    def __call__(self, coords, shift=True):
         if isinstance(coords, (TransformationFunction, CoordinateTransform)):
-            return type(self)(coords, self)
+            return type(self)(coords, self) # just constructing a new transform...
         else:
             return self.apply(coords)
 
