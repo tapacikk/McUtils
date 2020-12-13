@@ -57,7 +57,7 @@ class LoggingBlock:
             'closer': '::*'
         }
     ]
-    block_level_padding= " " * 4
+    block_level_padding= " " * 2
     def __init__(self,
                  logger,
                  log_level=None,
@@ -213,7 +213,7 @@ class Logger:
                         pass
                 #O_NONBLOCK is *nix only
                 with open(log, "a", os.O_NONBLOCK) as lf: # this is potentially quite slow but I am also quite lazy
-                    print(self.format_message(message, *params, **kwargs), file=lf, **print_options)
+                    print(self.format_message(message, *params, meta=self.format_metainfo(metainfo), **kwargs), file=lf, **print_options)
             elif log is None:
                 print(self.format_message(message, *params, meta=self.format_metainfo(metainfo), **kwargs), **print_options)
             else:
@@ -278,45 +278,69 @@ class LogParser(FileStreamReader):
                 self._tag, self._lines = self.parse_block_data()
             return self._tag
 
+        def block_iterator(self, opener, closer,
+                           preblock_handler=lambda c,w: w,
+                           postblock_handler=lambda e:e,
+                           start=0):
+
+            where = self.data.find(opener, start)
+            while where > -1:
+                chunk = self.data[start:where]
+                where = preblock_handler(chunk, where)
+                end = self.data.find(closer, where)
+                end = postblock_handler(end)
+                subblock = self.data[where:end]
+                start = end
+                yield subblock, start
+                where = self.data.find(opener, start)
+
+        def line_iterator(self, pattern=""):
+            og_settings = self.parent.get_block_settings(self.depth)
+            prompt = og_settings['prompt'].format(meta="") + pattern
+
+        def parse_prompt_blocks(self, chunk, prompt):
+            splitsies = chunk.split("\n" + prompt)
+            if splitsies[0] == "":
+                splitsies = splitsies[1:]
+            return splitsies
+
         def parse_block_data(self):
             # find where subblocks are
             # parse around them
             og_settings = self.parent.get_block_settings(self.depth)
             prompt = og_settings['prompt'].split("{meta}", 1)[0]
 
-
             new_settings = self.parent.get_block_settings(self.depth+1)
             opener = "\n" + new_settings['opener'].split("{tag}", 1)[0]
             closer = "\n" + new_settings['closer'].split("{tag}", 1)[0]
             start=0
             lines=[]
-            where = self.data.find(opener, start)
-            while where > -1:
-                chunk = self.data[start:where]
-                splitsies = chunk.split("\n" + prompt)
-                if splitsies[0] == "":
-                    splitsies = splitsies[1:]
-                lines.extend(splitsies)
-                where += 1 # to account for the newline
-                end = self.data.find(closer, where+1)
+
+            pre_block = lambda block, where: (lines.extend(self.parse_prompt_blocks(block, prompt)),  where +1)[1]
+
+            def post_block(end):
                 if end == -1:
                     raise ValueError("unclosed log block? {}".format(self.data))
-                end += 1 # to account for newline
+                end += 1  # to account for newline
                 eol = self.data.find("\n", end)
                 if eol > 0:
                     end = eol
-                lines.append(type(self)(self.data[where:end], self.parent, self.depth + 1))
-                start = end
-                where = self.data.find(opener, start)
+                return end
 
-            splitsies = self.data[start:].split("\n" + prompt)
-            if splitsies[0] == "":
-                splitsies = splitsies[1:]
+            for block, start in self.block_iterator(opener, closer, pre_block, post_block):
+                # print(".>"*10, block, lines, "<."*10, sep="\n")
+                lines.append(type(self)(block, self.parent, self.depth + 1))
+
+            chonk = self.data[start:]
+            splitsies = self.parse_prompt_blocks(chonk, prompt)
             lines.extend(splitsies)
 
             tag_start = og_settings['opener'].split("{tag}", 1)[0]
             tag_end = og_settings['opener'].split("{tag}", 2)[-1]
             tag = lines[0].split(tag_start, 1)[-1].split(tag_end)[0].strip()
+
+            block_end = "\n" + og_settings['closer'].split("{tag}", 1)[0]
+            lines[-1] = lines[-1].split(block_end, 1)[0]
 
             return tag, lines[1:]
 
@@ -327,24 +351,36 @@ class LogParser(FileStreamReader):
                 len(self.lines)
             )
 
-    def get_block(self):
-        block_settings = self.get_block_settings(0)
+    def get_block(self, level=0, tag=None):
+        """
+        :param level:
+        :type level:
+        :param tag:
+        :type tag:
+        :return:
+        :rtype:
+        """
+
+        block_settings = self.get_block_settings(level)
         opener = block_settings['opener'].split("{tag}", 1)[0]
+        if tag is not None:
+            opener = (opener + "{tag}").format(tag=tag)
         closer = block_settings['closer'].split("{tag}", 1)[0]
-        # print(opener, closer)
-        # raise ValueError(self.tell(), self.find_tag(opener))
+        if tag is not None:
+            closer = (closer + "{tag}").format(tag=tag)
+
         block_data = self.parse_key_block(opener, "\n"+closer, mode="Single", parser=lambda x:x) #type: str
         if block_data is None:
             raise ValueError("no more blocks")
         # I now need to process get_block further...
         block_data = opener + block_data.split("\n"+closer, 1)[0]
 
-        return self.LogBlockParser(block_data, self, 0)
+        return self.LogBlockParser(block_data, self, level)
 
-    def __iter__(self):
+    def get_blocks(self, tag=None, level=0):
         while True: # would be nice to have a smarter iteration protocol but ah well...
             try:
-                next_block = self.get_block()
+                next_block = self.get_block(level=level, tag=tag)
             except ValueError as e:
                 args = e.args
                 if len(args) == 1 and isinstance(args[0], str) and args[0] == "no more blocks":

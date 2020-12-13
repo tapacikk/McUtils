@@ -188,23 +188,24 @@ class ScaffoldingTests(TestCase):
         finally:
             os.remove(my_file)
 
-    @debugTest
-    def test_Logging(self):
+    @validationTest
+    def test_BasicLogging(self):
         stdout = io.StringIO()
         logger = Logger(stdout)
         with logger.block(tag='Womp Womp'):
             logger.log_print('wompy dompy domp')
+
             logger.log_print('Some other useful info?')
             with logger.block(tag="Calling into subprogram"):
                 logger.log_print('actually this is fake -_-')
                 logger.log_print('took {timing:.5f}s', timing=121.01234)
+
             logger.log_print('I guess following up on that?')
             with logger.block(tag="Calling into subprogram"):
                 logger.log_print('this is also fake! :yay:')
                 logger.log_print('took {timing:.5f}s', timing=212.01234)
 
             logger.log_print('done for now; took {timing:.5f}s', timing=-1)
-
 
         with logger.block(tag='Surprise second block!'):
             logger.log_print('just kidding')
@@ -215,8 +216,6 @@ class ScaffoldingTests(TestCase):
 
             logger.log_print('okay done for real; took {timing:.0f} years', timing=10000)
 
-        # print("\n" + stdout.getvalue())
-
         with tmpf.NamedTemporaryFile(mode="w+b") as temp:
             log_dump = temp.name
         try:
@@ -224,9 +223,27 @@ class ScaffoldingTests(TestCase):
                 dump.write(stdout.getvalue())
             with LogParser(log_dump) as parser:
                 blocks = list(parser)
-                print(blocks[1].lines[1], "\n", blocks[1].lines[1].lines)
+                self.assertEquals(len(blocks[1].lines[1].lines), 2)
         finally:
             os.remove(log_dump)
 
+    @debugTest
+    def test_InformedLogging(self):
+        import random
 
+        with tmpf.NamedTemporaryFile(mode="w+b") as temp:
+            log_dump = temp.name
+        try:
+            logger = Logger(log_dump)
+            for i in range(100):
+                with logger.block(tag="Step {}".format(i)):
+                    logger.log_print("Did X")
+                    logger.log_print("Did Y")
+                    with logger.block(tag="Fake Call".format(i)):
+                        logger.log_print("Took {timing}s", timing=random.random())
 
+            with LogParser(log_dump) as parser:
+                for block in parser.get_blocks(tag="Fake Call", level=1):
+                    print(block)
+        finally:
+            os.remove(log_dump)

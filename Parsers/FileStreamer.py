@@ -1,10 +1,12 @@
 from mmap import mmap
+import abc, io
 
 __all__ = [
     "FileStreamReader",
     "FileStreamCheckPoint",
     "FileStreamerTag",
-    "FileStreamReaderException"
+    "FileStreamReaderException",
+    "StringStreamReader"
 ]
 
 ########################################################################################################################
@@ -30,18 +32,99 @@ class FileStreamCheckPoint:
 class FileStreamReaderException(IOError):
     pass
 
-class FileStreamReader:
+class SearchStream(metaclass=abc.ABCMeta):
     """
-    Represents a file from which we'll stream blocks of data by finding tags and parsing what's between them
+    Represents a stream from which we can pull block of data.
+    Just provides a core interface with which we can work
     """
-    def __init__(self, file, mode="r", encoding="utf-8", **kw):
-        self._file = file
-        self._mode = mode.strip("+b")+"+b"
+
+    @abc.abstractmethod
+    def read(self, n=1):
+        raise NotImplementedError("SearchStream is a base class")
+    @abc.abstractmethod
+    def seek(self, *args, **kwargs):
+        raise NotImplementedError("SearchStream is a base class")
+    @abc.abstractmethod
+    def tell(self):
+        raise NotImplementedError("SearchStream is a base class")
+    @abc.abstractmethod
+    def find(self, tag):
+        raise NotImplementedError("SearchStream is a base class")
+    @abc.abstractmethod
+    def rfind(self, tag):
+        raise NotImplementedError("SearchStream is a base class")
+    @abc.abstractmethod
+    def skip_tag(self, tag):
+        raise NotImplementedError("SearchStream is a base class")
+    @abc.abstractmethod
+    def rskip_tag(self, tag):
+        raise NotImplementedError("SearchStream is a base class")
+
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+class ByteSearchStream(SearchStream):
+    """
+    A stream that is implemented for searching in byte strings
+    """
+    def __init__(self, data, encoding="utf-8", **kw):
+        """
+        :param data:
+        :type data: bytearray
+        :param encoding:
+        :type encoding:
+        :param kw:
+        :type kw:
+        """
+        self._data = data
         self._encoding = encoding
         self._kw = kw
         self._stream = None
         self._wasopen = None
+    def __enter__(self):
+        self._stream = io.BytesIO(self._data)
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._stream.close()
+    def read(self, n=1):
+        return self._stream.read(n).decode(self._encoding)
+    def seek(self, *args, **kwargs):
+        return self._stream.seek(*args, **kwargs)
+    def tell(self):
+        return self._stream.tell()
+    def encode_tag(self, tag):
+        if not isinstance(tag, bytes):
+            tag = tag.encode(self._encoding)
+        return tag
+    def find(self, tag):
+        enc_tag = self.encode_tag(tag)
+        return self._data.find(enc_tag)
+    def rfind(self, tag):
 
+        enc_tag = self.encode_tag(tag)
+        return self._data.rfind(enc_tag)
+    def skip_tag(self, tag):
+        pos = self._stream.tell()
+        enc_tag = self.encode_tag(tag)
+        return self._stream.seek(pos + len(enc_tag))
+    def rskip_tag(self, tag):
+        pos = self._stream.tell()
+        enc_tag = self.encode_tag(tag)
+        return self._stream.seek(pos - len(enc_tag))
+
+class FileSearchStream(SearchStream):
+    """
+    A stream that is implemented for searching in mmap-ed files
+    """
+    def __init__(self, file, mode="r", encoding="utf-8", **kw):
+        self._file = file
+        self._mode = mode.strip("+b") + "+b"
+        self._encoding = encoding
+        self._kw = kw
+        self._stream = None
+        self._wasopen = None
     def __enter__(self):
         if isinstance(self._file, str):
             self._wasopen = False
@@ -51,26 +134,88 @@ class FileStreamReader:
             self._fstream = self._file
         self._stream = mmap(self._fstream.fileno(), 0)
         return self
-
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._stream.close()
         if not self._wasopen:
             self._fstream.close()
-
-    def __iter__(self):
-        return iter(self._fstream)
-
-    def __getattr__(self, item):
-        return getattr(self._stream, item)
-    def readline(self):
-        return self._stream.readline()
     def read(self, n=1):
-        return self._stream.read(n)
+        return self._stream.read(n).decode(self._encoding)
     def seek(self, *args, **kwargs):
-        # self._fstream.seek(*args, **kwargs)
         return self._stream.seek(*args, **kwargs)
     def tell(self):
         return self._stream.tell()
+    def find(self, tag):
+        enc_tag = tag.encode(self._encoding)
+        return self._stream.find(enc_tag)
+    def rfind(self, tag):
+        enc_tag = tag.encode(self._encoding)
+        return self._stream.rfind(enc_tag)
+    def skip_tag(self, tag):
+        pos = self._stream.tell()
+        enc_tag = tag.encode(self._encoding)
+        return self._stream.seek(pos + len(enc_tag))
+    def rskip_tag(self, tag):
+        pos = self._stream.tell()
+        enc_tag = tag.encode(self._encoding)
+        return self._stream.seek(pos - len(enc_tag))
+
+class StringSearchStream(SearchStream):
+    """
+    A stream that is implemented for searching in strings.
+    Current implementation creates a `StringIO` buffer to support `read`/`tell`/etc.
+    This is very memory inefficient, but we're not winning performance awards for
+    any of this anyway
+    """
+    def __init__(self, string):
+        """
+        :param string:
+        :type string: str
+        """
+        self._data = string
+        self._stream = None
+
+    def __enter__(self):
+        self._stream = io.StringIO(self._data)
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._stream.close()
+
+    def read(self, n=1):
+        return self._stream.read(n)
+    def seek(self, *args, **kwargs):
+        return self._stream.seek(*args, **kwargs)
+    def tell(self):
+        return self._stream.tell()
+    def find(self, tag):
+        pos = self._stream.tell()
+        return self._data.find(tag, pos)
+    def rfind(self, tag):
+        pos = self._stream.tell()
+        return self._data.rfind(tag, pos)
+    def skip_tag(self, tag):
+        pos = self._stream.tell()
+        return self._stream.seek(pos + len(tag))
+    def rskip_tag(self, tag):
+        pos = self._stream.tell()
+        return self._stream.seek(pos - len(tag))
+
+class SearchStreamReader:
+    """
+    Represents a reader which implements finding chunks of data in a stream
+    """
+
+    def __init__(self, stream):
+        """
+        :param stream:
+        :type stream: SearchStream
+        """
+        self.stream = stream
+    def __enter__(self):
+        self.stream.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stream.__exit__(exc_type, exc_val, exc_tb)
 
     def _find_tag(self, tag,
                   skip_tag = True,
@@ -85,17 +230,20 @@ class FileStreamReader:
         :rtype: int
         """
         with FileStreamCheckPoint(self, revert = False) as chk:
-            enc_tag = tag.encode(self._encoding)
-            mode = self._stream.find if direction == 'forward' else self._stream.rfind
-            pos = mode(enc_tag)
+            if direction == 'forward':
+                pos = self.stream.find(tag)
+            else:
+                pos = self.stream.rfind(tag)
             if seek and pos >= 0:
+                self.stream.seek(pos)
                 if skip_tag:
-                    pos = pos + len(enc_tag) if direction == 'forward' else pos - len(enc_tag)
-                self._stream.seek(pos)
+                    self.stream.skip_tag(tag) if direction == 'forward' else self.stream.rskip_tag(tag)
             elif pos == -1:
                 chk.revert()
         return pos
-    def find_tag(self, tag,
+
+    def find_tag(self,
+                 tag,
                  skip_tag = None,
                  seek = None
                  ):
@@ -127,7 +275,7 @@ class FileStreamReader:
             follow_ups = tags.skips
             if follow_ups is not None:
                 for tag in follow_ups:
-                    self.seek(pos + 1)
+                    self.stream.seek(pos + 1)
                     p = self.find_tag(tag)
                     if p > -1:
                         pos = p
@@ -136,8 +284,8 @@ class FileStreamReader:
             if offset is not None:
                 # why are we using self._stream.tell here...?
                 # I won't touch it for now but I feel like it should be pos
-                pos = self._stream.tell() + offset
-                self._stream.seek(pos)
+                pos = self.stream.tell() + offset
+                self.stream.seek(pos)
 
         return pos
 
@@ -157,13 +305,13 @@ class FileStreamReader:
                 with FileStreamCheckPoint(self):
                     end = self.find_tag(tag_end, seek=False)
                 if end > 0:
-                    return self._stream.read(end-start).decode(self._encoding)
+                    return self.stream.read(end-start)
         else:
             start = self.tell()
             with FileStreamCheckPoint(self):
                 end = self.find_tag(tag_end, seek=False)
             if end > 0:
-                return self._stream.read(end-start).decode(self._encoding)
+                return self.stream.read(end-start)
 
         # implict None return if no block found
 
@@ -232,6 +380,43 @@ class FileStreamReader:
             if parser is not None:
                 block = parser(block)
             return block
+
+    def read(self, n=1):
+        return self.stream.read(n)
+    def seek(self, *args, **kwargs):
+        return self.stream.seek(*args, **kwargs)
+    def tell(self):
+        return self.stream.tell()
+    def find(self, tag):
+        return self.stream.find(tag)
+    def rfind(self, tag):
+        return self.stream.rfind(tag)
+    def skip_tag(self, tag):
+        return self.stream.skip_tag(tag)
+    def rskip_tag(self, tag):
+        return self.stream.rskip_tag(tag)
+
+class FileStreamReader(SearchStreamReader):
+    """
+    Represents a file from which we'll stream blocks of data by finding tags and parsing what's between them
+    """
+    def __init__(self, file, mode="r", encoding="utf-8", **kw):
+        stream = FileSearchStream(file, mode=mode, encoding=encoding, **kw)
+        super().__init__(stream)
+class StringStreamReader(SearchStreamReader):
+    """
+    Represents a string from which we'll stream blocks of data by finding tags and parsing what's between them
+    """
+    def __init__(self, string):
+        stream = StringSearchStream(string)
+        super().__init__(stream)
+class ByteStreamReader(SearchStreamReader):
+    """
+    Represents a string from which we'll stream blocks of data by finding tags and parsing what's between them
+    """
+    def __init__(self, string, mode="r", encoding="utf-8", **kw):
+        stream = ByteSearchStream(string, mode=mode, encoding=encoding, **kw)
+        super().__init__(stream)
 
 class FileStreamerTag:
     def __init__(self,
