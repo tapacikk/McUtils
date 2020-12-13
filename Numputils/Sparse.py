@@ -1,5 +1,5 @@
 import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os
-from McUtils.Misc import MaxSizeCache
+from McUtils.Scaffolding import MaxSizeCache
 
 __all__ = [
     "SparseArray",

@@ -1,5 +1,5 @@
 import os
-from .ConfigManager import ConfigSerializer
+from .ConfigManagement import ConfigSerializer
 
 __all__ = [ "ParameterManager" ]
 

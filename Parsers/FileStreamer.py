@@ -40,15 +40,22 @@ class FileStreamReader:
         self._encoding = encoding
         self._kw = kw
         self._stream = None
+        self._wasopen = None
 
     def __enter__(self):
-        self._fstream = open(self._file, mode=self._mode, **self._kw)
+        if isinstance(self._file, str):
+            self._wasopen = False
+            self._fstream = open(self._file, mode=self._mode, **self._kw)
+        else:
+            self._wasopen = True
+            self._fstream = self._file
         self._stream = mmap(self._fstream.fileno(), 0)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._stream.close()
-        self._fstream.close()
+        if not self._wasopen:
+            self._fstream.close()
 
     def __iter__(self):
         return iter(self._fstream)
@@ -81,7 +88,7 @@ class FileStreamReader:
             enc_tag = tag.encode(self._encoding)
             mode = self._stream.find if direction == 'forward' else self._stream.rfind
             pos = mode(enc_tag)
-            if seek and pos > 0:
+            if seek and pos >= 0:
                 if skip_tag:
                     pos = pos + len(enc_tag) if direction == 'forward' else pos - len(enc_tag)
                 self._stream.seek(pos)
@@ -146,7 +153,7 @@ class FileStreamReader:
         """
         if tag_start is not None:
             start = self.find_tag(tag_start)
-            if start > 0:
+            if start >= 0:
                 with FileStreamCheckPoint(self):
                     end = self.find_tag(tag_end, seek=False)
                 if end > 0:

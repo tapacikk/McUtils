@@ -12,13 +12,13 @@ class Cache(metaclass=abc.ABCMeta):
     """
     @abc.abstractmethod
     def __getitem__(self, item):
-        ...
+        raise NotImplementedError("Cache is an abstract base class")
     @abc.abstractmethod
     def __contains__(self, item):
-        ...
+        raise NotImplementedError("Cache is an abstract base class")
     @abc.abstractmethod
     def __setitem__(self, key, value):
-        ...
+        raise NotImplementedError("Cache is an abstract base class")
 
 class MaxSizeCache:
     """
