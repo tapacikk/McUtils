@@ -39,7 +39,7 @@ class SearchStream(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def read(self, n=1):
+    def read(self, n=-1):
         raise NotImplementedError("SearchStream is a base class")
     @abc.abstractmethod
     def seek(self, *args, **kwargs):
@@ -54,10 +54,7 @@ class SearchStream(metaclass=abc.ABCMeta):
     def rfind(self, tag):
         raise NotImplementedError("SearchStream is a base class")
     @abc.abstractmethod
-    def skip_tag(self, tag):
-        raise NotImplementedError("SearchStream is a base class")
-    @abc.abstractmethod
-    def rskip_tag(self, tag):
+    def tag_size(self, tag):
         raise NotImplementedError("SearchStream is a base class")
 
     def __enter__(self):
@@ -88,7 +85,7 @@ class ByteSearchStream(SearchStream):
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._stream.close()
-    def read(self, n=1):
+    def read(self, n=-1):
         return self._stream.read(n).decode(self._encoding)
     def seek(self, *args, **kwargs):
         return self._stream.seek(*args, **kwargs)
@@ -102,17 +99,11 @@ class ByteSearchStream(SearchStream):
         enc_tag = self.encode_tag(tag)
         return self._data.find(enc_tag)
     def rfind(self, tag):
-
         enc_tag = self.encode_tag(tag)
         return self._data.rfind(enc_tag)
-    def skip_tag(self, tag):
-        pos = self._stream.tell()
+    def tag_size(self, tag):
         enc_tag = self.encode_tag(tag)
-        return self._stream.seek(pos + len(enc_tag))
-    def rskip_tag(self, tag):
-        pos = self._stream.tell()
-        enc_tag = self.encode_tag(tag)
-        return self._stream.seek(pos - len(enc_tag))
+        return len(enc_tag)
 
 class FileSearchStream(SearchStream):
     """
@@ -138,7 +129,7 @@ class FileSearchStream(SearchStream):
         self._stream.close()
         if not self._wasopen:
             self._fstream.close()
-    def read(self, n=1):
+    def read(self, n=-1):
         return self._stream.read(n).decode(self._encoding)
     def seek(self, *args, **kwargs):
         return self._stream.seek(*args, **kwargs)
@@ -150,14 +141,9 @@ class FileSearchStream(SearchStream):
     def rfind(self, tag):
         enc_tag = tag.encode(self._encoding)
         return self._stream.rfind(enc_tag)
-    def skip_tag(self, tag):
-        pos = self._stream.tell()
+    def tag_size(self, tag):
         enc_tag = tag.encode(self._encoding)
-        return self._stream.seek(pos + len(enc_tag))
-    def rskip_tag(self, tag):
-        pos = self._stream.tell()
-        enc_tag = tag.encode(self._encoding)
-        return self._stream.seek(pos - len(enc_tag))
+        return len(enc_tag)
 
 class StringSearchStream(SearchStream):
     """
@@ -180,7 +166,7 @@ class StringSearchStream(SearchStream):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._stream.close()
 
-    def read(self, n=1):
+    def read(self, n=-1):
         return self._stream.read(n)
     def seek(self, *args, **kwargs):
         return self._stream.seek(*args, **kwargs)
@@ -192,12 +178,8 @@ class StringSearchStream(SearchStream):
     def rfind(self, tag):
         pos = self._stream.tell()
         return self._data.rfind(tag, pos)
-    def skip_tag(self, tag):
-        pos = self._stream.tell()
-        return self._stream.seek(pos + len(tag))
-    def rskip_tag(self, tag):
-        pos = self._stream.tell()
-        return self._stream.seek(pos - len(tag))
+    def tag_size(self, tag):
+        return len(tag)
 
 class SearchStreamReader:
     """
@@ -213,7 +195,6 @@ class SearchStreamReader:
     def __enter__(self):
         self.stream.__enter__()
         return self
-
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stream.__exit__(exc_type, exc_val, exc_tb)
 
@@ -222,7 +203,8 @@ class SearchStreamReader:
                   seek = True,
                   direction = 'forward'
                   ):
-        """Finds a tag in a file
+        """
+        Finds a tag in a file
 
         :param header: a tag specifying a header to look for + optional follow-up processing/offsets
         :type header: FileStreamerTag
@@ -234,10 +216,18 @@ class SearchStreamReader:
                 pos = self.stream.find(tag)
             else:
                 pos = self.stream.rfind(tag)
-            if seek and pos >= 0:
-                self.stream.seek(pos)
+            if pos >= 0:
                 if skip_tag:
-                    self.stream.skip_tag(tag) if direction == 'forward' else self.stream.rskip_tag(tag)
+                    tag_size = self.stream.tag_size(tag)
+                else:
+                    tag_size = 0
+
+                if direction == 'forward':
+                    pos += tag_size
+                else:
+                    pos -= tag_size
+                if seek:
+                    self.stream.seek(pos)
             elif pos == -1:
                 chk.revert()
         return pos
@@ -247,7 +237,8 @@ class SearchStreamReader:
                  skip_tag = None,
                  seek = None
                  ):
-        """Finds a tag in a file
+        """
+        Finds a tag in a file
 
         :param header: a tag specifying a header to look for + optional follow-up processing/offsets
         :type header: FileStreamerTag
@@ -256,6 +247,11 @@ class SearchStreamReader:
         """
         if isinstance(tag, str):
             tags = FileStreamerTag(tag)
+        elif isinstance(tag, dict):
+            tag = tag.copy()
+            t = tag['tag']
+            del tag['tag']
+            tags = FileStreamerTag(t, **tag)
         else:
             tags = tag
 
@@ -290,7 +286,8 @@ class SearchStreamReader:
         return pos
 
     def get_tagged_block(self, tag_start, tag_end, block_size = 500):
-        """Pulls the string between tag_start and tag_end
+        """
+        Pulls the string between tag_start and tag_end
 
         :param tag_start:
         :type tag_start: FileStreamerTag or None
@@ -315,7 +312,15 @@ class SearchStreamReader:
 
         # implict None return if no block found
 
-    def parse_key_block(self, tag_start=None, tag_end=None, mode="Single", parser = None, parse_mode = "List", num = None, **ignore):
+    def parse_key_block(self,
+                        tag_start=None,
+                        tag_end=None,
+                        mode="Single",
+                        parser = None,
+                        parse_mode = "List",
+                        num = None,
+                        **ignore
+                        ):
         """Parses a block by starting at tag_start and looking for tag_end and parsing what's in between them
 
         :param key: registered key pattern to pull from a file
@@ -414,8 +419,8 @@ class ByteStreamReader(SearchStreamReader):
     """
     Represents a string from which we'll stream blocks of data by finding tags and parsing what's between them
     """
-    def __init__(self, string, mode="r", encoding="utf-8", **kw):
-        stream = ByteSearchStream(string, mode=mode, encoding=encoding, **kw)
+    def __init__(self, string, encoding="utf-8", **kw):
+        stream = ByteSearchStream(string, encoding=encoding, **kw)
         super().__init__(stream)
 
 class FileStreamerTag:

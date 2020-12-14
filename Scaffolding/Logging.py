@@ -1,6 +1,6 @@
 import os, enum, weakref
 
-from ..Parsers import FileStreamReader, FileStreamCheckPoint
+from ..Parsers import FileStreamReader, StringStreamReader
 
 __all__ = [
     "Logger",
@@ -304,6 +304,9 @@ class LogParser(FileStreamReader):
                 splitsies = splitsies[1:]
             return splitsies
 
+        def make_subblock(self, block):
+            return type(self)(block, self.parent, self.depth+1)
+
         def parse_block_data(self):
             # find where subblocks are
             # parse around them
@@ -313,27 +316,26 @@ class LogParser(FileStreamReader):
             new_settings = self.parent.get_block_settings(self.depth+1)
             opener = "\n" + new_settings['opener'].split("{tag}", 1)[0]
             closer = "\n" + new_settings['closer'].split("{tag}", 1)[0]
-            start=0
-            lines=[]
 
-            pre_block = lambda block, where: (lines.extend(self.parse_prompt_blocks(block, prompt)),  where +1)[1]
+            start = 0
+            lines = []
 
-            def post_block(end):
-                if end == -1:
-                    raise ValueError("unclosed log block? {}".format(self.data))
-                end += 1  # to account for newline
-                eol = self.data.find("\n", end)
-                if eol > 0:
-                    end = eol
-                return end
+            with StringStreamReader(self.data) as parser:
+                header = parser.parse_key_block("", {"tag":opener, "skip_tag":False})
+                if header is not None:
+                    lines.extend(self.parse_prompt_blocks(header, prompt))
+                    block = parser.parse_key_block("", closer)
+                    lines.append(self.make_subblock(block))
+                    while header is not None:
+                        header = parser.parse_key_block("", {"tag":opener, "skip_tag":False})
+                        if header is None:
+                            break #
+                        lines.extend(self.parse_prompt_blocks(header, prompt))
+                        block = parser.parse_key_block("", closer)
+                        lines.append(self.make_subblock(block))
 
-            for block, start in self.block_iterator(opener, closer, pre_block, post_block):
-                # print(".>"*10, block, lines, "<."*10, sep="\n")
-                lines.append(type(self)(block, self.parent, self.depth + 1))
-
-            chonk = self.data[start:]
-            splitsies = self.parse_prompt_blocks(chonk, prompt)
-            lines.extend(splitsies)
+                rest = parser.stream.read()
+                lines.extend(self.parse_prompt_blocks(rest, prompt))
 
             tag_start = og_settings['opener'].split("{tag}", 1)[0]
             tag_end = og_settings['opener'].split("{tag}", 2)[-1]
@@ -362,12 +364,21 @@ class LogParser(FileStreamReader):
         """
 
         block_settings = self.get_block_settings(level)
-        opener = block_settings['opener'].split("{tag}", 1)[0]
-        if tag is not None:
-            opener = (opener + "{tag}").format(tag=tag)
-        closer = block_settings['closer'].split("{tag}", 1)[0]
-        if tag is not None:
-            closer = (closer + "{tag}").format(tag=tag)
+        if tag is None:
+            opener = block_settings['opener'].split("{tag}", 1)[0]
+        else:
+            opener_split = block_settings['opener'].split("{tag}", 1)
+            opener = opener_split[0]
+            if len(opener_split) > 1:
+                opener += " {} ".format(tag)
+
+        if tag is None:
+            closer = block_settings['closer'].split("{tag}", 1)[0]
+        else:
+            close_split = block_settings['closer'].split("{tag}", 1)
+            closer = close_split[0]
+            if len(close_split) > 1:
+                closer += " {} ".format(tag)
 
         block_data = self.parse_key_block(opener, "\n"+closer, mode="Single", parser=lambda x:x) #type: str
         if block_data is None:
@@ -377,6 +388,28 @@ class LogParser(FileStreamReader):
 
         return self.LogBlockParser(block_data, self, level)
 
+    def get_line(self, level=0, tag=None):
+        """
+        :param level:
+        :type level:
+        :param tag:
+        :type tag:
+        :return:
+        :rtype:
+        """
+
+        block_settings = self.get_block_settings(level)
+        prompt = block_settings['prompt'].split("{meta}", 1)[0]
+        if tag is not None:
+            prompt += " {}".format(tag)
+
+        # at some point I can try to refactor to keep the header info or whatever
+        block_data = self.parse_key_block({'tag':"\n" + prompt, 'skip_tag':True}, {"tag":"\n", 'skip_tag': False}, mode="Single", parser=lambda x:x) #type: str
+        if block_data is None:
+            raise ValueError("no more lines")
+
+        return block_data
+
     def get_blocks(self, tag=None, level=0):
         while True: # would be nice to have a smarter iteration protocol but ah well...
             try:
@@ -384,6 +417,20 @@ class LogParser(FileStreamReader):
             except ValueError as e:
                 args = e.args
                 if len(args) == 1 and isinstance(args[0], str) and args[0] == "no more blocks":
+                    return None
+                raise
+            else:
+                if next_block is None:
+                    return None
+                yield next_block
+
+    def get_lines(self, tag=None, level=0):
+        while True: # would be nice to have a smarter iteration protocol but ah well...
+            try:
+                next_block = self.get_line(level=level, tag=tag)
+            except ValueError as e:
+                args = e.args
+                if len(args) == 1 and isinstance(args[0], str) and args[0] == "no more lines":
                     return None
                 raise
             else:

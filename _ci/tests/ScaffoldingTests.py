@@ -1,5 +1,6 @@
 from Peeves.TestUtils import *
 from McUtils.Scaffolding import *
+import McUtils.Parsers as parsers
 from unittest import TestCase
 import numpy as np, io, os, tempfile as tmpf, json
 
@@ -188,7 +189,7 @@ class ScaffoldingTests(TestCase):
         finally:
             os.remove(my_file)
 
-    @validationTest
+    @debugTest
     def test_BasicLogging(self):
         stdout = io.StringIO()
         logger = Logger(stdout)
@@ -222,8 +223,9 @@ class ScaffoldingTests(TestCase):
             with open(log_dump, "w+") as dump:
                 dump.write(stdout.getvalue())
             with LogParser(log_dump) as parser:
-                blocks = list(parser)
-                self.assertEquals(len(blocks[1].lines[1].lines), 2)
+                blocks = list(parser.get_blocks())
+                self.assertEquals(blocks[1].lines[1].lines[1], " (all views are entirely my own and do not reflect on my employer in any way)")
+                self.assertEquals(blocks[1].lines[1].lines[0].tag, "Doubly nested block!")
         finally:
             os.remove(log_dump)
 
@@ -240,10 +242,26 @@ class ScaffoldingTests(TestCase):
                     logger.log_print("Did X")
                     logger.log_print("Did Y")
                     with logger.block(tag="Fake Call".format(i)):
-                        logger.log_print("Took {timing}s", timing=random.random())
+                        logger.log_print("Took {timing:.5f}s", timing=random.random())
+
+            number_puller = parsers.StringParser(parsers.Capturing(parsers.Number))
+            with LogParser(log_dump) as parser:
+                time_str = ""
+                for block in parser.get_blocks(tag="Fake Call", level=1):
+                    time_str += block.lines[0]
+                timings = number_puller.parse_all(time_str).array
+                self.assertEquals(len(timings), 100)
+                self.assertGreater(np.average(timings), .35)
+                self.assertLess(np.average(timings), .65)
 
             with LogParser(log_dump) as parser:
-                for block in parser.get_blocks(tag="Fake Call", level=1):
-                    print(block)
+                time_str = ""
+                for line in parser.get_lines(tag="Took ", level=1):
+                    time_str += line
+                timings = number_puller.parse_all(time_str).array
+                self.assertEquals(len(timings), 100)
+                self.assertGreater(np.average(timings), .35)
+                self.assertLess(np.average(timings), .65)
+
         finally:
             os.remove(log_dump)
