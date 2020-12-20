@@ -2,12 +2,12 @@ name: McUtilsCI
 on:
   push:
 jobs:
-  _ci:
+  ci:
     runs-on: ubuntu-latest
     steps:
       # To use this repository's private action,
       # you must check out the repository
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Run tests
-        uses: ./_ci # Uses an action in the root directory
+      - name: Test & Document
+        uses: ./ci # Uses an action in the root directory
