@@ -19,6 +19,7 @@ The more scientifically-focused `Psience` package makes significant use of `McUt
   - [ExternalPrograms](McUtils/ExternalPrograms.md)
   - [Extensions](McUtils/Extensions.md)
   - [Numputils](McUtils/Numputils.md)
+  - [Scaffolding](McUtils/Scaffolding.md)
 
 ### Examples:
 

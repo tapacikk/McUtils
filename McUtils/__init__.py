@@ -27,5 +27,6 @@ __all__ = [
     "Coordinerds",
     "ExternalPrograms",
     "Extensions",
-    "Numputils"
+    "Numputils",
+    "Scaffolding"
 ]

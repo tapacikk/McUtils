@@ -15,6 +15,7 @@ Mostly useful during development
   - [ExternalPrograms](McUtils/McUtils/ExternalPrograms.md)
   - [Extensions](McUtils/McUtils/Extensions.md)
   - [Numputils](McUtils/McUtils/Numputils.md)
+  - [Scaffolding](McUtils/McUtils/Scaffolding.md)
 
 ### Examples:
 

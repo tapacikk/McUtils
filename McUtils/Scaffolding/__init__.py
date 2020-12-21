@@ -18,3 +18,5 @@ from .Configurations import *; from .Configurations import __all__ as exposed
 __all__ += exposed
 from .Jobs import *; from .Jobs import __all__ as exposed
 __all__ += exposed
+from .CLIs import *; from .CLIs import __all__ as exposed
+__all__ += exposed
