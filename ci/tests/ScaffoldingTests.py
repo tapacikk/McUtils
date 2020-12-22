@@ -264,7 +264,7 @@ class ScaffoldingTests(TestCase):
         finally:
             os.remove(log_dump)
 
-    @debugTest
+    @validationTest
     def test_Persistence(self):
         persist_dir = TestManager.test_data("persistence_tests")
 
@@ -285,7 +285,7 @@ class ScaffoldingTests(TestCase):
         obj = manager.load("obj1", strict=False)
 
         self.assertEquals(obj.val, 'test_val')
-    @debugTest
+    @validationTest
     def test_Jobbing(self):
 
         import time
@@ -305,8 +305,7 @@ class ScaffoldingTests(TestCase):
             with open(job.logger.log_file) as doopy:
                 doop_str = doopy.read()
                 self.assertNotEqual("", doop_str)
-
-    @debugTest
+    @validationTest
     def test_CLI(self):
         import McUtils.Plots as plt
         class PlottingInterface(CommandGroup):
@@ -360,5 +359,27 @@ class ScaffoldingTests(TestCase):
                 mccli.run()
             finally:
                 sys.argv = argv
+
+    @debugTest
+    def test_JobInit(self):
+
+        import time
+
+        with tmpf.TemporaryDirectory() as temp_dir:
+            manager = JobManager(temp_dir)
+            with manager.job(TestManager.test_data("persistence_tests/test_job")) as job:
+                logger = job.logger
+
+                with logger.block(tag="Sleeping"):
+                    logger.log_print("Goodnight!")
+                    time.sleep(.2)
+                    logger.log_print("Okee I'm back up")
+
+            self.assertEquals(os.path.basename(job.dir), "test_job")
+            self.assertEquals(set(Config(job.dir).opt_dict.keys()), {'logger', 'parallelizer', 'config_location'})
+            self.assertEquals(set(job.checkpoint.backend.keys()), {'start', 'runtime'})
+            with open(job.logger.log_file) as doopy:
+                doop_str = doopy.read()
+                self.assertNotEqual("", doop_str)
 
 

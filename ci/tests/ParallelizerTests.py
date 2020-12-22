@@ -11,20 +11,18 @@ def main_print(*args, parallelizer=None):
 def worker_print(*args, parallelizer=None):
     print(*args)
 def run_job(parallelizer=None):
-    data = np.arange(1000)
+    if parallelizer.on_main:
+        data = np.arange(1000)
+    else:
+        data = None
     data = parallelizer.scatter(data)
-    # main_print(data, len(data))
-    # worker_print(data[0], data[-1])
     lens = parallelizer.gather(len(data))
-    main_print(lens)
-
+    return lens
 class ParallelizerTests(TestCase):
-
     def test_BasicMultiprocessing(self):
-
-        MultiprocessingParallelizer().run(
-            run_job
-        )
+        par_lens = MultiprocessingParallelizer().run(run_job)
+        serial_lens = SerialNonParallelizer().run(run_job)
+        self.assertEquals(sum(par_lens), serial_lens)
 
 
 

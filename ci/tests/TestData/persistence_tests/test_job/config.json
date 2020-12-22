@@ -1,0 +1,12 @@
+{
+  "logger": {
+  },
+  "parallelizer": [
+    {
+      "mode": "mpi"
+    },
+    {
+      "mode": "multiprocessing"
+    }
+  ]
+}

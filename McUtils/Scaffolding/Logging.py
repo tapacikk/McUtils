@@ -110,7 +110,7 @@ class Logger:
     Defines a simple logger object to write log data to a file based on log levels.
     """
 
-    _loggers = weakref.WeakValueDictionary() # niiiice
+    _loggers = weakref.WeakValueDictionary()
     default_verbosity = 0
     def __init__(self,
                  log_file = None,

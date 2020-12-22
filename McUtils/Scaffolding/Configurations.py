@@ -30,6 +30,7 @@ class Config:
 
     config_file_name = "config"
     config_file_extensions = [".json", ".yml", ".yaml", ".py"]
+    @classmethod
     def find_config(self, config, name=None, extensions=None):
         """
         Finds configuration file (if config isn't a file)
@@ -39,7 +40,6 @@ class Config:
         :return:
         :rtype:
         """
-
         if os.path.isdir(config):
             if name is None:
                 name = self.config_file_name
@@ -165,7 +165,7 @@ class Config:
     def load_opts(self):
         if not self._loaded:
             self._conf = self.load()
-            self._conf['location'] = os.path.dirname(self.config)
+            self._conf['config_location'] = os.path.dirname(self.config)
 
     def get_conf_attr(self, item):
         if not self._loaded:

@@ -317,6 +317,19 @@ class Parallelizer(metaclass=abc.ABCMeta):
                 **kwargs
             )
 
+    mode_map = {}
+    @classmethod
+    def from_config(cls,
+                    mode=None,
+                    **kwargs
+                    ):
+        if mode not in cls.mode_map:
+            raise KeyError("don't know what to do with parallelization mode '{}'".format(
+                mode
+            ))
+        par_cls = cls.mode_map[mode]
+        return par_cls.from_config(**kwargs)
+
 class SendRecieveParallelizer(Parallelizer):
     """
     Parallelizer that implements `scatter`, `gather`, `broadcast`, and `map`
@@ -615,7 +628,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         with self:
             self._comm = comm # makes a cyclic dependency...but oh well
             kwargs['parallelizer'] = comm.parent
-            runner(*args, **kwargs)
+            return runner(*args, **kwargs)
 
     def apply(self, func, *args, **kwargs):
         """
@@ -642,8 +655,8 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             )
         )
         main = self._run(func, self.PoolCommunicator(self, 0, self.queues), args, kwargs)
-        return [main] + list(subsidiary.get())
-
+        subs = subsidiary.get() # just to effect a wait
+        return main
 
     def _get_pool(self,
                   manager: mp.Manager,
@@ -680,6 +693,11 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
     @property
     def on_main(self):
         return not self.worker
+
+    @classmethod
+    def from_config(cls, **kw):
+        return cls(**kw)
+Parallelizer.mode_map['multiprocessing'] = MultiprocessingParallelizer
 
 class MPIParallelizer(SendRecieveParallelizer):
     """
@@ -942,7 +960,6 @@ class MPIParallelizer(SendRecieveParallelizer):
     def on_main(self):
         return self.comm.location == 0
 
-
     def broadcast(self, data, **kwargs):
         """
         Sends the same data to all processes
@@ -1001,6 +1018,28 @@ class MPIParallelizer(SendRecieveParallelizer):
         sub_data = self.scatter(data, shape=input_shape, **kwargs)
         res = func(sub_data)
         return self.gather(res, shape=output_shape, **kwargs)
+
+    def apply(self, func, *args, **kwargs):
+        """
+        Applies func to args in parallel on all of the processes.
+        For MPI, since jobs are always started with mpirun, this
+        is just a regular apply
+
+        :param func:
+        :type func:
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+        return func(*args, **kwargs)
+
+    @classmethod
+    def from_config(cls, **kw):
+        return cls(**kw)
+Parallelizer.mode_map['mpi'] = MPIParallelizer
 
 class SerialNonParallelizer(Parallelizer):
     """
@@ -1109,7 +1148,8 @@ class SerialNonParallelizer(Parallelizer):
         """
         return map(function, data, **kwargs)
 
-    def run(self, func, *args, **kwargs):
+    def apply(self, func, *args, **kwargs):
+        kwargs['parallelizer'] = self
         return func(*args, **kwargs)
 
 

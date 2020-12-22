@@ -20,7 +20,7 @@ class PersistenceManager:
     or, maybe in the future, a SQL database or similar.
     Requires class that supports `from_config` to load and `to_config` to save.
     """
-    def __init__(self, cls, persistence_loc = None):
+    def __init__(self, cls, persistence_loc=None):
         """
         :param cls:
         :type cls: type
@@ -62,15 +62,46 @@ class PersistenceManager:
     def new_config(self, key, init=None):
         """
         Creates a new space and config for the persistent structure named `key`
-        :param key:
-        :type key:
+
+        :param key: name for job
+        :type key: str
+        :param init: initial parameters
+        :type init: str | dict | None
         :return:
         :rtype:
         """
         loc = self.obj_loc(key)
+        if init is None:
+            init = {}
+        elif isinstance(init, str):
+            if os.path.isdir(init):
+                init_dir = init
+                init = Config(init).opt_dict
+                if 'initialization_directory' not in init:
+                    init['initialization_directory'] = init_dir
+            else:
+                init = Config(init).opt_dict
+
         if not os.path.isdir(loc):
-            os.makedirs(loc, exist_ok=True)
-        return Config.new(loc, init=init)
+            if 'initialization_directory' in init:
+                shutil.copytree(
+                    init['initialization_directory'],
+                    loc
+                )
+            else:
+                os.makedirs(loc, exist_ok=True)
+
+        # now we prune, because we don't want to preserve this forever...
+        if 'initialization_directory' in init:
+            del init['initialization_directory']
+
+        if Config.find_config(loc) is None:
+            return Config.new(loc, init=init)
+        else:
+            conf = Config(loc)
+            if len(init) > 0:
+                conf.update(**init)
+            return conf
 
     def contains(self, key):
         """
