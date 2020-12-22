@@ -28,5 +28,6 @@ __all__ = [
     "ExternalPrograms",
     "Extensions",
     "Numputils",
-    "Scaffolding"
+    "Scaffolding",
+    "Parallelizers"
 ]
