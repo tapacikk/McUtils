@@ -28,7 +28,7 @@ fi
 
 if [[ "$branch" == "edit" ]]; then
   # build docs and push
-  PYTHONPATH=/home pages=$(python3 McUtils/ci/build_docs.py)
+  PYTHONPATH=/home python3 McUtils/ci/build_docs.py
   cd McUtils
   git add -A
   git diff-index --quiet HEAD || git commit -m "Built out docs"
