@@ -6,7 +6,7 @@ target = os.path.join(root, "docs")
 sys.path.insert(0, root)
 doc_config = {
     "config": {
-        "title": "McUtils",
+        "title": "McUtils Dev Branch Documentation",
         "path": "McUtils",
         "url": "https://mccoygroup.github.io/McUtils/",
         "gh_username": "McCoyGroup",

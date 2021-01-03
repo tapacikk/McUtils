@@ -31,4 +31,4 @@ RUN \
     cd /home/McUtils && \
     git checkout edit
 
-ENTRYPOINT ["sh", "/home/McUtils/ci/run_ci.sh"]
+ENTRYPOINT ["/bin/bash", "/home/McUtils/ci/run_ci.sh"]

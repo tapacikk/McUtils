@@ -39,7 +39,7 @@ class GJFOptFormatter:
             opt_val, opt_tag = self.format_opt(i)
             if opt_tag is True:
                 chunks.append("{}={}".format(k, opt_val))
-            elif opt_tag is not "ignore":
+            elif not isinstance(opt_tag, str) or opt_tag != "ignore":
                 chunks.append(opt_val)
         return ("({})".format(", ".join(*chunks)), True)
     @classmethod
@@ -63,7 +63,7 @@ class GJFOptFormatter:
             opt_val, opt_tag = self.format_opt(i)
             if opt_tag is True:
                 chunks.append(tag+"{}={}".format(k, opt_val))
-            elif opt_tag is not "ignore":
+            elif not isinstance(opt_tag, str) or opt_tag != "ignore":
                 chunks.append(tag+k)
         return "\n".join(chunks)
 

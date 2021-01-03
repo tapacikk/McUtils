@@ -15,65 +15,65 @@ __all__ = [
 class StringParserException(Exception):
     ...
 
-"""
-One thing that's really tough with this stuff is figuring out how to manage shapes as we move across the different parsers and recursion level
-
-We can use the RegexPattern to manage the original StructuredType -> this seems to be pretty reliable
-We can use that to create an initial StructuredTypeArray -> this seems to be pretty reliable
-Then if we call parse_all, we need to reshape that StructuredTypeArray so that it can take a vector of return values
-    -> I _think_ this works as it should
-Next, no matter which parser we use, we need to get out our match or matches -> this is, again, quite reliable
-At that point we need to figure out how many groups each subarray should have -> this seems to be broken
-
-
-"""
-
-"""
-StringParser Design:
-
-input: RegexPattern
-output: StructuredTypeArray or list or OrderedDict thereof
-
-Basic Idea:
-
-RegexPattern can track which of its children are tagged as Capturing and which are tagged as Named. These children in turn
-can keep track of their data type (dtype) and also the shape of the data that should come out of their matched groups.
-
-So once we've compiled down RegexPattern--making sure that only groups at the outer-most level capture when compiling--
-what we can do is use the python re module to find the various matched components. 
-
-At this point, we need to convert the matched strings into the appropriately formatted NumPy arrays. To handle this in 
-recursive fashion I created a StructuredTypeArray class that has two flavors, simple and compound, which respectively
-handle the direct communication with NumPy and the delegation and distribution of higher-order data to simpler arrays.
-
-So in our parsing process we need to create a StructuredTypeArray for the found dtype from the RegexPattern. This is 
-relatively straightforward. Next, we might be using parse_all which asks for a vector of results back. If this is the
-case we need to take our initial StructuredTypeArray and turn it into, in effect, a StructuredTypeArray vector. Rather
-than use an inefficient python list format, though, we call StructuredTypeArray.add_axis which broadcasts to a 
-higher-dimensional data format. It also changes up the stored StructuredType such that a new axis has been prepended to
-the shapes of each.
-
-Next we have to work with our matched data somehow. There are a few issues here, but probably the biggest one is that the
-number of matched groups doesn't need to line up with the number of blocks we want returned. This means that we might need to take our
-matched groups and use some 'block_size' that each StructuredTypeArray tracks to figure out how to split these groups up.
-
-Assuming that works well, we now apply the block handler for each declared Capturing block to the matched data string.
-For very simple data, this will be effectively doing nothing, so that the StructuredTypeArray can handle the cast to an
-np.ndarray. For compound types or more complex data we need to basically go match-by-match and apply the block parser.
-
-This is where the recursion occurs and where things can get messy. The default block handler for an np.ndarray calls 
-parse on a string. This means that parse will be called until the data can finally be put into a StructuredTypeArray
-format. On the other hand, the returned data needs to be consistent with the expected return type of the parent call.
-For that reason, the block handler passes in the return array, and the return array uses its stype when calling the 
-subparser. This means, though, that there could be an apparent shape mismatch if the data itself is ragged. To resolve
-that, StructuredTypeArray will pad lower-dimensional data into a higher-dimensional format when possible.
-
-A major complicating factor in all of this is how one manages Repeating patterns. Every Repeating pattern actually needs
-to be managed using parse_all and its own Capturing groups, after first finding the matches for the repeats. Since the 
-passed dtype for such a call is also a higher-dimensional object, the outer-most axis of the dtype needs to be dropped,
-then parse_all needs to be called on the child form. Managing this correctly inside a recursive process can be challenging.
-
-"""
+# """
+# One thing that's really tough with this stuff is figuring out how to manage shapes as we move across the different parsers and recursion level
+#
+# We can use the RegexPattern to manage the original StructuredType -> this seems to be pretty reliable
+# We can use that to create an initial StructuredTypeArray -> this seems to be pretty reliable
+# Then if we call parse_all, we need to reshape that StructuredTypeArray so that it can take a vector of return values
+#     -> I _think_ this works as it should
+# Next, no matter which parser we use, we need to get out our match or matches -> this is, again, quite reliable
+# At that point we need to figure out how many groups each subarray should have -> this seems to be broken
+#
+#
+# """
+#
+# """
+# StringParser Design:
+#
+# input: RegexPattern
+# output: StructuredTypeArray or list or OrderedDict thereof
+#
+# Basic Idea:
+#
+# RegexPattern can track which of its children are tagged as Capturing and which are tagged as Named. These children in turn
+# can keep track of their data type (dtype) and also the shape of the data that should come out of their matched groups.
+#
+# So once we've compiled down RegexPattern--making sure that only groups at the outer-most level capture when compiling--
+# what we can do is use the python re module to find the various matched components.
+#
+# At this point, we need to convert the matched strings into the appropriately formatted NumPy arrays. To handle this in
+# recursive fashion I created a StructuredTypeArray class that has two flavors, simple and compound, which respectively
+# handle the direct communication with NumPy and the delegation and distribution of higher-order data to simpler arrays.
+#
+# So in our parsing process we need to create a StructuredTypeArray for the found dtype from the RegexPattern. This is
+# relatively straightforward. Next, we might be using parse_all which asks for a vector of results back. If this is the
+# case we need to take our initial StructuredTypeArray and turn it into, in effect, a StructuredTypeArray vector. Rather
+# than use an inefficient python list format, though, we call StructuredTypeArray.add_axis which broadcasts to a
+# higher-dimensional data format. It also changes up the stored StructuredType such that a new axis has been prepended to
+# the shapes of each.
+#
+# Next we have to work with our matched data somehow. There are a few issues here, but probably the biggest one is that the
+# number of matched groups doesn't need to line up with the number of blocks we want returned. This means that we might need to take our
+# matched groups and use some 'block_size' that each StructuredTypeArray tracks to figure out how to split these groups up.
+#
+# Assuming that works well, we now apply the block handler for each declared Capturing block to the matched data string.
+# For very simple data, this will be effectively doing nothing, so that the StructuredTypeArray can handle the cast to an
+# np.ndarray. For compound types or more complex data we need to basically go match-by-match and apply the block parser.
+#
+# This is where the recursion occurs and where things can get messy. The default block handler for an np.ndarray calls
+# parse on a string. This means that parse will be called until the data can finally be put into a StructuredTypeArray
+# format. On the other hand, the returned data needs to be consistent with the expected return type of the parent call.
+# For that reason, the block handler passes in the return array, and the return array uses its stype when calling the
+# subparser. This means, though, that there could be an apparent shape mismatch if the data itself is ragged. To resolve
+# that, StructuredTypeArray will pad lower-dimensional data into a higher-dimensional format when possible.
+#
+# A major complicating factor in all of this is how one manages Repeating patterns. Every Repeating pattern actually needs
+# to be managed using parse_all and its own Capturing groups, after first finding the matches for the repeats. Since the
+# passed dtype for such a call is also a higher-dimensional object, the outer-most axis of the dtype needs to be dropped,
+# then parse_all needs to be called on the child form. Managing this correctly inside a recursive process can be challenging.
+#
+# """
 class StringParser:
     """
     A convenience class that makes it easy to pull blocks out of strings and whatnot
@@ -476,7 +476,7 @@ class StringParser:
         if handler is not None:
             data = handler(data, array = array, append = append)
         if data is not None:
-            if single and (append or (append is 0)):
+            if single and (append or (isinstance(append, int) and append == 0)):
                 # print("pre-append:>", array)
                 # print("axis:", append)
                 # print("total axis:", append + array.append_depth)
@@ -485,7 +485,7 @@ class StringParser:
                     append = 0
                 array.append(data, axis = append)
                 # print("<:post-append", array)
-            elif (append or (append is 0)):
+            elif (append or (isinstance(append, int) and append == 0)):
                 # print("pre-extend:>", array)
                 if append is True:
                     append = 0
