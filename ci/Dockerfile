@@ -6,7 +6,7 @@ RUN apt-get update \
     && apt-get purge -y --auto-remove \
     && rm -rf /var/lib/apt/lists/*
 
-LABEL "name"="McCoyGroup/PeevesCI"
+LABEL "name"="McCoyGroup/McUtilsCI"
 LABEL "maintainer"="Mark Boyer <b3m2a1uw.edu>"
 LABEL "version"="0.0.1"
 
