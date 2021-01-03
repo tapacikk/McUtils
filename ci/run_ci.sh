@@ -18,13 +18,13 @@ git merge $branch
 ## run the test script
 cd /home
 
-if [[ "$branch" = "master" ]]; then
+if [[ "$branch" == "master" ]]; then
   PYTHONPATH=/home python3 McUtils/ci/tests/run_tests.py -v -d
 else
   PYTHONPATH=/home python3 McUtils/ci/tests/run_tests.py -d
 fi
 
-if [[ "$branch" = "edit" ]]; then
+if [[ "$branch" == "edit" ]]; then
   # build docs and push
   PYTHONPATH=/home python3 McUtils/ci/build_docs.py
   cd McUtils
