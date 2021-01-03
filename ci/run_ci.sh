@@ -12,9 +12,11 @@ echo "Running tests on $branch"
 cd /home/McUtils
 git config user.name ${GITHUB_ACTOR}
 git config user.email ${GITHUB_ACTOR}@users.noreply.github.com
+repo="https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/McCoyGroup/McUtils.git"
 git checkout gh-pages
 git pull
 git merge $branch
+git push -u $repo gh-pages
 ## run the test script
 cd /home
 
@@ -26,8 +28,9 @@ fi
 
 if [[ "$branch" == "edit" ]]; then
   # build docs and push
-  PYTHONPATH=/home python3 McUtils/ci/build_docs.py
+  PYTHONPATH=/home pages=$(python3 McUtils/ci/build_docs.py)
   cd McUtils
-  git add -A && git commit -m "Built out docs"
-  git push -u "https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/McCoyGroup/McUtils.git" gh-pages
+  git add -A
+  git diff-index --quiet HEAD || git commit -m "Built out docs"
+  git push -u $repo gh-pages
 fi
