@@ -1,3 +1,0 @@
-# Documentation
-
-  - [McUtils](McUtils.md)

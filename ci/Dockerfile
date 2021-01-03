@@ -6,14 +6,7 @@ RUN apt-get update \
     && apt-get purge -y --auto-remove \
     && rm -rf /var/lib/apt/lists/*
 
-# installs python packages we'd want for unit testing
-RUN pip install \
-              numpy \
-              matplotlib \
-              scipy \
-              h5py
-
-LABEL "name"="McCoyGroup/McUtilsCI"
+LABEL "name"="McCoyGroup/PeevesCI"
 LABEL "maintainer"="Mark Boyer <b3m2a1uw.edu>"
 LABEL "version"="0.0.1"
 
@@ -24,6 +17,7 @@ LABEL "com.github.actions.color"="orange"
 
 RUN \
     cd /home && \
+    git clone https://github.com/McCoyGroup/Peeves.git && \
     git clone https://github.com/McCoyGroup/McUtils.git
 
 ENTRYPOINT ["sh", "/home/McUtils/_ci/run_ci.sh"]
