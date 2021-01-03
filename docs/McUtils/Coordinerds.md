@@ -34,6 +34,8 @@ Chained conversions are not _currently_ supported, but might well become support
   - [AffineTransform](Coordinerds/CoordinateTransformations/AffineTransform/AffineTransform.md)
   - [TranslationTransform](Coordinerds/CoordinateTransformations/TranslationTransform/TranslationTransform.md)
   - [RotationTransform](Coordinerds/CoordinateTransformations/RotationTransform/RotationTransform.md)
+  - [cartesian_to_zmatrix](Coordinerds/Conveniences/cartesian_to_zmatrix.md)
+  - [zmatrix_to_cartesian](Coordinerds/Conveniences/zmatrix_to_cartesian.md)
 
 ### Examples:
 
