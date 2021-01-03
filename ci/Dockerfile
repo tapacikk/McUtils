@@ -20,4 +20,8 @@ RUN \
     git clone https://github.com/McCoyGroup/Peeves.git && \
     git clone https://github.com/McCoyGroup/McUtils.git
 
+RUN \
+    cd /home/McUtils && \
+    git checkout edit
+
 ENTRYPOINT ["sh", "/home/McUtils/ci/run_ci.sh"]
