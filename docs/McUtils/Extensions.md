@@ -1,21 +1,21 @@
 # <a id="McUtils.Extensions">McUtils.Extensions</a>
     
-A file that only exists to make this directory useable as a way to import McUtils too.
-Mostly useful during development
+A package for managing extension modules.
+The existing `ExtensionLoader` will be moving here, and will be supplemented by classes for dealing with compiled extensions
 
 ### Members:
 
-  - [CLoader](McUtils/Extensions/CLoader/CLoader.md)
-  - [ModuleLoader](McUtils/Extensions/ModuleLoader/ModuleLoader.md)
-  - [ArgumentType](McUtils/Extensions/ArgumentSignature/ArgumentType.md)
-  - [ArrayType](McUtils/Extensions/ArgumentSignature/ArrayType.md)
-  - [PointerType](McUtils/Extensions/ArgumentSignature/PointerType.md)
-  - [PrimitiveType](McUtils/Extensions/ArgumentSignature/PrimitiveType.md)
-  - [PrimitiveType](McUtils/Extensions/ArgumentSignature/PrimitiveType.md)
-  - [PrimitiveType](McUtils/Extensions/ArgumentSignature/PrimitiveType.md)
-  - [Argument](McUtils/Extensions/ArgumentSignature/Argument.md)
-  - [FunctionSignature](McUtils/Extensions/ArgumentSignature/FunctionSignature.md)
-  - [SharedLibraryFunction](McUtils/Extensions/SharedLibraryManager/SharedLibraryFunction.md)
+  - [CLoader](Extensions/CLoader/CLoader.md)
+  - [ModuleLoader](Extensions/ModuleLoader/ModuleLoader.md)
+  - [ArgumentType](Extensions/ArgumentSignature/ArgumentType.md)
+  - [ArrayType](Extensions/ArgumentSignature/ArrayType.md)
+  - [PointerType](Extensions/ArgumentSignature/PointerType.md)
+  - [PrimitiveType](Extensions/ArgumentSignature/PrimitiveType.md)
+  - [PrimitiveType](Extensions/ArgumentSignature/PrimitiveType.md)
+  - [PrimitiveType](Extensions/ArgumentSignature/PrimitiveType.md)
+  - [Argument](Extensions/ArgumentSignature/Argument.md)
+  - [FunctionSignature](Extensions/ArgumentSignature/FunctionSignature.md)
+  - [SharedLibraryFunction](Extensions/SharedLibraryManager/SharedLibraryFunction.md)
 
 ### Examples:
 

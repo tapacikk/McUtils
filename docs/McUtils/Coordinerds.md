@@ -1,29 +1,39 @@
 # <a id="McUtils.Coordinerds">McUtils.Coordinerds</a>
     
-A file that only exists to make this directory useable as a way to import McUtils too.
-Mostly useful during development
+The Coordinerds package implements stuff for dealing with coordinates and generalized coordinate systems
+
+It provides a semi-symbolic way to represent a CoordinateSystem and a CoordinateSet that provides coordinates within a
+coordinate system. An extensible system for converting between coordinate systems and is provided.
+
+The basic design of the package is set up so that one creates a `CoordinateSet` object, which in turn tracks its `CoordinateSystem`.
+A `CoordinateSet` is a subclass of `np.ndarray`, and so any operation that works for a `np.ndarray` will work in turn for `CoordinateSet`.
+This provides a large amount flexibility.
+
+The `CoordinateSystem` object handles much of the heavy lifting for a `CoordinateSet`.
+Conversions between different systems are implemented by a `CoordinateSystemConverter`.
+Chained conversions are not _currently_ supported, but might well become supported in the future.
 
 ### Members:
 
-  - [CoordinateSet](McUtils/Coordinerds/CoordinateSystems/CoordinateSet/CoordinateSet.md)
-  - [CartesianCoordinateSystem](McUtils/Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem.md)
-  - [InternalCoordinateSystem](McUtils/Coordinerds/CoordinateSystems/CommonCoordinateSystems/InternalCoordinateSystem.md)
-  - [CartesianCoordinateSystem3D](McUtils/Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem3D.md)
-  - [CartesianCoordinates3D](McUtils/Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinates3D.md)
-  - [SphericalCoordinateSystem](McUtils/Coordinerds/CoordinateSystems/CommonCoordinateSystems/SphericalCoordinateSystem.md)
-  - [SphericalCoordinates](McUtils/Coordinerds/CoordinateSystems/CommonCoordinateSystems/SphericalCoordinates.md)
-  - [ZMatrixCoordinateSystem](McUtils/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.md)
-  - [ZMatrixCoordinates](McUtils/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinates.md)
-  - [CoordinateSystem](McUtils/Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystem.md)
-  - [BaseCoordinateSystem](McUtils/Coordinerds/CoordinateSystems/CoordinateSystem/BaseCoordinateSystem.md)
-  - [CoordinateSystemError](McUtils/Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystemError.md)
-  - [CoordinateSystemConverters](McUtils/Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverters.md)
-  - [CoordinateSystemConverter](McUtils/Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverter.md)
-  - [CoordinateTransform](McUtils/Coordinerds/CoordinateTransformations/CoordinateTransform/CoordinateTransform.md)
-  - [TransformationFunction](McUtils/Coordinerds/CoordinateTransformations/TransformationFunction/TransformationFunction.md)
-  - [AffineTransform](McUtils/Coordinerds/CoordinateTransformations/AffineTransform/AffineTransform.md)
-  - [TranslationTransform](McUtils/Coordinerds/CoordinateTransformations/TranslationTransform/TranslationTransform.md)
-  - [RotationTransform](McUtils/Coordinerds/CoordinateTransformations/RotationTransform/RotationTransform.md)
+  - [CoordinateSet](Coordinerds/CoordinateSystems/CoordinateSet/CoordinateSet.md)
+  - [CartesianCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem.md)
+  - [InternalCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/InternalCoordinateSystem.md)
+  - [CartesianCoordinateSystem3D](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem3D.md)
+  - [CartesianCoordinates3D](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinates3D.md)
+  - [SphericalCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/SphericalCoordinateSystem.md)
+  - [SphericalCoordinates](Coordinerds/CoordinateSystems/CommonCoordinateSystems/SphericalCoordinates.md)
+  - [ZMatrixCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.md)
+  - [ZMatrixCoordinates](Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinates.md)
+  - [CoordinateSystem](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystem.md)
+  - [BaseCoordinateSystem](Coordinerds/CoordinateSystems/CoordinateSystem/BaseCoordinateSystem.md)
+  - [CoordinateSystemError](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystemError.md)
+  - [CoordinateSystemConverters](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverters.md)
+  - [CoordinateSystemConverter](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverter.md)
+  - [CoordinateTransform](Coordinerds/CoordinateTransformations/CoordinateTransform/CoordinateTransform.md)
+  - [TransformationFunction](Coordinerds/CoordinateTransformations/TransformationFunction/TransformationFunction.md)
+  - [AffineTransform](Coordinerds/CoordinateTransformations/AffineTransform/AffineTransform.md)
+  - [TranslationTransform](Coordinerds/CoordinateTransformations/TranslationTransform/TranslationTransform.md)
+  - [RotationTransform](Coordinerds/CoordinateTransformations/RotationTransform/RotationTransform.md)
 
 ### Examples:
 

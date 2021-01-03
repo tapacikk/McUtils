@@ -1,22 +1,26 @@
 # <a id="McUtils">McUtils</a>
     
-A file that only exists to make this directory useable as a way to import McUtils too.
-Mostly useful during development
+A growing package of assorted functionality that finds use across many different packages, but doesn't attempt to
+provide a single unified interface for doing certain types of projects.
+
+All of the McUtils packages stand mostly on their own, but there will be little calls into one another here and there.
+
+The more scientifically-focused `Psience` package makes significant use of `McUtils`.
 
 ### Members:
 
-  - [Data](McUtils/McUtils/Data.md)
-  - [GaussianInterface](McUtils/McUtils/GaussianInterface.md)
-  - [Misc](McUtils/McUtils/Misc.md)
-  - [Parsers](McUtils/McUtils/Parsers.md)
-  - [Plots](McUtils/McUtils/Plots.md)
-  - [Zachary](McUtils/McUtils/Zachary.md)
-  - [Coordinerds](McUtils/McUtils/Coordinerds.md)
-  - [ExternalPrograms](McUtils/McUtils/ExternalPrograms.md)
-  - [Extensions](McUtils/McUtils/Extensions.md)
-  - [Numputils](McUtils/McUtils/Numputils.md)
-  - [Scaffolding](McUtils/McUtils/Scaffolding.md)
-  - [Parallelizers](McUtils/McUtils/Parallelizers.md)
+  - [Data](McUtils/Data.md)
+  - [GaussianInterface](McUtils/GaussianInterface.md)
+  - [Misc](McUtils/Misc.md)
+  - [Parsers](McUtils/Parsers.md)
+  - [Plots](McUtils/Plots.md)
+  - [Zachary](McUtils/Zachary.md)
+  - [Coordinerds](McUtils/Coordinerds.md)
+  - [ExternalPrograms](McUtils/ExternalPrograms.md)
+  - [Extensions](McUtils/Extensions.md)
+  - [Numputils](McUtils/Numputils.md)
+  - [Scaffolding](McUtils/Scaffolding.md)
+  - [Parallelizers](McUtils/Parallelizers.md)
 
 ### Examples:
 

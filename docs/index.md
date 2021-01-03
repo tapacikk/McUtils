@@ -3,6 +3,7 @@
 McUtils is a set of utilities written by the McCoy group for the McCoy group to handle common things we do, like pulling data from electronic structure calculations, doing unit conversions, interpolating functions, making attractive plots, getting finite difference derivatives, performing fast, vectorized operations, etc.
 
 We're working on [documenting the package](https://mccoygroup.github.io/References/Documentation/McUtils.html), but writing good documentation takes more time than writing good code.
+Docs for the actively edited, unstable branch can be found [here](https://mccoygroup.github.io/McUtils).
 
 ### Installation & Requirements
 

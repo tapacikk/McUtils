@@ -1,20 +1,19 @@
 # <a id="McUtils.Data">McUtils.Data</a>
     
-A file that only exists to make this directory useable as a way to import McUtils too.
-Mostly useful during development
+Provides a small data framework for wrapping up datasets into classes for access and loading
 
 ### Members:
 
-  - [DataHandler](McUtils/Data/CommonData/DataHandler.md)
-  - [DataError](McUtils/Data/CommonData/DataError.md)
-  - [DataRecord](McUtils/Data/CommonData/DataRecord.md)
-  - [AtomData](McUtils/Data/AtomData/AtomData.md)
-  - [AtomDataHandler](McUtils/Data/AtomData/AtomDataHandler.md)
-  - [UnitsData](McUtils/Data/ConstantsData/UnitsData.md)
-  - [UnitsDataHandler](McUtils/Data/ConstantsData/UnitsDataHandler.md)
-  - [BondData](McUtils/Data/BondData/BondData.md)
-  - [BondDataHandler](McUtils/Data/BondData/BondDataHandler.md)
-  - [WavefunctionData](McUtils/Data/WavefunctionData/WavefunctionData.md)
+  - [DataHandler](Data/CommonData/DataHandler.md)
+  - [DataError](Data/CommonData/DataError.md)
+  - [DataRecord](Data/CommonData/DataRecord.md)
+  - [AtomData](Data/AtomData/AtomData.md)
+  - [AtomDataHandler](Data/AtomData/AtomDataHandler.md)
+  - [UnitsData](Data/ConstantsData/UnitsData.md)
+  - [UnitsDataHandler](Data/ConstantsData/UnitsDataHandler.md)
+  - [BondData](Data/BondData/BondData.md)
+  - [BondDataHandler](Data/BondData/BondDataHandler.md)
+  - [WavefunctionData](Data/WavefunctionData/WavefunctionData.md)
 
 ### Examples:
 
