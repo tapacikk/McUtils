@@ -1,5 +1,5 @@
 """
-Tests for things in the Psience packages
+Tests for things in the McUtils packages
 """
 
 import os, sys
@@ -18,6 +18,6 @@ TestManager.test_pkg = test_pkg
 stdout = sys.stdout
 try:
     sys.stdout = sys.stderr
-    TestManager.run()
+    TestManager.run(exit_code=1) # don't allow to fail by default
 finally:
     sys.stdout = stdout
