@@ -5,3 +5,4 @@ Mostly useful during development
 
 from .McUtils.Numputils import *
 from .McUtils.Numputils import __all__
+from .McUtils.Numputils import __doc__

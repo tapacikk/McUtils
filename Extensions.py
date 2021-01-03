@@ -5,3 +5,4 @@ Mostly useful during development
 
 from .McUtils.Extensions import *
 from .McUtils.Extensions import __all__
+from .McUtils.Extensions import __doc__

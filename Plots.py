@@ -5,3 +5,4 @@ Mostly useful during development
 
 from .McUtils.Plots import *
 from .McUtils.Plots import __all__
+from .McUtils.Plots import __doc__
