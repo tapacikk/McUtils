@@ -10,7 +10,7 @@ cd /home/McUtils
 git config user.name ${GITHUB_ACTOR}
 git config user.email ${GITHUB_ACTOR}@users.noreply.github.com
 git checkout gh-pages
-git merge master
+git merge edit
 ## run the test script
 cd /home
 PYTHONPATH=/home python3 McUtils/ci/tests/run_tests.py -v -d
