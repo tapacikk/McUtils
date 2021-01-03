@@ -18,6 +18,6 @@ TestManager.test_pkg = test_pkg
 stdout = sys.stdout
 try:
     sys.stdout = sys.stderr
-    TestManager.run(exit_code=1) # don't allow to fail by default
+    TestManager.run(exit_code=0) # don't allow to fail by default
 finally:
     sys.stdout = stdout
