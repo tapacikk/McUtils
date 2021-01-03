@@ -1,8 +1,9 @@
 from Peeves.Doc import *
-import os
+import os, sys
 
 root = os.path.dirname(os.path.dirname(__file__))
 target = os.path.join(root, "docs")
+sys.path.insert(0, root)
 doc_config = {
     "config": {
         "title": "McUtils",

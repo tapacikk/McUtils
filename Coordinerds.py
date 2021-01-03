@@ -5,3 +5,4 @@ Mostly useful during development
 
 from .McUtils.Coordinerds import *
 from .McUtils.Coordinerds import __all__
+from .McUtils.Coordinerds import __doc__
