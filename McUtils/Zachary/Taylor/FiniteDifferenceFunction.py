@@ -24,10 +24,12 @@ class FiniteDifferenceError(Exception):
     pass
 class FiniteDifferenceFunction:
     """
-    The FiniteDifferenceFunction encapsulates a bunch of functionality extracted from Fornberger's
-    Calculation of Wieghts in Finite Difference Formulas (https://epubs.siam.org/doi/pdf/10.1137/S0036144596322507)
+    The FiniteDifferenceFunction encapsulates a bunch of functionality extracted from [Fornberger's
+    Calculation of Wieghts in Finite Difference Formulas](https://epubs.siam.org/doi/pdf/10.1137/S0036144596322507)
 
-    Only applies to direct product grids, but each subgrid can be regular or irregular
+    Only applies to direct product grids, but each subgrid can be regular or irregular.
+    Used in a large number of other places, but relatively rarely on its own.
+    A convenient application is the `FiniteDifferenceDerivative` class in the `Derivatives` module.
     """
     def __init__(self, *diffs, axes=0, contract = False):
         """Constructs an object to take finite differences derivatives of grids of data

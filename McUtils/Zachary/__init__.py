@@ -1,5 +1,5 @@
 """
-Handles all of the "numerical math" stuff inside Mcutils which made it balloon a little bit
+Handles all of the "numerical math" stuff inside Mcutils which has made it balloon a little bit
 """
 
 from .Taylor import *
