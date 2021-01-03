@@ -6,12 +6,14 @@ set -e
 ##
 
 branch=$(git rev-parse --abbrev-ref HEAD)
+echo "Running tests on $branch"
 
 # get into the parent folder and merge in changes from the master branch
 cd /home/McUtils
 git config user.name ${GITHUB_ACTOR}
 git config user.email ${GITHUB_ACTOR}@users.noreply.github.com
 git checkout gh-pages
+git pull
 git merge $branch
 ## run the test script
 cd /home
