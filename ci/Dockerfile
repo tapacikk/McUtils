@@ -17,7 +17,6 @@ LABEL "com.github.actions.color"="orange"
 
 RUN \
     cd /home && \
-    git clone https://github.com/McCoyGroup/Peeves.git && \
-    git clone https://github.com/McCoyGroup/McUtils.git
+    git clone https://github.com/McCoyGroup/Peeves.git
 
-ENTRYPOINT ["sh", "/home/McUtils/_ci/run_ci.sh"]
+ENTRYPOINT ["sh", "/home/McUtils/ci/run_ci.sh"]
