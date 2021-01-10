@@ -33,7 +33,16 @@ class Parallelizer(metaclass=abc.ABCMeta):
     #   up a parallelizer
     #
     parallelizer_registry = weakref.WeakValueDictionary()
+    default_key="default"
     _default_par_stack = [] #stack to use when setting the default parallelizer
+
+    def __init__(self):
+        self._active_sentinel=0
+
+    @classmethod
+    def get_fallback_parallelizer(cls):
+        return SerialNonParallelizer()
+
     @classmethod
     def lookup(cls, key):
         """
@@ -44,8 +53,13 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
+        if key is None:
+            return cls.get_fallback_parallelizer()
         if key not in cls.parallelizer_registry:
-            return SerialNonParallelizer()
+            if key != cls.default_key:
+                return cls.get_default()
+            else:
+                return cls.get_fallback_parallelizer()
         else:
             return cls.parallelizer_registry[key]
     @classmethod
@@ -55,7 +69,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
-        return cls.lookup('default')
+        return cls.lookup(cls.default_key)
     def register(self, key):
         """
         Checks in the registry to see if a given parallelizer is there
@@ -72,9 +86,9 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
-        if 'default' in self.parallelizer_registry:
-            self._default_par_stack.append(self.parallelizer_registry['default'])
-        self.register('default')
+        if self.default_key in self.parallelizer_registry:
+            self._default_par_stack.append(self.parallelizer_registry[self.default_key])
+        self.register(self.default_key)
     def reset_default(self):
         """
         Resets the default parallelizer
@@ -83,6 +97,10 @@ class Parallelizer(metaclass=abc.ABCMeta):
         """
         if len(self._default_par_stack) > 0:
             self._default_par_stack.pop()
+
+    @property
+    def active(self):
+        return self._active_sentinel > 0
 
     @abc.abstractmethod
     def initialize(self):
@@ -110,8 +128,11 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
-        self.set_default()
-        self.initialize()
+        if not self.active:
+            self.set_default()
+            self.initialize()
+        self._active_sentinel += 1
+        return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
         Allows the parallelizer context to be unset
@@ -125,8 +146,10 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
-        self.reset_default()
-        self.finalize(exc_type, exc_val, exc_tb)
+        self._active_sentinel -= 1
+        if not self.active:
+            self.reset_default()
+            self.finalize(exc_type, exc_val, exc_tb)
 
     ####################################################################
     #  CONTROL FLOW:
@@ -167,7 +190,8 @@ class Parallelizer(metaclass=abc.ABCMeta):
             if parallelizer is None:
                 parallelizer = Parallelizer.get_default()
             if parallelizer.on_main:
-                return func(*args, parallelizer=parallelizer, **kwargs)
+                kwargs['parallelizer'] = parallelizer
+                return func(*args, **kwargs)
             else:
                 return Parallelizer.InWorkerProcess
 
@@ -189,7 +213,8 @@ class Parallelizer(metaclass=abc.ABCMeta):
             if parallelizer is None:
                 parallelizer = Parallelizer.get_default()
             if not parallelizer.on_main:
-                return func(*args, parallelizer=parallelizer, **kwargs)
+                kwargs['parallelizer'] = parallelizer
+                return func(*args, **kwargs)
             else:
                 return Parallelizer.InMainProcess
 
@@ -278,7 +303,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
     #   require core methods to be implemented to act like an `mp.Pool`
     #
     @abc.abstractmethod
-    def map(self, function, data, **kwargs):
+    def map(self, function, data, extra_args=None, extra_kwargs=None, **kwargs):
         """
         Performs a parallel map of function over
         the held data on different processes
@@ -292,6 +317,24 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
+        raise NotImplementedError("Parallelizer is an abstract base class")
+
+    @abc.abstractmethod
+    def starmap(self, function, data, extra_args=None, extra_kwargs=None, **kwargs):
+        """
+        Performs a parallel map with unpacking of function over
+        the held data on different processes
+
+        :param function:
+        :type function:
+        :param data:
+        :type data:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+
         raise NotImplementedError("Parallelizer is an abstract base class")
 
     @abc.abstractmethod
@@ -310,12 +353,21 @@ class Parallelizer(metaclass=abc.ABCMeta):
         raise NotImplementedError("Parallelizer is an abstract base class")
 
     def run(self, func, *args, **kwargs):
+        """
+        Calls `apply`, but makes sure state is handled cleanly
+
+        :param func:
+        :type func:
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+
         with self:
-            return self.apply(
-                func,
-                *args,
-                **kwargs
-            )
+            return self.apply(func, *args, **kwargs)
 
     mode_map = {}
     @classmethod
@@ -329,6 +381,92 @@ class Parallelizer(metaclass=abc.ABCMeta):
             ))
         par_cls = cls.mode_map[mode]
         return par_cls.from_config(**kwargs)
+
+    ####################################################################
+    #  UTILITY API:
+    #   necessary things to make API more useable
+    #
+    @property
+    def nprocs(self):
+        """
+        Returns the number of processes the parallelizer has
+        to work with
+        :return:
+        :rtype:
+        """
+        return self.get_nprocs()
+    @abc.abstractmethod
+    def get_nprocs(self):
+        """
+        Returns the number of processes
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("Parallelizer is an abstract base class")
+    @property
+    def id(self):
+        """
+        Returns some form of identifier for the current process
+        :return:
+        :rtype:
+        """
+        return self.get_id()
+    @abc.abstractmethod
+    def get_id(self):
+        """
+        Returns the id for the current process
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("Parallelizer is an abstract base class")
+
+    def main_print(self, *args, **kwargs):
+        """
+        Prints from the main process
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+        print(*args, **kwargs)
+    def worker_print(self, *args, **kwargs):
+        """
+        Prints from a main worker process
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+        print("On Worker {}:".format(self.id), *args, **kwargs)
+    def print(self, *args, **kwargs):
+        """
+        An implementation of print that operates differently on workers than on main
+        processes
+
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+        if self.on_main:
+            return self.main_print(*args, **kwargs)
+        else:
+            return self.worker_print(*args, **kwargs)
+
+    @abc.abstractmethod
+    def wait(self):
+        """
+        Causes all processes to wait until they've met up at this point.
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("Parallelizer is an abstract base class")
 
 class SendRecieveParallelizer(Parallelizer):
     """
@@ -392,7 +530,6 @@ class SendRecieveParallelizer(Parallelizer):
         :return:
         :rtype: SendRecieveParallelizer.SendReceieveCommunicator
         """
-
     def send(self, data, loc, **kwargs):
         """
         Sends data to the process specified by loc
@@ -429,8 +566,9 @@ class SendRecieveParallelizer(Parallelizer):
         :rtype:
         """
         if self.on_main:
-            for i in self.comm.locations:
+            for i in self.comm.locations[1:]:
                 self.comm.send(data, i, **kwargs)
+            return data
         else:
             return self.comm.send(data, self.comm.location) # effectively a receive...
     def scatter(self, data, **kwargs):
@@ -453,14 +591,12 @@ class SendRecieveParallelizer(Parallelizer):
             locs = list(self.comm.locations) # gotta be safe
             nlocs = len(locs)
             chunk_size = len(data) // nlocs
-            chunk_remainder = len(data) % chunk_size
-            if chunk_remainder == 0:
-                chunk_sizes = [chunk_size] * nlocs
-            else:
-                chunk_sizes = [chunk_size] * (nlocs - 1) + [chunk_size + chunk_remainder]
-
-            main_data = data[:chunk_sizes[0]]
-            s = chunk_size
+            chunk_sizes = [chunk_size] * nlocs
+            chunk_coverage = (chunk_size*nlocs)
+            for i in range(len(data)-chunk_coverage):
+                chunk_sizes[i] += 1
+            s = chunk_sizes[0]
+            main_data = data[:s]
             for i, b in zip(locs[1:], chunk_sizes[1:]):
                 chunk = data[s:s+b]
                 self.comm.send(chunk, i, **kwargs)
@@ -486,11 +622,14 @@ class SendRecieveParallelizer(Parallelizer):
             recv = [None] * nlocs
             recv[0] = data
             for n, i in enumerate(locs[1:]):
-                recv[n+1] = self.comm.receive(data, i, **kwargs)
+                res = self.comm.receive(data, i, **kwargs)
+                if isinstance(res, Exception):
+                    raise res
+                recv[n+1] = res
             return recv
         else:
             return self.comm.receive(data, self.comm.location, **kwargs) # effectively a send...
-    def map(self, func, data, **kwargs):
+    def map(self, func, data, extra_args=None, extra_kwargs=None, **kwargs):
         """
         Performs a parallel map of function over
         the held data on different processes
@@ -504,9 +643,72 @@ class SendRecieveParallelizer(Parallelizer):
         :return:
         :rtype:
         """
-        sub_data = self.scatter(data, **kwargs)
-        res = func(sub_data)
-        return self.gather(res, **kwargs)
+
+        # self.wait()
+        # self.print("Scattering Data")
+        data = self.scatter(data, **kwargs)
+        # self.wait()
+        # self.print("Broadcasting Extra Args")
+        extra_args = self.broadcast(extra_args, **kwargs)
+        # self.wait()
+        # self.print("Broadcasting Extra Kwargs")
+        extra_kwargs = self.broadcast(extra_kwargs, **kwargs)
+        if extra_args is None:
+            extra_args = ()
+        if extra_kwargs is None:
+            extra_kwargs = {}
+        # try:
+        evals = [func(sub_data, *extra_args, **extra_kwargs) for sub_data in data]
+        # except Exception as e:
+        #     self.gather(e, **kwargs)
+        #     raise
+        res = self.gather(evals, **kwargs)
+        if self.on_main:
+            return sum(res, [])
+        else:
+            return Parallelizer.InWorkerProcess
+    def starmap(self, func, data, extra_args=None, extra_kwargs=None, **kwargs):
+        """
+        Performs a parallel map with unpacking of function over
+        the held data on different processes
+
+        :param function:
+        :type function:
+        :param data:
+        :type data:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+        data = self.scatter(data, **kwargs)
+        extra_args = self.broadcast(extra_args)
+        extra_kwargs = self.broadcast(extra_kwargs)
+        if extra_args is None:
+            extra_args = ()
+        if extra_kwargs is None:
+            extra_kwargs = {}
+        # try:
+        evals = [func(*sub_data, *extra_args, **extra_kwargs) for sub_data in data]
+        # except Exception as e:
+        #     self.gather(e, **kwargs)
+        #     raise
+        res = self.gather(evals, **kwargs)
+        if self.on_main:
+            return sum(res, [])
+        else:
+            return Parallelizer.InWorkerProcess
+
+    def wait(self):
+        """
+        Causes all processes to wait until they've met up at this point.
+        :return:
+        :rtype:
+        """
+
+        # flag = self.broadcast("SyncFlag")
+        self.gather("SyncFlag") # sends data to main
+        self.broadcast("SyncFlag")
 
 class MultiprocessingParallelizer(SendRecieveParallelizer):
     """
@@ -515,10 +717,11 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
     """
 
     class SendRecvQueuePair:
-        def __init__(self, id:int, manager:mp.Manager):
+        def __init__(self, id:int, manager:'mp.managers.SyncManager'):
             self.id=id
             self.send_queue = manager.Queue()
             self.receive_queue = manager.Queue()
+            self.init_flag = manager.Event()
     class PoolCommunicator(SendRecieveParallelizer.SendReceieveCommunicator):
         """
         Defines a serializable process communicator
@@ -526,6 +729,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         to support `send` and `receive` and therefore to
         support the rest of the necessary bits of the MPI API
         """
+        initialization_timeout=.5
         def __init__(self,
                      parent: 'MultiprocessingParallelizer',
                      id:int,
@@ -534,6 +738,26 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             self.parent = parent
             self.id = id
             self.queues = tuple(queues)
+
+        class PoolError(Exception):
+            """
+            For errors arising from Pool operations
+            """
+            pass
+
+        def initialize(self):
+            """
+            Performs initialization of the communicator
+            (basically just waits until all threads say all is well)
+            :return:
+            :rtype:
+            """
+            self.queues[self.id].init_flag.set()
+            if self.parent.on_main:
+                for q in self.queues:
+                    wat = q.init_flag.wait(self.initialization_timeout)
+                    if not wat:
+                        raise self.PoolError("Failed to initialize pool")
 
         @property
         def locations(self):
@@ -564,11 +788,14 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             :return:
             :rtype:
             """
-            queue = self.queues[loc].send_queue
-            # print(">>>>", self.id, loc)
+            queue = self.queues[loc].send_queue #type: mp.queues.Queue
             if loc == self.id:
-                return queue.get()
+                # print("Send", "<<<<", self.id)
+                res = queue.get()
+                # print("Sent to", self.id)
+                return res
             else:
+                # print("Send", self.id, ">>>>", loc)
                 queue.put(data)
                 return data
         def receive(self, data, loc, **kwargs):
@@ -584,10 +811,13 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             :rtype:
             """
             queue = self.queues[loc].receive_queue
-            # print("<<<<", self.id, loc)
             if loc != self.id:
-                return queue.get()
+                # print("Recv", loc, ">>>>", self.id)
+                res = queue.get()
+                # print("Recieved on", self.id, "from", loc)
+                return res
             else:
+                # print("Recv", "<<<<", self.id)
                 queue.put(data)
                 return data
 
@@ -598,13 +828,21 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                  manager=None,
                  **kwargs
                  ):
-        self.opts = kwargs
-        self.pool = pool
-        self.worker = worker
-        self.ctx = context
+        super().__init__()
+        self.opts=kwargs
+        self.pool=pool
+        self.worker=worker
+        self.ctx=context
         self.manager=manager
         self._comm = None
+        self._comm_list = None
         self.nproc = None
+
+    def get_nprocs(self):
+        return self.nproc
+    def get_id(self):
+        return self.comm.id
+
     @property
     def comm(self):
         """
@@ -615,19 +853,55 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         return self._comm
 
     def __getstate__(self):
-        state = self.opts.copy()
-        # the mapped process doesn't need to know about either of these
-        state['runner'] = None
+        # most things don't need to be mapped over...
+        state = self.__dict__.copy()
+        state['pool'] = None
+        state['worker'] = True
+        state['manager'] = None
         state['comm'] = None
-        state['worker'] = True # so that the worker processes know they're workers
+        state['_comm'] = None
+        state['_comm_list'] = None
+        state['queues'] = None
+        # print(state)
+        # state = {
+        #     'opts': self.opts,
+        #     'pool': None,
+        #     'worker': True,
+        #     'manager': None, #self.manager,
+        #     'comm': None,
+        #     'nproc': self.nproc
+        # }
+        # print(self.runner)
+        # state['runner'] = None
+        # state['comm'] = None
+        # state['worker'] = True # so that the worker processes know they're workers
+        # print(state)
         return state
 
     @staticmethod
     def _run(runner, comm:PoolCommunicator, args, kwargs):
+        """
+        Static runner function that just dispatches methods out to
+        cores
+        :param runner:
+        :type runner:
+        :param comm:
+        :type comm:
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
         self=comm.parent
         with self:
             self._comm = comm # makes a cyclic dependency...but oh well
+            # self.print("...?")
+            self._comm.initialize()
+            # self.print("fack")
             kwargs['parallelizer'] = comm.parent
+            # self.print(runner)
             return runner(*args, **kwargs)
 
     def apply(self, func, *args, **kwargs):
@@ -643,18 +917,25 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         :return:
         :rtype:
         """
-        self._comm = self.PoolCommunicator(self, 0, self.queues)
-        # self.pool = mp.Pool()
-        subsidiary = self.pool.starmap_async(
-            self._run,
-            zip(
+        import multiprocessing as mp
+
+        if self._comm_list is None:
+            self._comm_list = [self.PoolCommunicator(self, i, self.queues) for i in range(0, self.nproc+1)]
+        self._comm = self._comm_list[0]
+        mapping = list(zip(
                 [func] * self.nproc,
-                [self.PoolCommunicator(self, i, self.queues) for i in range(1, self.nproc + 1)],
+                self._comm_list[1:],
                 [args] * self.nproc,
                 [kwargs] * self.nproc
-            )
-        )
-        main = self._run(func, self.PoolCommunicator(self, 0, self.queues), args, kwargs)
+            ))
+        pool = self.pool #type: mp.pool.Pool
+        subsidiary = pool.starmap_async(self._run, mapping)
+        try:
+            main = self._run(func, self.PoolCommunicator(self, 0, self.queues), args, kwargs)
+        except self.PoolCommunicator.PoolError:
+            # check for errors on subsidiary...
+            subsidiary.get(timeout=.5)
+            raise
         subs = subsidiary.get() # just to effect a wait
         return main
 
@@ -662,6 +943,8 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                   manager: mp.Manager,
                   **kwargs
                   ):
+        if 'processes' not in kwargs:
+            kwargs['processes'] = mp.cpu_count() - 1
         return manager.Pool(**kwargs)
 
     @staticmethod
@@ -798,14 +1081,12 @@ class MPIParallelizer(SendRecieveParallelizer):
                 locs = list(self.locations)  # gotta be safe
                 nlocs = len(locs)
                 chunk_size = len(data) // nlocs
-                chunk_remainder = len(data) % chunk_size
-                if chunk_remainder == 0:
-                    chunk_sizes = [chunk_size] * nlocs
-                else:
-                    chunk_sizes = [chunk_size] * (nlocs - 1) + [chunk_size + chunk_remainder]
+                chunk_sizes = [chunk_size] * nlocs
+                for i in range(len(data) - (chunk_size*nlocs)):
+                    chunk_sizes[i] += 1
 
-                main_data = data[:chunk_sizes[0]]
-                s = chunk_size
+                s = chunk_sizes[0]
+                main_data = data[:s]
                 for i, b in zip(locs[1:], chunk_sizes[1:]):
                     chunk = data[s:s + b]
                     self.send(chunk, i, **kwargs)
@@ -841,7 +1122,7 @@ class MPIParallelizer(SendRecieveParallelizer):
                 ranks = self.comm.Get_size()
                 ndat = shape[0]
                 block_size = ndat // ranks
-                block_remainder = ndat % ranks
+                block_remainder = ndat - (block_size*ranks)
                 if block_remainder == 0:
                     shape = (block_size,) + shape[1:]
                     recv_buf = np.empty(shape, dtype=data.dtype)
@@ -852,8 +1133,11 @@ class MPIParallelizer(SendRecieveParallelizer):
                     # implementation of Scatterv that explicitly needs the
                     # appropriate block offsets, since it basically expects
                     # to have a flattened form of the array (just like MPI)
+                    block_sizes = [block_size]*ranks
+                    for i in range(block_remainder):
+                        block_sizes[i] += 1
+                    block_sizes = np.array(block_sizes)
                     block_offset = int(np.prod(data.shape[1:]))
-                    block_sizes = np.array([block_size]*ranks + [block_remainder])
                     block_offsets = np.cumsum(block_sizes*block_offset)
                     recv_buf = np.empty((block_sizes[self.location],) + data.shape[1:], dtype=data.dtype)
                     return self.comm.Scatterv(
@@ -904,7 +1188,7 @@ class MPIParallelizer(SendRecieveParallelizer):
                 ranks = self.comm.Get_size()
                 ndat = shape[0]
                 block_size = ndat // ranks
-                block_remainder = ndat % ranks
+                block_remainder = ndat - (block_size*ranks)
                 if block_remainder == 0:
                     if root == self.location:
                         recv_buf = np.empty(shape, dtype=data.dtype)
@@ -913,8 +1197,11 @@ class MPIParallelizer(SendRecieveParallelizer):
                     self.comm.Gather(send_buf, recv_buf, root=root)
                     return recv_buf
                 else:
+                    block_sizes = [block_size] * ranks
+                    for i in range(block_remainder):
+                        block_sizes[i] += 1
+                    block_sizes = np.array(block_sizes)
                     block_offset = int(np.prod(data.shape[1:]))
-                    block_sizes = np.array([block_size] * ranks + [block_remainder])
                     block_offsets = np.cumsum(block_sizes * block_offset)
                     if root == self.location:
                         recv_buf = np.empty(shape, dtype=data.dtype)
@@ -931,6 +1218,8 @@ class MPIParallelizer(SendRecieveParallelizer):
                 return self.gather_obj(data, root=root, **kwargs)
 
     def __init__(self, root=0, comm=None):
+        super().__init__()
+
         from mpi4py import MPI as api
         self.api = api
         if comm is None:
@@ -1047,6 +1336,11 @@ class SerialNonParallelizer(Parallelizer):
     is provide
     """
 
+    def get_nprocs(self):
+        return 1
+    def get_id(self):
+        return 0
+
     def initialize(self):
         """
         Initializes a parallelizer
@@ -1132,9 +1426,10 @@ class SerialNonParallelizer(Parallelizer):
         :rtype:
         """
         return data
-    def map(self, function, data, **kwargs):
+
+    def map(self, function, data, extra_args=None, extra_kwargs=None, **kwargs):
         """
-        Performs a serial map of function over
+        Performs a serial map of the function over
         the passed data
 
         :param function:
@@ -1146,11 +1441,51 @@ class SerialNonParallelizer(Parallelizer):
         :return:
         :rtype:
         """
-        return map(function, data, **kwargs)
+
+        if extra_args is not None or extra_kwargs is not None:
+            if extra_args is None:
+                extra_args=()
+            if extra_kwargs is None:
+                extra_kwargs={}
+            function = lambda a, fn=function, ea=extra_args, ek=extra_kwargs: fn(a, *ea, **ek)
+
+        return list(map(function, data, **kwargs))
+
+    def starmap(self, function, data, extra_args=None, extra_kwargs=None, **kwargs):
+        """
+        Performs a serial map with unpacking of the function over
+        the passed data
+
+        :param function:
+        :type function:
+        :param data:
+        :type data:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+
+        if extra_args is None:
+            extra_args=()
+        if extra_kwargs is None:
+            extra_kwargs={}
+        function = lambda a, fn=function, ea=extra_args, ek=extra_kwargs: fn(*a, *ea, **ek)
+
+        return list(map(function, data, **kwargs))
 
     def apply(self, func, *args, **kwargs):
         kwargs['parallelizer'] = self
         return func(*args, **kwargs)
+
+    def wait(self):
+        """
+        No need to wait when you're in a serial environment
+        :return:
+        :rtype:
+        """
+
+        pass
 
 
 
