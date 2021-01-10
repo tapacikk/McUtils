@@ -307,7 +307,7 @@ class NullCheckpointer(CheckpointerBase):
     A checkpointer that doesn't actually do anything, but which is provided
     so that programs can turn off checkpointing without changing their layout
     """
-    def __init__(self, checkpoint_file):
+    def __init__(self, checkpoint_file=None):
         super().__init__(checkpoint_file)
         self.backend = {}
 
