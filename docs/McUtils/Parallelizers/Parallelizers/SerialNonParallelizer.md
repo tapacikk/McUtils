@@ -3,6 +3,16 @@ Totally serial evaluation for cases where no parallelism
 is provide
 
 ### Properties and Methods
+<a id="McUtils.Parallelizers.Parallelizers.SerialNonParallelizer.get_nprocs" class="docs-object-method">&nbsp;</a>
+```python
+get_nprocs(self): 
+```
+
+<a id="McUtils.Parallelizers.Parallelizers.SerialNonParallelizer.get_id" class="docs-object-method">&nbsp;</a>
+```python
+get_id(self): 
+```
+
 <a id="McUtils.Parallelizers.Parallelizers.SerialNonParallelizer.initialize" class="docs-object-method">&nbsp;</a>
 ```python
 initialize(self): 
@@ -93,9 +103,24 @@ A no-op
 
 <a id="McUtils.Parallelizers.Parallelizers.SerialNonParallelizer.map" class="docs-object-method">&nbsp;</a>
 ```python
-map(self, function, data, **kwargs): 
+map(self, function, data, extra_args=None, extra_kwargs=None, **kwargs): 
 ```
-Performs a serial map of function over
+Performs a serial map of the function over
+        the passed data
+- `function`: `Any`
+    >No description...
+- `data`: `Any`
+    >No description...
+- `kwargs`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Parallelizers.Parallelizers.SerialNonParallelizer.starmap" class="docs-object-method">&nbsp;</a>
+```python
+starmap(self, function, data, extra_args=None, extra_kwargs=None, **kwargs): 
+```
+Performs a serial map with unpacking of the function over
         the passed data
 - `function`: `Any`
     >No description...
@@ -110,6 +135,14 @@ Performs a serial map of function over
 ```python
 apply(self, func, *args, **kwargs): 
 ```
+
+<a id="McUtils.Parallelizers.Parallelizers.SerialNonParallelizer.wait" class="docs-object-method">&nbsp;</a>
+```python
+wait(self): 
+```
+No need to wait when you're in a serial environment
+- `:returns`: `_`
+    >No description...
 
 ### Examples
 
