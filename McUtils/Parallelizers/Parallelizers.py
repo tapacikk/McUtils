@@ -1183,6 +1183,7 @@ class MPIParallelizer(SendRecieveParallelizer):
             :return:
             :rtype:
             """
+
             if isinstance(data, np.ndarray):
                 # make sure everyone knows what's up
                 send_buf = np.ascontiguousarray(data)
@@ -1190,7 +1191,7 @@ class MPIParallelizer(SendRecieveParallelizer):
                     block_sizes = self.gather(data.shape[0], root=root)
                     ndat = int(np.sum(block_sizes))
                     if root == self.location:
-                        shape = (ndat,) + data.shape
+                        shape = (ndat,) + data.shape[1:]
                     shape = self.broadcast(shape)
                 # otherwise send shit around
                 ranks = self.comm.Get_size()
