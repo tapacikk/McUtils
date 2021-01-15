@@ -317,7 +317,7 @@ Prints from a main worker process
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.print" class="docs-object-method">&nbsp;</a>
 ```python
-print(self, *args, **kwargs): 
+print(self, *args, where='both', **kwargs): 
 ```
 An implementation of print that operates differently on workers than on main
         processes
