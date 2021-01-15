@@ -997,6 +997,14 @@ class MPIParallelizer(SendRecieveParallelizer):
             self.parent = parent
             self.comm = mpi_comm
         @property
+        def nprocs(self):
+            """
+            Returns the number of available processes
+            :return:
+            :rtype:
+            """
+            return self.comm.Get_size()
+        @property
         def locations(self):
             """
             Returns the list of locations known by the
@@ -1228,6 +1236,11 @@ class MPIParallelizer(SendRecieveParallelizer):
         self._comm = self.MPICommunicator(self, comm)
         self.world_size = None
         self.world_rank = None
+
+    def get_nprocs(self):
+        return self._comm.nprocs
+    def get_id(self):
+        return self._comm.location
 
     def initialize(self):
         # handled by mpi4py?
