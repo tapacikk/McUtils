@@ -10,18 +10,26 @@ System: type
 ```
 <a id="McUtils.GaussianInterface.GaussianJob.GaussianJob.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, name, *args, description=None, system=None, job=None, config=None, template='Template.gjf', file=None): 
+__init__(self, name, *args, description=None, system=None, job=None, config=None, template='TemplateTerse.gjf', file=None): 
 ```
 
 <a id="McUtils.GaussianInterface.GaussianJob.GaussianJob.format" class="docs-object-method">&nbsp;</a>
 ```python
 format(self): 
 ```
+Formats the job string
+- `:returns`: `_`
+    >No description...
 
 <a id="McUtils.GaussianInterface.GaussianJob.GaussianJob.write" class="docs-object-method">&nbsp;</a>
 ```python
 write(self, file=None): 
 ```
+Writes the job to a file
+- `file`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
 
 <a id="McUtils.GaussianInterface.GaussianJob.GaussianJob.start" class="docs-object-method">&nbsp;</a>
 ```python

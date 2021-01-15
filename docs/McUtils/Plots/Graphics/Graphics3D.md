@@ -2,9 +2,17 @@
 Extends the standard matplotlib 3D plotting to use all the Graphics extensions
 
 ### Properties and Methods
+```python
+opt_keys: set
+```
 <a id="McUtils.Plots.Graphics.Graphics3D.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, *args, figure=None, axes=None, subplot_kw=None, event_handlers=None, animate=None, axes_labels=None, plot_label=None, plot_range=None, plot_legend=None, ticks=None, scale=None, ticks_style=None, image_size=None, background=None, backend=<Backends.MPL: 'matplotlib'>, **kwargs): 
+__init__(self, *args, figure=None, axes=None, subplot_kw=None, event_handlers=None, animate=None, axes_labels=None, plot_label=None, plot_range=None, plot_legend=None, ticks=None, scale=None, ticks_style=None, image_size=None, background=None, view_settings=None, backend=<Backends.MPL: 'matplotlib'>, **kwargs): 
+```
+
+<a id="McUtils.Plots.Graphics.Graphics3D.set_options" class="docs-object-method">&nbsp;</a>
+```python
+set_options(self, view_settings=None, **parent_opts): 
 ```
 
 <a id="McUtils.Plots.Graphics.Graphics3D.plot_label" class="docs-object-method">&nbsp;</a>
@@ -83,6 +91,18 @@ background(self):
 ```python
 @property
 colorbar(self): 
+```
+
+<a id="McUtils.Plots.Graphics.Graphics3D.box_ratios" class="docs-object-method">&nbsp;</a>
+```python
+@property
+box_ratios(self): 
+```
+
+<a id="McUtils.Plots.Graphics.Graphics3D.view_settings" class="docs-object-method">&nbsp;</a>
+```python
+@property
+view_settings(self): 
 ```
 
 ### Examples

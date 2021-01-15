@@ -34,7 +34,7 @@ The main necessary implementation method for a converter class.
 
 <a id="McUtils.Coordinerds.CoordinateSystems.CoordinateSystemConverter.CoordinateSystemConverter.register" class="docs-object-method">&nbsp;</a>
 ```python
-register(self): 
+register(self, where=None): 
 ```
 Registers the CoordinateSystemConverter
 - `:returns`: `_`

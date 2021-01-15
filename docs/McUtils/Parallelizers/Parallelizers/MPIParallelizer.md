@@ -11,6 +11,16 @@ from_config: method
 __init__(self, root=0, comm=None): 
 ```
 
+<a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.get_nprocs" class="docs-object-method">&nbsp;</a>
+```python
+get_nprocs(self): 
+```
+
+<a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.get_id" class="docs-object-method">&nbsp;</a>
+```python
+get_id(self): 
+```
+
 <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.initialize" class="docs-object-method">&nbsp;</a>
 ```python
 initialize(self): 

@@ -46,6 +46,8 @@ A plotting framework that builds off of matplotlib, but potentially could use a 
   - [Styled](Plots/Styling/Styled.md)
   - [ThemeManager](Plots/Styling/ThemeManager.md)
   - [Image](Plots/Image/Image.md)
+  - [GraphicsPropertyManager](Plots/Properties/GraphicsPropertyManager.md)
+  - [GraphicsPropertyManager3D](Plots/Properties/GraphicsPropertyManager3D.md)
 
 ### Examples:
 

@@ -29,9 +29,9 @@ class DataTests(TestCase):
 
     @validationTest
     def test_AtomData(self):
-        self.assertIsInstance(AtomData["H"], dict)
-        self.assertIsInstance(AtomData["Hydrogen"], dict)
-        self.assertIsInstance(AtomData["Helium3"], dict)
+        self.assertIsInstance(AtomData["H"], DataRecord)
+        self.assertIsInstance(AtomData["Hydrogen"], DataRecord)
+        self.assertIsInstance(AtomData["Helium3"], DataRecord)
         self.assertIs(AtomData["Hydrogen2"], AtomData["Deuterium"])
         self.assertIs(AtomData["H2"], AtomData["Deuterium"])
         self.assertIs(AtomData["H1"], AtomData["Hydrogen"])

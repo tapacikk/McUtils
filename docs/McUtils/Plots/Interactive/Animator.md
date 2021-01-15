@@ -33,6 +33,30 @@ toggle(self):
 show(self): 
 ```
 
+<a id="McUtils.Plots.Interactive.Animator.to_jshtml" class="docs-object-method">&nbsp;</a>
+```python
+to_jshtml(self): 
+```
+Delegates to the underlying animation
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Plots.Interactive.Animator.to_html5_video" class="docs-object-method">&nbsp;</a>
+```python
+to_html5_video(self): 
+```
+Delegates to the underlying animation
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Plots.Interactive.Animator.as_jupyter_animation" class="docs-object-method">&nbsp;</a>
+```python
+as_jupyter_animation(self, mode='javascript'): 
+```
+Chains some stuff to make Jupyter animations work
+- `:returns`: `_`
+    >No description...
+
 ### Examples
 
 

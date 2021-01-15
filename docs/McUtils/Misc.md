@@ -8,6 +8,7 @@ Defines a set of miscellaneous helper utilities that are commonly used across pr
   - [StringMatcher](Misc/FileMatcher/StringMatcher.md)
   - [MatchList](Misc/FileMatcher/MatchList.md)
   - [FileMatcher](Misc/FileMatcher/FileMatcher.md)
+  - [ModuleReloader](Misc/InteractiveTools/ModuleReloader.md)
 
 ### Examples:
 

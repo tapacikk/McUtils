@@ -15,7 +15,8 @@ Chained conversions are not _currently_ supported, but might well become support
 
 ### Members:
 
-  - [CoordinateSet](Coordinerds/CoordinateSystems/CoordinateSet/CoordinateSet.md)
+  - [CoordinateSystemConverters](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverters.md)
+  - [CoordinateSystemConverter](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverter.md)
   - [CartesianCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem.md)
   - [InternalCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/InternalCoordinateSystem.md)
   - [CartesianCoordinateSystem3D](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem3D.md)
@@ -27,8 +28,7 @@ Chained conversions are not _currently_ supported, but might well become support
   - [CoordinateSystem](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystem.md)
   - [BaseCoordinateSystem](Coordinerds/CoordinateSystems/CoordinateSystem/BaseCoordinateSystem.md)
   - [CoordinateSystemError](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystemError.md)
-  - [CoordinateSystemConverters](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverters.md)
-  - [CoordinateSystemConverter](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverter.md)
+  - [CoordinateSet](Coordinerds/CoordinateSystems/CoordinateSet/CoordinateSet.md)
   - [CoordinateTransform](Coordinerds/CoordinateTransformations/CoordinateTransform/CoordinateTransform.md)
   - [TransformationFunction](Coordinerds/CoordinateTransformations/TransformationFunction/TransformationFunction.md)
   - [AffineTransform](Coordinerds/CoordinateTransformations/AffineTransform/AffineTransform.md)
