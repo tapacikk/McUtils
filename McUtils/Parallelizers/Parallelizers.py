@@ -442,7 +442,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :rtype:
         """
         print("On Worker {}:".format(self.id), *args, **kwargs)
-    def print(self, *args, **kwargs):
+    def print(self, *args, where='both', **kwargs):
         """
         An implementation of print that operates differently on workers than on main
         processes
@@ -455,9 +455,11 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :rtype:
         """
         if self.on_main:
-            return self.main_print(*args, **kwargs)
+            if where in {'both', 'main'}:
+                return self.main_print(*args, **kwargs)
         else:
-            return self.worker_print(*args, **kwargs)
+            if where in {'both', 'worker'}:
+                return self.worker_print(*args, **kwargs)
 
     @abc.abstractmethod
     def wait(self):
@@ -755,9 +757,10 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             self.queues[self.id].init_flag.set()
             if self.parent.on_main:
                 for q in self.queues:
-                    wat = q.init_flag.wait(self.initialization_timeout)
-                    if not wat:
-                        raise self.PoolError("Failed to initialize pool")
+                    if not q.init_flag.is_set():
+                        wat = q.init_flag.wait(self.initialization_timeout)
+                        if not wat:
+                            raise self.PoolError("Failed to initialize pool")
 
         @property
         def locations(self):
@@ -821,6 +824,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                 queue.put(data)
                 return data
 
+    _is_worker=False # global flag to be overridden
     def __init__(self,
                  worker=False,
                  pool:mp.Pool=None,
@@ -901,7 +905,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             self._comm.initialize()
             # self.print("fack")
             kwargs['parallelizer'] = comm.parent
-            # self.print(runner)
+            # self.print(">>>>>>>>", runner)
             return runner(*args, **kwargs)
 
     def apply(self, func, *args, **kwargs):
@@ -945,8 +949,9 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                   ):
         if 'processes' not in kwargs:
             kwargs['processes'] = mp.cpu_count() - 1
+        if 'initializer' not in kwargs:
+            kwargs['initializer'] = self._set_is_worker
         return manager.Pool(**kwargs)
-
     @staticmethod
     def get_pool_context(pool):
         return pool._ctx # I don't like doing this but seems like only way?
@@ -954,6 +959,13 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
     def get_pool_nprocs(pool):
         return pool._processes  # see above
 
+    @classmethod
+    def _set_is_worker(cls, *args):
+        """
+        Sets a flag so that worker processes
+        can know immediately that they are workers
+        """
+        cls._is_worker = True
     def initialize(self):
         if not self.worker:
             if self.pool is None:
@@ -966,6 +978,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                 self.manager = mp.Manager()
             self.pool.__enter__()
             self.nproc = self.get_pool_nprocs(self.pool)
+            self.pool.map(self._set_is_worker, [None] * self.nproc)
             self.queues = [self.SendRecvQueuePair(i, self.manager) for i in range(0, self.nproc+1)]
 
     def finalize(self, exc_type, exc_val, exc_tb):
@@ -993,9 +1006,34 @@ class MPIParallelizer(SendRecieveParallelizer):
         sending/receiving data from a specific subprocesses
         """
 
-        def __init__(self, parent, mpi_comm):
+        def __init__(self, parent, mpi_comm, api):
             self.parent = parent
             self.comm = mpi_comm
+            self.api = api
+        @property
+        def type_map(self):
+            """
+            Kinda hacky type map...hopefully
+            sufficient to just have a few core numeric types?
+            """
+            return {
+                'int32': self.api.INT,
+                'int64': self.api.LONG,
+                'float32': self.api.FLOAT,
+                'float64': self.api.DOUBLE
+            }
+        def get_mpi_type(self, dtype):
+            """
+            Gets the MPI datatype for the numpy
+            dtype
+            """
+            tm = self.type_map
+            key = dtype.name
+            if key not in tm:
+                raise KeyError(
+                    "mapping from {} to MPI datatype not included...".format(dtype)
+                    )
+            return tm[key]
         @property
         def nprocs(self):
             """
@@ -1034,7 +1072,7 @@ class MPIParallelizer(SendRecieveParallelizer):
             :rtype:
             """
             if loc == self.location:
-                return self.comm.receive(source=self.comm.ANY_LOCATION)
+                return self.comm.recv(source=self.api.ANY_SOURCE)
             else:
                 self.comm.send(data, dest=loc)
         def receive(self, data, loc, root=0, **kwargs):
@@ -1051,9 +1089,9 @@ class MPIParallelizer(SendRecieveParallelizer):
             """
             if loc != self.location:
                 self.comm.send(self.location, dest=loc)
-                return self.comm.receive(source=loc)
+                return self.comm.recv(source=loc)
             else:
-                where_to = self.comm.recv(source=self.comm.ANY_LOCATION)
+                where_to = self.comm.recv(source=self.api.ANY_SOURCE)
                 self.comm.send(data, dest=where_to)
         def broadcast(self, data, root=0, **kwargs):
             """
@@ -1100,7 +1138,7 @@ class MPIParallelizer(SendRecieveParallelizer):
                     self.send(chunk, i, **kwargs)
                     s += b
                 return main_data
-        def scatter(self, data, root=0, shape=None, **kwargs):
+        def scatter(self, data, root=0, shape=None, dtype=None, **kwargs):
             """
             Performs a scatter of data to the different
             available parallelizer processes.
@@ -1127,13 +1165,18 @@ class MPIParallelizer(SendRecieveParallelizer):
                     if root == self.location:
                         shape = data.shape
                     shape = self.broadcast(shape)
+                if dtype is None:
+                    if root == self.location:
+                        dtype = data.dtype
+                    dtype = self.broadcast(dtype)
+                np.empty(shape, dtype=dtype)
                 ranks = self.comm.Get_size()
                 ndat = shape[0]
                 block_size = ndat // ranks
                 block_remainder = ndat - (block_size*ranks)
                 if block_remainder == 0:
                     shape = (block_size,) + shape[1:]
-                    recv_buf = np.empty(shape, dtype=data.dtype)
+                    recv_buf = np.empty(shape, dtype=dtype)
                     self.comm.Scatter(send_buf, recv_buf, root=root)
                     return recv_buf
                 else:
@@ -1145,16 +1188,23 @@ class MPIParallelizer(SendRecieveParallelizer):
                     for i in range(block_remainder):
                         block_sizes[i] += 1
                     block_sizes = np.array(block_sizes)
-                    block_offset = int(np.prod(data.shape[1:]))
-                    block_offsets = np.cumsum(block_sizes*block_offset)
-                    recv_buf = np.empty((block_sizes[self.location],) + data.shape[1:], dtype=data.dtype)
-                    return self.comm.Scatterv(
-                        send_buf,
-                        block_sizes,
-                        block_offsets,
+                    block_offset = int(np.prod(shape[1:]))
+                    block_offsets = np.concatenate([[0], np.cumsum(block_sizes*block_offset)])[:-1]
+                    recv_buf = np.empty((block_sizes[self.location],) + shape[1:], dtype=dtype)
+                    # print(block_offsets, block_offset, block_sizes)
+                    self.comm.Scatterv(
+                        [
+                            send_buf,
+                            block_sizes,
+                            block_offsets,
+                            self.get_mpi_type(dtype)
+                        ],
                         recv_buf,
                         root=root
-                     )
+                    )
+                    
+                    # print(">>>>", send_buf, recv_buf, self.get_mpi_type(dtype).name)
+                    return recv_buf
             else:
                 return self.scatter_obj(data, root=root, **kwargs)
         def gather_obj(self, data, root=0, **kwargs):
@@ -1164,17 +1214,14 @@ class MPIParallelizer(SendRecieveParallelizer):
                 recv = [None] * nlocs
                 recv[0] = data
                 for n, i in enumerate(locs[1:]):
-                    recv[n + 1] = self.comm.receive(data, i, **kwargs)
+                    recv[n + 1] = self.receive(data, i, **kwargs)
                 return recv
             else:
                 return self.receive(data, self.location, **kwargs)  # effectively a send...
-        def gather(self, data, root=0, shape=None, **kwargs):
+        def gather(self, data, root=0, shape=None, dtype=None, **kwargs):
             """
             Performs a gather from the different
             available parallelizer processes.
-            *NOTE:* unlike in the MPI case, `data` does not
-            need to be evenly divisible by the number of available
-            processes
 
             :param data:
             :type data:
@@ -1189,10 +1236,15 @@ class MPIParallelizer(SendRecieveParallelizer):
                 send_buf = np.ascontiguousarray(data)
                 if shape is None:
                     block_sizes = self.gather(data.shape[0], root=root)
-                    ndat = int(np.sum(block_sizes))
-                    if root == self.location:
-                        shape = (ndat,) + data.shape[1:]
+                    if block_sizes is not None:
+                        ndat = int(np.sum(block_sizes))
+                        if root == self.location:
+                            shape = (ndat,) + data.shape[1:]
                     shape = self.broadcast(shape)
+                if dtype is None:
+                    if root == self.location:
+                        dtype = data.dtype
+                    dtype = self.broadcast(dtype)
                 # otherwise send shit around
                 ranks = self.comm.Get_size()
                 ndat = shape[0]
@@ -1200,7 +1252,7 @@ class MPIParallelizer(SendRecieveParallelizer):
                 block_remainder = ndat - (block_size*ranks)
                 if block_remainder == 0:
                     if root == self.location:
-                        recv_buf = np.empty(shape, dtype=data.dtype)
+                        recv_buf = np.empty(shape, dtype=dtype)
                     else:
                         recv_buf = None
                     self.comm.Gather(send_buf, recv_buf, root=root)
@@ -1210,19 +1262,24 @@ class MPIParallelizer(SendRecieveParallelizer):
                     for i in range(block_remainder):
                         block_sizes[i] += 1
                     block_sizes = np.array(block_sizes)
-                    block_offset = int(np.prod(data.shape[1:]))
-                    block_offsets = np.cumsum(block_sizes * block_offset)
+                    block_offset = int(np.prod(shape[1:]))
+                    block_offsets = np.concatenate([[0], np.cumsum(block_sizes*block_offset)])[:-1]
                     if root == self.location:
-                        recv_buf = np.empty(shape, dtype=data.dtype)
+                        recv_buf = np.empty(shape, dtype=dtype)
                     else:
                         recv_buf = None
-                    return self.comm.Gatherv(
+                    self.comm.Gatherv(
                         send_buf,
-                        block_sizes,
-                        block_offsets,
-                        recv_buf,
+                        [
+                            recv_buf,
+                            block_sizes,
+                            block_offsets,
+                            self.get_mpi_type(dtype)
+                        ],
                         root=root
                     )
+
+                    return recv_buf
             else:
                 return self.gather_obj(data, root=root, **kwargs)
 
@@ -1234,7 +1291,7 @@ class MPIParallelizer(SendRecieveParallelizer):
         if comm is None:
             comm = api.COMM_WORLD
         self.root = root
-        self._comm = self.MPICommunicator(self, comm)
+        self._comm = self.MPICommunicator(self, comm, api)
         self.world_size = None
         self.world_rank = None
 
