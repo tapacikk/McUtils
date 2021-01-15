@@ -1336,7 +1336,7 @@ class MPIParallelizer(SendRecieveParallelizer):
         :return:
         :rtype:
         """
-        return func(*args, **kwargs)
+        return func(*args, parallelizer=self, **kwargs)
 
     @classmethod
     def from_config(cls, **kw):
