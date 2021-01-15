@@ -20,7 +20,7 @@ class GaussianInterfaceTests(TestCase):
             parse = reader.parse("Header")
         self.assertIn("P", parse["Header"].job)
 
-    @validationTest
+    @inactiveTest
     def test_DefaultLogParse(self):
         with GaussianLogReader(self.test_rel_scan) as reader:
             parse = reader.parse()
@@ -201,35 +201,3 @@ class GaussianInterfaceTests(TestCase):
             parse = reader.parse("AtomicMasses")
         masses = parse["AtomicMasses"]
         self.assertEquals(len(masses), n)
-
-    @validationTest
-    def test_GaussianJobWriter(self):
-        job = GaussianJob(
-            "water scan",
-            description="Simple water scan",
-            config= GaussianJob.Config(
-                NProc = 4,
-                Mem = '1000MB'
-            ),
-            job= GaussianJob.Job(
-                'Scan'
-            ),
-            system = GaussianJob.System(
-                charge=0,
-                molecule=[
-                    ["O", "H", "H"],
-                    [
-                        [0, 0, 0],
-                        [.987, 0, 0],
-                        [0, .987, 0]
-                    ]
-                ],
-                vars=[
-                    GaussianJob.System.Variable("y1", 0., 10., .1),
-                    GaussianJob.System.Constant("x1", 10)
-                ]
-
-            )
-        )
-        # print(job.write(), file=sys.stderr)
-        self.assertIsInstance(job.format(), str)

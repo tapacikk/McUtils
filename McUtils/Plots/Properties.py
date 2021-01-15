@@ -515,6 +515,7 @@ class GraphicsPropertyManager:
 class GraphicsPropertyManager3D(GraphicsPropertyManager):
     def __init__(self, graphics, figure, axes, managed=False):
         super().__init__(graphics, figure, axes, managed=managed)
+        self._view_settings = None
 
     @property
     def axes_labels(self):
@@ -557,10 +558,8 @@ class GraphicsPropertyManager3D(GraphicsPropertyManager):
         else:
             pr = self._plot_range
         return pr
-
     @plot_range.setter
     def plot_range(self, ranges):
-
         if self._plot_range is None:
             self._plot_range = (self.axes.get_xlim(), self.axes.get_ylim(), self.axes.get_zlim())
 
@@ -594,7 +593,6 @@ class GraphicsPropertyManager3D(GraphicsPropertyManager):
                                set_minor_locator=self.axes.xaxis.set_minor_locator,
                                **opts
                                )
-
     def _set_yticks(self, y, **opts):
         return self._set_ticks(y,
                                set_ticks=self.axes.set_yticks,
@@ -602,7 +600,6 @@ class GraphicsPropertyManager3D(GraphicsPropertyManager):
                                set_minor_locator=self.axes.yaxis.set_minor_locator,
                                **opts
                                )
-
     def _set_zticks(self, z, **opts):
         return self._set_ticks(z,
                                set_ticks=self.axes.set_zticks,
@@ -656,3 +653,17 @@ class GraphicsPropertyManager3D(GraphicsPropertyManager):
                 axis='z',
                 **z
             )
+
+    @property
+    def view_settings(self):
+        return {'elev': self.axes.elev, 'azim':self.axes.azim}
+    @view_settings.setter
+    def view_settings(self, value):
+        if isinstance(value, dict):
+            if 'elev' not in value:
+                value['elev'] = self.axes.elev
+            if 'azim' not in value:
+                value['azim'] = self.axes.azim
+        else:
+            value = dict(zip(['elev', 'azim'], value))
+        self.axes.view_init(elev=value['elev'], azim=value['azim'])

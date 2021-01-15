@@ -13,6 +13,59 @@ __all__ = [
 
 ######################################################################################################
 ##
+##                                   CoordinateSystemConverter Class
+##
+######################################################################################################
+class CoordinateSystemConverter(metaclass=abc.ABCMeta):
+    """
+    A base class for type converters
+    """
+
+    @property
+    @abc.abstractmethod
+    def types(self):
+        """The types property of a converter returns the types the converter converts
+
+        """
+        pass
+
+    def convert_many(self, coords_list, **kwargs):
+        """Converts many coordinates. Used in cases where a CoordinateSet has higher dimension
+        than its basis dimension. Should be overridden by a converted to provide efficient conversions
+        where necessary.
+
+        :param coords_list: many sets of coords
+        :type coords_list: np.ndarray
+        :param kwargs:
+        :type kwargs:
+        """
+        return np.array((self.convert(coords, **kwargs) for coords in coords_list))
+
+    @abc.abstractmethod
+    def convert(self, coords, **kwargs):
+        """The main necessary implementation method for a converter class.
+        Provides the actual function that converts the coords set
+
+        :param coords:
+        :type coords: np.ndarray
+        :param kwargs:
+        :type kwargs:
+        """
+        pass
+
+    def register(self, where=None):
+        """
+        Registers the CoordinateSystemConverter
+
+        :return:
+        :rtype:
+        """
+        if where is None:
+            where = CoordinateSystemConverters
+        where.register_converter(*self.types, self)
+
+######################################################################################################
+##
 ##                                   CoordinateSystemConverters Class
 ##
 ######################################################################################################
@@ -65,6 +118,12 @@ class CoordinateSystemConverters:
 
     @classmethod
     def _preload_converters(self):
+        """
+        Preloads Cartesian/ZMatrix converters.
+        Maybe will load others in the future.
+        :return:
+        :rtype:
+        """
         from .CartesianToZMatrix import __converters__ as converters
         for conv in converters:
             type_pair = tuple(conv.types)
@@ -78,7 +137,7 @@ class CoordinateSystemConverters:
                 self.load_converter(file)
 
     @classmethod
-    def get_converter(self, system1, system2):
+    def get_converter(cls, system1, system2):
         """Gets the appropriate converter for two CoordinateSystem objects
 
         :param system1:
@@ -90,15 +149,17 @@ class CoordinateSystemConverters:
         """
 
         try:
-            converter = self.converters[(system1, system2)]
+            converter = cls.converters[(system1, system2)]
         except KeyError:
-            for key_pair, conv in reversed(self.converters.items()):
+            for key_pair, conv in reversed(cls.converters.items()):
                 if isinstance(system1, key_pair[0]) and isinstance(system2, key_pair[1]):
                     converter = conv
                     break
             else:
                 raise KeyError(
-                    "no rules for converting coordinate system {} to {}".format(system1, system2)
+                    "{}: no rules for converting coordinate system {} to {} in {}".format(cls.__name__, system1, system2, [
+                        "{}=>{}".format(k.__name__, b.__name__ ) for k,b in cls.converters
+                    ])
                 )
         return converter
 
@@ -115,60 +176,10 @@ class CoordinateSystemConverters:
         """
 
         if not isinstance(converter, CoordinateSystemConverter):
-            raise TypeError('{}: registered converters should be subclasses of {}'.format(
+            raise TypeError('{}: registered converters should be subclasses of {} (got {})'.format(
                 cls.__name__,
-                CoordinateSystemConverter.__name__
+                CoordinateSystemConverter,
+                type(converter)
             ))
 
         cls.converters[(system1, system2)] = converter
-
-
-######################################################################################################
-##
-##                                   CoordinateSystemConverter Class
-##
-######################################################################################################
-class CoordinateSystemConverter(metaclass=abc.ABCMeta):
-    """A base class for type converters
-    """
-
-    @property
-    @abc.abstractmethod
-    def types(self):
-        """The types property of a converter returns the types the converter converts
-
-        """
-        pass
-
-    def convert_many(self, coords_list, **kwargs):
-        """Converts many coordinates. Used in cases where a CoordinateSet has higher dimension
-        than its basis dimension. Should be overridden by a converted to provide efficient conversions
-        where necessary.
-
-        :param coords_list: many sets of coords
-        :type coords_list: np.ndarray
-        :param kwargs:
-        :type kwargs:
-        """
-        return np.array((self.convert(coords, **kwargs) for coords in coords_list))
-
-    @abc.abstractmethod
-    def convert(self, coords, **kwargs):
-        """The main necessary implementation method for a converter class.
-        Provides the actual function that converts the coords set
-
-        :param coords:
-        :type coords: np.ndarray
-        :param kwargs:
-        :type kwargs:
-        """
-        pass
-
-    def register(self):
-        """
-        Registers the CoordinateSystemConverter
-
-        :return:
-        :rtype:
-        """
-        CoordinateSystemConverters.register_converter(*self.types, self)

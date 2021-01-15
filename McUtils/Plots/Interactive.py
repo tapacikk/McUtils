@@ -345,3 +345,32 @@ class Animator:
             self.start()
     def show(self):
         return self.figure.show()
+
+    def to_jshtml(self):
+        """
+        Delegates to the underlying animation
+        :return:
+        :rtype:
+        """
+        return self._animation.to_jshtml()
+    def to_html5_video(self):
+        """
+        Delegates to the underlying animation
+        :return:
+        :rtype:
+        """
+        return self._animation.to_html5_video()
+
+    def as_jupyter_animation(self, mode='javascript'):
+        """
+        Chains some stuff to make Jupyter animations work
+        :return:
+        :rtype:
+        """
+
+        from IPython.display import HTML
+        if mode == 'javascript':
+            buffer = self.to_jshtml()
+        else:
+            buffer = self.to_html5_video()
+        return HTML(buffer)

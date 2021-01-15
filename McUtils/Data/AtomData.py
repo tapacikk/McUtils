@@ -12,6 +12,21 @@ class AtomDataHandler(DataHandler):
     """
     def __init__(self):
         super().__init__("AtomData", alternate_keys=("Name", "Symbol", "CanonicalSymbol"))
+    def __getitem__(self, item):
+        """
+        Special cases the default getitem so tuples are mapped
+        :param item:
+        :type item:
+        :return:
+        :rtype:
+        """
+        if isinstance(item, tuple):
+            val = super().__getitem__(item[0])
+            for k in item[1:]:
+                val = val[k]
+        else:
+            val = super().__getitem__(item)
+        return val
     def load(self):
         # now update by max IsotopeFraction
         super().load()

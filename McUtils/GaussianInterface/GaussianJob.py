@@ -6,7 +6,10 @@ import os, numpy as np
 from collections import OrderedDict, namedtuple
 from ..Data import AtomData
 
-__all__ = [ "GaussianJob" ]
+__all__ = [
+    "GaussianJob",
+    "GaussianJobArray"
+]
 
 ####################################################################################################################
 #
@@ -85,7 +88,7 @@ class GaussianJob:
             system = None,
             job = None,
             config = None,
-            template = "Template.gjf",
+            template = "TemplateTerse.gjf",#"Template.gjf",
             file = None
             ):
 
@@ -125,6 +128,12 @@ class GaussianJob:
         self.temp = template
 
     def format(self):
+        """
+        Formats the job string
+
+        :return:
+        :rtype:
+        """
         temp = self.temp
         if not ('{header}' in temp and '{job}' in temp):
             if not os.path.isfile(temp):
@@ -139,6 +148,14 @@ class GaussianJob:
         )
 
     def write(self, file=None):
+        """
+        Writes the job to a file
+
+        :param file:
+        :type file:
+        :return:
+        :rtype:
+        """
         import tempfile as tf
 
         if file is None:
@@ -217,7 +234,7 @@ class GaussianJob:
         basis_set_keys = ["cc", "aug", "sto"] # common level-of-theory/basis set specs...
 
 
-        def __init__(self, job_type = None, basis_set = None, **kw):
+        def __init__(self, job_type=None, basis_set=None, **kw):
             for k in kw:
                 if job_type is None and k in self.job_types:
                     job_type = k
@@ -233,7 +250,6 @@ class GaussianJob:
             self.job_type = self.job_types[job_type]
 
             if self.job_type != job_type and job_type in kw:  # this is what I get for allowing things like ReactionPath -_-
-
                 jtv = kw[job_type]
                 del kw[job_type]
                 kw[self.job_type] = jtv
@@ -259,6 +275,30 @@ class GaussianJob:
 
     class Config(OrderedDict):
         """Inner class for handling the main config options"""
+        def __init__(self,
+                     *args,
+                     Mem=None,
+                     NProc=None,
+                     Chk=None,
+                     **kwargs
+                     ):
+            """
+            Transparent wrapper to super().__init__ that
+            just provides the ability to get autocompletion
+            """
+            if len(args) > 0:
+                raise GaussianJobException("{} doesn't support positional args".format(
+                    type(self).__name__
+                ))
+            for k,v in (
+                    ('Mem', Mem),
+                    ('NProc', NProc),
+                    ('Chk', Chk),
+            ):
+                if v is not None:
+                    kwargs[k] = v
+            super().__init__(kwargs)
+
         def format(self):
             """Returns a formatted version of the job setup
 
@@ -302,25 +342,87 @@ class GaussianJob:
             else:
                 blocks.extend(self.format_const_vars(vars))
             return "\n".join(blocks)
-        def format_charges(self):
+
+        charge_templates = {
+            'integer': '{:<3.0f}',
+            'charge_template': '{integer} {integer}'
+        }
+        def format_charges(self, templates=None):
+            """
+            Formats charge block
+
+            :return:
+            :rtype:
+            """
+
             try:
                 c, mult = self.charge
             except TypeError:
                 c = self.charge
                 mult = 1
-            return "{} {}".format(c, mult)
-        def format_bonds(self):
+
+            if templates is None:
+                templates = {}
+            templates = dict(self.charge_templates, **templates)
+            charge_template = templates['charge_template'].format(**templates)
+
+            return charge_template.format(c, mult)
+
+        bond_templates = {
+            'integer':'{:<5.0f}',
+            'bond_template': ' {integer} {integer} {integer}'
+        }
+        def format_bonds(self, templates=None):
+            """
+            Formats the bonds held in the job spec
+            so that they are appropriate for the bottom of the Gaussian
+            job spec
+
+            :param templates:
+            :type templates:
+            :return:
+            :rtype:
+            """
             b = self.bonds
             if b is None:
                 return ""
-            bond_block = [ None ]*len(b)
+
+            if templates is None:
+                templates = {}
+            templates = dict(self.bond_templates, **templates)
+            bond_template = templates['bond_template'].format(**templates)
+
+            bond_block = [ '' ]*len(b)
             for i,bond in enumerate(b):
                 bond = bond if len(bond) > 2 else tuple(bond) + (1,)
-                bond_block[i] = " {:d<5} {:d<5} {:d<5}".format(*bond)
+                bond_block[i] = bond_template.format(*bond)
             return "\n".join(bond_block)
 
-        @staticmethod
-        def format_opt_vars(vars):
+        opt_variable_templates = {
+            'name':'{:>8}',
+            'real':'{:>12.8f}',
+            'integer':'{:<5.0f}',
+            'value_template':'  {name} = {real}',
+            'scan_template':'  {name} = {real} s {integer} {real}',
+            'constant_template':'  {name} = {real} f'
+        }
+        @classmethod
+        def format_opt_vars(cls, vars, templates=None):
+            """
+            Formats variable definitions for Gaussian optimization jobs
+
+            :param vars:
+            :type vars:
+            :return:
+            :rtype:
+            """
+            if templates is None:
+                templates = {}
+            templates = dict(cls.opt_variable_templates, **templates)
+            val_temp = templates['value_template'].format(**templates)
+            scan_temp = templates['scan_template'].format(**templates)
+            const_temp = templates['constant_template'].format(**templates)
+
             variables = vars["vars"]
             if len(variables) > 0:
                 variables_blocks = [" Variables:"]
@@ -328,25 +430,46 @@ class GaussianJob:
                 variables_blocks = []
             for k,c in variables.items():
                 if c[1] is None:
-                    variables_blocks.append("  {:>6} = {:>12.6f}".format(k, c[0]))
+                    variables_blocks.append(val_temp.format(k, c[0]))
                 else:
-                    variables_blocks.append("  {:>6} = {:>12.6f} s {:<5.0f} {:>12.6f}".format(k, *c))
+                    variables_blocks.append(scan_temp.format(k, *c))
 
             consts = vars["consts"]
             for k,c in consts.items():
-                variables_blocks.append("  {:>6} = {:>12.6f} f".format(k, c))
+                variables_blocks.append(const_temp.format(k, c))
 
             return variables_blocks
 
-        @staticmethod
-        def format_scan_vars(vars):
+        scan_variable_templates = {
+            'name': '{:>8}',
+            'real': '{:>12.8f}',
+            'integer': '{:<5.0f}',
+            'scan_template': '  {name} = {real} {integer} {real}',
+            'constant_template': '  {name} = {real} {integer} {real}'
+        }
+        @classmethod
+        def format_scan_vars(cls, vars, templates=None):
+            """
+            Formats variable definitions for Gaussian scan jobs
+
+            :param vars:
+            :type vars:
+            :return:
+            :rtype:
+            """
+            if templates is None:
+                templates = {}
+            templates = dict(cls.scan_variable_templates, **templates)
+            scan_temp = templates['scan_template'].format(**templates)
+            const_temp = templates['constant_template'].format(**templates)
+
             variables = vars["vars"]
             if len(variables) > 0:
                 variables_blocks = [" Variables:"]
             else:
                 variables_blocks = []
             for k,c in variables.items():
-                variables_blocks.append("  {:>6} = {:>12.6f} {:<5.0f} {:>12.6f}".format(k, *c))
+                variables_blocks.append(scan_temp.format(k, *c))
 
             consts = vars["consts"]
             if len(consts) > 0:
@@ -354,12 +477,31 @@ class GaussianJob:
             else:
                 constants_blocks = []
             for k,c in consts.items():
-                constants_blocks.append("  {:>8} = {:>12.8f} {:<5.0f} {:>12.8f}".format(k, c, 0, 0))
+                constants_blocks.append(const_temp.format(k, c, 0, 0))
 
             return variables_blocks + constants_blocks
 
-        @staticmethod
-        def format_const_vars(vars):
+        sp_variable_templates = {
+            'name': '{:>8}',
+            'real': '{:>12.8f}',
+            'constant_template': '  {name} = {real}'
+        }
+        @classmethod
+        def format_const_vars(cls, vars, templates=None):
+            """
+            Formats constant block for Gaussian single point jobs
+
+            :param vars:
+            :type vars:
+            :return:
+            :rtype:
+            """
+
+            if templates is None:
+                templates = {}
+            templates = dict(cls.sp_variable_templates, **templates)
+            const_temp = templates['constant_template'].format(**templates)
+
             variables = vars["vars"]
             consts = vars["consts"]
             if len(consts) + len(variables) > 0:
@@ -367,13 +509,21 @@ class GaussianJob:
             else:
                 constants_blocks = []
             for k,c in variables.items():
-                constants_blocks.append("  {:>6} = {:f}".format(k, *c))
+                constants_blocks.append(const_temp.format(k, *c))
             for k,c in consts.items():
-                constants_blocks.append("  {:>6} = {:f}".format(k, c))
+                constants_blocks.append(const_temp.format(k, c))
             return constants_blocks
 
         @staticmethod
         def get_coord_type(crds):
+            """
+            Tries to infer coordinates type
+
+            :param crds:
+            :type crds:
+            :return:
+            :rtype:
+            """
             crd_type = None
             try:
                 csys = crds.system # try to pull the coordinate system directly off the coordinates
@@ -393,10 +543,10 @@ class GaussianJob:
                     crd_type = "zmatspec"
             else:
                 try:
-                    from Coordinerds.CoordinateSystems import ZMatrixCoordinates, CartesianCoordinates3D
-                    if isinstance(csys, ZMatrixCoordinates):
+                    from ..Coordinerds import ZMatrixCoordinateSystem, CartesianCoordinateSystem
+                    if isinstance(csys, ZMatrixCoordinateSystem):
                         crd_type = "zmat"
-                    elif isinstance(csys, CartesianCoordinates3D):
+                    elif isinstance(csys, CartesianCoordinateSystem):
                         crd_type = "cart"
                 except ImportError:
                     name = crd_type.__name__
@@ -408,6 +558,15 @@ class GaussianJob:
             return crd_type
 
         def prep_vars(self, *vars):
+            """
+            Prepares variable specifications so that they
+            can be nicely fed into the various formatters
+
+            :param vars:
+            :type vars:
+            :return:
+            :rtype:
+            """
             var_map = { # to map variables to coordinates
                 "vars"  : OrderedDict(),
                 "consts": OrderedDict()
@@ -444,6 +603,15 @@ class GaussianJob:
             return var_map
 
         def prep_mol(self, mol):
+            """
+            Prepares the atom for formatting, in particular
+            making sure isotopic stuff is clean
+
+            :param mol:
+            :type mol:
+            :return:
+            :rtype:
+            """
             try:
                 ats = mol["atoms"],
                 crds = mol["coords"]
@@ -454,13 +622,13 @@ class GaussianJob:
                     ats = mol.atoms
                     crds = mol.crds
 
-            atoms = [None]*len(ats)
+            atoms = ['']*len(ats)
             for i, a in enumerate(ats):
                 main = AtomData[a, "PrimaryIsotope"]
                 if main:
-                    atoms[i] = AtomData[a, "Symbol"]
+                    atoms[i] = AtomData[a]["Symbol"]
                 else:
-                    atoms[i] = "{}(Iso={})".format(AtomData[a, "ElementSymbol"], AtomData[a, "MassNumber"])
+                    atoms[i] = "{}(Iso={})".format(AtomData[a]["ElementSymbol"], AtomData[a]["MassNumber"])
 
             # get molspec blocks based on type of coordinates that were fed in
             crd_type = self.get_coord_type(crds)
@@ -537,3 +705,44 @@ class GaussianJob:
         Variable = namedtuple("Variable", ["name", "start", "num", "step"])
         Variable.__new__.__defaults__ = (None,) * 4 # start and name really shouldn't take defaults but w/e
         Constant = namedtuple("Constant", ["name", "value"])
+
+class GaussianJobArray:
+    """
+    Represents a linked set of Gaussian jobs
+    """
+    def __init__(self, jobs, link="--Link1--"):
+        """
+        :param jobs:
+        :type jobs: Iterable[GaussianJob]
+        :param link: link command (defaults to just `--Link1--`)
+        :type link: str
+        """
+        self.jobs = tuple(jobs)
+        self.link_cmd = link
+
+    def format(self):
+        """
+        Formats a linked Gaussian job
+
+        :return:
+        :rtype:
+        """
+        linker="\n{}\n".format(self.link_cmd)
+        return linker.join(
+            j.format() for j in self.jobs
+        )
+
+    def write(self, file):
+        """
+        Writes a linked Gaussian job to file
+
+        :param file:
+        :type file:
+        :return:
+        :rtype:
+        """
+
+        with open(file, 'w+') as gjf:
+            gjf.write(self.format())
+
+        return file

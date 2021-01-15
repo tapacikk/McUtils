@@ -680,6 +680,9 @@ class Graphics(GraphicsBase):
 #
 class Graphics3D(Graphics):
     """Extends the standard matplotlib 3D plotting to use all the Graphics extensions"""
+
+    opt_keys = GraphicsBase.opt_keys & {'view_settings'}
+
     def __init__(self, *args,
                  figure=None,
                  axes=None,
@@ -695,6 +698,7 @@ class Graphics3D(Graphics):
                  ticks_style=None,
                  image_size=None,
                  background=None,
+                 view_settings=None,
                  backend=Backends.MPL,
                  **kwargs
                  ):
@@ -715,9 +719,25 @@ class Graphics3D(Graphics):
             image_size=image_size,
             event_handlers=event_handlers,
             animate=animate,
+            view_settings=view_settings,
             prop_manager=GraphicsPropertyManager3D,
             **kwargs
         )
+
+    def set_options(self,
+                    view_settings=None,
+                    **parent_opts
+                    ):
+
+        super().set_options(**parent_opts)
+
+        opts = (
+            ('view_settings', view_settings),
+        )
+        for oname, oval in opts:
+            oval = self._get_def_opt(oname, oval)
+            if oval is not None:
+                setattr(self, oname, oval)
 
     @staticmethod
     def _subplot_init(*args, backend = Backends.MPL, mpl_backend=None, **kw):
@@ -862,6 +882,23 @@ class Graphics3D(Graphics):
     @property
     def ticks(self):
         return self._ticks
+    @ticks.setter
+    def ticks(self, value):
+        self._prop_manager.ticks = value
+
+    @property
+    def box_ratios(self):
+        return self._prop_manager.box_ratios
+    @box_ratios.setter
+    def box_ratios(self, value):
+        self._prop_manager.box_ratios = value
+
+    @property
+    def view_settings(self):
+        return self._prop_manager.view_settings
+    @view_settings.setter
+    def view_settings(self, value):
+        self._prop_manager.view_settings = value
 
     @property
     def aspect_ratio(self):
