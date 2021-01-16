@@ -10,7 +10,7 @@ System: type
 ```
 <a id="McUtils.GaussianInterface.GaussianJob.GaussianJob.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, name, *args, description=None, system=None, job=None, config=None, template='TemplateTerse.gjf', file=None): 
+__init__(self, name, *args, description=None, system=None, job=None, config=None, template='TemplateTerse.gjf', footer=None, file=None): 
 ```
 
 <a id="McUtils.GaussianInterface.GaussianJob.GaussianJob.format" class="docs-object-method">&nbsp;</a>
