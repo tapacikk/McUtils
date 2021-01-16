@@ -159,8 +159,7 @@ class Job:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._init_dir = os.getcwd()
-        os.chdir(self.dir)
+        os.chdir(self._init_dir)
         end = time.time()
         self.checkpoint['runtime'] = end - self.start
         self.checkpoint.__exit__(exc_type, exc_val, exc_tb)
@@ -172,7 +171,10 @@ class JobManager(PersistenceManager):
     A class to manage job instances.
     Thin layer on a `PersistenceManager`
     """
-    def __init__(self, job_dir, job_type=Job):
+    default_job_type=Job
+    def __init__(self, job_dir, job_type=None):
+        if job_type is None:
+            job_type = self.default_job_type
         super().__init__(job_type, persistence_loc=job_dir)
 
     def job(self, name, timestamp=False, **kw):
@@ -194,3 +196,39 @@ class JobManager(PersistenceManager):
         if timestamp:
             name += "_" + datetime.datetime.now().isoformat()
         return self.load(name, make_new=True, init=kw)
+
+    @classmethod
+    def job_from_folder(cls, folder, job_type=None, make_config=True):
+        """
+        A special case convenience function that goes
+        directly to starting a job from a folder
+
+        :return:
+        :rtype:
+        """
+
+        if make_config:
+            test_file = os.path.join(folder, "config.json")
+            if not os.path.exists(test_file):
+                import json
+                with open(test_file, "w+") as dump:
+                    json.dump({}, dump)
+        jm = cls(os.path.dirname(folder), job_type=job_type)
+        return jm.job(folder)
+
+    @classmethod
+    def current_job(cls, job_type=None, make_config=True):
+        """
+        A special case convenience function that starts a
+        JobManager one directory up from the current
+        working directory and intializes a job from the
+        current working directory
+
+        :return:
+        :rtype:
+        """
+
+        return cls.job_from_folder(os.getcwd(), job_type=job_type, make_config=make_config)
+
+
+
