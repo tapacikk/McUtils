@@ -114,7 +114,11 @@ class SBatchJob:
         opts = self.format_opt_block()
         enter = self.sbatch_enter_command
         if self.description is not None:
-            enter += '\necho "' + inspect.cleandoc(self.description).replace("\n", '"\necho "') + '"'
+            enter += (
+                    '\necho "'
+                    + inspect.cleandoc(self.description).replace("\n", '"\necho "')
+                    + '"\necho\n\n'
+            )
         exit = self.sbatch_exit_command
 
         call = "\n".join(self.steps)

@@ -178,6 +178,7 @@ class JobManager(PersistenceManager):
     def job(self, name, timestamp=False, **kw):
         """
         Returns a loaded or new job with the given name and settings
+
         :param name:
         :type name: str
         :param timestamp:
