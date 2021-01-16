@@ -7,6 +7,7 @@ options for different HPC paritions and whatnot.
 ### Properties and Methods
 ```python
 slurm_keys: list
+default_opts: dict
 sbatch_opt_template: str
 sbatch_template: str
 sbatch_enter_command: str
