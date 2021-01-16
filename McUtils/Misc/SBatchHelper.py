@@ -51,7 +51,7 @@ class SBatchJob:
             chdir=chdir
         )
         base_opts = self.clean_opts(base_opts)
-        base_opts = dict(base_opts, **self.default_opts)
+        base_opts = dict(self.default_opts, **base_opts)
 
         opts = dict(opts, **base_opts)
         self.opts = self.clean_opts(opts)
