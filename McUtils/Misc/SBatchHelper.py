@@ -90,7 +90,7 @@ class SBatchJob:
     sbatch_enter_command="\n".join([
         'echo "Starting Job $SLURM_JOB_NAME"',
         'START=$(date +%s.%N)',
-        'echo "  START: $START"',
+        'echo "  START: $(date)"',
         'echo "    PWD: $PWD"',
         'echo "  NODES: $SLURM_JOB_NUM_NODES"',
         'echo "  PART.: $SLURM_JOB_PARTITION"',
@@ -100,7 +100,7 @@ class SBatchJob:
         'echo "{sep}"'.format(sep="=" * 50),
         'END=$(date +%s.%N)',
         'DIFF=$(echo "$END - $START" | bc)',
-        'echo "   END: $END"',
+        'echo "   END: $(date)"',
         'echo "  TIME: $DIFF"'
     ])
     def format(self):
