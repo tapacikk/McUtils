@@ -2,7 +2,7 @@
 Defines a symbolic representation of a Gaussian job for batch generation
 """
 
-import os, numpy as np
+import os, numpy as np, inspect
 from collections import OrderedDict, namedtuple
 from ..Data import AtomData
 
@@ -89,6 +89,7 @@ class GaussianJob:
             job = None,
             config = None,
             template = "TemplateTerse.gjf",#"Template.gjf",
+            footer=None,
             file = None
             ):
 
@@ -127,6 +128,10 @@ class GaussianJob:
         self.file = file
         self.temp = template
 
+        if footer is None:
+            footer = ""
+        self.footer = footer
+
     def format(self):
         """
         Formats the job string
@@ -144,7 +149,8 @@ class GaussianJob:
             header = self.config.format(),
             description = self.desc,
             job = self.job.format(),
-            system = self.system.format(job_type = self.job.job_type)
+            system = self.system.format(job_type = self.job.job_type),
+            footer = inspect.cleandoc(self.footer)
         )
 
     def write(self, file=None):

@@ -40,10 +40,17 @@ class GaussianJobTests(TestCase):
                     GaussianJob.System.Variable("y1", 0., 10., .1),
                     GaussianJob.System.Constant("x1", 10)
                 ]
+            ),
 
-            )
+            footer="""
+                C,O,H, 0
+                6-31G(d,p)
+
+                Rh 0
+                lanl2dz
+                """
         )
-        # print(job.write(), file=sys.stderr)
+        # print(job.format())
         self.assertIsInstance(job.format(), str)
 
     @validationTest
@@ -93,7 +100,14 @@ class GaussianJobTests(TestCase):
                         ["O", "H", "H"],
                         struct + np.tensordot(d, oh_modes, axes=[0, 0])
                     ]
-                )
+                ),
+                footer="""
+                        C,O,H, 0
+                        6-31G(d,p)
+                        
+                        Rh 0
+                        lanl2dz
+                        """
             )
             for i, d in enumerate(displacements)
         )
