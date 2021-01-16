@@ -32,6 +32,9 @@ class SBatchJob:
         "threads-per-core", "time", "time-min", "tmp", "uid", "usage", "use-min-nodes",
         "verbose", "version", "wait", "wait-all-nodes", "wckey", "wrap"
     ]
+    default_opts = {
+        'chdir': "."
+    }
     def __init__(self,
                  description=None,
                  job_name=None, account=None, partition=None,
