@@ -44,11 +44,15 @@ class SBatchJob:
                  ):
         self.description=description
         self.steps=steps
-        opts = dict(
-            opts,
+        base_opts = dict(
+            self.default_opts,
             job_name=job_name, account=account, partition=partition,
             mem=mem, nodes=nodes, ntasks_per_node=ntasks_per_node,
-            chdir=chdir,
+            chdir=chdir
+        )
+        opts = dict(
+            opts,
+            **base_opts
         )
         self.opts = self.clean_opts(opts)
 
