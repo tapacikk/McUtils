@@ -20,8 +20,8 @@ class SBatchHelperTests(TestCase):
             mem='120GB',
             steps=[
                 "echo 'yay'",
-                "sleep 25"
-                "echo 'yayayayyasd'",
+                "sleep 25s",
+                "echo 'yayayayyasd'"
             ]
         ).format()
 

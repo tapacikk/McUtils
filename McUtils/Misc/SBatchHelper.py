@@ -88,9 +88,8 @@ class SBatchJob:
 
     sbatch_template="#!/bin/bash\n{opts}\n\n{enter}\n{call}\n{exit}"
     sbatch_enter_command="\n".join([
-
         'echo "Starting Job $SLURM_JOB_NAME"',
-        'START=$(date +%s.%N)'
+        'START=$(date +%s.%N)',
         'echo "  START: $START"',
         'echo "    PWD: $PWD"',
         'echo "  NODES: $SLURM_JOB_NUM_NODES"',
