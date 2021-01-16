@@ -164,8 +164,11 @@ class Config:
 
     def load_opts(self):
         if not self._loaded:
+            cfg = self.config
+            if cfg is None:
+                raise ValueError("can't load config from None")
             self._conf = self.load()
-            self._conf['config_location'] = os.path.dirname(self.config)
+            self._conf['config_location'] = os.path.dirname(cfg)
 
     def get_conf_attr(self, item):
         if not self._loaded:

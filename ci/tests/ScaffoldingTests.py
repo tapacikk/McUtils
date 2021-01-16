@@ -382,4 +382,24 @@ class ScaffoldingTests(TestCase):
                 doop_str = doopy.read()
                 self.assertNotEqual("", doop_str)
 
+    @debugTest
+    def test_CurrentJob(self):
+
+        import time
+
+
+        with tmpf.TemporaryDirectory() as temp_dir:
+            jobby = JobManager.job_from_folder(temp_dir)
+            with jobby as job:
+                logger = job.logger
+
+                with logger.block(tag="Sleeping"):
+                    logger.log_print("Goodnight!")
+                    time.sleep(.2)
+                    logger.log_print("Okee I'm back up")
+
+            with open(job.logger.log_file) as doopy:
+                doop_str = doopy.read()
+                self.assertNotEqual("", doop_str)
+
 
