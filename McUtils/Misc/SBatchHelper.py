@@ -69,10 +69,10 @@ class SBatchJob:
         clean_opts = {}
         for opt_name, opt_val in opts.items():
             opt_name = opt_name.replace("_", "-")
-            # if opt_val is not None:
-            if opt_name not in self.slurm_keys:
-                raise ValueError("SBATCH option {} invalid; accepted ones are {}".format(opt_name, self.slurm_keys))
-            clean_opts[opt_name] = opt_val
+            if opt_val is not None:
+                if opt_name not in self.slurm_keys:
+                    raise ValueError("SBATCH option {} invalid; accepted ones are {}".format(opt_name, self.slurm_keys))
+                clean_opts[opt_name] = opt_val
         return clean_opts
 
     sbatch_opt_template="#SBATCH --{name}={value}"
