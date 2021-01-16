@@ -623,11 +623,20 @@ class SendRecieveParallelizer(Parallelizer):
             nlocs = len(locs) # we reserve space for the main thread
             recv = [None] * nlocs
             recv[0] = data
+            all_numpy = True
             for n, i in enumerate(locs[1:]):
                 res = self.comm.receive(data, i, **kwargs)
+                if not isinstance(res, np.ndarray):
+                    all_numpy=False
                 if isinstance(res, Exception):
                     raise res
                 recv[n+1] = res
+            if all_numpy:
+                # special case
+                try:
+                    recv = np.concatenate(recv, axis=0)
+                except:
+                    pass
             return recv
         else:
             return self.comm.receive(data, self.comm.location, **kwargs) # effectively a send...
