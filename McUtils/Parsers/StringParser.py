@@ -8,6 +8,8 @@ __all__ = [
     "StringParserException"
 ]
 
+__reload_hook__ = ['.RegexPatterns']
+
 ########################################################################################################################
 #
 #                                           StringParser
@@ -244,10 +246,16 @@ class StringParser:
 
         # if we're given a non-string regex we compile it
         base_regex = regex
+        # print(">>>>>>>>>", type(regex.compiled))
         if isinstance(regex, RegexPattern):
+            # print("...wat?", type(regex.compiled))
             regex = regex.compiled
 
-        match_iter = re.finditer(regex, txt)
+        try:
+            match_iter = re.finditer(regex, txt)
+        except:
+
+            raise Exception(type(regex), type(regex.compiled))
         if num_results is not None:
             import itertools as it
             matches = list(it.islice(match_iter, None, num_results))
