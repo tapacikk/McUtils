@@ -32,10 +32,12 @@ Returns module members
 
 <a id="McUtils.Misc.InteractiveTools.ModuleReloader.reload" class="docs-object-method">&nbsp;</a>
 ```python
-reload(self, reloaded=None, blacklist=None, reload_parents=True): 
+reload(self, stack=None, reloaded=None, blacklist=None, reload_parents=True, verbose=False, print_indent=''): 
 ```
 Recursively searches for modules to reload and then reloads them.
-        Uses a cache to break cyclic dependencies of any sort
+        Uses a cache to break cyclic dependencies of any sort.
+        This turns out to also be a challenging problem, since we need to basically
+        load depth-first, while never jumping too far back...
 - `:returns`: `_`
     >No description...
 

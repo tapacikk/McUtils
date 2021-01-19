@@ -198,6 +198,7 @@ Combines self and other
 ```python
 wrap(self, *args, **kwargs): 
 ```
+Applies wrapper function
 
 <a id="McUtils.Parsers.RegexPatterns.RegexPattern.build" class="docs-object-method">&nbsp;</a>
 ```python
