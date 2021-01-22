@@ -3,10 +3,11 @@ Provides scaffolding for creating serializers that dump data to a reloadable for
 Light-weight and unsophisticated, but that's what makes this useful..
 """
 
-import abc, numpy as np, json, io
+import abc, numpy as np, json, io, pickle, importlib, types, base64
 from collections import OrderedDict
 
 __all__= [
+    "PseudoPickler",
     "BaseSerializer",
     "JSONSerializer",
     "NumPySerializer",
@@ -15,6 +16,196 @@ __all__= [
     "ModuleSerializer"
 ]
 
+class PseudoPickler:
+    """
+    A simple plugin to work _like_ pickle, in that it should
+    hopefully support serializing arbitrary python objects, but which
+    doesn't attempt to put stuff down to a single `bytearray`, instead
+    supporting objects with `to_state` and `from_state` methods by converting
+    them to more primitive serializble types like arrays, strings, numbers,
+    etc.
+    Falls back to naive pickling when necessary.
+    """
+
+    _cache = None
+    def __init__(self,
+                 allow_pickle=True,
+                 protocol=1,
+                 b64encode=False
+                 ):
+        self.allow_pickle=allow_pickle
+        self.protocol=protocol
+        self.b64encode=b64encode
+
+    _primitive_types = (int, float, bool, str, np.integer, np.floating, np.bool)
+    _list_types = (tuple, list)
+    _dict_types = (dict, OrderedDict)
+    _importable_types = (type, types.MethodType, types.ModuleType)
+    def _to_state(self, obj, cache):
+        """
+        Tries to extract state for `obj` by walking through the
+        object dict
+
+        :param obj:
+        :type obj:
+        :param cache: cache of written objects to prevent cycles
+        :type cache: set
+        :return:
+        :rtype:
+        """
+
+        if obj is None:
+            return None
+        elif isinstance(obj, self._primitive_types):
+            return obj
+        elif isinstance(obj, np.ndarray):
+            if obj.dtype == np.dtype(object):
+                raise ValueError("don't support arbitrary object NumPy data yet")
+            else:
+                return obj
+        elif isinstance(obj, self._list_types):
+            return type(obj)(self.serialize(v, cache) for v in obj)
+        elif isinstance(obj, self._dict_types):
+            return type(obj)((k, self.serialize(v, cache)) for k,v in obj.items())
+        elif isinstance(obj, self._importable_types):
+            return self._to_importable_state(obj)
+        else:
+
+            objid = id(obj)
+            if objid in cache:
+                raise ValueError("multiple references to single object not allowed ({} already written)".format(obj))
+            cache.add(id(obj))
+            try:
+                odict = dict(obj.__dict__)
+            except AttributeError:
+                raise Exception(obj)
+
+            return self.serialize(odict, cache=cache)
+
+    def _to_importable_state(self, obj):
+        dump = pickle.dumps(obj)
+        if self.b64encode:
+            dump = base64.b64encode(dump).decode('ascii')
+        return {
+            "pseudopickle_protocol": self.protocol,
+            "pickle_data": dump
+        }
+
+    def to_state(self, obj, cache=None):
+        """
+        Tries to extract state from `obj`, first through its `to_state`
+        interface, but that failing by recursively walking the object
+        tree
+
+        :param obj:
+        :type obj:
+        :return:
+        :rtype:
+        """
+
+        if hasattr(obj, 'to_state'):
+            try:
+                return obj.to_state(serializer=self)
+            except TypeError: # usually mean we're pickling the class
+                pass
+        try:
+            return self._to_state(obj, cache)
+        except ValueError:
+            if self.allow_pickle:
+                dump = pickle.dumps(obj)
+                if self.b64encode:
+                    dump = base64.b64encode(dump).decode('ascii')
+                return {
+                    "pseudopickle_protocol": self.protocol,
+                    "pickle_data": dump
+                }
+            else:
+                raise
+
+    def serialize(self, obj, cache=None):
+        """
+        Serializes an object first by checking for a `to_state`
+        method, and that missing, by converting to primitive-ish types
+        in a recursive strategy if the object passes `is_simple`, otherwise
+        falling back to `pickle`
+
+        :param obj: object to be serialized
+        :type obj:
+        :return: spec for the pseudo-pickled data
+        :rtype: dict
+        """
+        reset_cache = False
+        if cache is None:
+            if self._cache is None:
+                reset_cache = True
+                cache = set()
+                type(self)._cache = cache
+            else:
+                cache = self._cache
+        state = self.to_state(obj, cache=cache)
+        if isinstance(obj, self._primitive_types + self._list_types + self._dict_types + self._importable_types):
+            return state
+
+        state = {
+            "pseudopickle_protocol": self.protocol,
+            "class": self.to_state(type(obj)),
+            "state": state
+        }
+
+        if reset_cache:
+            type(self)._cache = None
+
+        return state
+
+    # def _from_qualname(self, spec):
+    #     woof = importlib.import_module(spec['module_name'])
+    #     subnames = spec['qual_name'].split('.')
+    #     for a in subnames:
+    #         woof = getattr(woof, a)
+    #     return woof
+
+    def deserialize(self, spec):
+        """
+        Deserializes from an object spec, dispatching
+        to regular pickle where necessary
+
+        :param object:
+        :type object:
+        :return:
+        :rtype:
+        """
+
+        if isinstance(spec, dict) and 'pseudopickle_protocol' in spec:
+            if 'class' in spec:
+                cls = self.deserialize(spec['class'])
+                if hasattr(cls, 'from_state'):
+                    return cls.from_state(spec['state'], serializer=self)
+                else:
+                    return {"class": cls, "state": spec['state']}
+            elif 'pickle_data' in spec:
+                byte_stream = spec['pickle_data']
+                if not isinstance(byte_stream, bytes):
+                    if isinstance(byte_stream, np.ndarray):
+                        byte_stream = byte_stream.tolist()
+                        # corner case that I don't think should ever happen in the
+                        # use cases I've worked with...
+                        if isinstance(byte_stream, list):
+                            byte_stream = bytes(byte_stream)
+                    if isinstance(byte_stream, str):
+                        byte_stream = byte_stream.encode('ascii')
+                    byte_stream = base64.b64decode(byte_stream)
+                return pickle.loads(byte_stream)
+            else:
+                raise NotImplementedError("don't know how to pseudo-unpickle from {}".format(spec))
+        elif spec is None or isinstance(spec, self._primitive_types):
+            return spec
+        elif isinstance(spec, self._list_types):
+            return type(spec)(self.deserialize(v) for v in spec)
+        elif isinstance(spec, self._dict_types):
+            return type(spec)((k, self.deserialize(v)) for k,v in spec.items())
+        else:
+            return spec
+
 class ConvertedData:
     """
     Wrapper class for holding serialized data so we can be sure it's clean
@@ -22,6 +213,7 @@ class ConvertedData:
     def __init__(self, data, serializer):
         self.data = data
         self.serializer = serializer
+
 class BaseSerializer(metaclass=abc.ABCMeta):
     """
     Serializer base class to define the interface
@@ -74,23 +266,41 @@ class JSONSerializer(BaseSerializer):
     A serializer that makes dumping data to JSON simpler
     """
     class BaseEncoder(json.JSONEncoder):
+        def __init__(self, *args, pseudopickler=None, allow_pickle=True, **kwargs):
+            super().__init__(*args, **kwargs)
+            if pseudopickler is None:
+                pseudopickler = PseudoPickler(b64encode=True)
+            self.allow_pickle=allow_pickle
+            self.pickler = pseudopickler
         def default(self, obj):
             if isinstance(obj, np.ndarray):
                 return obj.tolist()
             else:
-                return json.JSONEncoder.default(self, obj)
-    def __init__(self, encoder=None):
+                if self.allow_pickle:
+                    try:
+                        stream = json.JSONEncoder.default(self, obj)
+                    except TypeError:
+                        stream = self.pickler.serialize(obj)
+
+                    return stream
+                else:
+                    return json.JSONEncoder.default(self, obj)
+
+    def __init__(self, encoder=None, allow_pickle=True, pseudopickler=None):
+        if pseudopickler is None:
+            pseudopickler = PseudoPickler(b64encode=True)
+        self.pseudopickler = pseudopickler
+        self.allow_pickle = allow_pickle
         if encoder is None:
-            self.encoder = self.BaseEncoder()
+            self.encoder = self.BaseEncoder(pseudopickler=pseudopickler, allow_pickle=allow_pickle)
     def convert(self, data):
         return ConvertedData(self.encoder.encode(data), self)
     def deconvert(self, data):
         return data
     def serialize(self, file, data, **kwargs):
-        if isinstance(data, ConvertedData):
-            file.write(data.data)
-        else:
-            json.dump(data, file, cls=self.BaseEncoder, **kwargs)
+        if not isinstance(data, ConvertedData):
+            data = self.convert(data)
+        file.write(data.data)
     def deserialize(self, file, key=None, **kwargs):
         dat = json.load(file)
         dat = self.deconvert(dat)
@@ -100,13 +310,19 @@ class JSONSerializer(BaseSerializer):
                 for k in key:
                     dat = dat[k]
             else:
-                return dat[key]
-        else:
-            return dat
+                dat = dat[key]
+
+        if self.allow_pickle:
+            dat = self.pseudopickler.deserialize(dat)
+
+
+        return dat
 
 class YAMLSerializer(BaseSerializer):
     """
-    A serializer that makes dumping data to JSON simpler
+    A serializer that makes dumping data to YAML simpler.
+    Doesn't support arbitrary python objects since that hasn't seemed like
+    a huge need yet...
     """
     def __init__(self):
         # just checks that we do really have YAML support...
@@ -138,16 +354,20 @@ class YAMLSerializer(BaseSerializer):
 class HDF5Serializer(BaseSerializer):
     """
     Defines a serializer that can prep/dump python data to HDF5.
-    To minimize complexity, we always use NumPy as an interface layer.
+    To minimize complexity, we always use NumPy & Pseudopickle as an interface layer.
     This restricts what we can serialize, but generally in insignificant ways.
     """
 
-    def __init__(self):
+    def __init__(self, allow_pickle=True, psuedopickler=None):
         import h5py as api
         self.api = api
+        self.allow_pickle = allow_pickle
+        if allow_pickle and psuedopickler is None:
+            psuedopickler = PseudoPickler(b64encode=True)
+        self.psuedopickler = psuedopickler
 
     # we define a converter layer that will coerce everything to NumPy arrays
-    atomic_types = (str, int, float)
+    atomic_types = (str, int, float, bool, np.floating, np.integer, np.bool)
     converter_dispatch = OrderedDict((
         ((np.ndarray,), lambda data, cls: data),
         ('asarray', lambda data, cls: data.asarray()),
@@ -160,21 +380,22 @@ class HDF5Serializer(BaseSerializer):
     def _literal_to_numpy(cls, data):
         return np.array([data]).reshape(())
 
-    @classmethod
-    def _dict_to_numpy(cls, data):
-        return {k:cls._convert(v) for k,v in data.items()}
+    def _dict_to_numpy(self, data):
+        return {k:self._convert(v) for k,v in data.items()}
 
-    @classmethod
-    def _iterable_to_numpy(cls, data):
+    def _iterable_to_numpy(self, data):
         arr = np.array(data)
         if arr.dtype == np.dtype(object):
             # map iterable into a stack of datasets :|
-            return dict({'_list_item_'+str(i):cls._convert(v) for i,v in enumerate(data)}, _list_numitems=cls._convert(len(data)))
+            return dict({'_list_item_'+str(i):self._convert(v) for i,v in enumerate(data)}, _list_numitems=self._convert(len(data)))
         else:
             return arr
 
-    @classmethod
-    def _convert(cls, data):
+    def _psuedo_pickle_to_numpy(self, data):
+        data = self.psuedopickler.serialize(data)
+        return self._convert(data, allow_pickle=False)
+
+    def _convert(self, data, allow_pickle=None):
         """
         Recursively loop through, test data, make sure HDF5 compatible
         :param data:
@@ -182,21 +403,33 @@ class HDF5Serializer(BaseSerializer):
         :return:
         :rtype:
         """
-        converter = None
-        for k, f in cls.converter_dispatch.items():
-            if isinstance(k, tuple):  # check if we're dispatching based on type
-                if isinstance(data, k):
-                    converter = f
-            elif isinstance(k, str):  # check if we're duck typing based on attributes
-                if hasattr(data, k):
-                    converter = f
-            elif k(data):  # assume dispatch key is a callable that tells us if data is compatible
-                converter = f
 
-        if converter is None:
-            raise TypeError("no registered converter to coerce {} into HDF5 compatible format".format(data))
+        if allow_pickle is None:
+            allow_pickle = self.allow_pickle
+        cur_pickle = self.allow_pickle
+        try:
+            self.allow_pickle = allow_pickle
+            converter = None
+            for k, f in self.converter_dispatch.items():
+                if isinstance(k, tuple):  # check if we're dispatching based on type
+                    if isinstance(data, k):
+                        converter = f
+                elif isinstance(k, str):  # check if we're duck typing based on attributes
+                    if hasattr(data, k):
+                        converter = f
+                elif k(data):  # assume dispatch key is a callable that tells us if data is compatible
+                    converter = f
 
-        return converter(data, cls)
+            if converter is None and allow_pickle:
+                converter = lambda x, s: s._psuedo_pickle_to_numpy(x)
+
+            if converter is None:
+                raise TypeError("no registered converter to coerce {} into HDF5 compatible format".format(data))
+
+            return converter(data, self)
+
+        finally:
+            self.allow_pickle = cur_pickle
 
     def convert(self, data):
         """
@@ -256,6 +489,7 @@ class HDF5Serializer(BaseSerializer):
                 self._write_dict(new_grp, v)
             else:
                 self._write_data(h5_obj, k, v)
+
     def serialize(self, file, data, **kwargs):
         if not isinstance(data, ConvertedData):
             data = self.convert(data)
@@ -290,6 +524,22 @@ class HDF5Serializer(BaseSerializer):
                 res = [ res['_list_item_' + str(i)] for i in range(n_items) ]
             elif list(res.keys()) == ['_data']: # special case for if we just saved a single array to file
                 res = res['_data']
+
+        # for primitive data...
+        if isinstance(res, np.ndarray) and res.shape == ():
+            dtype_name = str(res.dtype)
+            if '|S' in dtype_name:
+                # convert back from bytes to unicode...
+                try:
+                    res = res.astype(dtype=dtype_name.replace('|S', '<U'))
+                except:
+                    pass
+            res = res.tolist()
+
+
+        if self.allow_pickle:
+            res = self.psuedopickler.deserialize(res)
+
         return res
 
     def deserialize(self, file, key=None, **kwargs):

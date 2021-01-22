@@ -170,11 +170,17 @@ class GaussianFChkReader(FileStreamReader):
                 return None
             match = re.match(self.fchk_re, tag_line)
             if match is None:
-                raise GaussianFChkReaderException("{}.{}: line '{}' couldn't be read as a tag line".format(
-                    type(self).__name__,
-                    "get_next_block_params",
-                    tag_line
-                ))
+                with FileStreamCheckPoint(self):
+                    for i in range(4):
+                        prev_lines = self.rfind("\n")
+                        self.seek(prev_lines)
+                    lines = "".join(self.readline() for i in range(4))
+                    raise GaussianFChkReaderException("{}.{}: line '{}' couldn't be read as a tag line (in '{}')".format(
+                        type(self).__name__,
+                        "get_next_block_params",
+                        tag_line,
+                        lines
+                    ))
             jump = self.tell()
         self.seek(jump)
 
@@ -275,7 +281,26 @@ class GaussianFChkReader(FileStreamReader):
                 parse_results[tag] = self.get_block(**next_block)
         else:
             while len(keys_to_go)>0:
-                next_block = self.get_next_block_params()
+                # try to skip malformatted blocks...
+                try:
+                    next_block = self.get_next_block_params()
+                except GaussianFChkReaderException:
+                    fp = self.find("\n")
+                    if fp == -1:
+                        next_block = None
+                    else:
+                        next_block = ""
+                        self.seek(fp + 1)
+                    while next_block is not None and next_block == "":
+                        try:
+                            next_block = self.get_next_block_params()
+                        except GaussianFChkReaderException:
+                            fp = self.find("\n")
+                            if fp == -1:
+                                next_block = None
+                            else:
+                                self.seek(fp + 1)
+
                 if next_block is None:
                     raise GaussianFChkReaderException("{}.{}: couldn't find keys {}".format(
                         type(self).__name__,

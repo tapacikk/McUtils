@@ -51,10 +51,10 @@ class SearchStream(metaclass=abc.ABCMeta):
     def tell(self):
         raise NotImplementedError("SearchStream is a base class")
     @abc.abstractmethod
-    def find(self, tag):
+    def find(self, tag, start=None, end=None):
         raise NotImplementedError("SearchStream is a base class")
     @abc.abstractmethod
-    def rfind(self, tag):
+    def rfind(self, tag, start=None, end=None):
         raise NotImplementedError("SearchStream is a base class")
     @abc.abstractmethod
     def tag_size(self, tag):
@@ -100,12 +100,22 @@ class ByteSearchStream(SearchStream):
         if not isinstance(tag, bytes):
             tag = tag.encode(self._encoding)
         return tag
-    def find(self, tag):
+    def find(self, tag, start=None, end=None):
         enc_tag = self.encode_tag(tag)
-        return self._data.find(enc_tag)
-    def rfind(self, tag):
+        if start is None:
+            start = self.tell()
+        if end is None:
+            end = -1
+        arg_vec = [enc_tag, start, end]
+        return self._data.find(*arg_vec)
+    def rfind(self, tag, start=None, end=None):
         enc_tag = self.encode_tag(tag)
-        return self._data.rfind(enc_tag)
+        if start is None:
+            start = 0
+        if end is None:
+            end = self.tell()
+        arg_vec = [enc_tag, start, end]
+        return self._data.rfind(*arg_vec)
     def tag_size(self, tag):
         enc_tag = self.encode_tag(tag)
         return len(enc_tag)
@@ -142,12 +152,23 @@ class FileSearchStream(SearchStream):
         return self._stream.seek(*args, **kwargs)
     def tell(self):
         return self._stream.tell()
-    def find(self, tag):
+    def find(self, tag, start=None, end=None):
         enc_tag = tag.encode(self._encoding)
-        return self._stream.find(enc_tag)
-    def rfind(self, tag):
+        if start is None:
+            start = self.tell()
+        if end is None:
+            end = -1
+        arg_vec = [enc_tag, start, end]
+        return self._stream.find(*arg_vec)
+    def rfind(self, tag, start=None, end=None):
         enc_tag = tag.encode(self._encoding)
-        return self._stream.rfind(enc_tag)
+        if start is None:
+            start = 0
+        if end is None:
+            end = self.tell()
+        arg_vec = [enc_tag, start, end]
+
+        return self._stream.rfind(*arg_vec)
     def tag_size(self, tag):
         enc_tag = tag.encode(self._encoding)
         return len(enc_tag)
@@ -181,12 +202,21 @@ class StringSearchStream(SearchStream):
         return self._stream.seek(*args, **kwargs)
     def tell(self):
         return self._stream.tell()
-    def find(self, tag):
-        pos = self._stream.tell()
-        return self._data.find(tag, pos)
-    def rfind(self, tag):
-        pos = self._stream.tell()
-        return self._data.rfind(tag, pos)
+    def find(self, tag, start=None, end=None):
+        if start is None:
+            start = self.tell()
+        if end is None:
+            end = -1
+        arg_vec = [tag, start, end]
+
+        return self._data.find(*arg_vec)
+    def rfind(self, tag, start=None, end=None):
+        if start is None:
+            start = 0
+        if end is None:
+            end = self.tell()
+        arg_vec = [tag, start, end]
+        return self._data.rfind(*arg_vec)
     def tag_size(self, tag):
         return len(tag)
 
