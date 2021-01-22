@@ -5,6 +5,7 @@ Simple utilities that support constructing Regex patterns
 import re
 from collections import OrderedDict
 from .StructuredType import StructuredType, DisappearingType
+__reload_hook__ = [".StructuredType"]
 
 __all__ = [
     "RegexPattern",
@@ -140,7 +141,12 @@ class RegexPattern:
         self._parents = parents # we need this so we can propagate recompile calls all the way up
         self._joiner = joiner
         if join_function is None:
-            join_function = lambda j, k, no_capture=False: j.join(k)
+            def join_function(j, k, **ignore):
+                try:
+                    return j.join(k)
+                except TypeError:
+                    pass
+                raise ValueError("failed to join {} with {}".format(k, j))
         elif join_function == "safe":
             join_function = self._join_kids
         self._join_function = join_function # sometimes we might want to join the kids in a slightly different way...
@@ -410,13 +416,20 @@ class RegexPattern:
         if isinstance(self.pat, str) and isinstance(op, str):
             return self.pat + op
         elif isinstance(self.pat, str):
-            return lambda p, *arg, wrap = op, prefix = self.pat, a = args, kw = kwargs, **kwarg :prefix + wrap(p, *a, **kw)
+            def apply_op(p, *arg, wrap = op, prefix = self.pat, a = args, kw = kwargs, **kwarg):
+                return prefix + wrap(p, *a, **kw)
+            return apply_op
         elif isinstance(op, str):
             return self.pat(op, *args, **kwargs)
         else:
-            return lambda p, *arg, wrap = op, prewrap = self.pat, a = args, kw = kwargs, **kwarg: prewrap(wrap(p, *a, **kw))
+            def merge_ops(p, *arg, wrap = op, prewrap = self.pat, a = args, kw = kwargs, **kwarg):
+                return prewrap(wrap(p, *a, **kw))
+            return merge_ops
 
     def wrap(self, *args, **kwargs):
+        """
+        Applies wrapper function
+        """
         self._combine_args = args
         self._combine_kwargs = kwargs
         if self._wrapper_function is not None:
@@ -575,8 +588,10 @@ class RegexPattern:
         """
         if not isinstance(other, RegexPattern):
             other = RegexPattern(other)
+        def null_pat(p):
+            return p
         return type(self)(
-            lambda p: p,
+            null_pat,
             children = [self, other]
         )
     def __radd__(self, other):
@@ -589,8 +604,10 @@ class RegexPattern:
         """
         if not isinstance(other, RegexPattern):
             other = RegexPattern(other)
+        def null_pat(p):
+            return p
         return type(self)(
-            lambda p: p,
+            null_pat,
             children = [other, self]
         )
     def __call__(self, other,
@@ -659,7 +676,8 @@ class RegexPattern:
             if not isinstance(other, RegexPattern):
                 other = RegexPattern(other)
             new.add_child(other)
-
+        
+        # print(self._wrapper_function, args, kwargs)
         new.wrap(*args, **kwargs)
 
         return new
@@ -805,7 +823,8 @@ NonCapturing.__doc__ = """
     """
 
 op_p = optional # optional group
-opnb_p = lambda p, no_capture = False: r"(?:"+p+r")?" # optional non-binding group
+def opnb_p(p, no_capture=False):
+    return r"(?:"+p+r")?" # optional non-binding group
 Optional = RegexPattern(optional,
                         "Optional"
                         )
@@ -852,7 +871,7 @@ def wrap_name(self, n):
 Named = RegexPattern(
     named,
     "Named",
-    wrapper_function = lambda self, n: setattr(self, "key", n),
+    wrapper_function = wrap_name,
     capturing=True
 )
 Named.__name__ = "Named"

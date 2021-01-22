@@ -8,6 +8,7 @@ from .GaussianFChkComponents import FormattedCheckpointComponents, FormattedChec
 from ..Parsers import FileStreamReader, FileStreamCheckPoint, FileStreamReaderException
 
 __all__ = ["GaussianFChkReader", "GaussianLogReader"]
+__reload_hook__ = [ '.GaussianFChkComponents', ".GaussianLogComponents" ]
 
 ########################################################################################################################
 #
