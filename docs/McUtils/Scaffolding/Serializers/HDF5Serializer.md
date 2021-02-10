@@ -1,6 +1,6 @@
 ## <a id="McUtils.Scaffolding.Serializers.HDF5Serializer">HDF5Serializer</a>
 Defines a serializer that can prep/dump python data to HDF5.
-To minimize complexity, we always use NumPy as an interface layer.
+To minimize complexity, we always use NumPy & Pseudopickle as an interface layer.
 This restricts what we can serialize, but generally in insignificant ways.
 
 ### Properties and Methods
@@ -10,7 +10,7 @@ converter_dispatch: OrderedDict
 ```
 <a id="McUtils.Scaffolding.Serializers.HDF5Serializer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self): 
+__init__(self, allow_pickle=True, psuedopickler=None): 
 ```
 
 <a id="McUtils.Scaffolding.Serializers.HDF5Serializer.convert" class="docs-object-method">&nbsp;</a>

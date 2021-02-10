@@ -7,7 +7,7 @@ BaseEncoder: type
 ```
 <a id="McUtils.Scaffolding.Serializers.JSONSerializer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, encoder=None): 
+__init__(self, encoder=None, allow_pickle=True, pseudopickler=None): 
 ```
 
 <a id="McUtils.Scaffolding.Serializers.JSONSerializer.convert" class="docs-object-method">&nbsp;</a>

@@ -24,6 +24,7 @@ These are still in the prototype stage, but hopefully will allow us to unify str
   - [FchkForceDerivatives](GaussianInterface/FChkDerivatives/FchkForceDerivatives.md)
   - [FchkDipoleDerivatives](GaussianInterface/FChkDerivatives/FchkDipoleDerivatives.md)
   - [FchkDipoleHigherDerivatives](GaussianInterface/FChkDerivatives/FchkDipoleHigherDerivatives.md)
+  - [FchkDipoleNumDerivatives](GaussianInterface/FChkDerivatives/FchkDipoleNumDerivatives.md)
 
 ### Examples:
 

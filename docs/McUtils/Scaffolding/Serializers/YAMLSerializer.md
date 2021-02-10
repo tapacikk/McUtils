@@ -1,5 +1,7 @@
 ## <a id="McUtils.Scaffolding.Serializers.YAMLSerializer">YAMLSerializer</a>
-A serializer that makes dumping data to JSON simpler
+A serializer that makes dumping data to YAML simpler.
+Doesn't support arbitrary python objects since that hasn't seemed like
+a huge need yet...
 
 ### Properties and Methods
 <a id="McUtils.Scaffolding.Serializers.YAMLSerializer.__init__" class="docs-object-method">&nbsp;</a>

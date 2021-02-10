@@ -4,6 +4,7 @@ Basically acts like a high-dimensional wrapper that manages the _shape_ of a sta
 
 ### Properties and Methods
 ```python
+from_state: method
 empty: method
 from_diag: method
 clear_ravel_caches: method
@@ -13,6 +14,17 @@ loadz: method
 ```python
 __init__(self, a, shape=None, layout=<class 'scipy.sparse.csc.csc_matrix'>, dtype=None, initialize=True): 
 ```
+
+<a id="McUtils.Numputils.Sparse.SparseArray.to_state" class="docs-object-method">&nbsp;</a>
+```python
+to_state(self, serializer=None): 
+```
+Provides just the state that is needed to
+        serialize the object
+- `serializer`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
 
 <a id="McUtils.Numputils.Sparse.SparseArray.dtype" class="docs-object-method">&nbsp;</a>
 ```python
