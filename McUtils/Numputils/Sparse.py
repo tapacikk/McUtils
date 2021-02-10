@@ -859,7 +859,7 @@ def sparse_tensordot(a, b, axes=2):
             if axes_b[k] < 0:
                 axes_b[k] += ndb
     if not equal:
-        raise ValueError("shape-mismatch for sum")
+        raise ValueError("shape-mismatch for sum ({}{}@{}{})".format(as_, axes_a, bs, axes_b))
 
     # Move the axes to sum over to the end of "a"
     # and to the front of "b"

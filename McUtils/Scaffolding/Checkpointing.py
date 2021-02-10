@@ -3,7 +3,7 @@ import abc, os
 from .Serializers import *
 
 __all__ = [
-    "CheckpointerBase",
+    "Checkpointer",
     "DumpCheckpointer",
     "JSONCheckpointer",
     "NumPyCheckpointer",
@@ -11,7 +11,7 @@ __all__ = [
     "NullCheckpointer"
 ]
 
-class CheckpointerBase(metaclass=abc.ABCMeta):
+class Checkpointer(metaclass=abc.ABCMeta):
     """
     General purpose base class that allows checkpointing to be done easily and cleanly.
     Intended to be a passable object that allows code to checkpoint easily.
@@ -20,6 +20,46 @@ class CheckpointerBase(metaclass=abc.ABCMeta):
         self.checkpoint_file = checkpoint_file
         self._came_open = not isinstance(checkpoint_file, str)
         self._stream = None
+
+    _ext_map = None
+    @classmethod
+    def extension_map(cls):
+        if cls._ext_map is not None:
+            return cls._ext_map
+        else:
+            return {
+                '.json':JSONCheckpointer,
+                '.hdf5':HDF5Checkpointer,
+                '.npz':NumPyCheckpointer
+                # ('.yaml','.yml'):YA
+            }
+
+    @classmethod
+    def from_file(cls, file, **opts):
+        """
+        Dispatch function to load from the appropriate file
+        :param file:
+        :type file: str | File
+        :param opts:
+        :type opts:
+        :return:
+        :rtype:
+        """
+
+        if not isinstance(file, str):
+            #TODO: make this cleaner
+            file_name = file.name # might break in the future...
+        else:
+            file_name = file
+
+        _, ext = os.path.splitext(file_name)
+
+        ext_map = cls.extension_map()
+
+        if ext not in ext_map:
+            raise ValueError("don't know have default checkpointer type registered for extension {}".format(ext))
+
+        return ext_map[ext](file, **opts)
 
     def __enter__(self):
         if self._stream is None:
@@ -86,7 +126,19 @@ class CheckpointerBase(metaclass=abc.ABCMeta):
     def __setitem__(self, key, value):
         self.save_parameter(key, value)
 
-class DumpCheckpointer(CheckpointerBase):
+    @abc.abstractmethod
+    def keys(self):
+        """
+        Returns the keys of currently checkpointed
+        objects
+
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("Checkpointer is an abstract base class...")
+
+
+class DumpCheckpointer(Checkpointer):
     """
     A subclass of `CheckpointerBase` that writes an entire dump to file at once & maintains
     a backend cache to update it cleanly
@@ -165,6 +217,9 @@ class DumpCheckpointer(CheckpointerBase):
         """
         return self.backend[key]
 
+    def keys(self):
+        return self.backend.keys()
+
 class JSONCheckpointer(DumpCheckpointer):
     """
     A checkpointer that uses JSON as a backend
@@ -240,7 +295,7 @@ class NumPyCheckpointer(DumpCheckpointer):
         """
         self.serializer.serialize(self.stream, self.backend)
 
-class HDF5Checkpointer(CheckpointerBase):
+class HDF5Checkpointer(Checkpointer):
     """
     A checkpointer that uses an HDF5 file as a backend.
     Doesn't maintain a secondary `dict`, because HDF5 is an updatable format.
@@ -302,7 +357,11 @@ class HDF5Checkpointer(CheckpointerBase):
         """
         return self.serializer.deserialize(self.stream, key=key)
 
-class NullCheckpointer(CheckpointerBase):
+    def keys(self):
+        fff = self.serializer.api.File(self.stream)
+        return fff.keys()
+
+class NullCheckpointer(Checkpointer):
     """
     A checkpointer that doesn't actually do anything, but which is provided
     so that programs can turn off checkpointing without changing their layout
