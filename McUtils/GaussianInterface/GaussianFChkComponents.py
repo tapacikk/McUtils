@@ -84,6 +84,10 @@ FormattedCheckpointComponents["Dipole Derivatives"] = FchkDipoleDerivatives
 
 #region Dipole Derivatives num derivs
 
+FormattedCheckpointComponents["Dipole Moment num derivs"] = FchkDipoleNumDerivatives
+
+#region Dipole Derivatives num derivs
+
 FormattedCheckpointComponents["Dipole Derivatives num derivs"] = FchkDipoleHigherDerivatives
 
 #endregion
@@ -169,6 +173,7 @@ FormattedCheckpointCommonNames = {
     "Cartesian 3rd/4th derivatives" : "ForceDerivatives",
     "Dipole Moment" : "DipoleMoment",
     "Dipole Derivatives" : "DipoleDerivatives",
+    "Dipole Moment num derivs" : "DipoleNumDerivatives",
     "Dipole Derivatives num derivs" : "DipoleHigherDerivatives",
     "Vib-E2" : "VibrationalData",
     "Vib-Modes" : "VibrationalModes",

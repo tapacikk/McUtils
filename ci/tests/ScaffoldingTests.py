@@ -6,6 +6,17 @@ import numpy as np, io, os, sys, tempfile as tmpf
 
 class ScaffoldingTests(TestCase):
 
+    @debugTest
+    def test_Pseudopickle(self):
+
+        from McUtils.Numputils import SparseArray
+
+        pickler = PseudoPickler()
+        spa = SparseArray.from_diag([1, 2, 3, 4])
+        serial = pickler.serialize(spa)
+        deserial = pickler.deserialize(serial)
+        self.assertTrue(np.allclose(spa.toarray(), deserial.toarray()))
+
     @validationTest
     def test_HDF5Serialization(self):
         tmp = io.BytesIO()
@@ -39,7 +50,7 @@ class ScaffoldingTests(TestCase):
             loaded[1].tolist().decode('utf-8'),
             {k:v.tolist() for k,v in loaded[2].items()}
         ])
-    @validationTest
+    @debugTest
     def test_JSONSerialization(self):
         tmp = io.StringIO()
         serializer = JSONSerializer()
@@ -72,6 +83,40 @@ class ScaffoldingTests(TestCase):
         tmp.seek(0)
         loaded = serializer.deserialize(tmp, key='mixed_data')
         self.assertEquals(mixed_data, loaded)
+
+    @debugTest
+    def test_JSONPseudoPickleSerialization(self):
+
+        from McUtils.Numputils import SparseArray
+
+        tmp = io.StringIO()
+        serializer = JSONSerializer()
+
+        data = SparseArray.from_diag([1, 2, 3, 4])
+
+        serializer.serialize(tmp, data)
+        tmp.seek(0)
+        loaded = serializer.deserialize(tmp)
+
+        self.assertTrue(np.allclose(loaded.toarray(), data.toarray()))
+
+    @debugTest
+    def test_HDF5PseudoPickleSerialization(self):
+
+        from McUtils.Numputils import SparseArray
+
+        tmp = io.BytesIO()
+        serializer = HDF5Serializer()
+
+        data = SparseArray.from_diag([1, 2, 3, 4])
+
+        serializer.serialize(tmp, data)
+        tmp.seek(0)
+        loaded = serializer.deserialize(tmp)
+
+        self.assertTrue(np.allclose(loaded.toarray(), data.toarray()))
+
+
     @validationTest
     def test_NumPySerialization(self):
         tmp = io.BytesIO()
@@ -185,6 +230,44 @@ class ScaffoldingTests(TestCase):
             # do some other stuff, maybe need to reload from checkpoint?
             with HDF5Checkpointer(my_file) as chk:
                 self.assertEquals(len(chk['step_2']), 100)
+        finally:
+            os.remove(my_file)
+
+    class DataHolderClass:
+        def __init__(self, **keys):
+            self.data = keys
+        def to_state(self, serializer=None):
+            return self.data
+        @classmethod
+        def from_state(cls, state, serializer=None):
+            return cls(**state)
+    @debugTest
+    def test_HDF5CheckpointingPsuedopickle(self):
+
+        with tmpf.NamedTemporaryFile(mode="w+b") as chk_file:
+            my_file = chk_file.name
+        try:
+            with HDF5Checkpointer(my_file) as chk:
+                # do something
+                data = [1, 2, 3]
+                chk['step_1'] = data
+                # do something else
+                keys = {
+                    'steps': 500,
+                    'step_size': .1,
+                    'method': 'implicit euler'
+                }
+                woop = self.DataHolderClass(**keys)
+                chk['step_2_params'] = woop
+
+                # blobby
+                data_2 = np.random.rand(100)
+                chk['step_2'] = data_2
+
+            # do some other stuff, maybe need to reload from checkpoint?
+            with HDF5Checkpointer(my_file) as chk:
+                self.assertEquals(len(chk['step_2']), 100)
+                self.assertEquals(chk['step_2_params'].data, keys)
         finally:
             os.remove(my_file)
 
@@ -360,7 +443,7 @@ class ScaffoldingTests(TestCase):
             finally:
                 sys.argv = argv
 
-    @debugTest
+    @validationTest
     def test_JobInit(self):
 
         import time
@@ -382,11 +465,10 @@ class ScaffoldingTests(TestCase):
                 doop_str = doopy.read()
                 self.assertNotEqual("", doop_str)
 
-    @debugTest
+    @validationTest
     def test_CurrentJob(self):
 
         import time
-
 
         with tmpf.TemporaryDirectory() as temp_dir:
             jobby = JobManager.job_from_folder(temp_dir)

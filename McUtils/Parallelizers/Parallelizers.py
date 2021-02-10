@@ -1297,6 +1297,7 @@ class MPIParallelizer(SendRecieveParallelizer):
 
         from mpi4py import MPI as api
         self.api = api
+
         if comm is None:
             comm = api.COMM_WORLD
         self.root = root

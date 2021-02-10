@@ -33,6 +33,33 @@ class SparseArray:
             self._validate()
         self._block_inds = None # cached to speed things up
         self._block_vals = None # cached to speed things up
+
+    def to_state(self, serializer=None):
+        """
+        Provides just the state that is needed to
+        serialize the object
+        :param serializer:
+        :type serializer:
+        :return:
+        :rtype:
+        """
+        return {
+            'layout': serializer.serialize(self._fmt),
+            'shape': self.shape,
+            'dtype': self.dtype.name,
+            'block_data': self.block_data
+        }
+    @classmethod
+    def from_state(cls, state, serializer=None):
+        block_vals, block_inds = state['block_data']
+        block_vals = np.asarray(block_vals)
+        block_inds = tuple(np.asarray(x) for x in block_inds)
+        return cls(
+            (block_vals, block_inds),
+            dtype=np.dtype(state['dtype']),
+            layout=serializer.deserialize(state['layout']),
+            shape=state['shape']
+        )
     @classmethod
     def empty(cls, shape, dtype=None, **kw):
         matshape = (int(np.prod(shape[:-1])), shape[-1])
@@ -832,7 +859,7 @@ def sparse_tensordot(a, b, axes=2):
             if axes_b[k] < 0:
                 axes_b[k] += ndb
     if not equal:
-        raise ValueError("shape-mismatch for sum")
+        raise ValueError("shape-mismatch for sum ({}{}@{}{})".format(as_, axes_a, bs, axes_b))
 
     # Move the axes to sum over to the end of "a"
     # and to the front of "b"

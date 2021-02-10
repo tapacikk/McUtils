@@ -444,6 +444,10 @@ class ArrayPlot(DataPlot):
                          axes=axes, subplot_kw=subplot_kw,
                          **opts
                          )
+    def _get_plot_data(self, data):
+        if hasattr(data, 'toarray'):
+            data = data.toarray()
+        return data,
 
 
 class TensorPlot(GraphicsGrid):

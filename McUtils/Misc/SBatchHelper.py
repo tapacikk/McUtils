@@ -39,7 +39,8 @@ class SBatchJob:
                  description=None,
                  job_name=None, account=None, partition=None,
                  mem=None,  nodes=None, ntasks_per_node=None,
-                 chdir=None, steps=(),
+                 chdir=None, output=None,
+                 steps=(),
                  **opts
                  ):
         self.description=description
@@ -48,7 +49,7 @@ class SBatchJob:
         base_opts = dict(
             job_name=job_name, account=account, partition=partition,
             mem=mem, nodes=nodes, ntasks_per_node=ntasks_per_node,
-            chdir=chdir
+            output=output, chdir=chdir
         )
         base_opts = self.clean_opts(base_opts)
         base_opts = dict(self.default_opts, **base_opts)
