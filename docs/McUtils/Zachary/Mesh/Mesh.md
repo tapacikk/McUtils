@@ -1,8 +1,12 @@
 ## <a id="McUtils.Zachary.Mesh.Mesh">Mesh</a>
-A general Mesh class representing data points in n-dimensions in either a structured or unstructured manner
+A general Mesh class representing data points in n-dimensions
+in either a structured, unstructured, or semi-structured manner.
+Exists mostly to provides a unified interface to difference FD and Surface methods.
 
 ### Properties and Methods
 ```python
+MeshError: type
+MeshType: EnumMeta
 get_npoints: method
 get_gridpoints: method
 get_mesh_subgrids: method
@@ -12,7 +16,7 @@ RegularMesh: method
 ```
 <a id="McUtils.Zachary.Mesh.Mesh.__new__" class="docs-object-method">&nbsp;</a>
 ```python
-__new__(cls, data, mesh_type=None): 
+__new__(cls, data, mesh_type=None, allow_indeterminate=None): 
 ```
 
 - `griddata`: `np.ndarray`
