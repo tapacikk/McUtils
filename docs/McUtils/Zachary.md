@@ -440,6 +440,7 @@ class FiniteDifferenceTests(TestCase):
         mg = np.meshgrid(np.array([-1, 0, 1]), np.array([-1, 0, 1]))
         regmesh = Mesh(mg)
         self.assertIs(regmesh.mesh_type, MeshType.Structured)
+        self.assertEquals(regmesh.shape, (3, 3, 2))
 
     @debugTest
     def test_RegularMesh(self):
