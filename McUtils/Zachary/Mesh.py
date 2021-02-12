@@ -34,8 +34,8 @@ class Mesh(np.ndarray):
     # subclassing np.ndarray is weird... maybe I don't even want to do it... but I _think_ I do
     def __new__(cls,
                 data,
-                mesh_type = None,
-                allow_indeterminate = None
+                mesh_type=None,
+                allow_indeterminate=None
                 ):
         """
         :param griddata: the raw grid-point data the mesh uses
@@ -46,6 +46,10 @@ class Mesh(np.ndarray):
         :type opts:
         """
         data = np.asarray(data)
+        if cls._is_meshgrid(data):
+            # we turn mesh grids into grid point grids...
+            roll = np.roll(np.arange(data.ndim), -1)
+            data = data.transpose(roll)
         # data.mesh_type = mesh_type
         aid = cls._allow_indeterminate
         try:
@@ -77,7 +81,6 @@ class Mesh(np.ndarray):
             aid = self._allow_indeterminate
         if not aid and self.mesh_type is MeshType.Indeterminate:
             raise MeshError("indeterminate MeshType, but `allow_indeterminate` turned off")
-
 
     @property
     def mesh_spacings(self):
@@ -144,7 +147,6 @@ class Mesh(np.ndarray):
             # means ndim == 2
             grid = np.asarray(self)
             meshes = grid.T
-
 
         else:
             raise MeshError("{}.{}: can't get slices for mesh type {}".format(
@@ -235,9 +237,6 @@ class Mesh(np.ndarray):
             return MeshType.Indeterminate
 
         ndim = grid.ndim
-        if cls._is_meshgrid(grid):
-            roll = np.roll(np.arange(ndim), -1)
-            grid = grid.transpose(roll)
         shape = grid.shape
 
         mesh_spacings = cls.get_mesh_spacings(grid, tol=tol)
