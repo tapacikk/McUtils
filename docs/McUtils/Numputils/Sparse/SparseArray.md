@@ -12,7 +12,7 @@ loadz: method
 ```
 <a id="McUtils.Numputils.Sparse.SparseArray.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, a, shape=None, layout=<class 'scipy.sparse.csc.csc_matrix'>, dtype=None, initialize=True): 
+__init__(self, a, shape=None, layout=<class 'scipy.sparse.csr.csr_matrix'>, dtype=None, initialize=True): 
 ```
 
 <a id="McUtils.Numputils.Sparse.SparseArray.to_state" class="docs-object-method">&nbsp;</a>
