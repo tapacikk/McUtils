@@ -111,7 +111,6 @@ class SparseArray:
             total_shape = (1, nels)
             init_inds = (np.zeros(len(block_vals)), flat)
             try:
-                print(self.fmt, total_shape, len(block_vals))
                 data = self.fmt((block_vals, init_inds), shape=total_shape)
             except TypeError:
                 data = self.fmt(sp.csr_matrix((block_vals, init_inds)), shape=total_shape)
