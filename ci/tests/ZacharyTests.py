@@ -395,4 +395,37 @@ class FiniteDifferenceTests(TestCase):
         #         )
         # gg.show()
 
+    @debugTest
+    def test_MeshGridMesh(self):
+        mg = np.meshgrid(np.array([-1, 0, 1]), np.array([-1, 0, 1]))
+        regmesh = Mesh(mg)
+        self.assertIs(regmesh.mesh_type, MeshType.Structured)
+
+    @debugTest
+    def test_RegularMesh(self):
+        regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
+        self.assertIs(regmesh.mesh_type, MeshType.Structured)
+
+    @inactiveTest
+    def test_SemiStructuredMesh(self):
+        # class MeshType(enum.Enum):
+        #     Structured = "structured"
+        #     Unstructured = "unstructured"
+        #     SemiStructured = "semistructured"
+        #     Indeterminate = "indeterminate"
+        semi_mesh = Mesh([[np.arange(i)] for i in range(10, 25)])
+        self.assertIs(semi_mesh.mesh_type, MeshType.SemiStructured)
+
+    @debugTest
+    def test_MeshFromList(self):
+        try:
+            wat = np.asarray([[-1, 0, 1], [-1, 0, 1]])
+            bad = Mesh(wat)
+        except Mesh.MeshError:
+            pass
+        else:
+            # just to make it accessible through Mesh
+            self.assertIs(bad.mesh_type, MeshType.Indeterminate)
+
+
 

@@ -7,6 +7,8 @@ import numpy as np, enum
 
 __all__ = [ "Mesh", "MeshType" ]
 
+# we define a bunch of MeshType attributes so that the string names can change up or whatever but the interface
+# can remain consistent
 class MeshType(enum.Enum):
     Structured = "structured"
     Unstructured = "unstructured"
@@ -18,15 +20,22 @@ class MeshError(Exception):
 
 class Mesh(np.ndarray):
     """
-    A general Mesh class representing data points in n-dimensions in either a structured or unstructured manner
+    A general Mesh class representing data points in n-dimensions
+    in either a structured, unstructured, or semi-structured manner.
+    Exists mostly to provides a unified interface to difference FD and Surface methods.
     """
-    # we define a bunch of MeshType attributes so that the string names can change up or whatever but the interface
-    # can remain consistent
 
+    # just to make it accessible through Mesh
+    MeshError = MeshError
+    MeshType = MeshType
+
+
+    _allow_indeterminate = False
     # subclassing np.ndarray is weird... maybe I don't even want to do it... but I _think_ I do
     def __new__(cls,
                 data,
-                mesh_type = None
+                mesh_type = None,
+                allow_indeterminate = None
                 ):
         """
         :param griddata: the raw grid-point data the mesh uses
@@ -36,7 +45,15 @@ class Mesh(np.ndarray):
         :param opts:
         :type opts:
         """
-        self = np.asarray(data).view(cls)
+        data = np.asarray(data)
+        # data.mesh_type = mesh_type
+        aid = cls._allow_indeterminate
+        try:
+            cls._allow_indeterminate = allow_indeterminate # gotta temp disable this...
+            self = data.view(cls)
+        finally:
+            cls._allow_indeterminate = aid
+        self.allow_indeterminate = allow_indeterminate
         self.mesh_type = self.get_mesh_type(self) if mesh_type is None else mesh_type
         self._spacings = None
         return self
@@ -53,6 +70,14 @@ class Mesh(np.ndarray):
         self.mesh_type = getattr(mesh, "mesh_type", None)
         if self.mesh_type is None:
             self.mesh_type = self.get_mesh_type(self)
+
+        self.allow_indeterminate = getattr(mesh, "allow_indeterminate", None)
+        aid = self.allow_indeterminate
+        if aid is None:
+            aid = self._allow_indeterminate
+        if not aid and self.mesh_type is MeshType.Indeterminate:
+            raise MeshError("indeterminate MeshType, but `allow_indeterminate` turned off")
+
 
     @property
     def mesh_spacings(self):
@@ -154,6 +179,8 @@ class Mesh(np.ndarray):
         if grid.ndim == 1:
             return [ grid ]
         elif grid.ndim ==2:
+            if isinstance(grid, Mesh):
+                grid = np.array(grid)
             meshes = grid.T
             mesh_points = [np.unique(np.round(x, tol)) for x in meshes]
             return mesh_points
@@ -174,6 +201,24 @@ class Mesh(np.ndarray):
 
         return mesh_spacings
 
+    @staticmethod
+    def _is_meshgrid(grid):
+        """
+        Just checks if the shape of the grid
+        is consistent with being a meshgrid
+        :param grid:
+        :type grid:
+        :return:
+        :rtype:
+        """
+
+        shape = grid.shape
+        return (
+            len(shape) > 1
+            and any(shape[0] != s for s in shape[1:])
+            and (shape[0] == len(shape) - 1)
+        ) # might introduce edge-case...? Hard to know
+
     @classmethod
     def get_mesh_type(cls, grid, tol=8):
         """Determines what kind of grid we're working with
@@ -183,16 +228,25 @@ class Mesh(np.ndarray):
         :return: mesh_type
         :rtype: MeshType
         """
+
+        grid = np.asarray(grid)
+
+        if grid.dtype == np.dtype(object):
+            return MeshType.Indeterminate
+
         ndim = grid.ndim
+        if cls._is_meshgrid(grid):
+            roll = np.roll(np.arange(ndim), -1)
+            grid = grid.transpose(roll)
         shape = grid.shape
+
         mesh_spacings = cls.get_mesh_spacings(grid, tol=tol)
         if ndim == 1:
             if mesh_spacings[0] is not None:
                 return MeshType.Structured
             else:
                 return MeshType.Unstructured
-        elif ndim == 2: # this means we were fed grid points
-            grid = np.asarray(grid)
+        elif ndim == 2: # this likely means we were fed grid points
             subgrids = cls.get_mesh_subgrids(grid, tol=tol)
             mesh_lens = [len(x) for x in subgrids]
             points = np.product(mesh_lens)
@@ -218,8 +272,20 @@ class Mesh(np.ndarray):
 
     @classmethod
     def RegularMesh(cls, *mesh_specs):
+        """
+        Builds a grid from multiple linspace arguments,
+        basically insuring it's structured (if non-Empty)
+        :param mesh_specs:
+        :type mesh_specs:
+        :return:
+        :rtype:
+        """
         # should probably handle the empty mesh subcase...
         coords = [ np.linspace(*m) for m in mesh_specs ]
-        cg = np.meshgrid(coords)
-        roll = np.roll(np.arange(len(mesh_specs)), -1)
-        return cls(np.transpose(cg, roll), mesh_type=MeshType.Structured)
+
+        if any(len(x) == 0 for x in coords):
+            raise ValueError()
+        cg = np.meshgrid(*coords)
+        roll = np.roll(np.arange(len(coords) + 1), -1)
+        wat = np.transpose(cg, roll)
+        return cls(wat, mesh_type=MeshType.Structured)
