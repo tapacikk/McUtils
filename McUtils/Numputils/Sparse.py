@@ -114,6 +114,9 @@ class SparseArray:
                 data = self.fmt((block_vals, init_inds), shape=total_shape)
             except TypeError:
                 data = self.fmt(sp.csc_matrix((block_vals, init_inds)), shape=total_shape)
+            except MemoryError:
+                data = sp.coo_matrix((block_vals, init_inds), shape=total_shape)
+                self._fmt = sp.coo_matrix
             self._a = data
             self._block_vals = block_vals
             self._block_inds = block_inds
