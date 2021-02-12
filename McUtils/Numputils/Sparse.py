@@ -22,7 +22,7 @@ class SparseArray:
     Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
     """
 
-    def __init__(self, a, shape=None, layout=sp.csc_matrix, dtype=None, initialize = True):
+    def __init__(self, a, shape=None, layout=sp.csr_matrix, dtype=None, initialize = True):
         self._shape = tuple(shape) if shape is not None else shape
         self._a = a
         self._fmt = layout
@@ -113,10 +113,10 @@ class SparseArray:
             try:
                 data = self.fmt((block_vals, init_inds), shape=total_shape)
             except TypeError:
-                data = self.fmt(sp.csc_matrix((block_vals, init_inds)), shape=total_shape)
+                data = self.fmt(sp.csr_matrix((block_vals, init_inds)), shape=total_shape)
             except MemoryError:
-                data = sp.coo_matrix((block_vals, init_inds), shape=total_shape)
-                self._fmt = sp.coo_matrix
+                data = sp.csr_matrix((block_vals, init_inds), shape=total_shape)
+                self._fmt = sp.csr_matrix
             self._a = data
             self._block_vals = block_vals
             self._block_inds = block_inds
@@ -652,7 +652,12 @@ class SparseArray:
         if set_elements:
             flat = self._ravel_indices(idx, self.shape)
             unflat = self._unravel_indices(flat, self.data.shape)
+            # try:
             self.data[unflat] = val
+            # except TypeError:
+            #     # need to construct a new data object in its entirety :weep:
+            #     # or convert to an assignable format?
+            #
             # TODO: figure out how to resolve the collisions
             #       more efficiently
             self._block_vals = None
