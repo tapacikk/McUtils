@@ -204,6 +204,9 @@ class Logger:
         else:
             verbosity = self.default_verbosity
 
+        if 'flush' not in print_options:
+            print_options['flush'] = True
+
         if verbosity <= self.verbosity:
             log = self.log_file
             if isinstance(log, str):
