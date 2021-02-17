@@ -167,7 +167,7 @@ class Logger:
         else:
             import json
             return json.dumps(metainfo)
-    def log_print(self, message, *params, print_options=None, padding=None, newline=None, metainfo=None, **kwargs):
+    def log_print(self, message, *messrest, print_options=None, padding=None, newline=None, metainfo=None, **kwargs):
         """
         :param message: message to print
         :type message: str | Iterable[str]
@@ -184,6 +184,9 @@ class Logger:
             padding = self.padding
         if newline is None:
             newline = self.newline
+
+        if len(messrest) > 0:
+            message = [message, *messrest]
 
         if not isinstance(message, str):
             joiner = (newline + padding)
@@ -217,11 +220,11 @@ class Logger:
                         pass
                 #O_NONBLOCK is *nix only
                 with open(log, "a", os.O_NONBLOCK) as lf: # this is potentially quite slow but I am also quite lazy
-                    print(self.format_message(message, *params, meta=self.format_metainfo(metainfo), **kwargs), file=lf, **print_options)
+                    print(self.format_message(message, meta=self.format_metainfo(metainfo), **kwargs), file=lf, **print_options)
             elif log is None:
-                print(self.format_message(message, *params, meta=self.format_metainfo(metainfo), **kwargs), **print_options)
+                print(self.format_message(message, meta=self.format_metainfo(metainfo), **kwargs), **print_options)
             else:
-                print(self.format_message(message, *params, meta=self.format_metainfo(metainfo), **kwargs), file=log, **print_options)
+                print(self.format_message(message, meta=self.format_metainfo(metainfo), **kwargs), file=log, **print_options)
 
 class NullLogger(Logger):
     """

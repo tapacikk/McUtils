@@ -396,6 +396,12 @@ class FiniteDifferenceTests(TestCase):
         # gg.show()
 
     @debugTest
+    def test_LinSpaceMesh(self):
+        mg = Mesh(np.linspace(-1, 1, 3))
+        self.assertIs(mg.mesh_type, MeshType.Structured)
+        self.assertEquals(mg.shape, (3,))
+
+    @debugTest
     def test_MeshGridMesh(self):
         mg = np.meshgrid(np.array([-1, 0, 1]), np.array([-1, 0, 1]))
         regmesh = Mesh(mg)
@@ -406,6 +412,13 @@ class FiniteDifferenceTests(TestCase):
     def test_RegularMesh(self):
         regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
         self.assertIs(regmesh.mesh_type, MeshType.Structured)
+        self.assertEquals(regmesh.shape, (3, 3, 2))
+
+    @debugTest
+    def test_RegMeshSubgrids(self):
+        regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
+        m = [Mesh(g) for g in regmesh.subgrids]
+        self.assertTrue(all(g.mesh_type is MeshType.Structured for g in m))
 
     @inactiveTest
     def test_SemiStructuredMesh(self):
