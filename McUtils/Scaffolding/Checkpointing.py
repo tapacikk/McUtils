@@ -411,3 +411,6 @@ class NullCheckpointer(Checkpointer):
         :rtype:
         """
         return self.backend[key]
+
+    def keys(self):
+        return []

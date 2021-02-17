@@ -17,7 +17,11 @@ class FiniteDifferenceDerivative:
     The potential for optimization undoubtedly exists, but the idea is to provide as _simple_ an interface as possible.
     Robustification needs to be done, but is currently used in `CoordinateSystem.jacobian` to good effect.
     """
-    def __init__(self, f, function_shape=(0, 0), **fd_opts):
+    def __init__(self,
+                 f,
+                 function_shape=(0, 0),
+                 parallelizer=None,
+                 **fd_opts):
         """
         :param f: the function we would like to take derivatives of
         :type f: FunctionSpec | callable
@@ -29,6 +33,9 @@ class FiniteDifferenceDerivative:
         if not isinstance(f, FunctionSpec):
             f = FunctionSpec(f, *function_shape)
         self.f = f
+        self.parallelizer=parallelizer
+        if parallelizer is not None:
+            raise NotImplementedError("need to figure out how I want to work parallelism in")
         self._fd_opts = fd_opts
 
     def __call__(self, *args, **opts):
@@ -106,11 +113,12 @@ class DerivativeGenerator:
     def __init__(self,
                  f_spec,
                  center,
-                 displacement_function = None,
-                 prep = None,
-                 lazy = False,
-                 mesh_spacing = .001,
-                 cache_evaluations = True,
+                 displacement_function=None,
+                 prep=None,
+                 lazy=False,
+                 mesh_spacing=.001,
+                 cache_evaluations=True,
+                 parallelizer=None,
                  **fd_opts
                  ):
         """
@@ -191,6 +199,8 @@ class DerivativeGenerator:
         self.cache_evaluations = cache_evaluations
         self._cache = {}
 
+        self.parallelizer = parallelizer
+
     def _get_fdf(self, ci, mesh_spacing):
         # create the different types of finite differences we'll compute for the different coordinates of interest
         dorder = self._dorder(ci)
@@ -216,7 +226,8 @@ class DerivativeGenerator:
         return stencil_widths, stencil_shapes, finite_difference, dorder
 
     def _coord_index(self, coord):
-        """Converts the coordinate spec into a linear index
+        """
+        Converts the coordinate spec into a linear index
 
         :param coord:
         :type coord:
