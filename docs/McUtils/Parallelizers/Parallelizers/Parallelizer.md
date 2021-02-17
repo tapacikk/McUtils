@@ -23,7 +23,7 @@ from_config: method
 ```
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self): 
+__init__(self, printer=None, verbose=False): 
 ```
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.register" class="docs-object-method">&nbsp;</a>
@@ -290,6 +290,12 @@ get_id(self):
 Returns the id for the current process
 - `:returns`: `_`
     >No description...
+
+<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.printer" class="docs-object-method">&nbsp;</a>
+```python
+@property
+printer(self): 
+```
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.main_print" class="docs-object-method">&nbsp;</a>
 ```python

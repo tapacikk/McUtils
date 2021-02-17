@@ -7,7 +7,7 @@ Robustification needs to be done, but is currently used in `CoordinateSystem.jac
 ### Properties and Methods
 <a id="McUtils.Zachary.Taylor.Derivatives.FiniteDifferenceDerivative.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, f, function_shape=(0, 0), **fd_opts): 
+__init__(self, f, function_shape=(0, 0), parallelizer=None, **fd_opts): 
 ```
 
 - `f`: `FunctionSpec | callable`

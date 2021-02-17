@@ -3,7 +3,7 @@
 Computes a finite difference derivative for the values on the grid
 
 ```python
-finite_difference(grid, values, order, accuracy=2, stencil=None, end_point_accuracy=1, axes=None, dtype='float64', **kw): 
+finite_difference(grid, values, order, accuracy=2, stencil=None, end_point_accuracy=1, axes=None, only_core=False, only_center=False, dtype='float64', **kw): 
 ```
 
 - `grid`: `np.ndarray`
@@ -20,6 +20,10 @@ finite_difference(grid, values, order, accuracy=2, stencil=None, end_point_accur
     >extra stencil points to use on the edges
 - `axes`: `int | Iterable[int]`
     >which axes to perform the successive derivatives over (defaults to the first _n_ axes)
+- `only_center`: `bool`
+    >whether or not to only take the central value
+- `only_core`: `bool`
+    >whether or not to avoid edge values where a different stencil would be used
 - `:returns`: `_`
     >No description...
 

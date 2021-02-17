@@ -38,7 +38,7 @@ format_metainfo(self, metainfo):
 
 <a id="McUtils.Scaffolding.Logging.Logger.log_print" class="docs-object-method">&nbsp;</a>
 ```python
-log_print(self, message, *params, print_options=None, padding=None, newline=None, metainfo=None, **kwargs): 
+log_print(self, message, *messrest, print_options=None, padding=None, newline=None, metainfo=None, **kwargs): 
 ```
 
 - `message`: `str | Iterable[str]`
