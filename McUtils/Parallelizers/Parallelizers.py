@@ -1013,7 +1013,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         can know immediately that they are workers
         """
         cls._is_worker = True
-    def initialize(self):
+    def initialize(self, allow_restart=True):
         if not self.worker:
             if self.pool is None:
                 if self.ctx is None:
@@ -1023,7 +1023,15 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                 self.ctx = self.get_pool_context(self.pool)
             if self.manager is None:
                 self.manager = mp.Manager()
-            self.pool.__enter__()
+            if allow_restart:
+                try:
+                    self.pool.__enter__()
+                except ValueError:
+                    # fix poos
+                    self.pool = None
+                    return self.initialize(allow_restart=False)
+            else:
+                self.pool.__enter__()
             self.nproc = self.get_pool_nprocs(self.pool)
             self.pool.map(self._set_is_worker, [None] * self.nproc)
             self.queues = [self.SendRecvQueuePair(i, self.manager) for i in range(0, self.nproc+1)]
