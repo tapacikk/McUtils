@@ -844,11 +844,13 @@ class FiniteDifferenceMatrix:
 ##########################################################################################
 
 def finite_difference(grid, values, order,
-                      accuracy = 2,
-                      stencil = None,
-                      end_point_accuracy = 1,
-                      axes = None,
-                      dtype = "float64",
+                      accuracy=2,
+                      stencil=None,
+                      end_point_accuracy=1,
+                      axes=None,
+                      only_core=False,
+                      only_center=False,
+                      dtype="float64",
                       **kw
                       ):
     """Computes a finite difference derivative for the values on the grid
@@ -868,6 +870,10 @@ def finite_difference(grid, values, order,
     :param end_point_accuracy: extra stencil points to use on the edges
     :param axes: which axes to perform the successive derivatives over (defaults to the first _n_ axes)
     :type axes: int | Iterable[int]
+    :param only_center: whether or not to only take the central value
+    :type only_center: bool
+    :param only_core: whether or not to avoid edge values where a different stencil would be used
+    :type only_core: bool
     :return:
     :rtype:
     """
@@ -881,8 +887,10 @@ def finite_difference(grid, values, order,
         accuracy = accuracy,
         stencil = stencil,
         end_point_accuracy = end_point_accuracy,
-        axes = axes,
-        dtype = dtype,
+        axes=axes,
+        dtype=dtype,
+        only_core=only_core,
+        only_center=only_center,
         **kw
     )
     return func(gv)

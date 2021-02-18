@@ -5,7 +5,7 @@ with Ray. Dask will require more work unfortunately...
 """
 
 import abc, weakref, functools, multiprocessing as mp, typing
-import numpy as np
+import numpy as np, pickle
 
 __all__ = [
     "Parallelizer",
@@ -35,9 +35,12 @@ class Parallelizer(metaclass=abc.ABCMeta):
     parallelizer_registry = weakref.WeakValueDictionary()
     default_key="default"
     _default_par_stack = [] #stack to use when setting the default parallelizer
-
-    def __init__(self):
+    _default_printer = print
+    def __init__(self, printer=None, verbose=False):
         self._active_sentinel=0
+        self._printer = printer
+        self._pickle_prot = None
+        self.verbose=verbose
 
     @classmethod
     def get_fallback_parallelizer(cls):
@@ -131,6 +134,8 @@ class Parallelizer(metaclass=abc.ABCMeta):
         if not self.active:
             self.set_default()
             self.initialize()
+            self._pickle_prot = pickle.DEFAULT_PROTOCOL
+            pickle.DEFAULT_PROTOCOL = pickle.HIGHEST_PROTOCOL
         self._active_sentinel += 1
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -150,6 +155,8 @@ class Parallelizer(metaclass=abc.ABCMeta):
         if not self.active:
             self.reset_default()
             self.finalize(exc_type, exc_val, exc_tb)
+            # self._pickle_prot = pickle.DEFAULT_PROTOCOL
+            pickle.DEFAULT_PROTOCOL = self._pickle_prot
 
     ####################################################################
     #  CONTROL FLOW:
@@ -420,6 +427,15 @@ class Parallelizer(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError("Parallelizer is an abstract base class")
 
+    @property
+    def printer(self):
+        if self._printer is None:
+            return self._default_printer
+        else:
+            return self._printer
+    @printer.setter
+    def printer(self, p):
+        self._printer = p
     def main_print(self, *args, **kwargs):
         """
         Prints from the main process
@@ -430,7 +446,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
-        print(*args, **kwargs)
+        self.printer(*args, **kwargs)
     def worker_print(self, *args, **kwargs):
         """
         Prints from a main worker process
@@ -441,7 +457,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
-        print("On Worker {}:".format(self.id), *args, **kwargs)
+        self.printer(" ".join(["On Worker {}:".format(self.id), *args]), **kwargs)
     def print(self, *args, where='both', **kwargs):
         """
         An implementation of print that operates differently on workers than on main
@@ -656,13 +672,16 @@ class SendRecieveParallelizer(Parallelizer):
         """
 
         # self.wait()
-        # self.print("Scattering Data")
+        if self.verbose:
+            self.print("Scattering Data")
         data = self.scatter(data, **kwargs)
         # self.wait()
-        # self.print("Broadcasting Extra Args")
+        if self.verbose:
+            self.print("Broadcasting Extra Args")
         extra_args = self.broadcast(extra_args, **kwargs)
         # self.wait()
-        # self.print("Broadcasting Extra Kwargs")
+        if self.verbose:
+            self.print("Broadcasting Extra Kwargs")
         extra_kwargs = self.broadcast(extra_kwargs, **kwargs)
         if extra_args is None:
             extra_args = ()
@@ -802,13 +821,20 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             """
             queue = self.queues[loc].send_queue #type: mp.queues.Queue
             if loc == self.id:
-                # print("Send", "<<<<", self.id)
+                if self.parent.verbose:
+                    self.parent.print("Send: getting on {id}", id=self.id)
                 res = queue.get()
-                # print("Sent to", self.id)
+                if self.parent.verbose:
+                    self.parent.print("Send: got on {id}", id=self.id)
+                res = pickle.loads(res)
                 return res
             else:
-                # print("Send", self.id, ">>>>", loc)
+                if self.parent.verbose:
+                    self.parent.print("Send: putting {id} to {loc}", id=self.id, loc=loc)
+                data = pickle.dumps(data, protocol=pickle.HIGHEST_PROTOCOL)
                 queue.put(data)
+                if self.parent.verbose:
+                    self.parent.print("Send: put on {id} to {loc}", id=self.id, loc=loc)
                 return data
         def receive(self, data, loc, **kwargs):
             """
@@ -824,13 +850,20 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             """
             queue = self.queues[loc].receive_queue
             if loc != self.id:
-                # print("Recv", loc, ">>>>", self.id)
+                if self.parent.verbose:
+                    self.parent.print("Recv: getting on {id} from {loc}", id=self.id, loc=loc)
                 res = queue.get()
-                # print("Recieved on", self.id, "from", loc)
+                res = pickle.loads(res)
+                if self.parent.verbose:
+                    self.parent.print("Recv: got on {id} from {loc}", id=self.id, loc=loc)
                 return res
             else:
-                # print("Recv", "<<<<", self.id)
+                if self.parent.verbose:
+                    self.parent.print("Recv: putting on {id}", id=self.id)
+                data = pickle.dumps(data, protocol=pickle.HIGHEST_PROTOCOL)
                 queue.put(data)
+                if self.parent.verbose:
+                    self.parent.print("Recv: put on {id}", id=self.id)
                 return data
 
     _is_worker=False # global flag to be overridden
@@ -839,9 +872,11 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                  pool:mp.Pool=None,
                  context=None,
                  manager=None,
+                 printer=None,
+                 verbose=False,
                  **kwargs
                  ):
-        super().__init__()
+        super().__init__(printer=printer, verbose=verbose)
         self.opts=kwargs
         self.pool=pool
         self.worker=worker
@@ -910,11 +945,10 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         self=comm.parent
         with self:
             self._comm = comm # makes a cyclic dependency...but oh well
-            # self.print("...?")
+            if self.verbose and self.on_main:
+                self.print("Starting Parallelizer with {runner}", runner=runner)
             self._comm.initialize()
-            # self.print("fack")
             kwargs['parallelizer'] = comm.parent
-            # self.print(">>>>>>>>", runner)
             return runner(*args, **kwargs)
 
     def apply(self, func, *args, **kwargs):
@@ -924,6 +958,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         :param func:
         :type func:
         :param args:
+        :type args:
         :type args:
         :param kwargs:
         :type kwargs:
@@ -1211,8 +1246,8 @@ class MPIParallelizer(SendRecieveParallelizer):
                         recv_buf,
                         root=root
                     )
-                    
-                    # print(">>>>", send_buf, recv_buf, self.get_mpi_type(dtype).name)
+                    if self.parent.verbose:
+                        self.parent.print("sending", send_buf, recv_buf, self.get_mpi_type(dtype).name)
                     return recv_buf
             else:
                 return self.scatter_obj(data, root=root, **kwargs)
