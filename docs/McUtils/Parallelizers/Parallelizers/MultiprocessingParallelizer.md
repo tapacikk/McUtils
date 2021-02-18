@@ -63,7 +63,7 @@ get_pool_nprocs(pool):
 
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.initialize" class="docs-object-method">&nbsp;</a>
 ```python
-initialize(self): 
+initialize(self, allow_restart=True): 
 ```
 
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.finalize" class="docs-object-method">&nbsp;</a>
