@@ -4,6 +4,7 @@ One place to change things up is convenient parsers for specific commonly pulled
 
 ### Properties and Methods
 ```python
+GaussianFChkReaderException: type
 registered_components: dict
 common_names: dict
 to_common_name: dict
