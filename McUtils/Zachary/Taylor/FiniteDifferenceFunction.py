@@ -3,6 +3,7 @@ Provides a general, convenient FiniteDifferenceFunction class to handle all of o
 """
 import numpy as np, scipy.sparse as sparse
 from ..Mesh import Mesh, MeshType
+__reload_hook__ = [ '..Mesh' ]
 
 __all__ = [
     'FiniteDifferenceFunction',
@@ -233,7 +234,8 @@ class FiniteDifferenceFunction:
                 diffs[i] = None
             else:
                 m = Mesh(g)
-                if m.mesh_type == MeshType.Structured:
+                # print(g[1]-g[0])
+                if m.mesh_type is MeshType.Structured:
                     diffs[i] = RegularGridFiniteDifference(
                         o,
                         stencil=s,
@@ -242,7 +244,7 @@ class FiniteDifferenceFunction:
                         mesh_spacing=g[1]-g[0],
                         **kwargs
                     )
-                else:
+                elif m.mesh_type is MeshType.Unstructured:
                     diffs[i] = IrregularGridFiniteDifference(
                         g,
                         o,
@@ -251,6 +253,8 @@ class FiniteDifferenceFunction:
                         end_point_accuracy=e,
                         **kwargs
                     )
+                else:
+                    raise ValueError("don't know how to do FD on a Mesh with type {}".format(m.mesh_type))
         return cls(*diffs, contract=contract, axes=axes)
 
 ##########################################################################################
