@@ -759,15 +759,16 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         to support `send` and `receive` and therefore to
         support the rest of the necessary bits of the MPI API
         """
-        initialization_timeout=.5
         def __init__(self,
                      parent: 'MultiprocessingParallelizer',
                      id:int,
-                     queues: typing.Iterable['MultiprocessingParallelizer.SendRecvQueuePair']
+                     queues: typing.Iterable['MultiprocessingParallelizer.SendRecvQueuePair'],
+                     initialization_timeout=.5
                      ):
             self.parent = parent
             self.id = id
             self.queues = tuple(queues)
+            self.initialization_timeout=initialization_timeout
 
         class PoolError(Exception):
             """
@@ -874,8 +875,10 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                  manager=None,
                  printer=None,
                  verbose=False,
+                 initialization_timeout=.5,
                  **kwargs
                  ):
+        self.initialization_timeout=initialization_timeout
         super().__init__(printer=printer, verbose=verbose)
         self.opts=kwargs
         self.pool=pool
@@ -968,7 +971,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         import multiprocessing as mp
 
         if self._comm_list is None:
-            self._comm_list = [self.PoolCommunicator(self, i, self.queues) for i in range(0, self.nproc+1)]
+            self._comm_list = [self.PoolCommunicator(self, i, self.queues, initialization_timeout=self.initialization_timeout) for i in range(0, self.nproc+1)]
         self._comm = self._comm_list[0]
         mapping = list(zip(
                 [func] * self.nproc,
@@ -979,10 +982,10 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         pool = self.pool #type: mp.pool.Pool
         subsidiary = pool.starmap_async(self._run, mapping)
         try:
-            main = self._run(func, self.PoolCommunicator(self, 0, self.queues), args, kwargs)
+            main = self._run(func, self.PoolCommunicator(self, 0, self.queues, initialization_timeout=self.initialization_timeout), args, kwargs)
         except self.PoolCommunicator.PoolError:
             # check for errors on subsidiary...
-            subsidiary.get(timeout=.5)
+            subsidiary.get(timeout=self.initialization_timeout)
             raise
         subs = subsidiary.get() # just to effect a wait
         return main
