@@ -145,6 +145,7 @@ class GaussianFChkReader(FileStreamReader):
 
     """
 
+    GaussianFChkReaderException = GaussianFChkReaderException
     registered_components = FormattedCheckpointComponents
     common_names = {to_:from_ for from_, to_ in FormattedCheckpointCommonNames.items()}
     to_common_name = FormattedCheckpointCommonNames
