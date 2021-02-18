@@ -3,7 +3,7 @@
 
 
 ```python
-vec_crosses(vecs1, vecs2, normalize=False, axis=-1): 
+vec_crosses(vecs1, vecs2, normalize=False, zero_thresh=None, axis=-1): 
 ```
 
 

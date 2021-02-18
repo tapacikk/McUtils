@@ -3,7 +3,7 @@
 Gets the angles and normals between two vectors
 
 ```python
-vec_angles(vectors1, vectors2, up_vectors=None, axis=-1): 
+vec_angles(vectors1, vectors2, up_vectors=None, zero_thresh=None, axis=-1): 
 ```
 
 - `vectors1`: `np.ndarray`
