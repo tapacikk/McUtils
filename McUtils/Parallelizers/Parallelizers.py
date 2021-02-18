@@ -783,10 +783,14 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             :return:
             :rtype:
             """
+            if self.parent.verbose:
+                self.parent.print("setting init flag on {id}", id=self.id)
             self.queues[self.id].init_flag.set()
             if self.parent.on_main:
-                for q in self.queues:
+                for i, q in enumerate(self.queues):
                     if not q.init_flag.is_set():
+                        if self.parent.verbose:
+                            self.parent.print("checking init flag on {i}", i=i)
                         wat = q.init_flag.wait(self.initialization_timeout)
                         if not wat:
                             raise self.PoolError("Failed to initialize pool")
