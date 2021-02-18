@@ -21,6 +21,10 @@ class SparseArray:
     Array class that generalize the regular `scipy.sparse.spmatrix`.
     Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
     """
+    #TODO: Be smarter about sparse formatting...currently I track stuff semi explicitly but
+    #      this can be delegated to the actual underlying sparse matrix
+    #      Also need to abstract out the back-end so that we can make this work with
+    #      tensorflow as well
 
     def __init__(self, a, shape=None, layout=sp.csr_matrix, dtype=None, initialize = True):
         self._shape = tuple(shape) if shape is not None else shape
@@ -188,11 +192,27 @@ class SparseArray:
         return data, (block_data, inds, total_shape)
     def _build_data(self, block_data, inds, total_shape):
         if len(block_data) == 0 or np.prod(block_data.shape) == 0.: # empty array
-            return self.fmt(sp.csc_matrix(total_shape, dtype=self.dtype))
+            if total_shape[0] > total_shape[1]:
+                base_sparse = sp.csc_matrix(total_shape, dtype=self.dtype)
+            else:
+                base_sparse = sp.csr_matrix(total_shape, dtype=self.dtype)
+            try:
+                return self.fmt(base_sparse)
+            except MemoryError:
+                self._fmt = base_sparse.format
+                return base_sparse
         try:
             data = self.fmt((block_data, inds), shape=total_shape, dtype=self.dtype)
         except (ValueError, TypeError):
-            data = self.fmt(sp.csc_matrix((block_data, inds), shape=total_shape, dtype=self.dtype))
+            if total_shape[0] > total_shape[1]:
+                base_sparse = sp.csc_matrix(total_shape, dtype=self.dtype)
+            else:
+                base_sparse = sp.csr_matrix(total_shape, dtype=self.dtype)
+            try:
+                data = self.fmt(base_sparse)
+            except MemoryError:
+                data = base_sparse
+                self._fmt = base_sparse.format
         return data
 
     @property
@@ -375,10 +395,10 @@ class SparseArray:
             unflat = new_inds
             total_shape = new_shape
 
-        try:
-            data = self._build_data(data, unflat, total_shape)
-        except:
-            raise Exception(data, unflat, new_shape, total_shape)
+        # try:
+        data = self._build_data(data, unflat, total_shape)
+        # except MemoryError:
+        #     raise Exception(data, unflat, new_shape, total_shape)
         new = type(self)(data, shape = new_shape, layout = self.fmt)
         arr = np.lexsort(unflat)
         new_inds = [inds[arr] for inds in new_inds]
