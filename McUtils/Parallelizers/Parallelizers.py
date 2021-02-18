@@ -1027,7 +1027,8 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
 
     def finalize(self, exc_type, exc_val, exc_tb):
         if not self.worker:
-            self.pool.__exit__(exc_type, exc_val, exc_tb)
+            if self.pool is not None:
+                self.pool.__exit__(exc_type, exc_val, exc_tb)
             self.queues = None
             self._comm = None
     @property
