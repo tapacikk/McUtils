@@ -144,10 +144,16 @@ def vec_normalize(vecs, axis=-1, zero_thresh=None):
 #       vec_crosses
 #
 
-def vec_crosses(vecs1, vecs2, normalize=False, axis=-1):
+def vec_crosses(vecs1, vecs2, normalize=False, zero_thresh=None, axis=-1):
     crosses = np.cross(vecs1, vecs2, axis=axis)
     if normalize:
+        zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
+        norms = vec_norms(crosses, axis=axis)
+        bad_norms = np.where(np.abs(norms) <= zero_thresh)
+        norms[bad_norms] = 1.
         crosses = crosses/vec_norms(crosses, axis=axis)[..., np.newaxis]
+        crosses[bad_norms] = 0.
+
     return crosses
 
 ################################################
@@ -191,7 +197,7 @@ def vec_sins(vectors1, vectors2, axis=-1):
 #
 #       vec_angles
 #
-def vec_angles(vectors1, vectors2, up_vectors=None, axis=-1):
+def vec_angles(vectors1, vectors2, up_vectors=None, zero_thresh=None, axis=-1):
     """
     Gets the angles and normals between two vectors
 
@@ -209,11 +215,16 @@ def vec_angles(vectors1, vectors2, up_vectors=None, axis=-1):
     norms1  = vec_norms(vectors1, axis=axis)
     norms2  = vec_norms(vectors2, axis=axis)
     norm_prod = norms1*norms2
+    zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
+    bad_norm_prods = np.where(np.abs(norm_prod) <= zero_thresh)
+    norm_prod[bad_norm_prods] = 1.
     cos_comps = dots/norm_prod
     cross_norms = vec_norms(crosses, axis=axis)
     sin_comps = cross_norms/norm_prod
 
     angles = np.arctan2(sin_comps, cos_comps)
+
+    angles[bad_norm_prods] = 0.
 
     # return signed angles
     if up_vectors is not None:
