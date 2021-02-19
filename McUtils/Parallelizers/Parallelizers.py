@@ -1010,6 +1010,10 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
     def get_pool_nprocs(pool):
         return pool._processes  # see above
 
+    def _reset_mp_caches(self):
+        self.pool = None
+        self.queues = None
+        self._comm_list = None
     @classmethod
     def _set_is_worker(cls, *args):
         """
@@ -1032,7 +1036,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                     self.pool.__enter__()
                 except ValueError:
                     # fix poos
-                    self.pool = None
+                    self._reset_mp_caches()
                     return self.initialize(allow_restart=False)
             else:
                 self.pool.__enter__()
