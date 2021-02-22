@@ -369,7 +369,6 @@ class HDF5Serializer(BaseSerializer):
     To minimize complexity, we always use NumPy & Pseudopickle as an interface layer.
     This restricts what we can serialize, but generally in insignificant ways.
     """
-
     def __init__(self, allow_pickle=True, psuedopickler=None):
         import h5py as api
         self.api = api
@@ -382,6 +381,7 @@ class HDF5Serializer(BaseSerializer):
     atomic_types = (str, int, float, bool, np.floating, np.integer, np.bool)
     converter_dispatch = OrderedDict((
         ((np.ndarray,), lambda data, cls: cls._iterable_to_numpy(data)),
+        ('to_state', lambda x, s: s._psuedo_pickle_to_numpy(x)),
         ('asarray', lambda data, cls: cls._iterable_to_numpy(data.asarray())),
         ((type(None),), lambda x, cls: cls._none_to_none(x)),
         (atomic_types, lambda x, cls: cls._literal_to_numpy(x)),
