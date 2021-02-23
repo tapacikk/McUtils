@@ -336,6 +336,13 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
 
+    @abc.abstractmethod
+    def concatenate(self, other, axis=0):
+        """
+        Concatenates two SparseArrays along the specified axis
+        :return:
+        :rtype: SparseArray
+        """
 
 class ScipySparseArray(SparseArray):
     """
@@ -865,7 +872,7 @@ class ScipySparseArray(SparseArray):
         # this is an in-place operation which feels kinda dangerous?
         if np.prod(shp) != np.prod(self.shape):
             raise ValueError("Can't reshape {} into {}".format(self.shape, shp))
-        new = self.copy()
+        new = self.copy() # I'm not sure I want a whole copy here...?
         new._shape = tuple(shp)
         bi = new._block_inds
         if bi is not None:
@@ -877,6 +884,45 @@ class ScipySparseArray(SparseArray):
     def squeeze(self):
         self.reshape([x for x in self.shape if x != 1])
         return self
+    def concatenate(self, other, axis=0):
+        """
+        Concatenates two arrays along the specified axis
+        :param other:
+        :type other:
+        :param axis:
+        :type axis:
+        :return:
+        :rtype:
+        """
+
+        if not isinstance(other, ScipySparseArray):
+            other = ScipySparseArray(other)
+
+        other_remainder = other.shape[:axis] + other.shape[axis+1:]
+        self_remainder = self.shape[:axis] + self.shape[axis+1:]
+        if other_remainder != self_remainder:
+            raise ValueError("can't concatenate arrays with shapes {} and {} along axis {}".format(
+                self.shape,
+                other.shape,
+                axis
+            ))
+
+        if axis != 0:
+            raise NotImplementedError("gotta get concatenation along later axes working...")
+        # do necessary reshaping to make the row-or-columns stackable
+        if self.data.shape[0] != self.shape[0]:
+            self_stacky = self.data.reshape((self.shape[0], -1))
+        else:
+            self_stacky = self.data
+
+        if other.data.shape[0] != other.shape[0]:
+            other_stacky = other.data.reshape((other.shape[0], -1))
+        else:
+            other_stacky = other.data
+
+        new_shit = sp.vstack([self_stacky, other_stacky])
+        new_shape = self.shape[:axis] + (self.shape[axis] + other.shape[axis],) + self.shape[axis+1:]
+        return type(self)(new_shit, shape=new_shape)
 
     @property
     def T(self):
@@ -891,23 +937,26 @@ class ScipySparseArray(SparseArray):
         if isinstance(b, SparseArray) and len(bshp) > 2:
             bcols = int(np.prod(bshp[1:]))
             b = b.reshape((bshp[0], bcols))
-        if self.ndim > 2:
+        if self.shape != self.data.shape:
             arows = int(np.prod(self.shape[:-1]))
             a = self.reshape((arows, self.shape[-1])).data
         else:
             a = self.data
 
         if isinstance(b, ScipySparseArray):
+            if b.shape != b.data.shape:
+                bcols = int(np.prod(b.shape[1:]))
+                b = b.reshape((b.shape[0], bcols)).data
             b = b.data
         elif isinstance(b, SparseArray):
             b = b.ascsr()
 
-        # try:
-        #     type(self)(a.dot(b))
-        # except:
-        #     raise Exception(a, b)
+        woof = a.dot(b)
 
-        return type(self)(a.dot(b))
+        if isinstance(woof, sp.spmatrix):
+            return type(self)(a.dot(b))
+        else:
+            return woof
 
     def __neg__(self):
         return -1 * self
@@ -1427,8 +1476,6 @@ class TensorFlowSparseArray(SparseArray):
         :rtype: sp.coo_matrix
         """
         return ScipySparseArray(self).ascsr()
-
-
     def reshape(self, newshape):
         """
         Returns a reshaped version of the tensor
