@@ -39,6 +39,8 @@ Any lowish-level numerical operations that need to be shared go here.
   - [vec_sin_cos_derivs](Numputils/AnalyticDerivs/vec_sin_cos_derivs.md)
   - [vec_angle_derivs](Numputils/AnalyticDerivs/vec_angle_derivs.md)
   - [SparseArray](Numputils/Sparse/SparseArray.md)
+  - [ScipySparseArray](Numputils/Sparse/ScipySparseArray.md)
+  - [TensorFlowSparseArray](Numputils/Sparse/TensorFlowSparseArray.md)
   - [sparse_tensordot](Numputils/Sparse/sparse_tensordot.md)
 
 ### Examples:
