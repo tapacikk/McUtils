@@ -1,8 +1,10 @@
-import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os
+import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc
 from McUtils.Scaffolding import MaxSizeCache
 
 __all__ = [
     "SparseArray",
+    "ScipySparseArray",
+    "TensorFlowSparseArray",
     "sparse_tensordot"
 ]
 
@@ -16,7 +18,333 @@ __all__ = [
 #   This would also allow us to more conveniently swap out the backend for our different arrays, in
 #   case we want to use a different sparse matrix format.
 
-class SparseArray:
+class SparseArray(metaclass=abc.ABCMeta):
+    """
+    Represents a generic sparse array format
+    which can be subclassed to provide a concrete implementation
+    """
+    backends = None
+    @classmethod
+    def get_backends(cls):
+        """
+        Provides the set of backends to try by default
+        :return:
+        :rtype:
+        """
+        if cls.backends is None:
+            return (ScipySparseArray,)
+        else:
+            return cls.backends
+    @classmethod
+    def from_data(cls, data, **kwargs):
+        """
+        A wrapper so that we can dispatch to the best
+        sparse backend we've got defined.
+        Can be monkey patched.
+        :param data:
+        :type data:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+        for backend in cls.get_backends():
+            try:
+                return backend(data, **kwargs)
+            except ImportError:
+                pass
+    @classmethod
+    def from_diag(cls, data, **kwargs):
+        """
+        A wrapper so that we can dispatch to the best
+        sparse backend we've got defined.
+        Can be monkey patched.
+        :param data:
+        :type data:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
+        for backend in cls.get_backends():
+            try:
+                return backend.from_diagonal_data(data, **kwargs)
+            except ImportError:
+                pass
+    @classmethod
+    @abc.abstractmethod
+    def from_diagonal_data(cls, diags, **kw):
+        """
+        Constructs a sparse tensor from
+        :param diags:
+        :type diags:
+        :param kw:
+        :type kw:
+        :return:
+        :rtype:
+        """
+        ...
+    @property
+    @abc.abstractmethod
+    def shape(self):
+        """
+        Provides the shape of the sparse array
+        :return:
+        :rtype: tuple[int]
+        """
+        ...
+    @property
+    def ndim(self):
+        """
+        Provides the number of dimensions in the array
+        :return:
+        :rtype:
+        """
+        return len(self.shape)
+    @abc.abstractmethod
+    def to_state(self, serializer=None):
+        """
+        Provides just the state that is needed to
+        serialize the object
+        :param serializer:
+        :type serializer:
+        :return:
+        :rtype:
+        """
+        ...
+    @classmethod
+    @abc.abstractmethod
+    def from_state(cls, state, serializer=None):
+        """
+        Loads from the stored state
+        :param serializer:
+        :type serializer:
+        :return:
+        :rtype:
+        """
+        ...
+    @classmethod
+    @abc.abstractmethod
+    def empty(cls, shape, dtype=None, **kw):
+        """
+        Returns an empty SparseArray with the appropriate shape and dtype
+        :param shape:
+        :type shape:
+        :param dtype:
+        :type dtype:
+        :param kw:
+        :type kw:
+        :return:
+        :rtype:
+        """
+        ...
+    @property
+    @abc.abstractmethod
+    def block_data(self):
+        """
+        Returns the row and column indices and vector of
+        values that the sparse array is storing
+        :param shape:
+        :type shape:
+        :param dtype:
+        :type dtype:
+        :param kw:
+        :type kw:
+        :return:
+        :rtype:
+        """
+        ...
+    @abc.abstractmethod
+    def transpose(self, axes):
+        """
+        Returns a transposed version of the tensor
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        ...
+    @abc.abstractmethod
+    def ascoo(self):
+        """
+        Converts the tensor into a scipy COO matrix...
+        :return:
+        :rtype: sp.coo_matrix
+        """
+        ...
+
+    @abc.abstractmethod
+    def ascsr(self):
+        """
+        Converts the tensor into a scipy CSR matrix...
+        :return:
+        :rtype: sp.csr_matrix
+        """
+        ...
+    @abc.abstractmethod
+    def asarray(self):
+        """
+        Converts the tensor into a dense np.ndarray
+        :return:
+        :rtype: np.ndarray
+        """
+        ...
+    @abc.abstractmethod
+    def reshape(self, newshape):
+        """
+        Returns a reshaped version of the tensor
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        ...
+    def __truediv__(self, other):
+        return self.multiply(1/other)
+    def __rtruediv__(self, other):
+        return self.multiply(1/other)
+    def __rmul__(self, other):
+        return self.multiply(other)
+    def __mul__(self, other):
+        return self.multiply(other)
+    @abc.abstractmethod
+    def multiply(self, other):
+        """
+        Multiplies self and other
+        :param other:
+        :type other:
+        :return:
+        :rtype:
+        """
+        ...
+    @abc.abstractmethod
+    def dot(self, other):
+        """
+        Takes a regular dot product of self and other
+        :param other:
+        :type other:
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        ...
+    def tensordot(self, other, axes=2):
+        """
+        Takes the dot product of self and other along the specified axes
+        :param other:
+        :type other:
+        :param axes: the axes to contract along
+        :type axes: Iterable[int] | Iterable[Iterable[int]]
+        :return:
+        :rtype:
+        """
+
+        try:
+            iter(axes)
+        except TypeError:
+            axes_a = list(range(-axes, 0))
+            axes_b = list(range(0, axes))
+        else:
+            axes_a, axes_b = axes
+        try:
+            na = len(axes_a)
+            axes_a = list(axes_a)
+        except TypeError:
+            axes_a = [axes_a]
+            na = 1
+        try:
+            nb = len(axes_b)
+            axes_b = list(axes_b)
+        except TypeError:
+            axes_b = [axes_b]
+            nb = 1
+
+        a = self
+        b = other
+
+        as_ = a.shape
+        nda = a.ndim
+        bs = b.shape
+        ndb = b.ndim
+        equal = True
+        if na != nb:
+            equal = False
+        else:
+            for k in range(na):
+                if as_[axes_a[k]] != bs[axes_b[k]]:
+                    equal = False
+                    break
+                if axes_a[k] < 0:
+                    axes_a[k] += nda
+                if axes_b[k] < 0:
+                    axes_b[k] += ndb
+        if not equal:
+            raise ValueError("shape-mismatch for sum ({}{}@{}{})".format(as_, axes_a, bs, axes_b))
+
+        # Move the axes to sum over to the end of "a"
+        # and to the front of "b"
+        notin = [k for k in range(nda) if k not in axes_a]
+        newaxes_a = [notin, axes_a]
+        N2 = 1
+        for axis in axes_a:
+            N2 *= as_[axis]
+        totels_a = np.prod(as_)
+        newshape_a = (totels_a // N2, N2)
+        olda = [as_[axis] for axis in notin]
+
+        notin = [k for k in range(ndb) if k not in axes_b]
+        newaxes_b = [axes_b, notin]
+        N2 = 1
+        for axis in axes_b:
+            N2 *= bs[axis]
+        totels_b = np.prod(bs)
+        newshape_b = (N2, totels_b // N2)
+        oldb = [bs[axis] for axis in notin]
+
+        # if any(dim == 0 for dim in ip.chain(newshape_a, newshape_b)):
+        #     # shortcut for when we aren't even doing a contraction...?
+        #     res = sp.csr_matrix((olda + oldb), dtype=b.dtype)
+        #     # dense output...I guess that's clean?
+        #     if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
+        #         res = res.todense()
+        #     return res
+
+
+        if a.ndim > 1:
+            at = a.transpose(newaxes_a[0] + newaxes_a[1])
+        else:
+            at = a
+        at = at.reshape(newshape_a)
+
+        if b.ndim > 1:
+            bt = b.transpose(newaxes_b[0] + newaxes_b[1])
+        else:
+            bt = b
+        bt = bt.reshape(newshape_b)
+
+        res = at.dot(bt)
+
+        return res.reshape(olda + oldb)
+    @classmethod
+    def clear_caches(self):
+        """
+        A method to be overloaded.
+        Subclasses may want to cache things for performance, so we
+        provide a way for them to clear this out.
+        :return:
+        :rtype:
+        """
+
+    @abc.abstractmethod
+    def concatenate(self, other, axis=0):
+        """
+        Concatenates two SparseArrays along the specified axis
+        :return:
+        :rtype: SparseArray
+        """
+
+class ScipySparseArray(SparseArray):
     """
     Array class that generalize the regular `scipy.sparse.spmatrix`.
     Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
@@ -70,9 +398,37 @@ class SparseArray:
         if dtype is None:
             dtype=np.float64
         return cls(sp.csr_matrix(matshape, dtype=dtype), shape=shape, **kw)
+    @staticmethod
+    def _get_balanced_shape(shp):
+        """
+        We get a strong memory benefit from having a well-balanced
+        matrix, so we do a scan to find the best balancing point
+        This works by finding the first spot where the product of the remaining
+        inds is less than the first inds and then checking the balance against
+        cutting at the previous spot
+        :param shp:
+        :type shp:
+        :return:
+        :rtype:
+        """
+
+        cumprods_left = np.cumprod(shp)
+        cumprods_right = np.flip(np.cumprod(np.flip(shp)))
+        vl, vr = o_vl, o_vr = 1, cumprods_right[0]
+        for vl, vr in zip(cumprods_left, cumprods_right[1:]):
+            if vr == vl: # perfect balance
+                break
+            elif vr < vl:
+                if (vr / vl) < (o_vl / o_vr):
+                    vl, vr = o_vl, o_vr
+                break
+            o_vl, o_vr = vl, vr
+
+        return (vl, vr)
+
     def _init_matrix(self):
         a = self._a
-        if isinstance(a, SparseArray):
+        if isinstance(a, ScipySparseArray):
             if self.fmt is not a.fmt:
                 self._a = self.fmt(a._a, shape=a.shape)
             else:
@@ -88,7 +444,9 @@ class SparseArray:
         elif isinstance(a, np.ndarray):
             self._shape = a.shape
             if len(a.shape) > 2:
-                a = a.reshape((a.shape[0], np.prod(a.shape[1:])))
+                # we want this to be more balanced b.c. it helps for transposes
+                total_shape = self._get_balanced_shape(a.shape)
+                a = a.reshape(total_shape)
             elif len(a.shape) == 1:
                 a = a.reshape(a.shape + (1,))
             self._a = self.fmt(a, shape=a.shape)
@@ -107,13 +465,15 @@ class SparseArray:
                 ))
             # gotta make sure our inds are sorted so we don't run into sorting issues later...
             flat = self._ravel_indices(a[1], self._shape)
-            nels = int(np.prod(self._shape))
+            # nels = int(np.prod(self._shape))
             sort = np.argsort(flat)
             flat = flat[sort]
             block_vals = block_vals[sort]
             block_inds = tuple(i[sort] for i in block_inds)
-            total_shape = (1, nels)
-            init_inds = (np.zeros(len(block_vals)), flat)
+
+            total_shape = self._get_balanced_shape(self._shape)
+            # print(">>>>> ", total_shape)
+            init_inds = self._unravel_indices(flat, total_shape)
             try:
                 data = self.fmt((block_vals, init_inds), shape=total_shape)
             except TypeError:
@@ -201,6 +561,11 @@ class SparseArray:
             except MemoryError:
                 self._fmt = base_sparse.format
                 return base_sparse
+
+        # shp = self.shape
+        # if len(shp) == 5 and shp[:4] == (12, 12, 12, 12):
+        #     raise RuntimeError(self.shape, self.fmt, total_shape, "why")
+
         try:
             data = self.fmt((block_data, inds), shape=total_shape, dtype=self.dtype)
         except (ValueError, TypeError):
@@ -228,23 +593,28 @@ class SparseArray:
         return diag.flatten()
 
     @classmethod
-    def from_diag(cls, diags, **kw):
+    def from_diagonal_data(cls, diags, **kw):
         if isinstance(diags[0], (int, np.integer, float, np.floating)):
             # just a plain old diagonal matrix
             N = len(diags)
             # print(len(diags))
             return cls(sp.csr_matrix(sp.diags([diags], [0])), shape=(N, N), **kw)
         else:
+
             data = sp.block_diag(diags, format='csr')
             block_size = diags[0].shape
             if 'shape' not in kw:
                 kw['shape'] = (len(diags), block_size[0], len(diags), block_size[1])
-            return cls(data, **kw).transpose((0, 2, 1, 3))
-
-    def toarray(self):
+            wat = cls(data, **kw).transpose((0, 2, 1, 3))
+            return wat
+    def asarray(self):
         return np.reshape(self.data.toarray(), self.shape)
     def todense(self):
         return np.reshape(np.asarray(self.data.todense()), self.shape)
+    def ascoo(self):
+        return sp.coo_matrix(self.data)
+    def ascsr(self):
+        return sp.csr_matrix(self.data)
     @property
     def data(self):
         if not isinstance(self._a, sp.spmatrix):
@@ -252,6 +622,21 @@ class SparseArray:
         if not self._validated:
             self._validate()
         return self._a
+    @data.setter
+    def data(self, new):
+        if not isinstance(new, sp.spmatrix):
+            raise ValueError("new underlying sparse buffer must be of type {}".format(
+                sp.spmatrix
+            ))
+        elif np.prod(new.shape) != np.prod(self.shape):
+            raise ValueError("can't use sparse buffer of shape {} for tensor of shape {}".format(
+                new.shape,
+                self.shape
+            ))
+        else:
+            if new.format != self.data.format:
+                new = self.fmt(new)
+            self._a = new
     @property
     def fmt(self):
         return self._fmt
@@ -271,6 +656,9 @@ class SparseArray:
     # def __len__(self):
     #     return self.shape[0]
 
+    @classmethod
+    def clear_caches(cls):
+        cls.clear_ravel_caches()
     @classmethod
     def clear_ravel_caches(cls):
         cls._unravel_cache = MaxSizeCache()
@@ -295,6 +683,20 @@ class SparseArray:
             res = np.unravel_index(n, dims)
             cache[n_hash] = res
         return res
+
+    # we cache the common ops...
+    @classmethod
+    def set_ravel_cache_size(cls, size):
+        if cls._ravel_cache is None:
+            cls._ravel_cache = MaxSizeCache(size)
+        elif cls._ravel_cache.max_items != size:
+            cls._ravel_cache = MaxSizeCache(size)
+
+        if cls._unravel_cache is None:
+            cls._unravel_cache = MaxSizeCache(size)
+        elif cls._unravel_cache.max_items != size:
+            cls._unravel_cache = MaxSizeCache(size)
+
 
     _ravel_cache = MaxSizeCache()  # hopefully faster than bunches of unravel_index calls...
     @classmethod
@@ -321,16 +723,43 @@ class SparseArray:
             cache[n_hash] = res
         return res
 
+    # import memory_profiler
+    # @memory_profiler.profile
+    def _getinds(self):
+        # pulled from tocoo except without the final conversion to COO...
+        from scipy.sparse import _sparsetools
+
+        data = self.data
+        major_dim, minor_dim = data._swap(data.shape)
+        minor_indices = data.indices
+        major_indices = np.empty(len(minor_indices), dtype=data.indices.dtype)
+        _sparsetools.expandptr(major_dim, data.indptr, major_indices)
+        row, col = data._swap((major_indices, minor_indices))
+
+        return row, col
+    def find(self):
+        fmt = self.data.format
+        if False and fmt in ['csr', 'csc']:
+            d = self.data # type: sp.csr_matrix
+            vals = d.data
+            row_inds, col_inds = self._getinds()
+        else:
+            row_inds, col_inds, vals = sp.find(self.data)
+        return row_inds, col_inds, vals
+
     @property
     def block_vals(self):
         if self._block_vals is None:
             d = self.data
-            row_inds, col_inds, data = sp.find(d)
+
+            row_inds, col_inds, data = self.find()
+
             flat = self._ravel_indices((row_inds, col_inds), d.shape)
             unflat = self._unravel_indices(flat, self.shape)
             self._block_inds = (flat, unflat)
             self._block_vals = data
         return self._block_vals
+
     @property
     def block_inds(self):
         if self._block_inds is None:
@@ -378,16 +807,25 @@ class SparseArray:
         :return:
         :rtype:
         """
+
         shp = self.shape
+
+        # if len(self.shape) > 4:
+        #     raise Exception("why")
+
         data, inds = self.block_data
+
+        # if len(self.shape) > 4:
+        #     raise Exception("why")
+
         new_inds = [inds[i] for i in transp]
         new_shape = tuple(shp[i] for i in transp)
-
         if len(data) == 0:
             return type(self).empty(new_shape, layout=self.fmt, dtype=data.dtype)
 
         if len(new_shape) > 2:
-            total_shape = (np.prod(new_shape[:-2])*new_shape[-2], new_shape[-1])
+            total_shape = self._get_balanced_shape(new_shape)
+            # print(">>>>>  woof ", total_shape)
             flat = self._ravel_indices(new_inds, new_shape)
             unflat = self._unravel_indices(flat, total_shape)
         else:
@@ -395,12 +833,20 @@ class SparseArray:
             unflat = new_inds
             total_shape = new_shape
 
+        # if len(new_shape) > 4:
+        #     raise Exception("why")
+
         # try:
         data = self._build_data(data, unflat, total_shape)
+
         # except MemoryError:
         #     raise Exception(data, unflat, new_shape, total_shape)
         new = type(self)(data, shape = new_shape, layout = self.fmt)
+
         arr = np.lexsort(unflat)
+
+        # if len(new_shape) > 4:
+        #     raise Exception("why")
         new_inds = [inds[arr] for inds in new_inds]
         if self._block_vals is not None:
             new_v = self._block_vals[arr]
@@ -412,21 +858,71 @@ class SparseArray:
             new.block_inds = (flat, new_inds)
             # except:
             #     raise Exception(new_shape, len(total_shape))
+
         return new
 
     def reshape(self, shp):
+        """
+        Had to make this op not in-plae because otherwise got scary errors...
+        :param shp:
+        :type shp:
+        :return:
+        :rtype:
+        """
         # this is an in-place operation which feels kinda dangerous?
         if np.prod(shp) != np.prod(self.shape):
             raise ValueError("Can't reshape {} into {}".format(self.shape, shp))
-        self._shape = tuple(shp)
-        bi = self._block_inds
+        new = self.copy() # I'm not sure I want a whole copy here...?
+        new._shape = tuple(shp)
+        bi = new._block_inds
         if bi is not None:
             flat, unflat = bi
-            self._block_inds = flat
-        return self
+            new._block_inds = flat
+        if len(shp) == 2:
+            new.data = new.data.reshape(shp)
+        return new
     def squeeze(self):
         self.reshape([x for x in self.shape if x != 1])
         return self
+    def concatenate(self, other, axis=0):
+        """
+        Concatenates two arrays along the specified axis
+        :param other:
+        :type other:
+        :param axis:
+        :type axis:
+        :return:
+        :rtype:
+        """
+
+        if not isinstance(other, ScipySparseArray):
+            other = ScipySparseArray(other)
+
+        other_remainder = other.shape[:axis] + other.shape[axis+1:]
+        self_remainder = self.shape[:axis] + self.shape[axis+1:]
+        if other_remainder != self_remainder:
+            raise ValueError("can't concatenate arrays with shapes {} and {} along axis {}".format(
+                self.shape,
+                other.shape,
+                axis
+            ))
+
+        if axis != 0:
+            raise NotImplementedError("gotta get concatenation along later axes working...")
+        # do necessary reshaping to make the row-or-columns stackable
+        if self.data.shape[0] != self.shape[0]:
+            self_stacky = self.data.reshape((self.shape[0], -1))
+        else:
+            self_stacky = self.data
+
+        if other.data.shape[0] != other.shape[0]:
+            other_stacky = other.data.reshape((other.shape[0], -1))
+        else:
+            other_stacky = other.data
+
+        new_shit = sp.vstack([self_stacky, other_stacky])
+        new_shape = self.shape[:axis] + (self.shape[axis] + other.shape[axis],) + self.shape[axis+1:]
+        return type(self)(new_shit, shape=new_shape)
 
     @property
     def T(self):
@@ -437,15 +933,30 @@ class SparseArray:
     def __matmul__(self, other):
         return self.dot(other)
     def dot(self, b, reverse=False):
-        if reverse:
-            return sparse_tensordot(b, self, axes=(-1, 0))
+        bshp = b.shape
+        if isinstance(b, SparseArray) and len(bshp) > 2:
+            bcols = int(np.prod(bshp[1:]))
+            b = b.reshape((bshp[0], bcols))
+        if self.shape != self.data.shape:
+            arows = int(np.prod(self.shape[:-1]))
+            a = self.reshape((arows, self.shape[-1])).data
         else:
-            return sparse_tensordot(self, b, axes=(-1, 0))
-    def tensordot(self, b, axes=2, reverse=False):
-        if reverse:
-            return sparse_tensordot(b, self, axes=axes)
+            a = self.data
+
+        if isinstance(b, ScipySparseArray):
+            if b.shape != b.data.shape:
+                bcols = int(np.prod(b.shape[1:]))
+                b = b.reshape((b.shape[0], bcols)).data
+            b = b.data
+        elif isinstance(b, SparseArray):
+            b = b.ascsr()
+
+        woof = a.dot(b)
+
+        if isinstance(woof, sp.spmatrix):
+            return type(self)(a.dot(b))
         else:
-            return sparse_tensordot(self, b, axes=axes)
+            return woof
 
     def __neg__(self):
         return -1 * self
@@ -470,7 +981,7 @@ class SparseArray:
                     new._block_inds = bi
                 return new
 
-        if isinstance(other, SparseArray):
+        if isinstance(other, ScipySparseArray):
             other = other.data
         if isinstance(other, sp.spmatrix):
             other = other.reshape(d.shape)
@@ -513,7 +1024,7 @@ class SparseArray:
                     new._block_inds = bi
                 return new
 
-        if isinstance(other, SparseArray):
+        if isinstance(other, ScipySparseArray):
             other = other.data
         if isinstance(other, sp.spmatrix):
             other = other.reshape(d.shape)
@@ -824,19 +1335,287 @@ class SparseArray:
                                           self.non_zero_count
                                            )
 
+# import tensorflow
+class TensorFlowSparseArray(SparseArray):
+    """
+    Provides a SparseArray implementation that uses TensorFlow as the backend
+    """
+    def __init__(self, data, dtype=None):
+        import tensorflow
+        self.tensor = self._init_tensor(data, dtype=dtype) #type: tensorflow.sparse.SparseTensor
+
+    def _init_tensor(self, data, dtype=None):
+        """
+        :param data:
+        :type data:
+        :return:
+        :rtype: tensorflow.sparse.SparseTensor
+        """
+        import tensorflow
+        if isinstance(data, TensorFlowSparseArray):
+            import copy
+            new = copy.copy(data.tensor)
+            if dtype is not None and new.dtype != dtype:
+                raise NotImplementedError("not sure how to convert dtypes...")
+            return new
+        elif isinstance(data, tensorflow.sparse.SparseTensor):
+            if dtype is not None and data.dtype != dtype:
+                raise NotImplementedError("not sure how to convert dtypes...")
+            return data
+        elif isinstance(data, ScipySparseArray):
+            vals, inds = data.block_data
+            if dtype is not None and vals.dtype != dtype:
+                vals = vals.astype(dtype)
+            return tensorflow.sparse.SparseTensor(inds, vals, data.shape)
+        elif isinstance(data, sp.spmatrix):
+            row_inds, col_inds, vals = sp.find(data)
+            if dtype is not None and vals.dtype != dtype:
+                vals = vals.astype(dtype)
+            return tensorflow.sparse.SparseTensor((row_inds, col_inds), vals, data.shape)
+        elif isinstance(data, np.ndarray) and data.dtype != np.dtype(object):
+            return self._init_tensor(ScipySparseArray(data))
+        elif isinstance(data, (list, tuple)) and len(data) == 2:
+            if all(isinstance(x, (int, np.integer)) for x in data):
+                # empty tensor
+                return tensorflow.sparse.SparseTensor([], [], data)
+            elif len(data[1]) == 2 and all(isinstance(x, (int, np.integer)) for x in data[1]):
+                # second arg is shape
+                vals = np.array(data[0][0])
+                inds = data[0][1]
+                if dtype is not None and vals.dtype != dtype:
+                    vals = vals.astype(dtype)
+                return tensorflow.sparse.SparseTensor(inds, vals, data[1])
+            else:
+                raise TypeError("don't know how to turn {} into a tensorflow SparseTensor".format(
+                    data
+                ))
+        else:
+            raise TypeError("don't know how to turn {} into a tensorflow SparseTensor".format(
+                data
+            ))
+
+    @property
+    def shape(self):
+        """
+        Provides the shape of the sparse array
+        :return:
+        :rtype: tuple[int]
+        """
+        return tuple(self.tensor.shape)
+
+    def to_state(self, serializer=None):
+        """
+        Provides just the state that is needed to
+        serialize the object
+        :param serializer:
+        :type serializer:
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("coming")
+
+    @classmethod
+    def from_state(cls, state, serializer=None):
+        """
+        Loads from the stored state
+        :param serializer:
+        :type serializer:
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("coming")
+
+    @classmethod
+    def empty(cls, shape, dtype=None, **kw):
+        """
+        Returns an empty SparseArray with the appropriate shape and dtype
+        :param shape:
+        :type shape:
+        :param dtype:
+        :type dtype:
+        :param kw:
+        :type kw:
+        :return:
+        :rtype:
+        """
+        cls(shape, dtype=dtype)
+
+    @property
+    def block_data(self):
+        """
+        Returns the row and column indices and vector of
+        values that the sparse array is storing
+        :return:
+        :rtype: Tuple[np.ndarray, Iterable[np.ndarray]]
+        """
+        return (self.tensor.values, self.tensor.indices)
+
+    def transpose(self, axes):
+        """
+        Returns a transposed version of the tensor
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        import tensorflow as tf
+        new = tf.sparse.transpose(self.tensor, perm=axes)
+        return type(self)(new)
+
+    def ascoo(self):
+        """
+        Converts the tensor into a scipy COO matrix...
+        :return:
+        :rtype: sp.coo_matrix
+        """
+        return ScipySparseArray(self).ascoo()
+    def ascsr(self):
+        """
+        Converts the tensor into a scipy COO matrix...
+        :return:
+        :rtype: sp.coo_matrix
+        """
+        return ScipySparseArray(self).ascsr()
+    def reshape(self, newshape):
+        """
+        Returns a reshaped version of the tensor
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        import tensorflow as tf
+        new = tf.sparse.reshape(self.tensor, newshape)
+        return type(self)(new)
+
+    def __truediv__(self, other):
+        return self.multiply(1 / other)
+
+    def __rtruediv__(self, other):
+        return self.multiply(1 / other)
+
+    def __rmul__(self, other):
+        return self.multiply(other)
+
+    def __mul__(self, other):
+        return self.multiply(other)
+
+    def multiply(self, other):
+        """
+        Multiplies self and other
+        :param other:
+        :type other:
+        :return:
+        :rtype:
+        """
+        import tensorflow as tf
+        if isinstance(other, TensorFlowSparseArray):
+            new = self.tensor * other.tensor
+            return type(self)(new)
+        elif isinstance(other, (tf.Tensor, tf.SparseTensor)):
+            new = self.tensor * other
+            return type(self)(new)
+        elif isinstance(other, (int, np.integer, float, np.floating)):
+            if other == 0:
+                return type(self).empty(self.shape)
+            else:
+                vals, inds = self.block_data
+                vals = vals * other
+                return type(self)(((vals, inds), self.shape))
+
+    @staticmethod
+    def _tf_sparse_dot(a, b):
+        from tensorflow.python.ops.linalg.sparse import sparse_csr_matrix_ops
+        ashp = tuple(a.shape)
+        if len(ashp) > 2:
+            arows = int(np.prod(ashp[:-1]))
+            acols = ashp[-1]
+            a = a.reshape((arows, acols))
+        bshp = tuple(b.shape)
+        if len(bshp) > 2:
+            brows = bshp[0]
+            bcols = int(np.prod(bshp[1:]))
+            b = b.reshape((brows, bcols))
+        # woof..
+        csr_1 = sparse_csr_matrix_ops.sparse_tensor_to_csr_sparse_matrix(
+            a.indices,
+            a.values,
+            a.shape
+        )
+        csr_2 = sparse_csr_matrix_ops.sparse_tensor_to_csr_sparse_matrix(
+            b.indices,
+            b.values,
+            b.shape
+        )
+        new = sparse_csr_matrix_ops.sparse_matrix_mat_mul(csr_1, csr_2)
+        if len(ashp) > 2 or len(b) > 2:
+            remainder_a = ashp[:-1]
+            remainder_b = bshp[1:]
+            new = new.reshape(remainder_a + remainder_b)
+        return new
+
+    def dot(self, other):
+        """
+        Takes a regular dot product of self and other
+        :param other:
+        :type other:
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        import tensorflow as tf
+
+        if isinstance(other, tf.SparseTensor):
+            # one main case to which all others will defer
+
+            return type(self)(self._tf_sparse_dot(self.tensor, other))
+        elif isinstance(other, TensorFlowSparseArray):
+            return self.dot(other.tensor)
+        elif isinstance(other, (sp.spmatrix, ScipySparseArray)):
+            # heavy duty...
+            return self.dot(type(self)(other))
+        elif isinstance(other, tf.Tensor):
+            return tf.sparse.sparse_dense_matmul(self, other)
+        else:
+            raise TypeError("dot not defined for {} and {}".format(type(self).__name__, type(other).__name__))
+
+
 def _dot(a, b):
     if isinstance(a, SparseArray):
-        a = a.data
+        a = a.ascsr()
     if isinstance(b, SparseArray):
-        b = b.data
+        b = b.ascsr()
+
     if isinstance(a, sp.spmatrix):
-        return a.dot(b)
+        dense_output = False
+        if not isinstance(b, sp.spmatrix):
+            dense_output = True
+            # we convert it to a sparse thing to avoid memory blow-ups when we get dense unpacking...?
+            b = sp.csr_matrix(b)
+
+        wat = a.dot(b)
+        # raise Exception(wat.shape, a.shape, b.shape)
     else:
-        return np.dot(a, b)
-def asCOO(a):
-    if not isinstance(a, sp.coo_matrix):
-        a = sp.coo_matrix(a)
-    return a
+        dense_output = True
+        # we convert it to a sparse thing to avoid memory blow-ups when we get dense unpacking...?
+        a = sp.csr_matrix(a)
+        if not isinstance(b, sp.spmatrix):
+            dense_output = True
+            # we convert it to a sparse thing to avoid memory blow-ups when we get dense unpacking...?
+            b = sp.csr_matrix(b)
+        wat = a.dot(b)
+
+    # print(">>>>>", a.shape, b.shape, wat.shape)
+
+    if dense_output:
+        wat = wat.toarray()
+    return wat
+
+# def asCOO(a):
+#     if not isinstance(a, sp.coo_matrix):
+#         a = sp.coo_matrix(a)
+#     return a
 def sparse_tensordot(a, b, axes=2):
     """Defines a version of tensordot that uses sparse arrays, adapted from the sparse package on PyPI
 
@@ -892,51 +1671,76 @@ def sparse_tensordot(a, b, axes=2):
     # Move the axes to sum over to the end of "a"
     # and to the front of "b"
     notin = [k for k in range(nda) if k not in axes_a]
-    newaxes_a = notin + axes_a
+    newaxes_a = [notin, axes_a]
     N2 = 1
     for axis in axes_a:
         N2 *= as_[axis]
-    newshape_a = (-1, N2)
+    totels_a = np.prod(as_)
+    newshape_a = (totels_a // N2, N2)
     olda = [as_[axis] for axis in notin]
 
     notin = [k for k in range(ndb) if k not in axes_b]
-    newaxes_b = axes_b + notin
+    newaxes_b = [axes_b, notin]
     N2 = 1
     for axis in axes_b:
         N2 *= bs[axis]
-    newshape_b = (N2, -1)
+    totels_b = np.prod(bs)
+    newshape_b = (N2, totels_b // N2)
     oldb = [bs[axis] for axis in notin]
 
     if any(dim == 0 for dim in ip.chain(newshape_a, newshape_b)):
-        res = asCOO(np.empty(olda + oldb))
+        res = sp.csr_matrix((olda + oldb), dtype=b.dtype)
+        # dense output...I guess that's clean?
         if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
             res = res.todense()
         return res
 
-    if a.ndim > 1:
-        at = a.transpose(newaxes_a)
-    else:
-        at = a
-    if isinstance(at, SparseArray):
-        at = at.data
-    at = at.reshape(newshape_a)
+    if newshape_a[0] > 2 * newshape_b[1]:
+        # indicates it will be faster to transpose both arrays, dot, and transpose back
+        if a.ndim > 1:
+            # print(">>>>", newaxes_a)
+            at = a.transpose(newaxes_a[1] + newaxes_a[0])
+            # if newshape_a[1] > 5000:
+            #     raise Exception("why")
+        else:
+            at = a
 
-    if b.ndim > 1:
-        bt = b.transpose(newaxes_b)
-    else:
-        bt = b
-    if isinstance(bt, SparseArray):
-        bt = bt.data
-    bt = bt.reshape(newshape_b)
+        at = at.reshape(np.flip(newshape_a))
 
-    res = _dot(at, bt)
+        if b.ndim > 1:
+            bt = b.transpose(newaxes_b[1] + newaxes_b[0])
+        else:
+            bt = b
+        bt = bt.reshape(np.flip(newshape_b))
+
+        # if isinstance(bt, np.ndarray):
+        #     bt = sp.csr_matrix(bt)
+
+        res = _dot(bt, at).transpose()
+
+    else:
+        if a.ndim > 1:
+            at = a.transpose(newaxes_a[0] + newaxes_a[1])
+        else:
+            at = a
+        at = at.reshape(newshape_a)
+
+        if b.ndim > 1:
+            bt = b.transpose(newaxes_b[0] + newaxes_b[1])
+        else:
+            bt = b
+        bt = bt.reshape(newshape_b)
+
+        res = _dot(at, bt)
+
     if isinstance(res, sp.spmatrix):
-        if isinstance(a, SparseArray):
-            res = SparseArray(res, shape=olda + oldb, layout=a.fmt)
+        if isinstance(a, ScipySparseArray):
+            res = ScipySparseArray(res, shape=olda + oldb, layout=a.fmt)
         elif isinstance(b, sp.spmatrix):
-            res = SparseArray(res, shape=olda + oldb, layout=b.fmt)
+            res = ScipySparseArray(res, shape=olda + oldb, layout=b.fmt)
         else:
             res = res.reshape(olda + oldb)
     else:
         res = res.reshape(olda + oldb)
+
     return res
