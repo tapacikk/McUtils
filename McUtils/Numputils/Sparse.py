@@ -326,8 +326,27 @@ class SparseArray(metaclass=abc.ABCMeta):
         res = at.dot(bt)
 
         return res.reshape(olda + oldb)
+
     @classmethod
-    def clear_caches(self):
+    def enable_caches(self):
+        """
+        A method to be overloaded.
+        Subclasses may want to cache things for performance, so we
+        provide a way for them to turn this on
+        :return:
+        :rtype:
+        """
+    @classmethod
+    def disable_caches(self):
+        """
+        A method to be overloaded.
+        Subclasses may want to cache things for performance, so we
+        provide a way for them to turn this off
+        :return:
+        :rtype:
+        """
+    @classmethod
+    def clear_cache(self):
         """
         A method to be overloaded.
         Subclasses may want to cache things for performance, so we
@@ -657,7 +676,7 @@ class ScipySparseArray(SparseArray):
     #     return self.shape[0]
 
     @classmethod
-    def clear_caches(cls):
+    def clear_cache(cls):
         cls.clear_ravel_caches()
     @classmethod
     def clear_ravel_caches(cls):
@@ -1063,7 +1082,10 @@ class ScipySparseArray(SparseArray):
                     pull_elements = all(len(x) == e1 for x in idx)
 
         if pull_elements:
-            flat = self._ravel_indices(idx, self.shape)
+            try:
+                flat = self._ravel_indices(idx, self.shape)
+            except:
+                raise Exception(idx)
             unflat = self._unravel_indices(flat, self.data.shape)
             res = self.data[unflat]
             if not isinstance(flat, int):

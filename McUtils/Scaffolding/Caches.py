@@ -27,6 +27,8 @@ class MaxSizeCache:
     def __init__(self, max_items=128):
         self.od = OrderedDict()
         self.max_items = max_items
+    def keys(self):
+        return self.od.keys()
     def __contains__(self, item):
         return item in self.od
     def __getitem__(self, item):
