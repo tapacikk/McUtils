@@ -7,7 +7,7 @@ Basically acts like a high-dimensional wrapper that manages the _shape_ of a sta
 from_state: method
 empty: method
 from_diagonal_data: method
-clear_caches: method
+clear_cache: method
 clear_ravel_caches: method
 set_ravel_cache_size: method
 loadz: method

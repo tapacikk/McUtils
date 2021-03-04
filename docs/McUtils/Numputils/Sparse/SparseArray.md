@@ -11,7 +11,9 @@ from_diag: method
 from_diagonal_data: method
 from_state: method
 empty: method
-clear_caches: method
+enable_caches: method
+disable_caches: method
+clear_cache: method
 ```
 <a id="McUtils.Numputils.Sparse.SparseArray.shape" class="docs-object-method">&nbsp;</a>
 ```python

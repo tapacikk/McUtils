@@ -7,6 +7,11 @@ Simple lru-cache to support ravel/unravel ops
 __init__(self, max_items=128): 
 ```
 
+<a id="McUtils.Scaffolding.Caches.MaxSizeCache.keys" class="docs-object-method">&nbsp;</a>
+```python
+keys(self): 
+```
+
 <a id="McUtils.Scaffolding.Caches.MaxSizeCache.__contains__" class="docs-object-method">&nbsp;</a>
 ```python
 __contains__(self, item): 
