@@ -229,6 +229,7 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
         ...
+
     def tensordot(self, other, axes=2):
         """
         Takes the dot product of self and other along the specified axes
@@ -240,93 +241,108 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
 
+        caching_status = self.get_caching_status()
         try:
-            iter(axes)
-        except TypeError:
-            axes_a = list(range(-axes, 0))
-            axes_b = list(range(0, axes))
-        else:
-            axes_a, axes_b = axes
-        try:
-            na = len(axes_a)
-            axes_a = list(axes_a)
-        except TypeError:
-            axes_a = [axes_a]
-            na = 1
-        try:
-            nb = len(axes_b)
-            axes_b = list(axes_b)
-        except TypeError:
-            axes_b = [axes_b]
-            nb = 1
+            self.disable_caches()
+            try:
+                iter(axes)
+            except TypeError:
+                axes_a = list(range(-axes, 0))
+                axes_b = list(range(0, axes))
+            else:
+                axes_a, axes_b = axes
+            try:
+                na = len(axes_a)
+                axes_a = list(axes_a)
+            except TypeError:
+                axes_a = [axes_a]
+                na = 1
+            try:
+                nb = len(axes_b)
+                axes_b = list(axes_b)
+            except TypeError:
+                axes_b = [axes_b]
+                nb = 1
 
-        a = self
-        b = other
+            a = self
+            b = other
 
-        as_ = a.shape
-        nda = a.ndim
-        bs = b.shape
-        ndb = b.ndim
-        equal = True
-        if na != nb:
-            equal = False
-        else:
-            for k in range(na):
-                if as_[axes_a[k]] != bs[axes_b[k]]:
-                    equal = False
-                    break
-                if axes_a[k] < 0:
-                    axes_a[k] += nda
-                if axes_b[k] < 0:
-                    axes_b[k] += ndb
-        if not equal:
-            raise ValueError("shape-mismatch for sum ({}{}@{}{})".format(as_, axes_a, bs, axes_b))
+            as_ = a.shape
+            nda = a.ndim
+            bs = b.shape
+            ndb = b.ndim
+            equal = True
+            if na != nb:
+                equal = False
+            else:
+                for k in range(na):
+                    if as_[axes_a[k]] != bs[axes_b[k]]:
+                        equal = False
+                        break
+                    if axes_a[k] < 0:
+                        axes_a[k] += nda
+                    if axes_b[k] < 0:
+                        axes_b[k] += ndb
+            if not equal:
+                raise ValueError("shape-mismatch for sum ({}{}@{}{})".format(as_, axes_a, bs, axes_b))
 
-        # Move the axes to sum over to the end of "a"
-        # and to the front of "b"
-        notin = [k for k in range(nda) if k not in axes_a]
-        newaxes_a = [notin, axes_a]
-        N2 = 1
-        for axis in axes_a:
-            N2 *= as_[axis]
-        totels_a = np.prod(as_)
-        newshape_a = (totels_a // N2, N2)
-        olda = [as_[axis] for axis in notin]
+            # Move the axes to sum over to the end of "a"
+            # and to the front of "b"
+            notin = [k for k in range(nda) if k not in axes_a]
+            newaxes_a = [notin, axes_a]
+            N2 = 1
+            for axis in axes_a:
+                N2 *= as_[axis]
+            totels_a = np.prod(as_)
+            newshape_a = (totels_a // N2, N2)
+            olda = [as_[axis] for axis in notin]
 
-        notin = [k for k in range(ndb) if k not in axes_b]
-        newaxes_b = [axes_b, notin]
-        N2 = 1
-        for axis in axes_b:
-            N2 *= bs[axis]
-        totels_b = np.prod(bs)
-        newshape_b = (N2, totels_b // N2)
-        oldb = [bs[axis] for axis in notin]
+            notin = [k for k in range(ndb) if k not in axes_b]
+            newaxes_b = [axes_b, notin]
+            N2 = 1
+            for axis in axes_b:
+                N2 *= bs[axis]
+            totels_b = np.prod(bs)
+            newshape_b = (N2, totels_b // N2)
+            oldb = [bs[axis] for axis in notin]
 
-        # if any(dim == 0 for dim in ip.chain(newshape_a, newshape_b)):
-        #     # shortcut for when we aren't even doing a contraction...?
-        #     res = sp.csr_matrix((olda + oldb), dtype=b.dtype)
-        #     # dense output...I guess that's clean?
-        #     if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
-        #         res = res.todense()
-        #     return res
+            # if any(dim == 0 for dim in ip.chain(newshape_a, newshape_b)):
+            #     # shortcut for when we aren't even doing a contraction...?
+            #     res = sp.csr_matrix((olda + oldb), dtype=b.dtype)
+            #     # dense output...I guess that's clean?
+            #     if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
+            #         res = res.todense()
+            #     return res
 
 
-        if a.ndim > 1:
-            at = a.transpose(newaxes_a[0] + newaxes_a[1])
-        else:
-            at = a
-        at = at.reshape(newshape_a)
+            if a.ndim > 1:
+                at = a.transpose(newaxes_a[0] + newaxes_a[1])
+            else:
+                at = a
+            at = at.reshape(newshape_a)
 
-        if b.ndim > 1:
-            bt = b.transpose(newaxes_b[0] + newaxes_b[1])
-        else:
-            bt = b
-        bt = bt.reshape(newshape_b)
+            if b.ndim > 1:
+                bt = b.transpose(newaxes_b[0] + newaxes_b[1])
+            else:
+                bt = b
+            bt = bt.reshape(newshape_b)
 
-        res = at.dot(bt)
+            res = at.dot(bt)
 
-        return res.reshape(olda + oldb)
+            return res.reshape(olda + oldb)
+        finally:
+            if caching_status:
+                self.enable_caches()
 
+    @classmethod
+    def get_caching_status(cls):
+        """
+        A method to be overloaded.
+        Subclasses may want to cache things for performance, so we
+        provide a way for them to specify if caching is on or not
+        :return:
+        :rtype:
+        """
     @classmethod
     def enable_caches(self):
         """
@@ -367,6 +383,8 @@ class ScipySparseArray(SparseArray):
     """
     Array class that generalize the regular `scipy.sparse.spmatrix`.
     Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
+    We always a combo of an underlying CSR or CSC matrix & COO-like shape operations.
+
     """
     #TODO: Be smarter about sparse formatting...currently I track stuff semi explicitly but
     #      this can be delegated to the actual underlying sparse matrix
@@ -674,38 +692,87 @@ class ScipySparseArray(SparseArray):
         return self.data.nnz
     # def __len__(self):
     #     return self.shape[0]
-
+    default_cache_size = 2
+    caching_enabled=True
+    @classmethod
+    def get_caching_status(cls):
+        return cls.caching_enabled
+    @classmethod
+    def enable_caches(self):
+        """
+        A method to be overloaded.
+        Subclasses may want to cache things for performance, so we
+        provide a way for them to turn this on
+        :return:
+        :rtype:
+        """
+        self.caching_enabled = True
+    @classmethod
+    def disable_caches(self):
+        """
+        A method to be overloaded.
+        Subclasses may want to cache things for performance, so we
+        provide a way for them to turn this off
+        :return:
+        :rtype:
+        """
+        self.caching_enabled = False
     @classmethod
     def clear_cache(cls):
         cls.clear_ravel_caches()
     @classmethod
     def clear_ravel_caches(cls):
-        cls._unravel_cache = MaxSizeCache()
-        cls._ravel_cache = MaxSizeCache()
+        cls._unravel_cache = MaxSizeCache(cls.default_cache_size)
+        cls._ravel_cache = MaxSizeCache(cls.default_cache_size)
 
     # this saves time when we have to do a bunch of reshaping into similarly sized arrays,
     # but won't help as much when the shape changes
-    _unravel_cache = MaxSizeCache()  # hopefully faster than bunches of unravel_index calls...
+    _unravel_cache = MaxSizeCache(default_cache_size)  # hopefully faster than bunches of unravel_index calls...
     @classmethod
     def _unravel_indices(cls, n, dims):
+
         # we're hoping that we call with `n` often enough that we get a performance benefit
+        if not cls.caching_enabled:
+            big_dim = np.max(dims)
+            if big_dim < 256:
+                minimal_dtype = 'uint8'
+            elif big_dim < 65535:
+                minimal_dtype = 'uint16'
+            elif big_dim < 4294967295:
+                minimal_dtype = 'uint32'
+            else:
+                minimal_dtype = 'uint64'
+            res = tuple(x.astype(minimal_dtype) for x in np.unravel_index(n, dims))
+            return res
         if dims not in cls._unravel_cache:
-            cls._unravel_cache[dims] = {}
+            cls._unravel_cache[dims] = MaxSizeCache(cls.default_cache_size)
         cache = cls._unravel_cache[dims]
+
         if isinstance(n, np.ndarray):
             n_hash = hash(n.data.tobytes())
         else:
             n_hash = hash(n)
+
         if n_hash in cache:
             res = cache[n_hash]
         else:
-            res = np.unravel_index(n, dims)
+            big_dim = np.max(dims)
+            if big_dim < 256:
+                minimal_dtype = 'uint8'
+            elif big_dim < 65535:
+                minimal_dtype = 'uint16'
+            elif big_dim < 4294967295:
+                minimal_dtype = 'uint32'
+            else:
+                minimal_dtype = 'uint64'
+            res = tuple(x.astype(minimal_dtype) for x in np.unravel_index(n, dims))
             cache[n_hash] = res
         return res
 
     # we cache the common ops...
     @classmethod
     def set_ravel_cache_size(cls, size):
+        cls.default_cache_size = size
         if cls._ravel_cache is None:
             cls._ravel_cache = MaxSizeCache(size)
         elif cls._ravel_cache.max_items != size:
@@ -717,14 +784,16 @@ class ScipySparseArray(SparseArray):
             cls._unravel_cache = MaxSizeCache(size)
 
 
-    _ravel_cache = MaxSizeCache()  # hopefully faster than bunches of unravel_index calls...
+    _ravel_cache = MaxSizeCache(default_cache_size)  # hopefully faster than bunches of ravel_index calls...
     @classmethod
     def _ravel_indices(cls, mult, dims):
         # we're hoping that we call with `n` often enough that we get a performance benefit
+        if not cls.caching_enabled:
+            return np.ravel_multi_index(mult, dims)
         if isinstance(dims, list):
             dims = tuple(dims)
         if dims not in cls._ravel_cache:
-            cls._ravel_cache[dims] = {}
+            cls._ravel_cache[dims] = MaxSizeCache(cls.default_cache_size)
         cache = cls._ravel_cache[dims]
         if isinstance(mult[0], np.ndarray):
             n_hash = hash(tuple(m.data.tobytes() for m in mult))
@@ -742,8 +811,6 @@ class ScipySparseArray(SparseArray):
             cache[n_hash] = res
         return res
 
-    # import memory_profiler
-    # @memory_profiler.profile
     def _getinds(self):
         # pulled from tocoo except without the final conversion to COO...
         from scipy.sparse import _sparsetools
@@ -758,7 +825,7 @@ class ScipySparseArray(SparseArray):
         return row, col
     def find(self):
         fmt = self.data.format
-        if False and fmt in ['csr', 'csc']:
+        if fmt in ['csr', 'csc']:
             d = self.data # type: sp.csr_matrix
             vals = d.data
             row_inds, col_inds = self._getinds()
@@ -766,23 +833,29 @@ class ScipySparseArray(SparseArray):
             row_inds, col_inds, vals = sp.find(self.data)
         return row_inds, col_inds, vals
 
+
+    # import memory_profiler
+    # @memory_profiler.profile
+    def _load_block_data(self):
+        d = self.data
+
+        row_inds, col_inds, data = self.find()
+
+        flat = self._ravel_indices((row_inds, col_inds), d.shape)
+        unflat = self._unravel_indices(flat, self.shape)
+        self._block_inds = (flat, unflat)
+        self._block_vals = data
+
     @property
     def block_vals(self):
         if self._block_vals is None:
-            d = self.data
-
-            row_inds, col_inds, data = self.find()
-
-            flat = self._ravel_indices((row_inds, col_inds), d.shape)
-            unflat = self._unravel_indices(flat, self.shape)
-            self._block_inds = (flat, unflat)
-            self._block_vals = data
+            self._load_block_data()
         return self._block_vals
 
     @property
     def block_inds(self):
         if self._block_inds is None:
-            vals = self.block_vals
+            self._load_block_data()
         return self._block_inds
     @block_inds.setter
     def block_inds(self, bi):
@@ -816,26 +889,19 @@ class ScipySparseArray(SparseArray):
         res = self.block_vals, self.block_inds[1]
         return res
 
-    def transpose(self, transp):
-        """
-        Transposes the array and returns a new one.
-        Not necessarily a cheap operation.
-
-        :param transp: the transposition to do
-        :type transp: Iterable[int]
-        :return:
-        :rtype:
-        """
-
+    # import memory_profiler
+    # @memory_profiler.profile
+    def profiled_transpose(self, transp):
         shp = self.shape
 
-        # if len(self.shape) > 4:
-        #     raise Exception("why")
+        track_data = self.get_caching_status()
+        if self._block_vals is None:
+            row_inds, col_inds, data = self.find()
 
-        data, inds = self.block_data
-
-        # if len(self.shape) > 4:
-        #     raise Exception("why")
+            flat = self._ravel_indices((row_inds, col_inds), self.data.shape)
+            inds = self._unravel_indices(flat, self.shape)
+        else:
+            data, inds = self.block_data
 
         new_inds = [inds[i] for i in transp]
         new_shape = tuple(shp[i] for i in transp)
@@ -852,20 +918,67 @@ class ScipySparseArray(SparseArray):
             unflat = new_inds
             total_shape = new_shape
 
-        # if len(new_shape) > 4:
-        #     raise Exception("why")
-
-        # try:
         data = self._build_data(data, unflat, total_shape)
 
         # except MemoryError:
         #     raise Exception(data, unflat, new_shape, total_shape)
+        new = type(self)(data, shape=new_shape, layout=self.fmt)
+
+        if track_data:
+
+            arr = np.lexsort(unflat)
+
+            new_inds = [inds[arr] for inds in new_inds]
+            if self._block_vals is not None:
+                new_v = self._block_vals[arr]
+                new._block_vals = new_v
+            if flat is None:
+                new.block_inds = new_inds
+            else:
+                # try:
+                new.block_inds = (flat, new_inds)
+                # except:
+                #     raise Exception(new_shape, len(total_shape))
+
+        return new
+
+    def transpose(self, transp):
+        """
+        Transposes the array and returns a new one.
+        Not necessarily a cheap operation.
+
+        :param transp: the transposition to do
+        :type transp: Iterable[int]
+        :return:
+        :rtype:
+        """
+
+        if len(self.shape) > 4:
+            return self.profiled_transpose(transp)
+
+        shp = self.shape
+
+        data, inds = self.block_data
+
+        new_inds = [inds[i] for i in transp]
+        new_shape = tuple(shp[i] for i in transp)
+        if len(data) == 0:
+            return type(self).empty(new_shape, layout=self.fmt, dtype=data.dtype)
+
+        if len(new_shape) > 2:
+            total_shape = self._get_balanced_shape(new_shape)
+            flat = self._ravel_indices(new_inds, new_shape)
+            unflat = self._unravel_indices(flat, total_shape)
+        else:
+            flat = None
+            unflat = new_inds
+            total_shape = new_shape
+
+        data = self._build_data(data, unflat, total_shape)
         new = type(self)(data, shape = new_shape, layout = self.fmt)
 
         arr = np.lexsort(unflat)
 
-        # if len(new_shape) > 4:
-        #     raise Exception("why")
         new_inds = [inds[arr] for inds in new_inds]
         if self._block_vals is not None:
             new_v = self._block_vals[arr]
@@ -873,10 +986,7 @@ class ScipySparseArray(SparseArray):
         if flat is None:
             new.block_inds = new_inds
         else:
-            # try:
             new.block_inds = (flat, new_inds)
-            # except:
-            #     raise Exception(new_shape, len(total_shape))
 
         return new
 
@@ -893,6 +1003,7 @@ class ScipySparseArray(SparseArray):
             raise ValueError("Can't reshape {} into {}".format(self.shape, shp))
         new = self.copy() # I'm not sure I want a whole copy here...?
         new._shape = tuple(shp)
+
         bi = new._block_inds
         if bi is not None:
             flat, unflat = bi
@@ -1086,6 +1197,7 @@ class ScipySparseArray(SparseArray):
                 flat = self._ravel_indices(idx, self.shape)
             except:
                 raise Exception(idx)
+
             unflat = self._unravel_indices(flat, self.data.shape)
             res = self.data[unflat]
             if not isinstance(flat, int):
