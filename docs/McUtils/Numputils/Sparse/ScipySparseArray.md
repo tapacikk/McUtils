@@ -1,12 +1,18 @@
 ## <a id="McUtils.Numputils.Sparse.ScipySparseArray">ScipySparseArray</a>
 Array class that generalize the regular `scipy.sparse.spmatrix`.
 Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
+We always a combo of an underlying CSR or CSC matrix & COO-like shape operations.
 
 ### Properties and Methods
 ```python
 from_state: method
 empty: method
 from_diagonal_data: method
+default_cache_size: int
+caching_enabled: bool
+get_caching_status: method
+enable_caches: method
+disable_caches: method
 clear_cache: method
 clear_ravel_caches: method
 set_ravel_cache_size: method
@@ -111,6 +117,11 @@ block_inds(self):
 ```python
 @property
 block_data(self): 
+```
+
+<a id="McUtils.Numputils.Sparse.ScipySparseArray.profiled_transpose" class="docs-object-method">&nbsp;</a>
+```python
+profiled_transpose(self, transp): 
 ```
 
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.transpose" class="docs-object-method">&nbsp;</a>

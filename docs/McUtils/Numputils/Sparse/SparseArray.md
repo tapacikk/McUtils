@@ -11,6 +11,7 @@ from_diag: method
 from_diagonal_data: method
 from_state: method
 empty: method
+get_caching_status: method
 enable_caches: method
 disable_caches: method
 clear_cache: method
