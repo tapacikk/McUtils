@@ -289,7 +289,7 @@ class FiniteDifference1D:
             sten = stencil - 1
         return sten
 
-    def apply(self, vals, val_dim = None, axis = 0, mesh_spacing = None):
+    def apply(self, vals, val_dim=None, axis=0, mesh_spacing=None, check_shape=True):
         """
         Applies the held `FiniteDifferenceMatrix` to the array of values
 
@@ -304,17 +304,62 @@ class FiniteDifference1D:
         :return:
         :rtype: np.ndarray
         """
+
         if val_dim is None:
             val_dim = len(vals.shape)
         vs = vals.shape
         if val_dim == 1:
+            # print(type(self.mat.matrix))
+            if check_shape:
+                if self.mat.only_core or self.mat.only_center:
+                    shp = len(self.weights[len(self.weights) // 2])
+                else:
+                    shp = max(len(w) for w in self.weights)
+                if shp != vs[0]:
+                    if self.mat.only_core or self.mat.only_center:
+                        raise FiniteDifferenceError(
+                            "FD weights {} with can't be applied to data with shape {} along axis {}".format(
+                                self.weights[len(self.weights) // 2],
+                                self.weights,
+                                vs,
+                                axis
+                            ))
+                    else:
+                        raise FiniteDifferenceError(
+                            "FD weights {} with len {} can't be applied to data with shape {} along axis {}".format(
+                                self.weights,
+                                shp,
+                                vs,
+                                axis
+                            ))
             if mesh_spacing is not None:
                 self.mat.mesh_spacing = mesh_spacing
             self.mat.npts = vs[0]
-            # print(type(self.mat.matrix))
             vals = self.mat.matrix.dot(vals)  # axis doesn't even make sense here...
             # print(vals.shape)
         else:
+            if check_shape:
+                if self.mat.only_core or self.mat.only_center:
+                    shp = len(self.weights[ len(self.weights)//2 ])
+                else:
+                    shp = max(len(w) for w in self.weights)
+                if shp != vs[axis]:
+                    if self.mat.only_core or self.mat.only_center:
+                        raise FiniteDifferenceError(
+                            "FD weights {} with can't be applied to data with shape {} along axis {}".format(
+                                self.weights[len(self.weights) // 2],
+                                self.weights,
+                                vs,
+                                axis
+                            ))
+                    else:
+                        raise FiniteDifferenceError(
+                            "FD weights {} with len {} can't be applied to data with shape {} along axis {}".format(
+                                self.weights,
+                                shp,
+                                vs,
+                                axis
+                            ))
             if mesh_spacing is not None:
                 self.mat.mesh_spacing = mesh_spacing
             self.mat.npts = vs[axis]
@@ -627,7 +672,6 @@ class FiniteDifferenceMatrix:
                  mode = "sparse", dtype = "float64"
                  ):
         """
-
         :param finite_difference_data:
         :type finite_difference_data: FiniteDifferenceData
         :param npts:

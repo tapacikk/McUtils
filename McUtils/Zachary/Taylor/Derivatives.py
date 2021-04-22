@@ -221,6 +221,11 @@ class DerivativeGenerator:
 
         stencil_widths = tuple(len(cf[1]) if cf is not None else cf for cf in fdf.weights)
         stencil_shapes = tuple(w[1] if w is not None else w for w in fdf.widths)
+        if any(x != sum(y) for x,y in zip(stencil_widths, stencil_shapes)):
+            raise ValueError("weights {} don't correspond to shapes {}...".format(
+                fdf.weights,
+                fdf.widths
+            ))
         finite_difference = fdf#.get_FDF(shape = stencil_widths)
 
         return stencil_widths, stencil_shapes, finite_difference, dorder
@@ -313,13 +318,22 @@ class DerivativeGenerator:
             # it can also just be like ((0,)) in which case we're working in 1D
             ctup = tuple(c)
 
+            # pulls the appropriate displacement for this coordinate specifically
             disp = displacement[ctup]
 
+            # generate a full tensor of displacements by scaling the
+            # initial displacement by each of the number of steps to be taken
             steps = np.arange(-(stencil_shape[0]-1), stencil_shape[1]+1)
             disp = disp * steps
+
+            # pad this full displacement so it has enough 1s in it to be broadcasted to the stencil
+            # shape
             full_disp = np.reshape(disp, disp.shape + (1,) * (len(stencil_widths) - disp.ndim))
-            roll = np.roll(base_roll, -2+i) # why the -2???
+            # print(full_disp.shape, stencil_widths)
+            # I don't know what this does
+            roll = np.roll(base_roll, i) # why the -2???
             full_disp = full_disp.transpose(roll)
+            # print(i, base_roll, full_disp.shape, stencil_widths)
             to_set = np.broadcast_to(full_disp, stencil_widths).flatten()
 
             # in dimension 1 we want to have this repeat over the slowest moving indices, then the ones after those
@@ -343,7 +357,11 @@ class DerivativeGenerator:
             np.broadcast_to(displacements, full_target_shape)
         )
 
-        disp_spec = (tuple(tuple(x for x in c) for c in coord), displacement_shape)
+        disp_spec = (
+            tuple(tuple(x for x in c) for c in coord),
+            stencil_widths,
+            displacement_shape
+        )
 
         return disp_spec, displacements, displaced_coords
 
@@ -363,9 +381,12 @@ class DerivativeGenerator:
         """
 
         for spec in specs: # dumb for now but allows me to pick some optimal ordering in the future
+            # print(" >>>>>", spec)
             ci = self._coord_index(spec)
             fd_data = self._get_fdf(ci, self.mesh_spacing)
+            # print("   ::", ci, fd_data[0], fd_data[1])
             disp_data = self._get_displaced_coords(spec, fd_data[0], fd_data[1])
+            # print("   ::", disp_data[0], disp_data[1].shape)
 
             yield spec, disp_data, fd_data
 
@@ -410,16 +431,23 @@ class DerivativeGenerator:
 
 
         f = self.f
+        # Disp spec is a key
+        # displacements tell us the flattend shape of the displacements
+        # displaced coords are the proper coords to eval
         disp_spec, displacements, displaced_coords = disp_data
         stencil_widths, stencil_shapes, finite_difference, dorder = fd_data
 
-            # TODO: sit down and add comments to this compact implementation...
+        # TODO: sit down and add comments to this compact implementation...
 
         if cached:
             (disp, fvals) = self._cache[cache_key]
+            # print("oooh?", cache_key)
         else:
             config_shape = self.config_shape
+            # tries to unravel the displacements into a form that
+            # mimics the shape of the FD product grid
             cdim = len(config_shape)
+            # print("...?", displaced_coords.ndim, cdim)
             roll = [cdim] + [a for a in np.arange(displaced_coords.ndim) if a != cdim]
             dcoords = displaced_coords.transpose(roll)
             function_values = f(dcoords)
@@ -429,6 +457,7 @@ class DerivativeGenerator:
 
             # TODO: handle stuff like dipoles where we have an x, y, z component each of which should be handled separately...
             #       this might actually be handled naturally, though? I'm actually pretty hopeful it will be...
+            #       UPDATE: it's not, I should fix this
 
             # we now need to reformat the fvals so that they respect the stencil_shapes
             # not sure where the extra 1 is coming from here...?
