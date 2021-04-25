@@ -320,7 +320,7 @@ class ConverterTest(TestCase):
             msg="wat: {}".format(np.max(np.abs(np.round(diffs, 3))))
         )
 
-    @debugTest
+    @inactiveTest
     def test_CartesianToZMatrixJacobian2Planar(self):
 
         coord_set = CoordinateSet( # water

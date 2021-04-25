@@ -1,12 +1,12 @@
 ## <a id="McUtils.Numputils.Sparse.ScipySparseArray">ScipySparseArray</a>
 Array class that generalize the regular `scipy.sparse.spmatrix`.
 Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
-We always a combo of an underlying CSR or CSC matrix & COO-like shape operations.
+We always use a combo of an underlying CSR or CSC matrix & COO-like shape operations.
 
 ### Properties and Methods
 ```python
 from_state: method
-empty: method
+initialize_empty: method
 from_diagonal_data: method
 default_cache_size: int
 caching_enabled: bool
@@ -139,7 +139,7 @@ Transposes the array and returns a new one.
 ```python
 reshape(self, shp): 
 ```
-Had to make this op not in-plae because otherwise got scary errors...
+Had to make this op not in-place because otherwise got scary errors...
 - `shp`: `Any`
     >No description...
 - `:returns`: `_`
@@ -149,6 +149,16 @@ Had to make this op not in-plae because otherwise got scary errors...
 ```python
 squeeze(self): 
 ```
+
+<a id="McUtils.Numputils.Sparse.ScipySparseArray.resize" class="docs-object-method">&nbsp;</a>
+```python
+resize(self, newsize): 
+```
+Returns a resized version of the tensor
+- `newsize`: `tuple[int]`
+    >No description...
+- `:returns`: `_`
+    >No description...
 
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.concatenate" class="docs-object-method">&nbsp;</a>
 ```python

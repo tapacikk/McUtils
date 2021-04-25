@@ -11,6 +11,7 @@ from_diag: method
 from_diagonal_data: method
 from_state: method
 empty: method
+initialize_empty: method
 get_caching_status: method
 enable_caches: method
 disable_caches: method
@@ -50,14 +51,16 @@ Provides just the state that is needed to
 @property
 block_data(self): 
 ```
-Returns the row and column indices and vector of
-        values that the sparse array is storing
-- `shape`: `Any`
+Returns the vector of values and corresponding indices
+- `:returns`: `_`
     >No description...
-- `dtype`: `Any`
-    >No description...
-- `kw`: `Any`
-    >No description...
+
+<a id="McUtils.Numputils.Sparse.SparseArray.block_inds" class="docs-object-method">&nbsp;</a>
+```python
+@property
+block_inds(self): 
+```
+Returns indices for the stored values
 - `:returns`: `_`
     >No description...
 
@@ -100,6 +103,16 @@ Converts the tensor into a dense np.ndarray
 reshape(self, newshape): 
 ```
 Returns a reshaped version of the tensor
+- `axes`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Numputils.Sparse.SparseArray.resize" class="docs-object-method">&nbsp;</a>
+```python
+resize(self, newsize): 
+```
+Returns a resized version of the tensor
 - `axes`: `Any`
     >No description...
 - `:returns`: `_`

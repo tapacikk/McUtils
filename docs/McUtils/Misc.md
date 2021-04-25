@@ -9,6 +9,7 @@ Defines a set of miscellaneous helper utilities that are commonly used across pr
   - [MatchList](Misc/FileMatcher/MatchList.md)
   - [FileMatcher](Misc/FileMatcher/FileMatcher.md)
   - [ModuleReloader](Misc/InteractiveTools/ModuleReloader.md)
+  - [MoleculeGraphics](Misc/InteractiveTools/MoleculeGraphics.md)
   - [SBatchJob](Misc/SBatchHelper/SBatchJob.md)
 
 ### Examples:

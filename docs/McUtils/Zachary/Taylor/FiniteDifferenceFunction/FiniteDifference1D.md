@@ -31,7 +31,7 @@ widths(self):
 
 <a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifference1D.apply" class="docs-object-method">&nbsp;</a>
 ```python
-apply(self, vals, val_dim=None, axis=0, mesh_spacing=None): 
+apply(self, vals, val_dim=None, axis=0, mesh_spacing=None, check_shape=True): 
 ```
 Applies the held `FiniteDifferenceMatrix` to the array of values
 - `vals`: `np.ndarray | sparse.csr_matrix`
