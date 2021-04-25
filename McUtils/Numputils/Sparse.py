@@ -75,7 +75,8 @@ class SparseArray(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def from_diagonal_data(cls, diags, **kw):
         """
-        Constructs a sparse tensor from
+        Constructs a sparse tensor from diagonal elements
+
         :param diags:
         :type diags:
         :param kw:
@@ -83,6 +84,7 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
+        raise NotImplementedError("{}.{} is an abstract method".format(cls.__name__, 'from_diagonal_data'))
         ...
     @property
     @abc.abstractmethod
@@ -122,10 +124,18 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
+        raise NotImplementedError("{}.{} is an abstract method".format(cls.__name__, 'from_state'))
         ...
     @classmethod
+    def empty(cls, shape, **kw):
+        for backend in cls.get_backends():
+            try:
+                return backend.initialize_empty(shape, **kw)
+            except ImportError:
+                pass
+    @classmethod
     @abc.abstractmethod
-    def empty(cls, shape, dtype=None, **kw):
+    def initialize_empty(cls, shape, **kw):
         """
         Returns an empty SparseArray with the appropriate shape and dtype
         :param shape:
@@ -137,22 +147,27 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
+        raise NotImplementedError("{}.{} is an abstract method".format(cls.__name__, 'empty'))
         ...
     @property
     @abc.abstractmethod
     def block_data(self):
         """
-        Returns the row and column indices and vector of
-        values that the sparse array is storing
-        :param shape:
-        :type shape:
-        :param dtype:
-        :type dtype:
-        :param kw:
-        :type kw:
+        Returns the vector of values and corresponding indices
         :return:
         :rtype:
         """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'block_data'))
+        ...
+    @property
+    @abc.abstractmethod
+    def block_inds(self):
+        """
+        Returns indices for the stored values
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'block_inds'))
         ...
     @abc.abstractmethod
     def transpose(self, axes):
@@ -163,6 +178,7 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'transpose'))
         ...
     @abc.abstractmethod
     def ascoo(self):
@@ -171,6 +187,7 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype: sp.coo_matrix
         """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'ascoo'))
         ...
 
     @abc.abstractmethod
@@ -180,6 +197,7 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype: sp.csr_matrix
         """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'ascsr'))
         ...
     @abc.abstractmethod
     def asarray(self):
@@ -188,6 +206,7 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype: np.ndarray
         """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'asarray'))
         ...
     @abc.abstractmethod
     def reshape(self, newshape):
@@ -198,6 +217,18 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'reshape'))
+        ...
+    @abc.abstractmethod
+    def resize(self, newsize):
+        """
+        Returns a resized version of the tensor
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'resize'))
         ...
     def __truediv__(self, other):
         return self.multiply(1/other)
@@ -334,6 +365,10 @@ class SparseArray(metaclass=abc.ABCMeta):
             if caching_status:
                 self.enable_caches()
 
+    # TODO: Caching should be managed by keeping track of 'parent' `SparseArray`
+    #       objects using a weakref so that it's possible to just ask the parents
+    #       if they have the data we need in their caches and then all caches
+    #       will properly be cleaned up when objects go out of scope
     @classmethod
     def get_caching_status(cls):
         """
@@ -383,13 +418,11 @@ class ScipySparseArray(SparseArray):
     """
     Array class that generalize the regular `scipy.sparse.spmatrix`.
     Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
-    We always a combo of an underlying CSR or CSC matrix & COO-like shape operations.
-
+    We always use a combo of an underlying CSR or CSC matrix & COO-like shape operations.
     """
-    #TODO: Be smarter about sparse formatting...currently I track stuff semi explicitly but
-    #      this can be delegated to the actual underlying sparse matrix
-    #      Also need to abstract out the back-end so that we can make this work with
-    #      tensorflow as well
+    #TODO: Make this all de-factor COO-based with an option to
+    #       convert to for operations like repeated tensordot applications where
+    #       converting to CSR over and over would be wasteful
 
     def __init__(self, a, shape=None, layout=sp.csr_matrix, dtype=None, initialize = True):
         self._shape = tuple(shape) if shape is not None else shape
@@ -430,11 +463,12 @@ class ScipySparseArray(SparseArray):
             shape=state['shape']
         )
     @classmethod
-    def empty(cls, shape, dtype=None, **kw):
+    def initialize_empty(cls, shape, dtype=None, **kw):
         matshape = (int(np.prod(shape[:-1])), shape[-1])
         if dtype is None:
             dtype=np.float64
-        return cls(sp.csr_matrix(matshape, dtype=dtype), shape=shape, **kw)
+        new = cls(sp.csr_matrix(matshape, dtype=dtype), shape=shape, **kw)
+        return new
     @staticmethod
     def _get_balanced_shape(shp):
         """
@@ -992,13 +1026,13 @@ class ScipySparseArray(SparseArray):
 
     def reshape(self, shp):
         """
-        Had to make this op not in-plae because otherwise got scary errors...
+        Had to make this op not in-place because otherwise got scary errors...
         :param shp:
         :type shp:
         :return:
         :rtype:
         """
-        # this is an in-place operation which feels kinda dangerous?
+
         if np.prod(shp) != np.prod(self.shape):
             raise ValueError("Can't reshape {} into {}".format(self.shape, shp))
         new = self.copy() # I'm not sure I want a whole copy here...?
@@ -1014,6 +1048,38 @@ class ScipySparseArray(SparseArray):
     def squeeze(self):
         self.reshape([x for x in self.shape if x != 1])
         return self
+
+    def resize(self, newsize):
+        """
+        Returns a resized version of the tensor
+        :param newsize:
+        :type newsize: tuple[int]
+        :return:
+        :rtype:
+        """
+        # we'll simply construct a totally new tensor by dropping any indices which are out of bounds
+        # in any coordinate
+        # otherwise the multidimensional indices are clean so we'll just use those
+        if len(newsize) != self.ndim:
+            raise ValueError("unclear how to resize a tensor with rank {} into a tensor of rank {}".format(
+                self.ndim,
+                len(newsize)
+            ))
+
+        if len(newsize) == 2:
+            return type(self)(self.data.copy().resize(newsize), shape=newsize)
+
+        vals, inds = self.block_data
+        # now we've got to filter out the indices which are out of bounds in any dimension
+        for i,sizes in enumerate(zip(newsize, self.shape)):
+            n, o = sizes
+            if n < o:
+                mask = inds[:i]
+                vals = vals[mask]
+                inds = inds[mask]
+
+        return type(self)((vals, inds), shape=newsize)
+
     def concatenate(self, other, axis=0):
         """
         Concatenates two arrays along the specified axis
@@ -1572,7 +1638,7 @@ class TensorFlowSparseArray(SparseArray):
         :return:
         :rtype:
         """
-        cls(shape, dtype=dtype)
+        return cls(shape, dtype=dtype)
 
     @property
     def block_data(self):

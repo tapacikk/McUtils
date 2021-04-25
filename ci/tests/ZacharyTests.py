@@ -124,7 +124,7 @@ class FiniteDifferenceTests(TestCase):
         self.assertIs(passed, True)
 
     # @dataGenTest
-    @validationTest
+    @debugTest
     def test_finite_difference(self):
         sin_grid = np.arange(0, 1, .001)
         sin_vals = np.sin(sin_grid)
@@ -395,26 +395,26 @@ class FiniteDifferenceTests(TestCase):
         #         )
         # gg.show()
 
-    @debugTest
+    @validationTest
     def test_LinSpaceMesh(self):
         mg = Mesh(np.linspace(-1, 1, 3))
         self.assertIs(mg.mesh_type, MeshType.Structured)
         self.assertEquals(mg.shape, (3,))
 
-    @debugTest
+    @validationTest
     def test_MeshGridMesh(self):
         mg = np.meshgrid(np.array([-1, 0, 1]), np.array([-1, 0, 1]))
         regmesh = Mesh(mg)
         self.assertIs(regmesh.mesh_type, MeshType.Structured)
         self.assertEquals(regmesh.shape, (3, 3, 2))
 
-    @debugTest
+    @validationTest
     def test_RegularMesh(self):
         regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
         self.assertIs(regmesh.mesh_type, MeshType.Structured)
         self.assertEquals(regmesh.shape, (3, 3, 2))
 
-    @debugTest
+    @validationTest
     def test_RegMeshSubgrids(self):
         regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
         m = [Mesh(g) for g in regmesh.subgrids]
@@ -430,7 +430,7 @@ class FiniteDifferenceTests(TestCase):
         semi_mesh = Mesh([[np.arange(i)] for i in range(10, 25)])
         self.assertIs(semi_mesh.mesh_type, MeshType.SemiStructured)
 
-    @debugTest
+    @validationTest
     def test_MeshFromList(self):
         try:
             wat = np.asarray([[-1, 0, 1], [-1, 0, 1]])

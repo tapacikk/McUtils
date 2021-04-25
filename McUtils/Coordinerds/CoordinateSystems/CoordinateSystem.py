@@ -118,6 +118,9 @@ class CoordinateSystem:
         :rtype:  np.ndarray
         """
         return self._matrix
+    @matrix.setter
+    def matrix(self, mat):
+        self._matrix = mat
     @property
     def inverse(self):
         """
@@ -131,6 +134,9 @@ class CoordinateSystem:
             square_Q=self.matrix.shape[0] == self.matrix.shape[1]
             self._inv = (np.linalg.inv if square_Q else np.linalg.pinv)(self.matrix)
         return self._inv
+    @inverse.setter
+    def inverse(self, mat):
+        self._inv = mat
     @property
     def dimension(self):
         """
