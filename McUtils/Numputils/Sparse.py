@@ -41,12 +41,13 @@ class SparseArray(metaclass=abc.ABCMeta):
         A wrapper so that we can dispatch to the best
         sparse backend we've got defined.
         Can be monkey patched.
+
         :param data:
         :type data:
         :param kwargs:
         :type kwargs:
         :return:
-        :rtype:
+        :rtype: SparseArray
         """
         for backend in cls.get_backends():
             try:
@@ -414,17 +415,16 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype: SparseArray
         """
 
+    # TODO: need to figure out if I want to support item assignment or not
+
 class ScipySparseArray(SparseArray):
     """
     Array class that generalize the regular `scipy.sparse.spmatrix`.
     Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
     We always use a combo of an underlying CSR or CSC matrix & COO-like shape operations.
     """
-    #TODO: Make this all de-factor COO-based with an option to
-    #       convert to for operations like repeated tensordot applications where
-    #       converting to CSR over and over would be wasteful
 
-    def __init__(self, a, shape=None, layout=sp.csr_matrix, dtype=None, initialize = True):
+    def __init__(self, a, shape=None, layout=None, dtype=None, initialize = True):
         self._shape = tuple(shape) if shape is not None else shape
         self._a = a
         self._fmt = layout
@@ -463,11 +463,16 @@ class ScipySparseArray(SparseArray):
             shape=state['shape']
         )
     @classmethod
-    def initialize_empty(cls, shape, dtype=None, **kw):
-        matshape = (int(np.prod(shape[:-1])), shape[-1])
+    def initialize_empty(cls, shape, dtype=None, layout=None, **kw):
+        matshape = cls._get_balanced_shape(shape)
         if dtype is None:
             dtype=np.float64
-        new = cls(sp.csr_matrix(matshape, dtype=dtype), shape=shape, **kw)
+        if layout is None:
+            if matshape[0] > matshape[1]:
+                layout = sp.csc_matrix
+            else:
+                layout = sp.csr_matrix
+        new = cls(layout(matshape, dtype=dtype), shape=shape, **kw)
         return new
     @staticmethod
     def _get_balanced_shape(shp):
@@ -520,7 +525,14 @@ class ScipySparseArray(SparseArray):
                 a = a.reshape(total_shape)
             elif len(a.shape) == 1:
                 a = a.reshape(a.shape + (1,))
-            self._a = self.fmt(a, shape=a.shape)
+            if self._fmt is None:
+                if a.shape[0] > a.shape[1]:
+                    fmt = sp.csc_matrix
+                else:
+                    fmt = sp.csr_matrix
+            else:
+                fmt = self._fmt
+            self._a = fmt(a, shape=a.shape)
         # we're gonna support the (vals, (i_1, i_2, i_3, ...)) syntax for constructing
         # an array based on its non-zero positions
         elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1][0]):
@@ -545,13 +557,24 @@ class ScipySparseArray(SparseArray):
             total_shape = self._get_balanced_shape(self._shape)
             # print(">>>>> ", total_shape)
             init_inds = self._unravel_indices(flat, total_shape)
+            if self._fmt is None:
+                if total_shape[0] > total_shape[1]:
+                    fmt = sp.csc_matrix
+                else:
+                    fmt = sp.csr_matrix
+            else:
+                fmt = self._fmt
             try:
-                data = self.fmt((block_vals, init_inds), shape=total_shape)
+                data = fmt((block_vals, init_inds), shape=total_shape)
             except TypeError:
-                data = self.fmt(sp.csr_matrix((block_vals, init_inds)), shape=total_shape)
+                data = fmt(sp.coo_matrix((block_vals, init_inds)), shape=total_shape)
             except MemoryError:
-                data = sp.csr_matrix((block_vals, init_inds), shape=total_shape)
-                self._fmt = sp.csr_matrix
+                if total_shape[0] > total_shape[1]:
+                    fmt = sp.csc_matrix
+                else:
+                    fmt = sp.csr_matrix
+                data = fmt((block_vals, init_inds), shape=total_shape)
+                self._fmt = None
             self._a = data
             self._block_vals = block_vals
             self._block_inds = block_inds
@@ -624,9 +647,9 @@ class ScipySparseArray(SparseArray):
     def _build_data(self, block_data, inds, total_shape):
         if len(block_data) == 0 or np.prod(block_data.shape) == 0.: # empty array
             if total_shape[0] > total_shape[1]:
-                base_sparse = sp.csc_matrix(total_shape, dtype=self.dtype)
+                base_sparse = sp.coo_matrix(total_shape, dtype=self.dtype)
             else:
-                base_sparse = sp.csr_matrix(total_shape, dtype=self.dtype)
+                base_sparse = sp.coo_matrix(total_shape, dtype=self.dtype)
             try:
                 return self.fmt(base_sparse)
             except MemoryError:
@@ -671,7 +694,6 @@ class ScipySparseArray(SparseArray):
             # print(len(diags))
             return cls(sp.csr_matrix(sp.diags([diags], [0])), shape=(N, N), **kw)
         else:
-
             data = sp.block_diag(diags, format='csr')
             block_size = diags[0].shape
             if 'shape' not in kw:
@@ -686,6 +708,8 @@ class ScipySparseArray(SparseArray):
         return sp.coo_matrix(self.data)
     def ascsr(self):
         return sp.csr_matrix(self.data)
+    def ascsc(self):
+        return sp.csc_matrix(self.data)
     @property
     def data(self):
         if not isinstance(self._a, sp.spmatrix):
@@ -708,9 +732,25 @@ class ScipySparseArray(SparseArray):
             if new.format != self.data.format:
                 new = self.fmt(new)
             self._a = new
+    formats_map = {
+        'csr': sp.csr_matrix,
+        'csc': sp.csc_matrix,
+        'coo': sp.coo_matrix
+    }
+    @classmethod
+    def format_from_string(cls, fmt):
+        if isinstance(fmt, str):
+            return cls.formats_map[fmt]
+        elif isinstance(fmt, type):
+            return fmt
+        else:
+            raise TypeError("not sure how to get a valid sparse format class from {}".format(fmt))
     @property
     def fmt(self):
-        return self._fmt
+        if self._fmt is None:
+            return self.format_from_string(self.data.format)
+        else:
+            return self._fmt
     @property
     def shape(self):
         if self._shape is None:
@@ -1358,6 +1398,34 @@ class ScipySparseArray(SparseArray):
             else:
                 new.block_inds = flat, inds
             return new
+
+    def _set_data(self, unflat, val):
+        """
+        Tries to explicitly assign but if that fails drops back to CSR and then reconverts
+
+        :param unflat:
+        :type unflat:
+        :param val:
+        :type val:
+        :return:
+        :rtype:
+        """
+        # Just here so I can be smart
+        try:
+            self.data[unflat] = val
+        except TypeError:
+            if self.data.shape[0] > self.data.shape[1]:
+                sub_sparse = sp.csc_matrix(self.data)
+            else:
+                sub_sparse = sp.csr_matrix(self.data)
+            sub_sparse[unflat] = val
+            self.data = self.fmt(sub_sparse)
+
+        # TODO: figure out how to resolve the collisions
+        #       more efficiently
+        self._block_vals = None
+        self._block_inds = None
+
     def _set_element(self, idx, val):
         """
         Convert idx into a 1D index or slice or whatever and then convert it back to the appropriate 2D shape.
@@ -1384,15 +1452,12 @@ class ScipySparseArray(SparseArray):
             flat = self._ravel_indices(idx, self.shape)
             unflat = self._unravel_indices(flat, self.data.shape)
             # try:
-            self.data[unflat] = val
+
+            self._set_data(unflat, val)
             # except TypeError:
             #     # need to construct a new data object in its entirety :weep:
             #     # or convert to an assignable format?
             #
-            # TODO: figure out how to resolve the collisions
-            #       more efficiently
-            self._block_vals = None
-            self._block_inds = None
         else:
             # need to compute the proper block indices, unfortunately
             # so that they can be down-converted to their 2D equivalents
@@ -1409,11 +1474,8 @@ class ScipySparseArray(SparseArray):
 
             flat = self._ravel_indices(block_inds, self.shape)
             unflat = self._unravel_indices(flat, self.data.shape)
-            self.data[unflat] = val
-            # TODO: figure out how to resolve the collisions
-            #       more efficiently
-            self._block_vals = None
-            self._block_inds = None
+
+            self._set_data(unflat, val)
 
     def _del_element(self, idx):
         """
