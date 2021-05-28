@@ -576,7 +576,7 @@ class Graphics(GraphicsBase):
     @property
     def frame_style(self):
         return self._prop_manager.frame_style
-    @frame.setter
+    @frame_style.setter
     def frame_style(self, value):
         self._prop_manager.frame_style = value
 

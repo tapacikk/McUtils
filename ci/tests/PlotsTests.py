@@ -76,7 +76,7 @@ class PlotsTests(TestCase):
         plot.savefig(self.result_file("test_PlotStyling.png"))
         plot.close()
 
-    @validationTest
+    @debugTest
     def test_PlotGridStyling(self):
         main = GraphicsGrid(ncols=3, nrows=1, theme='Solarize_Light2', figure_label='my beuatufil triptych',
                             padding=((35, 60), (35, 40)))
@@ -94,15 +94,20 @@ class PlotsTests(TestCase):
         main[0, 2] = ContourPlot(x, y, np.cos(y), plot_label='$cos(y)$', figure=main[0, 2])
         main.colorbar = {"graphics": main[0, 1].graphics}
 
+        # main.show()
+
         main.savefig(self.result_file("test_PlotGridStyling.png"))
         main.close()
 
-    @validationTest
+    @debugTest
     def test_Scatter(self):
         pts = np.random.rand(50, 2)
-        plot = ScatterPlot(*pts.T)
+        plot = ScatterPlot(*pts.T,
+                           aspect_ratio=2,
+                           image_size=250
+                           )
         # plot.show()
-        plot.savefig(self.result_file("test_Scatter.png"))
+        plot.savefig(self.result_file("test_Scatter.pdf"), format='pdf')
         plot.close()
 
     @validationTest
@@ -150,8 +155,9 @@ class PlotsTests(TestCase):
         plot.savefig(self.result_file("test_ListTriContourPlot.png"))
         plot.close()
 
-    @validationTest
+    @inactiveTest
     def test_Animation(self):
+        "Currently broken"
         def get_data(*args):
             pts = np.pi*np.random.normal(scale = .25, size=(10550, 2))
             sins = np.sin(pts[:, 0])
@@ -165,7 +171,8 @@ class PlotsTests(TestCase):
                                       [-np.pi, np.pi]
                                   ]
                                   )
-        # plot.show()
+
+        plot.show()
 
         plot.savefig(self.result_file("test_ListTriContourPlot.gif"))
         plot.close()

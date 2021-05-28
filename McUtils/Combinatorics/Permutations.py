@@ -7,18 +7,22 @@ import collections
 
 __all__ = [
     "PartitionPermutationIndexer",
-    "IntegerPartitioner"
+    "IntegerPartitioner",
+    "UniquePermutations",
+    "IntegerPartitionPermutations"
 ]
 
 
 class IntegerPartitioner:
-    def __init__(self, n):
-        self.int = n
-        self.parts = []
+
+    def __init__(self):
+        raise NotImplementedError('{} is a singleton class'.format(
+            type(self).__name__
+        ))
 
     _partition_counts = None
     @classmethod
-    def count_partitions(cls, n, M, l):
+    def count_partitions(cls, n, M=None, l=None):
         """
         Uses the recurrence relation written out here
         https://en.wikipedia.org/wiki/Partition_(number_theory)#Partitions_in_a_rectangle_and_Gaussian_binomial_coefficients
@@ -36,123 +40,528 @@ class IntegerPartitioner:
         :rtype:
         """
 
+        # just simple checks that could cause stuff to break or be overly slow otherwise
+        if l is None:
+            l = n
+        if M is None:
+            M = n
+        if l > n:
+            l = n
+        if M > n:
+            M = n
+
+        if n == 0:
+            return 1
+        if l == 0 or (l == 1 and M < n):
+            return 0
+        if M <= 0 or l <= 0:
+            return 0
+
+        grew = False
         if cls._partition_counts is None:
+            grew = True
             # we just initialize this 3D array to be the size we need
-            cls._partition_counts = np.zeros((n, M, l))
+            cls._partition_counts = np.full((n, M, l), -1, dtype=int)
 
         if n > cls._partition_counts.shape[0]:
+            grew = True
             # grow in size along this axis
             # we grow by 2X the amount we really need to
             # so as to amortize the cost of the concatenations (thank you Lyle)
+            ext_shape = (
+                2*(n - cls._partition_counts.shape[0]),
+            ) + cls._partition_counts.shape[1:]
             cls._partition_counts = np.concatenate([
                 cls._partition_counts,
-                np.zeros_like(cls._partition_counts)
+                np.full(ext_shape, -1, dtype=cls._partition_counts.dtype)
             ],
             axis=0
             )
 
         if M > cls._partition_counts.shape[1]:
-            # double in size along this axis
+            grew = True
+            ext_shape = (
+                        cls._partition_counts.shape[0],
+                        2 * (M - cls._partition_counts.shape[1]),
+                        cls._partition_counts.shape[2]
+                    )
             cls._partition_counts = np.concatenate([
                 cls._partition_counts,
-                np.zeros_like(cls._partition_counts)
+                np.full(ext_shape, -1, dtype=cls._partition_counts.dtype)
             ],
-            axis=0
+                axis=1
             )
 
-        test = cls._partition_counts[n, M, l]
-        if test == 0:
-            ...
-        else:
-            return test
+        if M > cls._partition_counts.shape[2]:
+            grew = True
+            ext_shape = (
+                        cls._partition_counts.shape[0],
+                        cls._partition_counts.shape[1],
+                        2 * (M - cls._partition_counts.shape[2])
+                    )
+            cls._partition_counts = np.concatenate([
+                cls._partition_counts,
+                np.full(ext_shape, -1, dtype=cls._partition_counts.dtype)
+            ],
+                axis=2
+            )
 
+        if grew:
+            for i in range(cls._partition_counts.shape[0]):
+                cls._partition_counts[i, i:, 0] = 1
+                cls._partition_counts[i, 0, i:] = 1
 
-    @staticmethod
-    def _accell_asc(n, return_len=False):
-        """
-        Pulled from http://jeromekelleher.net/author/jerome-kelleher.html
-        Could easily be translated to C++ if speed is crucial (but this will never be a bottleneck)
-        Thought about adding numpy-style optimizations but I don't know that there's
-        any reason to since I'm guessing the int addition is more than fast enough
-        and numpy overhead would probably just be overhead
-        :param n:
-        :type n:
-        :return:
-        :rtype:
-        """
-        # set up storage for building the partitions
-        a = [0] * (n + 1)
-        k = 1  # at the end of each run this will be the length of the perm
-        y = n - 1
-        while k != 0:
-            x = a[k - 1] + 1
-            k -= 1
-            # this could easily be made into a direct for
-            # loop which would be good if this were actually compiled
-            while 2 * x <= y:
-                a[k] = x
-                y -= x
-                k += 1
-            # ditto above
-            l = k + 1
-            while x <= y:
-                a[k] = x
-                a[l] = y
-                if return_len:
-                    yield (k+2, a[:k + 2])
-                else:
-                    yield a[:k + 2]
-                x += 1
-                y -= 1
-            a[k] = x + y
-            y = x + y - 1
-            if return_len:
-                yield (k, a[:k + 1])
-            else:
-                yield a[:k + 1]
+        counts = cls._partition_counts[n-1, M-1, l-1]
+        if counts < 0:
+            # print("======>", (n, M, l))
+            t1 = cls.count_partitions(n, M, l-1)
+            t2 = cls.count_partitions(n-l, M-1, l)
+            counts = t1 + t2
+            # print(((n, M, l-1), t1), ((n-l, M-1, l), t2))
+            cls._partition_counts[n-1, M-1, l-1] = counts
+        return counts
 
     @classmethod
-    def integer_partitions(cls,
-                           n,
-                           pad=False,
-                           max_len=None,
-                           return_len=False
-                           ):
+    def partitions(cls, n, pad=False, return_lens = False, max_len=None):
         """
-        Takes integer partitions and adds extra info for convenience
-        :param n:
-        :type n:
+        Returns partitions in descending lexicographic order
+        Adapted from Kelleher to return terms ordered by length and then second in descending
+        lex order which while a computationally suboptimal is very natural for a mapping onto
+        physical phenomena (and also it's easier for storage)
+
+        :param n: integer to partition
+        :type n: int
+        :param return_len: whether to return the length or not
+        :type return_len:
         :return:
         :rtype:
         """
 
+        if max_len is None or max_len > n:
+            max_len = n
+        l = max_len
+
+        # total_partitions = cls.count_partitions(n)
+        count_totals = np.array([cls.count_partitions(n, l=i+1) for i in range(l)])
+        counts = np.concatenate([count_totals[:1], np.diff(count_totals)], axis=0)
+        # count_totals = np.flip(count_totals)
         if pad:
-            n_perms = cls.count_partitions(n)
-            if max_len is None:
-                storage = np.zeros((n_perms, n))
-            else:
-                storage = np.zeros((n_perms, max_len))
-            if return_len:
-                lens = np.zeros((n_perms,))
-            else:
-                lens = None
-            for i,p in enumerate(cls._accell_asc(n, return_len=True)):
-                l, p = p
-                if max_len is not None and l > max_len:
-                    break
-                storage[i, :l] = p
-                if return_len:
-                    lens[i] = l
+            storage = np.zeros((count_totals[-1], l), dtype=int)
         else:
-            if max_len is None:
-                # we can be a little bit more efficient here than otherwise
-                # would be possible?
-                n_perms = cls.count_partitions(n)
-            ...
+            storage = [np.zeros((c, i+1), dtype=int) for i,c in enumerate(counts)]
+            # raise Exception([s.shape for s in storage], counts, count_totals)
+
+        increments = np.zeros(l, dtype=int)
+
+        partition = np.ones(n, dtype=int)
+        partition[0] = n
+        k = q = 0 # k tracks the length of the permutation and q tracks where we're writing
+        if pad:
+            storage[increments[k], :k+1] = partition[:k+1]
+        else:
+            storage[k][increments[k]] = partition[:k+1]
+        increments[k] += 1
+        for _ in range(1, cls.count_partitions(n)):
+            # everytime we reach this line we have completed a "transition"
+            # where we convert an element like a -> a - 1, 1
+            # the number of such transitions is hard to calculate a priori?
+            if partition[q] == 2:
+                # this is a special optimized case where, since the array is initialized to 1
+                # when the element we're trying to "transition" is equal to 2 we just set it back to 1
+                # and increment the length of our partition
+                k += 1
+                partition[q] = 1
+                q -= 1
+            else:
+                # perform the transition, decrementing the term at position q
+                # and extending the array where necessary
+                m = partition[q] - 1
+                n1 = k - q + 1
+                partition[q] = m
+                if n1 >= m:
+                    for n1 in range(n1, m-1, -m):
+                        q += 1
+                        partition[q] = m
+                    n1 -= m
+                if n1 == 0:
+                    k = q
+                else:
+                    k = q + 1
+                    if n1 > 1:
+                        q += 1
+                        partition[q] = n1
+
+            if k < l-1:
+                if pad:
+                    storage[count_totals[k-1]+increments[k], :k+1] = partition[:k+1]
+                else:
+                    storage[k][increments[k]] = partition[:k+1]
+                increments[k] += 1
+            elif k == l-1:
+                if pad:
+                    storage[count_totals[k-1]+increments[k], :k+1] = partition[:k+1]
+                else:
+                    storage[k][increments[k]] = partition[:k+1]
+                increments[k] += 1
+                if increments[k] == counts[k]:
+                    break
+
+        if return_lens:
+            if pad:
+                lens = np.ones(count_totals[-1], dtype=int)
+                for i, bounds in enumerate(zip(counts, counts[1:])):
+                    a, b = bounds
+                    lens[a:b] = i + 1
+            else:
+                lens = [np.full(c, i + 1, dtype=int) for i, c in enumerate(counts)]
+            return lens, storage
+        else:
+            return storage
+
+    @classmethod
+    def partition_indices(cls, parts, sums=None, counts=None):
+        """
+        Provides a somewhat quick way to get the index of a set of
+        integer partitions.
+        Parts must be padded so that all parts are the same length.
+        If the sums of the partitions are known ahead of time they may be passed
+        Similarly if the numbers of non-zero elements in the partitions are known
+        ahead of time they may _also_ be passed
+
+        :param parts:
+        :type parts: np.ndarray
+        :param sums:
+        :type sums: np.ndarray
+        :return:
+        :rtype:
+        """
+
+        if sums is None:
+            sums = np.sum(parts, axis=1)
+        u_sums, inv = np.unique(sums, return_inverse=True)
+        total_nums = np.array([cls.count_partitions(n, n, n) for n in u_sums])[inv]
+        # we'll need to subtract from this _and_ this ensures the recurrences are filled out
+
+        if counts is None:
+            counts = np.count_nonzero(parts, axis=1)
+
+        reverse_orders = np.zeros(parts.shape[0], dtype=int) # where the indices will be in reverse-lex order
+        inds = np.arange(parts.shape[0])
+        for i in range(np.max(counts)): # exhaust all elements
+            # now we need to figure out where the counts are equal to zero
+            # because there's nothing to do with those so we mask them out
+            mask = np.where(np.where(counts != 0))
+            counts = counts[mask]
+            inds = inds[mask]
+            sums = sums[mask]
+            parts = parts[mask]
+            reverse_orders[mask] += cls._partition_counts[sums, parts[:, i], sums]
+            counts -= 1
+            sums -= parts[:, i]
+
+        return total_nums - reverse_orders
+
+class UniquePermutations:
+    """
+    Provides permutations for a _single_ integer partition (very important)
+    """
+    def __init__(self, partition):
+        self.part = np.flip(np.sort(partition))
+        v, c = np.unique(partition, return_counts=True)
+        self.vals = np.flip(v)
+        self.counts = np.flip(c)
+        self.dim = len(partition)
+        self._counter = None
+        self._num = None
+
+    @property
+    def num_permutations(self):
+        """
+        Counts the number of unique permutations of the partition
+        :param counts:
+        :type counts:
+        :return:
+        :rtype:
+        """
+        if self._num is None:
+            self._num = self.count_permutations(self.counts)
+        return self._num
+
+    @staticmethod
+    def count_permutations(counts):
+        """
+        Counts the number of unique permutations of the given "counts"
+        which correspond to the number of nodes in the unique permutation tree
+        :param counts:
+        :type counts:
+        :return:
+        :rtype:
+        """
+        import math
+
+        subfac = np.prod([math.factorial(x) for x in counts])
+        ndim_fac = math.factorial(np.sum(counts))
+
+        return ndim_fac // subfac
+
+    def get_permutations(self, return_indices=False, initial_permutation=None, num_perms=None):
+        """
+        Returns the permutations of the input array
+        :return:
+        :rtype:
+        """
 
 
+        if initial_permutation is None:
+            initial_permutation = self.part
+            if num_perms is None:
+                num_perms = self.num_permutations
+            dim = self.dim
+        else:
+            initial_permutation = np.asanyarray(initial_permutation)
+            # we'll assume this initial_permutation is one of the children of the current held one
+            # which means if we don't know how many permutations forward to go we need to find its index
+            # and subtract this from the total num
+            if num_perms is None:
+                skipped = self.index_permutations(initial_permutation)
+                num_perms = self.num_permutations - skipped
 
+            dim = self.dim
 
+        storage = np.zeros((num_perms, dim), dtype=initial_permutation.dtype)
+        if return_indices:
+            inds = np.zeros((num_perms, dim), dtype=int) # this could potentially be narrower
+        else:
+            inds = None
+
+        part = initial_permutation.copy()
+        self._fill_permutations_direct(storage, inds, part)
+
+        if return_indices:
+            return inds, storage
+        else:
+            return storage
+
+    def _fill_permutations_direct(self, storage, inds, partition):
+        """
+        Builds off of this algorithm for generating permutations
+        in lexicographic order: https://en.wikipedia.org/wiki/Permutation#Generation_in_lexicographic_order
+        Then we adapt it so that it works in _reverse_ lex order since that's how our partitions come in
+        This adaption is done just by pretending the the numbers are all negated so all ordering relations
+        flip
+
+        :param storage:
+        :type storage:
+        :param inds:
+        :type inds:
+        :return:
+        :rtype:
+        """
+
+        swap = np.arange(len(partition))
+        dim = self.dim
+        for i in range(len(storage)):
+            storage[i] = partition
+            if inds is not None:
+                inds[i] = swap
+
+            # find largest index such that the next element in the
+            # partition is smaller (i.e. find where we need to do our next swap)
+            # I'd like to do this with numpy builtins instead of a loop
+            # or maybe some partial ordering approach or something
+            # but don't have it quite figured out yet
+            for i in range(dim-2, -1, -1):
+                if partition[i] > partition[i+1]:
+                    break
+            else:
+                break
+
+            # find the next-smallest index such that
+            # the partition element is smaller than the one at the swap
+            # position
+            for j in range(dim-1, i, -1):
+                if partition[i] > partition[j]:
+                    break
+
+            # swap the terms and reverse the sequence of elements leading
+            # up to it
+            partition[(i, j),] = partition[(j, i),]
+            partition[i+1:] = np.flip(partition[i+1:])
+
+        return storage
+
+    @staticmethod
+    def _subtree_counts(total, ndim, counts, where):
+        """
+        Computes the number of states in the tree built from decrementing counts[where] by 1
+        Is it trivially simple? Yes
+        But there's power to having it be named.
+        :param total:
+        :type total:
+        :param ndim:
+        :type ndim:
+        :param counts:
+        :type counts:
+        :param where:
+        :type where:
+        :return:
+        :rtype:
+        """
+        mprod = total * counts[where]
+        if mprod % ndim != 0:
+            raise ValueError("subtree counts {} don't comport with dimension {}".format(
+                mprod, ndim
+            ))
+        return mprod // ndim
+
+    @staticmethod
+    def _reverse_subtree_counts(subtotal, ndim, counts, j):
+        """
+        Given subtotal = (total * counts[j]) // ndim
+              total    = (subtotal * ndim) // counts[j]
+        :return:
+        :rtype:
+        """
+
+        return (subtotal * ndim) // counts[j]
+
+    def index_permutations(self, perms, assume_sorted=False):
+        """
+
+        :param perms:
+        :type perms:
+        :param assume_sorted:
+        :type assume_sorted:
+        :return:
+        :rtype:
+        """
+
+        smol = perms.ndim == 1
+        if smol:
+            assume_sorted = True
+            perms = np.reshape(perms, (1, len(perms)))
+
+        if not assume_sorted:
+            sorting = np.lexsort(-np.flip(perms, axis=1).T)
+            perms = perms[sorting,]
+        else:
+            sorting = None
+
+        num_before = 0
+        cur_total = tot_perms = self.num_permutations
+        ndim = self.dim
+        cur_dim = self.dim
+        classes = self.vals
+        # we make a constant-time lookup for what a value maps to in
+        # terms of position in the counts array
+        class_map = {v:i for i,v in enumerate(classes)}
+        counts = np.copy(self.counts) # we're going to modify this in-place
+        nterms = len(counts)
+        # stack = collections.deque()  # stack of current data to reuse
+
+        # determine where each successive permutation differs so we can know how much to reuse
+        diffs = np.not_equal(perms[:-1], perms[1:]).astype('byte')
+
+        inds = np.full((len(perms),), -1)
+        for sn, state in enumerate(perms):
+            if sn > 0:
+                # we reuse as much work as we can by only backtracking where we need to
+                agree_pos = np.where(diffs[sn-1])[0][0] # where the first disagreement occurs...I'd like this to be less inefficient
+                num_diff = ndim - agree_pos  # number of differing states
+                if num_diff == 0:  # same state so just reuse the previous value
+                    if inds[sn - 1] == -1:
+                        raise ValueError("permutation {} tried to reused bad value from permutation {}".format(
+                            perms[sn], perms[sn - 1]
+                        ))
+                    inds[sn] = inds[sn - 1]
+                    continue
+
+                prev = perms[sn-1]
+                # at this point cur_dim gives us the number of trailing
+                # digits that are equivalent in the previous permutation
+                # so we only need to back-track to where the new state begins to
+                # differ from the old one,
+                for i in range(ndim - cur_dim - 1, agree_pos-1, -1):
+                    j = class_map[prev[i]]
+                    counts[j] += 1
+                    cur_dim += 1
+                    # We keep track how many total sub-permutations exist
+                    # for the subselection of `state` by simply reversing the
+                    # calculation that narrowed `cur_total`
+                    cur_total = self._reverse_subtree_counts(cur_total, cur_dim, counts, j)
+                    # We also need to work out how to subtract off the appropriate number of terms
+                    # ...which being basically quadratic time makes we wonder if maybe I was better off
+                    # sticking to using a stack, but maybe cut down on the number of copies for the stack?
+                    # Or maybe there's a way to not have to be quite as dumb as this?
+                    for j in range(nterms):
+                        if classes[j] == prev[i]:
+                            break
+                        subtotal = self._subtree_counts(cur_total, cur_dim, counts, j)
+                        num_before -= subtotal
+
+                state = state[agree_pos:]
+
+            # we loop through the elements in the permutation and
+            # add up number of elements in the subtree that would precede
+            # the state in reverse-lexicographic order
+            for i, el in enumerate(state):
+                for j in range(nterms):
+                    if counts[j] == 0:
+                        continue
+                    subtotal = self._subtree_counts(cur_total, cur_dim, counts, j)
+                    if classes[j] == el:
+                        cur_total = subtotal
+                        cur_dim -= 1
+                        counts[j] -= 1
+                        break
+                    else:
+                        num_before += subtotal
+
+                # short circuit if we've gotten down to a terminal node where
+                # there is just one unique element
+                if np.count_nonzero(counts) == 1:
+                    break
+
+            inds[sn] = num_before
+
+        if sorting is not None:
+            inds = inds[np.argsort(sorting)]
+        elif smol:
+            inds = inds[0]
+
+        return inds
+
+class IntegerPartitionPermutations:
+    """
+    Provides tools for working with permutations of a given integer partition
+    """
+    def __init__(self, num, dim=None):
+        self.int = num
+        if dim is None:
+            self.parts = IntegerPartitioner.integer_partitions(num, pad=True)
+        else:
+            if dim <= num:
+                self.parts = IntegerPartitioner.integer_partitions(num, pad=True, max_len=dim)
+            else:
+                parts_basic = IntegerPartitioner.integer_partitions(num, pad=True, max_len=num)
+                self.parts = np.concatenate(
+                    [
+                            parts_basic,
+                            np.zeros((len(parts_basic), dim - num))
+                        ],
+                    axis=1
+                )
+
+    def get_partition_permutation_indices(self, perms):
+        """
+
+        :param perms:
+        :type perms:
+        :return:
+        :rtype:
+        """
+
+        raise NotImplementedError('woof')
 
 PermutationStateKey = collections.namedtuple("PermutationStateKey", ['non_zero', 'classes'])
 class PartitionPermutationIndexer:
@@ -165,9 +574,7 @@ class PartitionPermutationIndexer:
     def __init__(self, partition):
         self.ndim = len(partition)
         self.partition = partition
-        self.classes, self.counts = np.unique(partition, return_counts=True)
-        self.classes = np.flip(self.classes)
-        self.counts = np.flip(self.counts)
+        self.perms = IntegerPartitionPermutations(partition)
         self.non_zero = sum(x for x,c in zip(self.counts, self.classes) if c != 0)
         self.key = PermutationStateKey(self.non_zero, tuple(self.classes))
         self.total_states = self._fac_rat(self.counts)
@@ -204,41 +611,6 @@ class PartitionPermutationIndexer:
                 mprod, ndim
             ))
         return mprod // ndim
-
-    @staticmethod
-    def _unique_permutations(elements):
-        """
-        From StackOverflow, an efficient enough
-        method to get unique permutations
-        :param perms:
-        :type perms:
-        :return:
-        :rtype:
-        """
-
-        class unique_element:
-            def __init__(self, value, occurrences):
-                self.value = value
-                self.occurrences = occurrences
-
-        def perm_unique_helper(listunique, result_list, d):
-            if d < 0:
-                yield tuple(result_list)
-            else:
-                for i in listunique:
-                    if i.occurrences > 0:
-                        result_list[d] = i.value
-                        i.occurrences -= 1
-                        for g in perm_unique_helper(listunique, result_list, d - 1):
-                            yield g
-                        i.occurrences += 1
-
-        if not hasattr(elements, 'count'):
-            elements = list(elements)
-        eset = set(elements)
-        listunique = [unique_element(i, elements.count(i)) for i in eset]
-        u = len(elements)
-        return list(sorted(list(perm_unique_helper(listunique, [0] * u, u - 1)), reverse=True))
 
     def get_perm_indices(self, states, assume_sorted=True):
         """
@@ -347,7 +719,7 @@ class PartitionPermutationIndexer:
             sorting = None
 
         perms = []
-        for n, p in enumerate(self._unique_permutations(self.partition)):
+        for n, p in enumerate(IntegerPartitionPermutations(self.partition).get_permutations()):
             while n == inds[0]:
                 perms.append(p)
                 inds = inds[1:]

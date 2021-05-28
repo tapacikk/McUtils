@@ -533,6 +533,7 @@ class ScipySparseArray(SparseArray):
             else:
                 fmt = self._fmt
             self._a = fmt(a, shape=a.shape)
+
         # we're gonna support the (vals, (i_1, i_2, i_3, ...)) syntax for constructing
         # an array based on its non-zero positions
         elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1][0]):
