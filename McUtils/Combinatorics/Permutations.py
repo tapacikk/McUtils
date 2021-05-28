@@ -447,10 +447,12 @@ class UniquePermutations:
         else:
             sorting = None
 
-        num_before = 0
-        cur_total = tot_perms = self.num_permutations
+        # tracks the number of prior nodes in the tree (first column)
+        # and the number of total remaining permutations (used to calculate the first)
+        tree_data = np.zeros((self.dim, 2), dtype=int)
+        cur_dim = self.dim - 1
+        tree_data[cur_dim, 1] = self.num_permutations
         ndim = self.dim
-        cur_dim = self.dim
         classes = self.vals
         # we make a constant-time lookup for what a value maps to in
         # terms of position in the counts array
@@ -481,24 +483,13 @@ class UniquePermutations:
                 # digits that are equivalent in the previous permutation
                 # so we only need to back-track to where the new state begins to
                 # differ from the old one,
-                for i in range(ndim - cur_dim - 1, agree_pos-1, -1):
+                for i in range(ndim - cur_dim - 2, agree_pos-1, -1):
                     j = class_map[prev[i]]
                     counts[j] += 1
+                    tree_data[cur_dim, 1] = 0
                     cur_dim += 1
-                    # We keep track how many total sub-permutations exist
-                    # for the subselection of `state` by simply reversing the
-                    # calculation that narrowed `cur_total`
-                    cur_total = self._reverse_subtree_counts(cur_total, cur_dim, counts, j)
-                    # We also need to work out how to subtract off the appropriate number of terms
-                    # ...which being basically quadratic time makes we wonder if maybe I was better off
-                    # sticking to using a stack, but maybe cut down on the number of copies for the stack?
-                    # Or maybe there's a way to not have to be quite as dumb as this?
-                    for j in range(nterms):
-                        if classes[j] == prev[i]:
-                            break
-                        subtotal = self._subtree_counts(cur_total, cur_dim, counts, j)
-                        num_before -= subtotal
-
+                # print(ndim-agree_pos)
+                # print("<<", cur_dim, tree_data[:, 1], counts)
                 state = state[agree_pos:]
 
             # we loop through the elements in the permutation and
@@ -508,21 +499,24 @@ class UniquePermutations:
                 for j in range(nterms):
                     if counts[j] == 0:
                         continue
-                    subtotal = self._subtree_counts(cur_total, cur_dim, counts, j)
+                    # print(cur_dim, tree_data[:, 1], counts)
+                    subtotal = self._subtree_counts(tree_data[cur_dim, 1], cur_dim+1, counts, j)
                     if classes[j] == el:
-                        cur_total = subtotal
                         cur_dim -= 1
                         counts[j] -= 1
+                        tree_data[cur_dim, 1] = subtotal
+                        tree_data[cur_dim, 0] = tree_data[cur_dim+1, 0]
                         break
                     else:
-                        num_before += subtotal
+                        tree_data[cur_dim, 0] += subtotal
 
                 # short circuit if we've gotten down to a terminal node where
                 # there is just one unique element
-                if np.count_nonzero(counts) == 1:
+                if tree_data[cur_dim, 1] == 1:
+                    # print(">>", cur_dim, tree_data[:, 1], counts)
                     break
 
-            inds[sn] = num_before
+            inds[sn] = tree_data[cur_dim, 0]
 
         if sorting is not None:
             inds = inds[np.argsort(sorting)]
