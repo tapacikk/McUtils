@@ -1562,7 +1562,10 @@ class SymmetricGroupGenerator:
 
         return perms
 
-    def _build_direct_sums(self, input_perm_classes, counts, classes, return_indices=False, filter_negatives=True):
+    def _build_direct_sums(self, input_perm_classes, counts, classes, return_indices=False,
+                           filter_negatives=True,
+                           merge=True
+                           ):
         """
         Creates direct sums of `input_perm_classes` with the unique permutations of `classes` where
         each of the classes has the same counts (just so we don't have to walk the tree as much)
@@ -1650,6 +1653,9 @@ class SymmetricGroupGenerator:
                         # print(">>", new_rep_perm)
                         classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in new_rep_perm]
                         standard_rep_perms = np.array([UniquePermutations.get_standard_permutation(c[1], c[0]) for c in classes_count_data])
+                        # TODO: if I want this to be faster than doing this in a secondary step I need to speed this part up
+                        #       or drop it altogether or something. I'm sure I can make use of prior info to get there or use the standard_rep_perms
+                        #       to skip a few steps ahead or cache a bunch of info or something...
                         padding = self.to_indices(standard_rep_perms)
                         for j in range(len(classes)):
                             indices[cum_counts[i]:cum_counts[i + 1], idx, j] = padding[j] + UniquePermutations.get_permutation_indices(new_perms[j],
@@ -1659,7 +1665,6 @@ class SymmetricGroupGenerator:
                     elif len(comp) > 0:
                         classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in new_rep_perm[comp]]
                         standard_rep_perms = np.array([UniquePermutations.get_standard_permutation(c[1], c[0]) for c in classes_count_data])
-                        # print(standard_rep_perms)
                         padding = self.to_indices(standard_rep_perms)
                         for n,j in enumerate(comp):
                             indices[cum_counts[i]:cum_counts[i + 1], idx, j] = padding[n] + UniquePermutations.get_permutation_indices(new_perms[j],
@@ -1669,15 +1674,24 @@ class SymmetricGroupGenerator:
 
         UniquePermutations.walk_permutation_tree(counts, on_visit)
 
+        perm_counts = np.full(total_perm_count, num_perms*len(classes))
         if len(dropped_pairs) > 0:
+            # raise Exception(storage.shape, num_perms*len(classes))
             mask = np.full(storage.shape, True)
             if return_indices:
                 ind_mask = np.full(indices.shape, True)
             for pair in dropped_pairs:
                 i, idx, negs = pair
                 mask[cum_counts[i]:cum_counts[i+1], idx, negs] = False
+                perm_counts[cum_counts[i]:cum_counts[i+1]] -= len(negs)
                 if return_indices:
                     ind_mask[cum_counts[i]:cum_counts[i + 1], idx, negs] = False
+
+            # we take the mask and use it to reshape the storage...
+            # but it would be nice to be able to reshape this in terms of the OG terms...
+            # like if that's possible...is that assured to be possible? I don't know
+            # we basically drop a bunch of intermediate stuff but I'm guessing it'll work
+            # to reshape the final thing
             storage = storage[mask]
             if return_indices:
                 indices = indices[ind_mask]
@@ -1685,13 +1699,18 @@ class SymmetricGroupGenerator:
         storage = storage.reshape((-1, ndim))
         if return_indices:
             indices = indices.flatten()
-            return storage, indices
-        else:
-            return storage
 
-    def take_permutation_rule_direct_sum(self, perms, rules, sums=None,
+        if return_indices:
+            return storage, perm_counts, indices
+        else:
+            return storage, perm_counts
+
+    def take_permutation_rule_direct_sum(self, perms, rules,
+                                         sums=None,
                                          assume_sorted=False,
-                                         return_indices=False):
+                                         return_indices=False,
+                                         split_results=False,
+                                         indexing_method='secondary'):
         """
         Applies `rules` to perms.
         Naively this is just taking every possible permutation of the rules padded to
@@ -1780,9 +1799,15 @@ class SymmetricGroupGenerator:
 
         perm_classes = [c[0] for c in class_data]
         perm_totals = [c[1] for c in class_data]
-        perm_inverse = [c[2] for c in class_data]
+        perm_sorting = [c[2] for c in class_data]
 
         # raise Exception(perm_classes, groups)
+
+        if return_indices and indexing_method == 'secondary':
+            secondary_inds = True
+            return_indices = False
+        else:
+            secondary_inds = False
 
         perms = []
         if return_indices:
@@ -1798,25 +1823,69 @@ class SymmetricGroupGenerator:
                 res = self._build_direct_sums(input_classes, counts, classes,
                                               return_indices=return_indices
                                               )
-                if return_indices:
-                    perm_block.append(res[0])
-                    ind_block.append(res[1])
+                if split_results:
+                    split_blocks = np.cumsum(res[1][:-1])
+                    res_perms = np.split(res[0], split_blocks)
+                    # print(split_blocks, [len(x) for x in res_perms])
+                    if return_indices:
+                        ind_block.append(np.split(res[2], split_blocks))
                 else:
-                    perm_block.append(res)
+                    res_perms = res[0]
+                    if return_indices:
+                        ind_block.append(res[2])
+                perm_block.append(res_perms)
 
-            # print(rule_inv, len(perm_block), len(rule_counts), len(rule_classes))
-            new_perms = np.concatenate(perm_block, axis=0)
-            perms.append(new_perms)
+            if split_results:
+                # zip to merge
+                new_perms = [
+                    np.concatenate(blocks, axis=0)
+                    for blocks in zip(*perm_block)
+                ]
+                perms.append(new_perms)
+                if return_indices:
+                    new_inds = [
+                        np.concatenate(blocks)
+                        for blocks in zip(*ind_block)
+                    ]
+                    indices.append(new_inds)
+            else:
+                new_perms = np.concatenate(perm_block, axis=0)
+                perms.append(new_perms)
+                if return_indices:
+                    new_inds = np.concatenate(ind_block)
+                    indices.append(new_inds)
+
+        # now we need to also reshuffle the states so
+        # that they come out in the input ordering
+        if split_results:
+            new_perms = []
+            for p,s in zip(perms, perm_sorting):
+                new_perms += [p[i] for i in np.argsort(s)]
+            perms = new_perms
+            if sorting is not None:
+                inv = np.argsort(sorting)
+                perms = [perms[i] for i in inv]
             if return_indices:
-                new_inds = np.concatenate(ind_block)
-                indices.append(new_inds)
-
-
-        # now maybe we want to take some kind of inverse????? Or not?????
-
-        perms = np.concatenate(perms, axis=0)
+                new_inds = []
+                for d,s in zip(indices, perm_sorting):
+                    new_inds += [d[i] for i in np.argsort(s)]
+                indices = new_inds
+                if sorting is not None:
+                    indices = [indices[i] for i in inv]
+        else:
+            perms = np.concatenate(perms, axis=0)
+            if return_indices:
+                indices = np.concatenate(indices)
         if return_indices:
-            indices = np.concatenate(indices)
+            return perms, indices
+        elif secondary_inds:
+            if split_results:
+                full_perms = np.concatenate(perms, axis=0)
+                indices = self.to_indices(full_perms)
+                splits = [len(x) for x in perms]
+                return perms, np.split(indices, splits)
+            else:
+                indices = self.to_indices(perms)
             return perms, indices
         else:
             return perms

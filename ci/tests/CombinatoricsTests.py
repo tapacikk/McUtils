@@ -341,8 +341,8 @@ class CombinatoricsTests(TestCase):
             axis=0
         )
 
-        full_perms = test_states[:, np.newaxis, :] + bleh[np.newaxis, :, :]
-        full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
+        full_full_perms = test_states[:, np.newaxis, :] + bleh[np.newaxis, :, :]
+        full_perms = full_full_perms.reshape((-1, full_perms.shape[-1]))
         negs = np.where(full_perms < 0)[0]
         comp = np.setdiff1d(np.arange(len(full_perms)), negs)
         full_perms = full_perms[comp,]
@@ -356,18 +356,40 @@ class CombinatoricsTests(TestCase):
         # test_rules = [
         #     [2], [1, 1], [-1, -1], [-1, 1], [-2]
         # ]
-        with Timer("direct inds"):
-            test_perms, test_inds = gen.take_permutation_rule_direct_sum(
-                test_states,
-                test_rules,
-                return_indices=True
-            )
+        # with BlockProfiler("direct inds"):
+        test_perms, test_inds = gen.take_permutation_rule_direct_sum(
+            test_states,
+            test_rules,
+            return_indices=True,
+            indexing_method='direct'
+        )
 
-        with Timer("secondary inds"):
-            test_perms2 = gen.take_permutation_rule_direct_sum(
-                test_states,
-                test_rules
-            )
-            test_inds2 = gen.to_indices(test_perms2)
+        # with BlockProfiler("secondary inds"):
+        test_perms2, test_inds2 = gen.take_permutation_rule_direct_sum(
+            test_states,
+            test_rules,
+            return_indices=True,
+            indexing_method='secondary'
+        )
 
         self.assertEquals(test_inds.tolist(), test_inds2.tolist())
+
+        test_perms2, test_inds2 = gen.take_permutation_rule_direct_sum(
+            test_states,
+            test_rules,
+            return_indices=True,
+            split_results=True
+        )
+
+        bleeep = []
+        for full_perms in full_full_perms.reshape((len(test_states), -1, full_perms.shape[-1])):
+            negs = np.where(full_perms < 0)[0]
+            comp = np.setdiff1d(np.arange(len(full_perms)), negs)
+            full_perms = full_perms[comp,]
+            bleeep.append(full_perms)
+
+        self.assertEquals(len(test_states), len(test_perms2))
+
+        for i in range(len(test_states)):
+            self.assertEquals(len(test_perms2[i]), len(bleeep[i]))
+            self.assertEquals(sorted(test_perms2[i].tolist()), sorted(bleeep[i].tolist()))
