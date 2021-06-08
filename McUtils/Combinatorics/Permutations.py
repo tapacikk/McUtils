@@ -125,9 +125,9 @@ class IntegerPartitioner:
                 cls._partition_counts[n-1, M-1, l-1] = counts
         else:
             # we assume we got a numpy array of equal length for each term
-            n = np.asanyarray(n)
-            M = np.asanyarray(M)
-            l = np.asanyarray(l)
+            n = np.asanyarray(n)#.astype(int)
+            M = np.asanyarray(M)#.astype(int)
+            l = np.asanyarray(l)#.astype(int)
 
             too_long = np.where(l > n)
             if len(too_long) > 0:
@@ -146,6 +146,7 @@ class IntegerPartitioner:
             if manage_counts:
                 cls._manage_counts_array(np.max(n), np.max(M), np.max(l))
 
+            # print(n.dtype, M.dtype, l.dtype)
             counts = cls._partition_counts[n - 1, M - 1, l - 1]
 
             zero_lens = l == 0
@@ -340,7 +341,7 @@ class IntegerPartitioner:
         :rtype:
         """
 
-        parts = np.asanyarray(parts)
+        parts = np.asanyarray(parts).astype(int)
         smol = parts.ndim == 1
         if smol:
             parts = parts.reshape((1, parts.shape[0]))
@@ -371,7 +372,6 @@ class IntegerPartitioner:
                     subsums = cls.count_exact_length_partitions_in_range(sums, sums, parts[:, i], counts)
                 #cls.count_partitions(sums - counts, sums - 1, counts) - cls.count_partitions(sums - counts, parts[:, i] - 1, counts)
                 num_before[inds] += subsums
-                # print(np.column_stack([sums, parts[:, i:], subsums, num_before[inds]]))
                 counts -= 1
                 sums -= parts[:, i]
 
@@ -724,7 +724,11 @@ class UniquePermutations:
         for sn, state in enumerate(perms):
             if sn > 0:
                 # we reuse as much work as we can by only backtracking where we need to
-                agree_pos = np.where(diffs[sn-1])[0][0] # where the first disagreement occurs...I'd like this to be less inefficient
+                agree_pos = np.where(diffs[sn-1])[0] # where the first disagreement occurs...I'd like this to be less inefficient
+                if len(agree_pos) == 0:
+                    agree_pos = ndim
+                else:
+                    agree_pos = agree_pos[0]
                 num_diff = ndim - agree_pos  # number of differing states
                 if num_diff == 0:  # same state so just reuse the previous value
                     if inds[sn - 1] == -1:
@@ -754,8 +758,6 @@ class UniquePermutations:
                     # I'm not sure why this didn't break earlier without this...
                     tree_data[cur_dim, 0] = tree_data[cur_dim+1, 0]
 
-                    # print(ndim-agree_pos)
-                    # print("<<", cur_dim, counts, tree_data[:, 1], tree_data[:, 0])
                     state = state[agree_pos:]
 
             # we loop through the elements in the permutation and
@@ -765,7 +767,6 @@ class UniquePermutations:
                 for j in range(nterms):
                     if counts[j] == 0:
                         continue
-                    # print("  ", cur_dim, counts, tree_data[:, 1], tree_data[:, 0])
                     subtotal = cls._subtree_counts(tree_data[cur_dim, 1], cur_dim+1, counts, j)
                     if classes[j] == el:
                         cur_dim -= 1
@@ -779,7 +780,6 @@ class UniquePermutations:
                 # short circuit if we've gotten down to a terminal node where
                 # there is just one unique element
                 if tree_data[cur_dim, 1] == 1:
-                    # print(">>", cur_dim, counts, tree_data[:, 1], tree_data[:, 0])
                     break
 
             inds[sn] = tree_data[cur_dim, 0]
@@ -841,7 +841,6 @@ class UniquePermutations:
 
         perms = np.zeros((len(indices), dim), dtype=int)
 
-        # print(":::", depth, counts, ":::")
         for sn, idx in enumerate(indices):
 
             # we back track directly to where the sum of the subtotal and the current num_before
@@ -986,7 +985,6 @@ class UniquePermutations:
             # is greater than the target index
             if allow_bracktracking:
                 tree_sums = tree_data[:depth, 0] + tree_data[1:depth + 1, 1]
-                # print(":?", idx, depth, tree_sums)
                 target_depth = np.where(tree_sums > idx)[0]
                 if len(target_depth) > 0:
                     target_depth = np.max(target_depth)
@@ -1039,6 +1037,122 @@ class UniquePermutations:
                 if done:
                     on_visit(idx, perm, counts, depth, tree_data)
                     break
+
+    @classmethod
+    def descend_permutation_tree_indices(cls, perms, on_visit, classes=None, counts=None, dim=None, assume_sorted=False, num_permutations=None):
+        """
+        Not sure what to call this exactly, but given that `walk_permutation_tree` maps onto `permutations_from_indices`
+        this is the counterpart that basically walks _down_ the way `permutation_indices` would.
+        I guess this is basically a BFS type approach of something?
+
+        :param perms:
+        :type perms:
+        :param assume_sorted:
+        :type assume_sorted:
+        :return:
+        :rtype:
+        """
+
+        raise NotImplementedError("The idea is good but I don't need it yet")
+
+        perms = np.asanyarray(perms)
+
+        if classes is None or counts is None:
+            classes, counts = cls.get_permutation_class_counts(perms[0])
+
+        smol = perms.ndim == 1
+        if smol:
+            assume_sorted = True
+            perms = np.reshape(perms, (1, len(perms)))
+
+        if not assume_sorted:
+            sorting = np.lexsort(-np.flip(perms, axis=1).T)
+            perms = perms[sorting,]
+        else:
+            sorting = None
+
+        # tracks the number of prior nodes in the tree (first column)
+        # and the number of total remaining permutations (used to calculate the first)
+        if dim is None:
+            dim = int(np.sum(counts))
+        tree_data = np.zeros((dim, 2), dtype=int)
+        cur_dim = dim - 1
+        if num_permutations is None:
+            num_permutations = cls.count_permutations(counts)
+        tree_data[cur_dim, 1] = num_permutations
+        ndim = dim
+        # we make a constant-time lookup for what a value maps to in
+        # terms of position in the counts array
+        class_map = {v: i for i, v in enumerate(classes)}
+        init_counts = counts
+        counts = np.copy(counts)  # we're going to modify this in-place
+        nterms = len(counts)
+        # stack = collections.deque()  # stack of current data to reuse
+
+        # determine where each successive permutation differs so we can know how much to reuse
+        permutation_indices = np.arange(ndim)
+        diffs = np.not_equal(perms[:-1], perms[1:])
+        for sn, state in enumerate(perms):
+            if sn > 0:
+                # we reuse as much work as we can by only backtracking where we need to
+                agree_pos = np.where(diffs[sn - 1])[0][
+                    0]  # where the first disagreement occurs...I'd like this to be less inefficient
+                num_diff = ndim - agree_pos  # number of differing states
+                if num_diff == 0:  # same state so just reuse the previous value
+                    # if inds[sn - 1] == -1:
+                    #     raise ValueError("permutation {} tried to reused bad value from permutation {}".format(
+                    #         perms[sn], perms[sn - 1]
+                    #     ))
+                    # inds[sn] = inds[sn - 1]
+                    continue
+                elif agree_pos == 0:
+                    # no need to actually backtrack when we know what we're gonna get
+                    cur_dim = ndim - 1
+                    tree_data[cur_dim, 1] = num_permutations
+                    tree_data[cur_dim, 0] = 0
+                    counts = init_counts.copy()
+                else:
+                    prev = perms[sn - 1]
+                    # at this point cur_dim gives us the number of trailing
+                    # digits that are equivalent in the previous permutation
+                    # so we only need to back-track to where the new state begins to
+                    # differ from the old one,
+                    for i in range(ndim - cur_dim - 2, agree_pos - 1, -1):
+                        j = class_map[prev[i]]
+                        counts[j] += 1
+                        cur_dim += 1
+                    # I'm not sure why this didn't break earlier without this...
+                    tree_data[cur_dim, 0] = tree_data[cur_dim + 1, 0]
+
+                    state = state[agree_pos:]
+
+            # we loop through the elements in the permutation and
+            # add up number of elements in the subtree that would precede
+            # the state in reverse-lexicographic order
+            for i, el in enumerate(state):
+                for j in range(nterms):
+                    if counts[j] == 0:
+                        continue
+                    subtotal = cls._subtree_counts(tree_data[cur_dim, 1], cur_dim + 1, counts, j)
+                    if classes[j] == el:
+                        cur_dim -= 1
+                        counts[j] -= 1
+                        tree_data[cur_dim, 1] = subtotal
+                        permutation_indices[cur_dim] = j
+                        tree_data[cur_dim, 0] = tree_data[cur_dim + 1, 0]
+                        break
+                    else:
+                        tree_data[cur_dim, 0] += subtotal
+
+                # short circuit if we've gotten down to a terminal node where
+                # there is just one unique element
+                if tree_data[cur_dim, 1] == 1:
+                    # now...we know what the permutation looks like in terms of the classes itself????
+                    # except...I'm not totally sure how to put this
+                    permutation_indices[cur_dim:] = np.arange(cur_dim, )
+                    break
+
+            on_visit(tree_data[cur_dim, 0], permutation_indices, tree_data)
 
 class IntegerPartitionPermutations:
     """
@@ -1118,7 +1232,7 @@ class IntegerPartitionPermutations:
 
         return uinds, sorting, inds
 
-    def get_full_equivalence_class_data(self, perms, split_method='direct'):
+    def get_full_equivalence_class_data(self, perms, split_method='direct', return_permutations=False):
         """
         Returns the equivalence class data of the given permutations
         :param perms:
@@ -1131,18 +1245,29 @@ class IntegerPartitionPermutations:
 
         # convert perms into their appropriate partitions
         # get the indices of those and then split
-
-        partition_sorting = np.argsort(-perms, axis=1) # these are the "permutations" in IntegerPartitionPermutations
-
         uinds, sorting, inds = self._get_partition_splits(perms, split_method=split_method)
 
         groups = np.split(perms[sorting,], inds)[1:]
-        partition_groups = np.split(partition_sorting[sorting,], inds)[1:]
         partition_data = self._class_counts[uinds]
 
-        return uinds, partition_data, partition_groups, groups, sorting
+        if return_permutations:
+            # now I need to relate perms to the "standard" permutation as a set of
+            # swaps, since it is only in this approach that various properties will hold...
+            # this means [1, 0, 0, 0, 0] -> [0, 0, 1, 0, 0] by [2, 1, 0, 3, 4] not [1, 2, 0, 3, 4]
+            partition_sorting = np.argsort(np.argsort(-perms, axis=1), axis=1)  # these are the "permutations" in IntegerPartitionPermutations
+            partition_groups = np.split(partition_sorting[sorting,], inds)[1:]
 
-    def get_equivalence_classes(self, perms, split_method='direct'):
+            # partition_groups = []
+            # for group, data in zip(groups, partition_data):
+            #     partition_groups.append(
+            #         UniquePermutations.get_permutation_swaps(group, classes=data[1], counts=data[2])
+            #     )
+        else:
+            partition_groups = None
+
+        return uinds, partition_data, partition_groups, groups, sorting, self._cumtotals[uinds]
+
+    def get_equivalence_classes(self, perms, split_method='direct', return_permutations=True):
         """
         Returns the equivalence classes and permutations of the given permutations
         :param perms:
@@ -1153,9 +1278,9 @@ class IntegerPartitionPermutations:
         :rtype:
         """
 
-        _, partition_data, partition_groups, _, sorting = self.get_full_equivalence_class_data(perms, split_method=split_method)
+        _, partition_data, partition_groups, _, sorting, totals = self.get_full_equivalence_class_data(perms, split_method=split_method, return_permutations=return_permutations)
 
-        return [(c[0], c[1], p) for c,p in zip(partition_data, partition_groups)], sorting
+        return [(c[0], c[1], p) for c,p in zip(partition_data, partition_groups)], totals, sorting
 
     def get_partition_permutation_indices(self, perms, split_method='direct'):
         """
@@ -1169,11 +1294,11 @@ class IntegerPartitionPermutations:
         :rtype:
         """
 
-        uinds, partition_data, partition_groups, groups, sorting = self.get_full_equivalence_class_data(perms, split_method=split_method)
+        uinds, partition_data, partition_groups, groups, sorting, totals = self.get_full_equivalence_class_data(perms, split_method=split_method)
 
         subinds = [
             s + UniquePermutations.get_permutation_indices(g, d[0], d[1], self.dim)
-            for d, g, s in zip(partition_data, groups, self._cumtotals[uinds])
+            for d, g, s in zip(partition_data, groups, totals)
         ]
 
         # raise Exception(groups, subinds)
@@ -1248,7 +1373,6 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
         self.partition_counts = np.array([], dtype=int)
         self._cumtotals = np.array([0, 1])
         self._num_terms = 1
-
 
     def get_partition_permutation_indices(self, perms, split_method=None):
         """
@@ -1372,10 +1496,16 @@ class SymmetricGroupGenerator:
         :rtype:
         """
 
+        perms = np.asanyarray(perms)
+        smol = perms.ndim == 1
+        if smol:
+            assume_sorted = True
+            perms = perms[np.newaxis]
+
         if sums is None:
             sums = np.sum(perms, axis=1)
 
-        if not assume_sorted:
+        if not assume_sorted and len(perms) > 1:
             sorting = np.argsort(sums)
             sums = sums[sorting]
             perms = perms[sorting]
@@ -1495,6 +1625,7 @@ class SymmetricGroupGenerator:
                 # This gives us strict ordering relations that we can make use of and allows us to only calculate
                 # the counts once
                 new_rep_perm = rep[np.newaxis, :] + class_perms
+                negs = None
                 if filter_negatives:
                     # if we run into negatives we need to mask them out
                     negs = np.where(new_rep_perm < 0)
@@ -1502,20 +1633,54 @@ class SymmetricGroupGenerator:
                         negs = negs[0]
                         if len(negs) > 0: # weird numpy shit
                             negs = np.unique(negs[0]) # the j values to drop
-                            dropped_pairs.append((i, negs))
+                            # now we take the complement
+                            dropped_pairs.append((i, idx, negs))
 
-                            raise Exception(perms, negs)
-
-                new_perms = new_rep_perm[:, perms].transpose(1, 0, 2)
-                storage[cum_counts[i]:cum_counts[i+1], idx] = new_perms
+                    comp = np.setdiff1d(np.arange(len(class_perms)), negs)
+                    new_perms = new_rep_perm[comp[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
+                    # raise Exception(comp, storage[cum_counts[i]:cum_counts[i+1], idx, comp].shape, new_rep_perm[:, perms].shape, new_perms.shape, perms.shape)
+                    storage[cum_counts[i]:cum_counts[i+1], idx, comp] = new_perms.transpose(1, 0, 2)
+                else:
+                    new_perms = new_rep_perm[:, perms].transpose(1, 0, 2)
+                    storage[cum_counts[i]:cum_counts[i + 1], idx] = new_perms
 
                 if return_indices:
-
                     # since we're assured sorting we make use of that when getting indices
-                    for j in range(len(classes)):
-                        indices[cum_counts[i]:cum_counts[i + 1], idx, j] = UniquePermutations.get_permutation_indices(new_perms[j])
+                    if negs is None or len(negs) == 0:
+                        # print(">>", new_rep_perm)
+                        classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in new_rep_perm]
+                        standard_rep_perms = np.array([UniquePermutations.get_standard_permutation(c[1], c[0]) for c in classes_count_data])
+                        padding = self.to_indices(standard_rep_perms)
+                        for j in range(len(classes)):
+                            indices[cum_counts[i]:cum_counts[i + 1], idx, j] = padding[j] + UniquePermutations.get_permutation_indices(new_perms[j],
+                                                                                                                                       classes=classes_count_data[j][0],
+                                                                                                                                       counts=classes_count_data[j][1]
+                                                                                                                                       )
+                    elif len(comp) > 0:
+                        classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in new_rep_perm[comp]]
+                        standard_rep_perms = np.array([UniquePermutations.get_standard_permutation(c[1], c[0]) for c in classes_count_data])
+                        # print(standard_rep_perms)
+                        padding = self.to_indices(standard_rep_perms)
+                        for n,j in enumerate(comp):
+                            indices[cum_counts[i]:cum_counts[i + 1], idx, j] = padding[n] + UniquePermutations.get_permutation_indices(new_perms[j],
+                                                                                                                                       classes=classes_count_data[n][0],
+                                                                                                                                       counts=classes_count_data[n][1]
+                                                                                                                                       )
 
         UniquePermutations.walk_permutation_tree(counts, on_visit)
+
+        if len(dropped_pairs) > 0:
+            mask = np.full(storage.shape, True)
+            if return_indices:
+                ind_mask = np.full(indices.shape, True)
+            for pair in dropped_pairs:
+                i, idx, negs = pair
+                mask[cum_counts[i]:cum_counts[i+1], idx, negs] = False
+                if return_indices:
+                    ind_mask[cum_counts[i]:cum_counts[i + 1], idx, negs] = False
+            storage = storage[mask]
+            if return_indices:
+                indices = indices[ind_mask]
 
         storage = storage.reshape((-1, ndim))
         if return_indices:
@@ -1590,7 +1755,7 @@ class SymmetricGroupGenerator:
                 perms,
                 np.zeros((perms.shape[0], dim - perms.shape[1]), dtype=perms.dtype)
             ],
-            axis=1
+                axis=1
             )
         elif perms.shape[1] > dim:
             raise ValueError("with dimension {} can't handle states of dimension {}".format(dim, perms.shape[-1]))
@@ -1614,7 +1779,8 @@ class SymmetricGroupGenerator:
         class_data = [p.get_equivalence_classes(g) for p,g in zip(partitioners, groups)]
 
         perm_classes = [c[0] for c in class_data]
-        perm_inverse = [c[1] for c in class_data]
+        perm_totals = [c[1] for c in class_data]
+        perm_inverse = [c[2] for c in class_data]
 
         # raise Exception(perm_classes, groups)
 
@@ -1624,22 +1790,25 @@ class SymmetricGroupGenerator:
 
         rule_counts = [group[0][1] for group in rule_groups]
         rule_classes = [[g[0] for g in group] for group in rule_groups]
-        for input_classes in perm_classes:
+        for input_classes,base_shift,tots in zip(perm_classes, shifts, perm_totals):
             perm_block = []
             if return_indices:
                 ind_block = []
             for counts, classes in zip(rule_counts, rule_classes):
-                res = self._build_direct_sums(input_classes, counts, classes, return_indices=return_indices)
+                res = self._build_direct_sums(input_classes, counts, classes,
+                                              return_indices=return_indices
+                                              )
                 if return_indices:
                     perm_block.append(res[0])
                     ind_block.append(res[1])
                 else:
                     perm_block.append(res)
 
-            new_perms = np.concatenate([perm_block[x] for x in rule_inv], axis=0)
+            # print(rule_inv, len(perm_block), len(rule_counts), len(rule_classes))
+            new_perms = np.concatenate(perm_block, axis=0)
             perms.append(new_perms)
             if return_indices:
-                new_inds = np.concatenate(ind_block)[rule_inv]
+                new_inds = np.concatenate(ind_block)
                 indices.append(new_inds)
 
 

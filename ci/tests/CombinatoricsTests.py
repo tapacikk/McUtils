@@ -1,6 +1,6 @@
 
 from Peeves.TestUtils import *
-from Peeves import BlockProfiler
+from Peeves import BlockProfiler, Timer
 from unittest import TestCase
 from McUtils.Combinatorics import *
 import sys, os, numpy as np, itertools
@@ -273,30 +273,45 @@ class CombinatoricsTests(TestCase):
         test_perms = gen.from_indices(1+subinds)
         self.assertEquals(part_perms[subinds,].tolist(), test_perms.tolist())
 
-        test_states = np.array([
-            [0, 0, 0, 0, 0, 0, 0, 0]
-        ])
-        test_rules = [[2], [1, 1]]
-        test_perms = gen.take_permutation_rule_direct_sum(
-            test_states,
-            test_rules
-        )
+        # wat = gen.to_indices(
+        #     [
+        #         [1, 0, 0, 0, 0, 0, 0, 0],
+        #         [1, 1, 0, 0, 0, 0, 0, 0]
+        #     ]
+        # )
 
-        sums = np.sum(test_perms, axis=1)
-        self.assertEquals(np.unique(sums).tolist(), [2])
+        # test_states = np.array([
+        #     [0, 0, 0, 0, 0, 0, 0, 0]
+        # ])
+        # test_rules = [[2], [1, 1]]
+        # test_perms = gen.take_permutation_rule_direct_sum(
+        #     test_states,
+        #     test_rules
+        # )
+        #
+        # sums = np.sum(test_perms, axis=1)
+        # self.assertEquals(np.unique(sums).tolist(), [2])
 
         test_states = np.array([
+            [0, 0, 0, 0, 0, 0, 0, 0],
             [1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0]
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [2, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 2, 0],
+            [0, 1, 1, 0, 0, 0, 2, 0],
+            [0, 0, 0, 0, 2, 0, 2, 0],
+            [0, 0, 0, 0, 2, 0, 0, 2],
+            [1, 0, 0, 0, 0, 0, 0, 2]
         ])
         test_rules = [[2], [1, 1]]
-        test_perms = gen.take_permutation_rule_direct_sum(
+        test_perms, test_inds = gen.take_permutation_rule_direct_sum(
             test_states,
-            test_rules
+            test_rules,
+            return_indices=True
         )
 
         sums = np.sum(test_perms, axis=1)
-        self.assertEquals(np.unique(sums).tolist(), [3])
+        self.assertEquals(np.unique(sums).tolist(), [2, 3, 5, 6])
 
         bleh = np.concatenate(
             [ UniquePermutations(x + [0] * (8-len(x))).permutations() for x in test_rules ],
@@ -306,18 +321,53 @@ class CombinatoricsTests(TestCase):
         full_perms = test_states[:, np.newaxis, :] + bleh[np.newaxis, :, :]
         full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
 
-
         self.assertEquals(len(test_perms), len(full_perms))
-
-        # raise Exception(np.column_stack([sorted(test_perms.tolist())[10:20], sorted(full_perms.tolist())[10:20]]))
         self.assertEquals(sorted(test_perms.tolist()), sorted(full_perms.tolist()))
+
+        full_inds = gen.to_indices(full_perms)
+        self.assertEquals(np.sort(test_inds).tolist(), np.sort(full_inds).tolist())
 
         test_rules = [
             [2], [1, 1], [-1, -1], [-1, 1], [-2]
         ]
-        test_perms = gen.take_permutation_rule_direct_sum(
+        test_perms, test_inds = gen.take_permutation_rule_direct_sum(
             test_states,
-            test_rules
+            test_rules,
+            return_indices=True
         )
 
-        raise Exception(test_perms)
+        bleh = np.concatenate(
+            [ UniquePermutations(x + [0] * (8-len(x))).permutations() for x in test_rules ],
+            axis=0
+        )
+
+        full_perms = test_states[:, np.newaxis, :] + bleh[np.newaxis, :, :]
+        full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
+        negs = np.where(full_perms < 0)[0]
+        comp = np.setdiff1d(np.arange(len(full_perms)), negs)
+        full_perms = full_perms[comp,]
+
+        self.assertEquals(len(test_perms), len(full_perms))
+        self.assertEquals(sorted(test_perms.tolist()), sorted(full_perms.tolist()))
+
+        full_inds = gen.to_indices(full_perms)
+        self.assertEquals(np.sort(test_inds).tolist(), np.sort(full_inds).tolist())
+
+        # test_rules = [
+        #     [2], [1, 1], [-1, -1], [-1, 1], [-2]
+        # ]
+        with Timer("direct inds"):
+            test_perms, test_inds = gen.take_permutation_rule_direct_sum(
+                test_states,
+                test_rules,
+                return_indices=True
+            )
+
+        with Timer("secondary inds"):
+            test_perms2 = gen.take_permutation_rule_direct_sum(
+                test_states,
+                test_rules
+            )
+            test_inds2 = gen.to_indices(test_perms2)
+
+        self.assertEquals(test_inds.tolist(), test_inds2.tolist())
