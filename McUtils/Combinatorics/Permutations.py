@@ -12,6 +12,16 @@ __all__ = [
     "SymmetricGroupGenerator"
 ]
 
+def _infer_dtype(max_dim):
+    if max_dim < 256:
+        minimal_dtype = 'int8'
+    elif max_dim < 65535:
+        minimal_dtype = 'int16'
+    elif max_dim < 4294967295:
+        minimal_dtype = 'int32'
+    else:
+        minimal_dtype = 'int64'
+    return minimal_dtype
 
 class IntegerPartitioner:
 
@@ -227,7 +237,7 @@ class IntegerPartitioner:
     #                                                                                  counts)
 
     @classmethod
-    def partitions(cls, n, pad=False, return_lens = False, max_len=None):
+    def partitions(cls, n, pad=False, return_lens = False, max_len=None, dtype=None):
         """
         Returns partitions in descending lexicographic order
         Adapted from Kelleher to return terms ordered by length and then second in descending
@@ -246,19 +256,22 @@ class IntegerPartitioner:
             max_len = n
         l = max_len
 
+        if dtype is None:
+            dtype = _infer_dtype(n)
+
         # total_partitions = cls.count_partitions(n)
         count_totals = np.array([cls.count_partitions(n, l=i+1) for i in range(l)])
         counts = np.concatenate([count_totals[:1], np.diff(count_totals)], axis=0)
         # count_totals = np.flip(count_totals)
         if pad:
-            storage = np.zeros((count_totals[-1], l), dtype=int)
+            storage = np.zeros((count_totals[-1], l), dtype=dtype)
         else:
-            storage = [np.zeros((c, i+1), dtype=int) for i,c in enumerate(counts)]
+            storage = [np.zeros((c, i+1), dtype=dtype) for i,c in enumerate(counts)]
             # raise Exception([s.shape for s in storage], counts, count_totals)
 
-        increments = np.zeros(l, dtype=int)
+        increments = np.zeros(l, dtype=dtype)
 
-        partition = np.ones(n, dtype=int)
+        partition = np.ones(n, dtype=dtype)
         partition[0] = n
         k = q = 0 # k tracks the length of the permutation and q tracks where we're writing
         if pad:
@@ -313,12 +326,12 @@ class IntegerPartitioner:
 
         if return_lens:
             if pad:
-                lens = np.ones(count_totals[-1], dtype=int)
+                lens = np.ones(count_totals[-1], dtype=dtype)
                 for i, bounds in enumerate(zip(counts, counts[1:])):
                     a, b = bounds
                     lens[a:b] = i + 1
             else:
-                lens = [np.full(c, i + 1, dtype=int) for i, c in enumerate(counts)]
+                lens = [np.full(c, i + 1, dtype=dtype) for i, c in enumerate(counts)]
             return lens, storage
         else:
             return storage
@@ -484,7 +497,7 @@ class UniquePermutations:
 
         storage = np.zeros((num_perms, dim), dtype=initial_permutation.dtype)
         if return_indices:
-            inds = np.zeros((num_perms, dim), dtype=int) # this could potentially be narrower
+            inds = np.zeros((num_perms, dim), dtype=_infer_dtype(dim)) # this could potentially be narrower
         else:
             inds = None
 
@@ -974,7 +987,7 @@ class UniquePermutations:
         counts = np.copy(counts)  # we're going to modify this in-place
         nterms = len(counts)
 
-        perm = np.zeros(dim, dtype=int)
+        perm = np.zeros(dim, dtype=_infer_dtype(dim))
 
         if indices is None:
             indices = range(num_permutations)
@@ -1171,7 +1184,7 @@ class IntegerPartitionPermutations:
                 self.partitions = np.concatenate(
                     [
                             parts_basic,
-                            np.zeros((len(parts_basic), dim - num), dtype=int)
+                            np.zeros((len(parts_basic), dim - num), dtype=parts_basic[0].dtype)
                         ],
                     axis=1
                 )
@@ -1251,10 +1264,8 @@ class IntegerPartitionPermutations:
         partition_data = self._class_counts[uinds]
 
         if return_permutations:
-            # now I need to relate perms to the "standard" permutation as a set of
-            # swaps, since it is only in this approach that various properties will hold...
-            # this means [1, 0, 0, 0, 0] -> [0, 0, 1, 0, 0] by [2, 1, 0, 3, 4] not [1, 2, 0, 3, 4]
-            partition_sorting = np.argsort(np.argsort(-perms, axis=1), axis=1)  # these are the "permutations" in IntegerPartitionPermutations
+            # these are the "permutations" in IntegerPartitionPermutations
+            partition_sorting = np.argsort(np.argsort(-perms, axis=1), axis=1).astype(_infer_dtype(perms.shape[-1]))
             partition_groups = np.split(partition_sorting[sorting,], inds)[1:]
 
             # partition_groups = []
@@ -1370,7 +1381,7 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
         self.dim = dim
 
         self._class_counts = np.array([ [np.array([0]), np.array([dim])] ], dtype=object)
-        self.partition_counts = np.array([], dtype=int)
+        self.partition_counts = np.array([], dtype='int8')
         self._cumtotals = np.array([0, 1])
         self._num_terms = 1
 
@@ -1510,7 +1521,7 @@ class SymmetricGroupGenerator:
         """
 
         if len(perms) == 0:
-            return np.array([], dtype=int)
+            return np.array([], dtype='int8')
 
         perms = np.asanyarray(perms)
         smol = perms.ndim == 1
@@ -1562,7 +1573,7 @@ class SymmetricGroupGenerator:
             sorting = None
 
         if len(indices) == 0:
-            return np.array([], dtype=int)
+            return np.array([], dtype='int8')
 
         max_ind = np.max(indices)
         while self._cumtotals[-1] < max_ind:
@@ -1736,7 +1747,8 @@ class SymmetricGroupGenerator:
                                          assume_sorted=False,
                                          return_indices=False,
                                          split_results=False,
-                                         indexing_method='secondary'):
+                                         indexing_method='secondary'
+                                         ):
         """
         Applies `rules` to perms.
         Naively this is just taking every possible permutation of the rules padded to
@@ -1756,13 +1768,26 @@ class SymmetricGroupGenerator:
 
         # if dim is None:
         dim = self.dim
+        perms = np.asanyarray(perms)
+        # next we pad up the perms as needed
+        if perms.shape[1] < dim:
+            perms = np.concatenate([
+                perms,
+                np.zeros((perms.shape[0], dim - perms.shape[1]), dtype=perms.dtype)
+            ],
+                axis=1
+            )
+        elif perms.shape[1] > dim:
+            raise ValueError("with dimension {} can't handle states of dimension {}".format(dim, perms.shape[-1]))
 
         # first up we pad the rules
         rules = [
-            np.concatenate([r, [0]*(dim - len(r))]) if len(r) < dim else np.array(r)
+            np.concatenate([np.array(r, dtype=perms.dtype), np.zeros(dim - len(r), dtype=perms.dtype)]) if len(r) < dim else np.array(r, dtype=perms.dtype)
             for r in rules
             if len(r) <= dim
         ]
+
+        # raise Exception(rules[0].dtype)
 
         # get counts so we can split them up
         wat = [UniquePermutations.get_permutation_class_counts(rule, sort_by_counts=True) for rule in rules]
@@ -1781,7 +1806,7 @@ class SymmetricGroupGenerator:
         rule_inv = []
         # raise Exception(rule_count_splits)
         for split, inv in zip(rule_count_splits, invs_splits):
-            rule_counts = np.array([x[1] for x in split], dtype=int)
+            rule_counts = np.array([x[1] for x in split])
             split_sort = np.lexsort(np.flip(rule_counts, axis=1).T)
             rule_counts = rule_counts[split_sort,]
             inv = inv[split_sort,]
@@ -1792,18 +1817,6 @@ class SymmetricGroupGenerator:
             rule_groups.extend(count_splits)
             rule_inv.append(inv)
         rule_inv = np.concatenate(rule_inv)
-
-        perms = np.asanyarray(perms)
-        # next we pad up the perms as needed
-        if perms.shape[1] < dim:
-            perms = np.concatenate([
-                perms,
-                np.zeros((perms.shape[0], dim - perms.shape[1]), dtype=perms.dtype)
-            ],
-                axis=1
-            )
-        elif perms.shape[1] > dim:
-            raise ValueError("with dimension {} can't handle states of dimension {}".format(dim, perms.shape[-1]))
 
         if sums is None:
             sums = np.sum(perms, axis=1)
@@ -1902,6 +1915,7 @@ class SymmetricGroupGenerator:
             perms = np.concatenate(perms, axis=0)
             if return_indices:
                 indices = np.concatenate(indices)
+
         if return_indices:
             return perms, indices
         elif secondary_inds:
