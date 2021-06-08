@@ -1374,6 +1374,16 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
         self._cumtotals = np.array([0, 1])
         self._num_terms = 1
 
+    def get_partition_permutations(self, return_indices=False):
+        """
+
+
+        :return:
+        :rtype:
+        """
+
+        return [np.zeros((1, self.dim), dtype='int8')]
+
     def get_partition_permutation_indices(self, perms, split_method=None):
         """
 
@@ -1440,6 +1450,7 @@ class SymmetricGroupGenerator:
         self.dim = dim
         self._partition_permutations = [EmptyIntegerPartitionPermutations(0, dim=self.dim)] #type: list[IntegerPartitionPermutations]
         self._counts = [1] #type: list[int]
+        self._cumtotals = [0]
 
     def _get_partition_perms(self, iterable):
         """
@@ -1451,6 +1462,8 @@ class SymmetricGroupGenerator:
         """
 
         inds = list(iterable)
+        if len(inds) == 0:
+            return [], []
         max_n = max(inds)
         min_n = min(inds)
         if min_n < 0:
@@ -1495,6 +1508,9 @@ class SymmetricGroupGenerator:
         :return:
         :rtype:
         """
+
+        if len(perms) == 0:
+            return np.array([], dtype=int)
 
         perms = np.asanyarray(perms)
         smol = perms.ndim == 1
@@ -1545,6 +1561,13 @@ class SymmetricGroupGenerator:
         else:
             sorting = None
 
+        if len(indices) == 0:
+            return np.array([], dtype=int)
+
+        max_ind = np.max(indices)
+        while self._cumtotals[-1] < max_ind:
+            self._get_partition_perms(1+len(self._partition_permutations)*2)
+
         insertion_spots = np.searchsorted(self._cumtotals - 1, indices)
         uinds, inds = np.unique(insertion_spots, return_index=True)
         groups = np.split(indices, inds)[1:]
@@ -1562,9 +1585,9 @@ class SymmetricGroupGenerator:
 
         return perms
 
-    def _build_direct_sums(self, input_perm_classes, counts, classes, return_indices=False,
-                           filter_negatives=True,
-                           merge=True
+    def _build_direct_sums(self, input_perm_classes, counts, classes,
+                           return_indices=False,
+                           filter_negatives=True
                            ):
         """
         Creates direct sums of `input_perm_classes` with the unique permutations of `classes` where
@@ -1632,12 +1655,15 @@ class SymmetricGroupGenerator:
                 if filter_negatives:
                     # if we run into negatives we need to mask them out
                     negs = np.where(new_rep_perm < 0)
+                    # print(new_rep_perm.shape, negs)
                     if len(negs) > 0:
                         negs = negs[0]
-                        if len(negs) > 0: # weird numpy shit
-                            negs = np.unique(negs[0]) # the j values to drop
-                            # now we take the complement
-                            dropped_pairs.append((i, idx, negs))
+                        if negs.ndim > 1: # weird numpy shit
+                            negs = negs[0]
+                        negs = np.unique(negs) # the j values to drop
+                        # print(">>>", negs)
+                        # now we take the complement
+                        dropped_pairs.append((i, idx, negs))
 
                     comp = np.setdiff1d(np.arange(len(class_perms)), negs)
                     new_perms = new_rep_perm[comp[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]

@@ -259,7 +259,6 @@ class CombinatoricsTests(TestCase):
         part_perms = gen.get_terms([1, 2, 3, 4, 5])
 
         inds = gen.to_indices(part_perms)
-
         self.assertEquals(inds[:100,].tolist(), list(range(1, 101)))
 
         np.random.seed(0)
@@ -268,7 +267,7 @@ class CombinatoricsTests(TestCase):
         self.assertEquals(inds[subinds,].tolist(), (1+subinds).tolist())
 
         np.random.seed(0)
-        subinds = np.random.choice(len(inds), 250, replace=False)[4:10]
+        subinds = np.random.choice(len(inds), 250, replace=False)
 
         test_perms = gen.from_indices(1+subinds)
         self.assertEquals(part_perms[subinds,].tolist(), test_perms.tolist())
@@ -328,14 +327,13 @@ class CombinatoricsTests(TestCase):
         self.assertEquals(np.sort(test_inds).tolist(), np.sort(full_inds).tolist())
 
         test_rules = [
-            [2], [1, 1], [-1, -1], [-1, 1], [-2]
+            [2], [-2], [-3], [1, 1], [-1, -1], [-1, 1], [-1, -1, 1]
         ]
         test_perms, test_inds = gen.take_permutation_rule_direct_sum(
             test_states,
             test_rules,
             return_indices=True
         )
-
         bleh = np.concatenate(
             [ UniquePermutations(x + [0] * (8-len(x))).permutations() for x in test_rules ],
             axis=0
@@ -357,12 +355,12 @@ class CombinatoricsTests(TestCase):
         #     [2], [1, 1], [-1, -1], [-1, 1], [-2]
         # ]
         # with BlockProfiler("direct inds"):
-        test_perms, test_inds = gen.take_permutation_rule_direct_sum(
-            test_states,
-            test_rules,
-            return_indices=True,
-            indexing_method='direct'
-        )
+        # test_perms, test_inds = gen.take_permutation_rule_direct_sum(
+        #     test_states,
+        #     test_rules,
+        #     return_indices=True,
+        #     indexing_method='direct'
+        # )
 
         # with BlockProfiler("secondary inds"):
         test_perms2, test_inds2 = gen.take_permutation_rule_direct_sum(
