@@ -113,7 +113,7 @@ class CombinatoricsTests(TestCase):
             msg="{} should have indices {} but got {}".format(test_parts, inds, test_inds)
         )
 
-    @debugTest
+    @validationTest
     def test_UniquePartitionPermutations(self):
         """
         Tests the generation of unique permutations of partitions
@@ -183,7 +183,7 @@ class CombinatoricsTests(TestCase):
         self.assertEquals(inds.tolist(), test_inds)
 
         np.random.seed(0)
-        test_inds = np.random.choice(len(all_perms), 25, replace=False)
+        test_inds = np.random.choice(len(all_perms), 20, replace=False)
         test_set = all_perms[test_inds,]
         sorting = np.lexsort(-np.flip(test_set, axis=1).T)[:5]
         test_set = test_set[sorting,]
@@ -198,6 +198,18 @@ class CombinatoricsTests(TestCase):
         perms = perm_builder.permutations_from_indices(inds)
         self.assertEquals(perms.tolist(), test_set.tolist())
 
+        swaps, perms = perm_builder.permutations(return_indices=True)
+        test_inds = np.random.choice(len(swaps), 10, replace=False)
+
+        self.assertEquals([perm_builder.part[s].tolist() for s in swaps[test_inds,]], perms[test_inds,].tolist())
+        # raise Exception(perms, inds)
+
+        perm_builder = UniquePermutations([2, 1, 1, 1, 0, 0, 0, 0])
+        all_perms = perm_builder.permutations()
+        test_inds = [73, 237]#, 331, 561, 623, 715]
+        perms = perm_builder.permutations_from_indices(test_inds)
+        self.assertEquals(perms.tolist(), all_perms[test_inds].tolist())
+
     @validationTest
     def test_IntegerPartitionPermutations(self):
         """
@@ -211,7 +223,7 @@ class CombinatoricsTests(TestCase):
 
         full_stuff = np.concatenate(part_perms.get_partition_permutations(), axis=0) # build everything so we can take subsamples to index
 
-        inds = np.random.choice(len(full_stuff), 8, replace=False)
+        inds = np.random.choice(len(full_stuff), 28, replace=False)
         subperms = full_stuff[inds,]
 
        #  """Exception: (array([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17,
@@ -226,3 +238,86 @@ class CombinatoricsTests(TestCase):
         # with BlockProfiler(name='perm method'):
         perm_inds = part_perms.get_partition_permutation_indices(subperms)
         self.assertEquals(inds.tolist(), perm_inds.tolist())
+
+        # sorting = np.argsort(perm_inds)[5:7]
+        # perm_inds = perm_inds[sorting]
+        # subperms = subperms[sorting]
+
+        og_perms = part_perms.get_partition_permutations_from_indices(perm_inds)
+        self.assertEquals(subperms.tolist(), og_perms.tolist())
+
+    @debugTest
+    def test_SymmetricGroupGenerator(self):
+        """
+        Tests the features of the symmetric group generator
+        :return:
+        :rtype:
+        """
+
+        gen = SymmetricGroupGenerator(8)
+
+        part_perms = gen.get_terms([1, 2, 3, 4, 5])
+
+        inds = gen.to_indices(part_perms)
+
+        self.assertEquals(inds[:100,].tolist(), list(range(1, 101)))
+
+        np.random.seed(0)
+        subinds = np.random.choice(len(inds), 250, replace=False)
+
+        self.assertEquals(inds[subinds,].tolist(), (1+subinds).tolist())
+
+        np.random.seed(0)
+        subinds = np.random.choice(len(inds), 250, replace=False)[4:10]
+
+        test_perms = gen.from_indices(1+subinds)
+        self.assertEquals(part_perms[subinds,].tolist(), test_perms.tolist())
+
+        test_states = np.array([
+            [0, 0, 0, 0, 0, 0, 0, 0]
+        ])
+        test_rules = [[2], [1, 1]]
+        test_perms = gen.take_permutation_rule_direct_sum(
+            test_states,
+            test_rules
+        )
+
+        sums = np.sum(test_perms, axis=1)
+        self.assertEquals(np.unique(sums).tolist(), [2])
+
+        test_states = np.array([
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0]
+        ])
+        test_rules = [[2], [1, 1]]
+        test_perms = gen.take_permutation_rule_direct_sum(
+            test_states,
+            test_rules
+        )
+
+        sums = np.sum(test_perms, axis=1)
+        self.assertEquals(np.unique(sums).tolist(), [3])
+
+        bleh = np.concatenate(
+            [ UniquePermutations(x + [0] * (8-len(x))).permutations() for x in test_rules ],
+            axis=0
+        )
+
+        full_perms = test_states[:, np.newaxis, :] + bleh[np.newaxis, :, :]
+        full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
+
+
+        self.assertEquals(len(test_perms), len(full_perms))
+
+        # raise Exception(np.column_stack([sorted(test_perms.tolist())[10:20], sorted(full_perms.tolist())[10:20]]))
+        self.assertEquals(sorted(test_perms.tolist()), sorted(full_perms.tolist()))
+
+        test_rules = [
+            [2], [1, 1], [-1, -1], [-1, 1], [-2]
+        ]
+        test_perms = gen.take_permutation_rule_direct_sum(
+            test_states,
+            test_rules
+        )
+
+        raise Exception(test_perms)
