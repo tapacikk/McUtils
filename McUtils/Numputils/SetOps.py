@@ -298,7 +298,7 @@ def find1d(ar, to_find, sorting=None, check=True):
     vals = np.searchsorted(ar, to_find, sorter=sorting)
     if isinstance(vals, (np.integer, int)):
         vals = np.array([vals])
-    # we have the ordering according to the _sorted_ version of `indices`
+    # we have the ordering according to the _sorted_ version of `ar`
     # so now we need to invert that back to the unsorted version
     if len(sorting) > 0:
         big_vals = vals == len(sorting)
@@ -306,11 +306,12 @@ def find1d(ar, to_find, sorting=None, check=True):
         vals = sorting[vals]
         # now because of how searchsorted works, we need to check if the found values
         # truly agree with what we asked for
-        bad_vals = sorting[vals] != sorting
+        bad_vals = ar[vals] != to_find
         if vals.shape == ():
             if bad_vals:
                 vals = -1
         else:
+            # print(vals, bad_vals)
             vals[bad_vals] = -1
     else:
         bad_vals = np.full_like(to_find, True)
