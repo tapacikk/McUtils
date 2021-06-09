@@ -852,7 +852,8 @@ class UniquePermutations:
         counts = np.copy(counts) # we're going to modify this in-place
         nterms = len(counts)
 
-        perms = np.zeros((len(indices), dim), dtype=int)
+        max_term = np.max(np.abs(classes))
+        perms = np.zeros((len(indices), dim), dtype=_infer_dtype(max_term))
 
         for sn, idx in enumerate(indices):
 
@@ -1806,7 +1807,7 @@ class SymmetricGroupGenerator:
         rule_inv = []
         # raise Exception(rule_count_splits)
         for split, inv in zip(rule_count_splits, invs_splits):
-            rule_counts = np.array([x[1] for x in split])
+            rule_counts = np.array([x[1] for x in split], dtype=_infer_dtype(dim))
             split_sort = np.lexsort(np.flip(rule_counts, axis=1).T)
             rule_counts = rule_counts[split_sort,]
             inv = inv[split_sort,]
@@ -1922,8 +1923,10 @@ class SymmetricGroupGenerator:
             if split_results:
                 full_perms = np.concatenate(perms, axis=0)
                 indices = self.to_indices(full_perms)
-                splits = [len(x) for x in perms]
-                return perms, np.split(indices, splits)
+                splits = np.cumsum([len(x) for x in perms])[:-1]
+                indices = np.split(indices, splits)
+                # raise Exception(splits)
+                return perms, indices
             else:
                 indices = self.to_indices(perms)
             return perms, indices

@@ -387,7 +387,10 @@ class CombinatoricsTests(TestCase):
             bleeep.append(full_perms)
 
         self.assertEquals(len(test_states), len(test_perms2))
+        self.assertEquals(len(test_states), len(test_inds2))
 
         for i in range(len(test_states)):
+            self.assertEquals(len(test_perms2[i]), len(test_inds2[i]))
             self.assertEquals(len(test_perms2[i]), len(bleeep[i]))
             self.assertEquals(sorted(test_perms2[i].tolist()), sorted(bleeep[i].tolist()))
+            self.assertEquals(sorted(test_inds2[i].tolist()), sorted(gen.to_indices(bleeep[i]).tolist()))

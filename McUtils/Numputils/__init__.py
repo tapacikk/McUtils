@@ -9,6 +9,7 @@ from .TransformationTransformations import *
 from .VectorOps import *
 from .AnalyticDerivs import *
 from .Sparse import *
+from .SetOps import *
 
 __all__ = (
     EulerSystem.__all__ +
@@ -16,6 +17,7 @@ __all__ = (
     TransformationTransformations.__all__ +
     VectorOps.__all__ +
     AnalyticDerivs.__all__ +
-    Sparse.__all__
+    Sparse.__all__+
+    SetOps.__all__
 )
 

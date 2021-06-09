@@ -102,7 +102,6 @@ class NumputilsTests(TestCase):
         #     ]
         # )
 
-
     @validationTest
     def test_PtsDihedralsDeriv(self):
         # need some proper values to test this against...
@@ -363,7 +362,7 @@ class NumputilsTests(TestCase):
             c2_flat.flatten(), cos_fd22.flatten()
         ))
 
-    @debugTest
+    @validationTest
     def test_AngleDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -435,3 +434,8 @@ class NumputilsTests(TestCase):
         import json
         with open(dump_file, 'w+') as f:
             json.dump(data, f)
+
+    @debugTest
+    def test_SetOps(self):
+        raise NotImplementedError('never wrote the test...')
+        ...
