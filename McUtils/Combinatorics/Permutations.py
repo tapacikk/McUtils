@@ -2067,18 +2067,22 @@ class SymmetricGroupGenerator:
                 indices = np.concatenate(indices)
 
         if return_indices:
-            return perms, indices
+            if return_filter:
+                return perms, indices, filter
+            else:
+                return perms, indices
         elif secondary_inds:
             if split_results:
                 full_perms = np.concatenate(perms, axis=0)
                 indices = self.to_indices(full_perms)
                 splits = np.cumsum([len(x) for x in perms])[:-1]
                 indices = np.split(indices, splits)
-                # raise Exception(splits)
-                return perms, indices
             else:
                 indices = self.to_indices(perms)
-            return perms, indices
+            if return_filter:
+                return perms, indices, filter
+            else:
+                return perms, indices
         else:
             return perms
 

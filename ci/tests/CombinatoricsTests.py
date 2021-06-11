@@ -433,14 +433,15 @@ class CombinatoricsTests(TestCase):
         u_tests = np.unique(test_perms[1], axis=0)
 
         test_states = gen.get_terms(range(1), flatten=True)
-        bleeeh, _ = gen.take_permutation_rule_direct_sum(
+        bleeeh, _, filter = gen.take_permutation_rule_direct_sum(
                 test_states,
                 test_rules,
                 return_indices=True,
                 split_results=False,
                 filter_perms=[
                     u_tests
-                ]
+                ],
+                return_filter=True
             )
 
         bleeeh, _ = nput.unique(bleeeh)
@@ -449,5 +450,6 @@ class CombinatoricsTests(TestCase):
         self.assertFalse(contained.any(),
                         msg='{} not in {}; {} in'.format(bleeeh[contained], u_tests, bleeeh[np.logical_not(contained)])
                         )
+        self.assertTrue(isinstance(filter.sums, np.ndarray))
 
         # self.assertEquals(np.unique(bleeeh, axis=0).tolist(), u_tests.tolist())
