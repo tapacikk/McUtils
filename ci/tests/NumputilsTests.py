@@ -437,5 +437,47 @@ class NumputilsTests(TestCase):
 
     @debugTest
     def test_SetOps(self):
-        raise NotImplementedError('never wrote the test...')
-        ...
+
+        unums, sorting = unique([1, 2, 3, 4, 5])
+        self.assertEquals(unums.tolist(), [1, 2, 3, 4, 5])
+        self.assertEquals(sorting.tolist(), [0, 1, 2, 3, 4])
+
+        unums, sorting = unique([1, 1, 3, 4, 5])
+        self.assertEquals(unums.tolist(), [1, 3, 4, 5])
+        self.assertEquals(sorting.tolist(), [0, 1, 2, 3, 4])
+
+        unums, sorting = unique([1, 3, 1, 1, 1])
+        self.assertEquals(unums.tolist(), [1, 3])
+        self.assertEquals(sorting.tolist(), [0, 2, 3, 4, 1])
+
+        unums, sorting = unique([[1, 3], [1, 1], [1, 3]])
+        self.assertEquals(unums.tolist(), [[1, 1], [1, 3]])
+        self.assertEquals(sorting.tolist(), [1, 0, 2])
+
+        inters, sortings, merge = intersection(
+            [1, 1, 3, 2, 5],
+            [0, 0, 0, 5, 1]
+        )
+        self.assertEquals(inters.tolist(), [1, 5])
+        self.assertEquals(sortings[0].tolist(), [0, 1, 3, 2, 4])
+        self.assertEquals(sortings[1].tolist(), [0, 1, 2, 4, 3])
+
+        inters, sortings, merge = intersection(
+            [
+                [1, 3], [1, 1]
+            ],
+            [
+                [1, 3], [0, 0]
+            ]
+        )
+        self.assertEquals(inters.tolist(), [[1, 3]])
+        self.assertEquals(sortings[0].tolist(), [1, 0])
+        self.assertEquals(sortings[1].tolist(), [1, 0])
+
+        diffs, sortings, merge = difference(
+            [1, 1, 3, 2, 5],
+            [0, 0, 0, 5, 1]
+        )
+        self.assertEquals(diffs.tolist(), [2, 3])
+        self.assertEquals(sortings[0].tolist(), [0, 1, 3, 2, 4])
+        self.assertEquals(sortings[1].tolist(), [0, 1, 2, 4, 3])

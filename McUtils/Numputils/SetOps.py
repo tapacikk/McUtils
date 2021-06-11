@@ -39,7 +39,11 @@ def coerce_dtype(ar, dtype=None):
     # shape `(n,)` with data type `dtype`.
     try:
         if ar.shape[1] > 0:
-            consolidated = ar.view(dtype).squeeze()
+            consolidated = ar.view(dtype)
+            if len(consolidated.shape) > 1:
+                consolidated = consolidated.squeeze()
+                if consolidated.shape == ():
+                    consolidated = np.expand_dims(consolidated, 0)
         else:
             # If ar.shape[1] == 0, then dtype will be `np.dtype([])`, which is
             # a data type with itemsize 0, and the call `ar.view(dtype)` will
@@ -100,6 +104,7 @@ def unique1d(ar, return_index=False, return_inverse=False,
     if sorting is None:
         sorting = ar.argsort(kind='mergesort') # we want to have stable sorts throughout
     ar = ar[sorting]
+
 
     mask = np.empty(ar.shape, dtype=np.bool_)
     mask[:1] = True

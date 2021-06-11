@@ -1300,10 +1300,10 @@ class ScipySparseArray(SparseArray):
                     pull_elements = all(len(x) == e1 for x in idx)
 
         if pull_elements:
-            try:
-                flat = self._ravel_indices(idx, self.shape)
-            except:
-                raise Exception(idx)
+            # try:
+            flat = self._ravel_indices(idx, self.shape)
+            # except:
+            #     raise Exception(idx)
 
             unflat = self._unravel_indices(flat, self.data.shape)
             res = self.data[unflat]
@@ -1338,6 +1338,7 @@ class ScipySparseArray(SparseArray):
                 else:
                     w = -1
                 return w
+
             for i, b, s in zip(range(len(blocks)), blocks, self.shape):
                 k = 0
                 ixs = inds[i]
