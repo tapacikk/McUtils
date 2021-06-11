@@ -8,6 +8,7 @@ import numpy as np
 __all__ = [
     'unique',
     'intersection',
+    'contained',
     'difference',
     'find',
     'argsort',
@@ -192,10 +193,10 @@ def intersect1d(ar1, ar2,
     else:
         return int1d, sortings, union_sorting
 
-def isin1d(ar1, ar2, assume_unique=False, invert=False,
+def contained(ar1, ar2, assume_unique=False, invert=False,
                 sortings=None, union_sorting=None):
     """
-    Test whether each element of a 1-D array is also present in a second array.
+    Test whether each element of `ar1` is also present in `ar2`.
     """
 
     # Ravel both arrays, behavior for the first array could be different
@@ -290,7 +291,7 @@ def difference1d(ar1, ar2, assume_unique=False, sortings=None, union_sorting=Non
             ar2, sorting2 = unique(ar2)
         sortings = (sorting1, sorting2)
 
-    in_spec = isin1d(ar1, ar2, sortings=sortings, union_sorting=union_sorting, assume_unique=True, invert=True)
+    in_spec = contained(ar1, ar2, sortings=sortings, union_sorting=union_sorting, assume_unique=True, invert=True)
     return (ar1[in_spec[0]],) + in_spec[1:]
 
 def find1d(ar, to_find, sorting=None, check=True):

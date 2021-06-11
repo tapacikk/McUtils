@@ -3,6 +3,7 @@ from Peeves.TestUtils import *
 from Peeves import BlockProfiler, Timer
 from unittest import TestCase
 from McUtils.Combinatorics import *
+import McUtils.Numputils as nput
 import sys, os, numpy as np, itertools
 
 class CombinatoricsTests(TestCase):
@@ -246,7 +247,7 @@ class CombinatoricsTests(TestCase):
         og_perms = part_perms.get_partition_permutations_from_indices(perm_inds)
         self.assertEquals(subperms.tolist(), og_perms.tolist())
 
-    @debugTest
+    @validationTest
     def test_SymmetricGroupGenerator(self):
         """
         Tests the features of the symmetric group generator
@@ -394,3 +395,59 @@ class CombinatoricsTests(TestCase):
             self.assertEquals(len(test_perms2[i]), len(bleeep[i]))
             self.assertEquals(sorted(test_perms2[i].tolist()), sorted(bleeep[i].tolist()))
             self.assertEquals(sorted(test_inds2[i].tolist()), sorted(gen.to_indices(bleeep[i]).tolist()))
+
+    @debugTest
+    def test_DirectSumIndices(self):
+        """
+        Tests the features of the symmetric group generator
+        :return:
+        :rtype:
+        """
+
+        gen = SymmetricGroupGenerator(10)
+
+        test_states = gen.get_terms(range(3), flatten=True)
+        test_rules = [
+            [2], [-2], [-3], [1, 1], [-1, -1], [-1, 1], [-1, -1, 1]
+        ]
+        with BlockProfiler("direct inds", print_res=False):
+            test_perms, test_inds = gen.take_permutation_rule_direct_sum(
+                test_states,
+                test_rules,
+                return_indices=True,
+                indexing_method='direct',
+                split_results=True
+            )
+
+        with BlockProfiler("secondary inds", print_res=False):
+            test_perms2, test_inds2 = gen.take_permutation_rule_direct_sum(
+                test_states,
+                test_rules,
+                return_indices=True,
+                indexing_method='secondary',
+                split_results=True
+            )
+
+        self.assertEquals(test_inds[0].tolist(), test_inds2[0].tolist())
+
+        u_tests = np.unique(test_perms[1], axis=0)
+
+        test_states = gen.get_terms(range(1), flatten=True)
+        bleeeh, _ = gen.take_permutation_rule_direct_sum(
+                test_states,
+                test_rules,
+                return_indices=True,
+                split_results=False,
+                filter_perms=[
+                    u_tests
+                ]
+            )
+
+        bleeeh, _ = nput.unique(bleeeh)
+        contained, _, _ = nput.contained(bleeeh, u_tests, invert=True)
+
+        self.assertFalse(contained.any(),
+                        msg='{} not in {}; {} in'.format(bleeeh[contained], u_tests, bleeeh[np.logical_not(contained)])
+                        )
+
+        # self.assertEquals(np.unique(bleeeh, axis=0).tolist(), u_tests.tolist())
