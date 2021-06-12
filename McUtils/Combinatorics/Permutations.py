@@ -128,11 +128,9 @@ class IntegerPartitioner:
 
             counts = cls._partition_counts[n-1, M-1, l-1]
             if counts < 0:
-                # print("======>", (n, M, l))
                 t1 = cls.count_partitions(n, M, l-1, manage_counts=False)
                 t2 = cls.count_partitions(n-l, M-1, l, manage_counts=False)
                 counts = t1 + t2
-                # print(((n, M, l-1), t1), ((n-l, M-1, l), t2))
                 cls._partition_counts[n-1, M-1, l-1] = counts
         else:
             # we assume we got a numpy array of equal length for each term
@@ -157,7 +155,6 @@ class IntegerPartitioner:
             if manage_counts:
                 cls._manage_counts_array(np.max(n), np.max(M), np.max(l))
 
-            # print(n.dtype, M.dtype, l.dtype)
             counts = cls._partition_counts[n - 1, M - 1, l - 1]
 
             zero_lens = l == 0
@@ -210,7 +207,6 @@ class IntegerPartitioner:
         :return:
         :rtype:
         """
-        # print((n, M, l), ">>", (n - l, M - 1, l))
         return cls.count_partitions(n - l, M - 1, l)
 
     @classmethod
@@ -229,7 +225,6 @@ class IntegerPartitioner:
         """
         wat1 = cls.count_exact_length_partitions(n, m, l)
         wat2 = cls.count_exact_length_partitions(n, M, l)
-        # print(wat1, wat2)
         return wat1 - wat2
 
     # @classmethod
@@ -371,7 +366,6 @@ class IntegerPartitioner:
         inds = np.arange(parts.shape[0])
         num_before = cls.count_partitions(sums, sums, counts - 1)
 
-        # print(np.column_stack([sums, parts, num_before]))
         for i in range(np.max(counts) - 1): # exhaust all elements except the last one where contrib will always be zero
             # now we need to figure out where the counts are greater than 1
             mask = np.where(counts > 1)[0]
@@ -611,78 +605,80 @@ class UniquePermutations:
         return self.get_permutation_indices(self.vals, self.counts, perms,
                                             assume_sorted=assume_sorted, dim=self.dim, num_permutations=self.num_permutations)
 
-    # @classmethod
-    # def get_next_permutation_from_prev(cls, classes, counts, class_map,
-    #                                    ndim,
-    #                                    cur,
-    #                                    prev, prev_index,
-    #                                    prev_dim,
-    #                                    subtree_counts,
-    #                                    ):
-    #     """
-    #     Pulls the next index by reusing as much info as possible from
-    #     previous index
-    #     Less able to be efficient than computing many indices at once so prefer that if
-    #     possible
-    #
-    #     :return:
-    #     :rtype:
-    #     """
-    #
-    #     if prev is not None:
-    #         diffs = np.not_equal(cur, prev)
-    #         # we reuse as much work as we can by only backtracking where we need to
-    #         agree_pos = np.where(diffs)[0][0]  # where the first disagreement occurs...I'd like this to be less inefficient
-    #         num_diff = ndim - agree_pos  # number of differing states
-    #         if num_diff == 0:  # same state so just reuse the previous value
-    #             return prev_index, prev_dim
-    #
-    #         elif agree_pos == 0:
-    #             # no need to actually backtrack when we know what we're gonna get
-    #             cur_dim = ndim - 1
-    #         else:
-    #             # at this point cur_dim gives us the number of trailing
-    #             # digits that are equivalent in the previous permutation
-    #             # so we only need to back-track to where the new state begins to
-    #             # differ from the old one,
-    #             for i in range(ndim - prev_dim - 2, agree_pos - 1, -1):
-    #                 j = class_map[prev[i]]
-    #                 counts[j] += 1
-    #                 # tree_data[cur_dim, 1] = 0
-    #                 # tree_data[cur_dim, 0] = 0
-    #                 cur_dim += 1
-    #             # I'm not sure why this didn't break earlier without this...
-    #             tree_data[cur_dim, 0] = tree_data[cur_dim + 1, 0]
-    #
-    #             # print(ndim-agree_pos)
-    #             # print("<<", cur_dim, counts, tree_data[:, 1], tree_data[:, 0])
-    #             state = state[agree_pos:]
-    #
-    #     # we loop through the elements in the permutation and
-    #     # add up number of elements in the subtree that would precede
-    #     # the state in reverse-lexicographic order
-    #     for i, el in enumerate(state):
-    #         for j in range(nterms):
-    #             if counts[j] == 0:
-    #                 continue
-    #             # print("  ", cur_dim, counts, tree_data[:, 1], tree_data[:, 0])
-    #             subtotal = cls._subtree_counts(tree_data[cur_dim, 1], cur_dim + 1, counts, j)
-    #             if classes[j] == el:
-    #                 cur_dim -= 1
-    #                 counts[j] -= 1
-    #                 tree_data[cur_dim, 1] = subtotal
-    #                 tree_data[cur_dim, 0] = tree_data[cur_dim + 1, 0]
-    #                 break
-    #             else:
-    #                 tree_data[cur_dim, 0] += subtotal
-    #
-    #         # short circuit if we've gotten down to a terminal node where
-    #         # there is just one unique element
-    #         if tree_data[cur_dim, 1] == 1:
-    #             # print(">>", cur_dim, counts, tree_data[:, 1], tree_data[:, 0])
-    #             break
-    #
-    #     inds[sn] = tree_data[cur_dim, 0]
+    @classmethod
+    def get_next_permutation_from_prev(cls, classes, counts, class_map,
+                                       ndim,
+                                       cur,
+                                       prev, prev_index,
+                                       prev_dim,
+                                       subtree_counts,
+                                       ):
+        """
+        Pulls the next index by reusing as much info as possible from
+        previous index
+        Less able to be efficient than computing many indices at once so prefer that if
+        possible
+
+        :return:
+        :rtype:
+        """
+
+        raise ValueError("Haven't gotten this working yet")
+
+        if prev is not None:
+            diffs = np.not_equal(cur, prev)
+            # we reuse as much work as we can by only backtracking where we need to
+            agree_pos = np.where(diffs)[0][0]  # where the first disagreement occurs...I'd like this to be less inefficient
+            num_diff = ndim - agree_pos  # number of differing states
+            if num_diff == 0:  # same state so just reuse the previous value
+                return prev_index, prev_dim
+
+            elif agree_pos == 0:
+                # no need to actually backtrack when we know what we're gonna get
+                cur_dim = ndim - 1
+            else:
+                # at this point cur_dim gives us the number of trailing
+                # digits that are equivalent in the previous permutation
+                # so we only need to back-track to where the new state begins to
+                # differ from the old one,
+                for i in range(ndim - prev_dim - 2, agree_pos - 1, -1):
+                    j = class_map[prev[i]]
+                    counts[j] += 1
+                    # tree_data[cur_dim, 1] = 0
+                    # tree_data[cur_dim, 0] = 0
+                    cur_dim += 1
+                # I'm not sure why this didn't break earlier without this...
+                tree_data[cur_dim, 0] = tree_data[cur_dim + 1, 0]
+
+                # print(ndim-agree_pos)
+                # print("<<", cur_dim, counts, tree_data[:, 1], tree_data[:, 0])
+                state = state[agree_pos:]
+
+        # we loop through the elements in the permutation and
+        # add up number of elements in the subtree that would precede
+        # the state in reverse-lexicographic order
+        for i, el in enumerate(state):
+            for j in range(nterms):
+                if counts[j] == 0:
+                    continue
+                # print("  ", cur_dim, counts, tree_data[:, 1], tree_data[:, 0])
+                subtotal = cls._subtree_counts(tree_data[cur_dim, 1], cur_dim + 1, counts, j)
+                if classes[j] == el:
+                    cur_dim -= 1
+                    counts[j] -= 1
+                    tree_data[cur_dim, 1] = subtotal
+                    tree_data[cur_dim, 0] = tree_data[cur_dim + 1, 0]
+                    break
+                else:
+                    tree_data[cur_dim, 0] += subtotal
+
+            # short circuit if we've gotten down to a terminal node where
+            # there is just one unique element
+            if tree_data[cur_dim, 1] == 1:
+                # print(">>", cur_dim, counts, tree_data[:, 1], tree_data[:, 0])
+                break
+
+        inds[sn] = tree_data[cur_dim, 0]
 
 
     @classmethod
@@ -1325,7 +1321,7 @@ class IntegerPartitionPermutations:
                                                                                                                 split_method=split_method)
         if assume_standard:
             subinds = [
-                np.full(len(g), s, dtype=_infer_dtype(s))
+                np.full(len(g), s, dtype=int)
                 for d, g, s in zip(partition_data, groups, totals)
             ]
         else:
@@ -1699,6 +1695,7 @@ class SymmetricGroupGenerator:
     def _build_direct_sums(self, input_perm_classes, counts, classes,
                            return_indices=False,
                            filter_negatives=True,
+                           allow_widen_dtypes=True,
                            filter=None
                            ):
         """
@@ -1727,9 +1724,19 @@ class SymmetricGroupGenerator:
         total_perm_count = np.sum(perm_counts)
         ndim = len(input_perm_classes[0][2][0])
 
-        storage = np.zeros((total_perm_count, num_perms, len(classes), ndim), dtype=input_perm_classes[0][2][0].dtype)
+        # we widen the dtype if necessary
+        dtype = input_perm_classes[0][2][0].dtype
+        if dtype is np.dtype(object):
+            raise ValueError("Can't get permutations for object-dtype inputs")
+        if allow_widen_dtypes:
+            max_val = np.max([ np.max(x[0]) for x in input_perm_classes])
+            max_rule = np.max(classes)
+            inferred = _infer_dtype(max_val + max_rule)
+            if inferred > dtype:
+                dtype = inferred
+        storage = np.zeros((total_perm_count, num_perms, len(classes), ndim), dtype=dtype)
         if return_indices:
-            indices = np.zeros((total_perm_count, num_perms, len(classes)), dtype=int)
+            indices = np.zeros((total_perm_count, num_perms, len(classes)), dtype=int) #might be able to bound this but not sure...
 
         if return_indices and not filter_negatives:
             raise NotImplementedError("Can't return indices without filtering negatives... (as I've currently implemented things)")
@@ -1798,13 +1805,11 @@ class SymmetricGroupGenerator:
                 if filter_negatives:
                     # if we run into negatives we need to mask them out
                     negs = np.where(new_rep_perm < 0)
-                    # print(new_rep_perm.shape, negs)
                     if len(negs) > 0:
                         negs = negs[0]
                         if negs.ndim > 1: # weird numpy shit
                             negs = negs[0]
                         negs = np.unique(negs) # the j values to drop
-                        # print(">>>", negs)
                         # now we take the complement
                         dropped_pairs.append((i, idx, cls_inds[i][negs]))
 
@@ -1818,13 +1823,16 @@ class SymmetricGroupGenerator:
 
                 if return_indices:
                     # since we're assured sorting we make use of that when getting indices
-
                     if negs is None or len(negs) == 0:
                         comp = cls_inds[i]
+                        sel = np.arange(len(comp))
 
                     if len(comp) > 0:
-                        classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in new_rep_perm[comp]]
-                        standard_rep_perms = np.array([UniquePermutations.get_standard_permutation(c[1], c[0]) for c in classes_count_data])
+                        classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in new_rep_perm[sel]]
+                        standard_rep_perms = np.array([
+                            UniquePermutations.get_standard_permutation(c[1], c[0]) for c in classes_count_data
+                        ], dtype=int
+                        )
                         for n,j in enumerate(comp):
                             padding_1 = paritioners[i][1][j]
                             padding_2 = paritioners[i][0][j].get_partition_permutation_indices([standard_rep_perms[n]], assume_standard=True)
@@ -1838,12 +1846,13 @@ class SymmetricGroupGenerator:
                                 sort_1 = np.arange(len(full_inds))  # assured sorting
                                 mask, _, _ = contained(full_inds, filter.inds,
                                                                 sortings=(sort_1, filter.ind_sort))
-                                # print(mask, full_inds, padding_1, padding_2, filter.inds)
                                 dropped_pairs.append((i, idx, j, mask))
 
         UniquePermutations.walk_permutation_tree(counts, on_visit)
 
         perm_counts = np.full(total_perm_count, num_perms*len(classes))
+
+        # print("????", perm_counts)
         if len(dropped_pairs) > 0:
             # raise Exception(storage.shape, num_perms*len(classes))
             mask = np.full(storage.shape, True)
@@ -1853,7 +1862,10 @@ class SymmetricGroupGenerator:
                 if len(pair) == 3:
                     i, idx, negs = pair
                     mask[cum_counts[i]:cum_counts[i+1], idx, negs] = False
-                    perm_counts[cum_counts[i]:cum_counts[i+1]] -= len(negs)
+                    if isinstance(idx, (int, np.integer)):
+                        perm_counts[cum_counts[i]:cum_counts[i+1]] -= len(negs)
+                    else:
+                        perm_counts[cum_counts[i]:cum_counts[i+1]] -= mask.shape[1] * len(negs)
                     if return_indices:
                         ind_mask[cum_counts[i]:cum_counts[i + 1], idx, negs] = False
                 else:
@@ -1862,6 +1874,8 @@ class SymmetricGroupGenerator:
                     perm_counts[cum_counts[i]:cum_counts[i+1]] -= len(submask) - np.count_nonzero(submask)
                     if return_indices:
                         ind_mask[cum_counts[i]:cum_counts[i + 1], idx, j] = submask
+
+            # print("  :", perm_counts)
 
 
             # we take the mask and use it to reshape the storage...
@@ -1945,7 +1959,7 @@ class SymmetricGroupGenerator:
         invs_splits = np.split(len_invs, len_split)[1:]
         # next sort and split the rules for real
         rule_groups = [] # no reason to be fancy here
-        rule_inv = []
+        # rule_inv = []
         # raise Exception(rule_count_splits)
         for split, inv in zip(rule_count_splits, invs_splits):
             rule_counts = np.array([x[1] for x in split], dtype=_infer_dtype(dim))
@@ -1957,8 +1971,8 @@ class SymmetricGroupGenerator:
             count_splits = np.split(split, sub_split)[1:]
 
             rule_groups.extend(count_splits)
-            rule_inv.append(inv)
-        rule_inv = np.concatenate(rule_inv)
+            # rule_inv.append(inv)
+        # rule_inv = np.concatenate(rule_inv)
 
         if sums is None:
             sums = np.sum(perms, axis=1)
@@ -2008,6 +2022,7 @@ class SymmetricGroupGenerator:
             if return_indices:
                 ind_block = []
             for counts, classes in zip(rule_counts, rule_classes):
+                # print(">>>>>>", input_classes[0][0], counts, classes)
                 res = self._build_direct_sums(input_classes, counts, classes,
                                               return_indices=return_indices,
                                               filter=filter
@@ -2015,7 +2030,7 @@ class SymmetricGroupGenerator:
                 if split_results:
                     split_blocks = np.cumsum(res[1][:-1])
                     res_perms = np.split(res[0], split_blocks)
-                    # print(split_blocks, [len(x) for x in res_perms])
+                    # print("=>", [len(x) for x in res_perms])
                     if return_indices:
                         ind_block.append(np.split(res[2], split_blocks))
                 else:

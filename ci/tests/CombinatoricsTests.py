@@ -227,15 +227,6 @@ class CombinatoricsTests(TestCase):
         inds = np.random.choice(len(full_stuff), 28, replace=False)
         subperms = full_stuff[inds,]
 
-       #  """Exception: (array([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17,
-       # 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,
-       # 35, 36, 37, 38, 39, 40]), 41)"""
-       #  """
-       #  (array([40, 39, 37, 34, 29, 38, 36, 33, 28, 32, 27, 22, 21, 35, 31, 26, 20,
-       # 25, 19, 13, 18, 12, 30, 24, 17, 16, 11, 10,  5, 23, 15,  9,  8,  4,
-       # 14,  7,  3,  6,  2,  1]), 40)
-       # """
-
         # with BlockProfiler(name='perm method'):
         perm_inds = part_perms.get_partition_permutation_indices(subperms)
         self.assertEquals(inds.tolist(), perm_inds.tolist())
@@ -247,7 +238,7 @@ class CombinatoricsTests(TestCase):
         og_perms = part_perms.get_partition_permutations_from_indices(perm_inds)
         self.assertEquals(subperms.tolist(), og_perms.tolist())
 
-    @validationTest
+    @debugTest
     def test_SymmetricGroupGenerator(self):
         """
         Tests the features of the symmetric group generator
@@ -311,7 +302,11 @@ class CombinatoricsTests(TestCase):
         )
 
         sums = np.sum(test_perms, axis=1)
-        self.assertEquals(np.unique(sums).tolist(), [2, 3, 5, 6])
+        test_sums = np.unique(
+                            np.unique(np.sum(test_states, axis=1))[np.newaxis]
+                            + np.unique([sum(x) for x in test_rules])[:, np.newaxis]
+        )
+        self.assertEquals(np.unique(sums).tolist(), test_sums.tolist())
 
         bleh = np.concatenate(
             [ UniquePermutations(x + [0] * (8-len(x))).permutations() for x in test_rules ],
@@ -351,28 +346,16 @@ class CombinatoricsTests(TestCase):
 
         full_inds = gen.to_indices(full_perms)
         self.assertEquals(np.sort(test_inds).tolist(), np.sort(full_inds).tolist())
-
-        # test_rules = [
-        #     [2], [1, 1], [-1, -1], [-1, 1], [-2]
-        # ]
-        # with BlockProfiler("direct inds"):
-        # test_perms, test_inds = gen.take_permutation_rule_direct_sum(
-        #     test_states,
-        #     test_rules,
-        #     return_indices=True,
-        #     indexing_method='direct'
-        # )
-
         # with BlockProfiler("secondary inds"):
         test_perms2, test_inds2 = gen.take_permutation_rule_direct_sum(
             test_states,
             test_rules,
-            return_indices=True,
-            indexing_method='secondary'
+            return_indices=True
         )
 
         self.assertEquals(test_inds.tolist(), test_inds2.tolist())
 
+        # print("==" * 50)
         test_perms2, test_inds2 = gen.take_permutation_rule_direct_sum(
             test_states,
             test_rules,
@@ -389,12 +372,16 @@ class CombinatoricsTests(TestCase):
 
         self.assertEquals(len(test_states), len(test_perms2))
         self.assertEquals(len(test_states), len(test_inds2))
+        self.assertEquals(
+            [len(x) for x in test_perms2],
+            [len(x) for x in bleeep]
+        )
 
         for i in range(len(test_states)):
-            self.assertEquals(len(test_perms2[i]), len(test_inds2[i]))
-            self.assertEquals(len(test_perms2[i]), len(bleeep[i]))
-            self.assertEquals(sorted(test_perms2[i].tolist()), sorted(bleeep[i].tolist()))
-            self.assertEquals(sorted(test_inds2[i].tolist()), sorted(gen.to_indices(bleeep[i]).tolist()))
+            self.assertEquals(len(test_perms2[i]), len(test_inds2[i]), msg='failed for state {}'.format(test_states[i]))
+            self.assertEquals(len(test_perms2[i]), len(bleeep[i]), msg='failed for state {}'.format(test_states[i]))
+            self.assertEquals(sorted(test_perms2[i].tolist()), sorted(bleeep[i].tolist()), msg='failed for state {}'.format(test_states[i]))
+            self.assertEquals(sorted(test_inds2[i].tolist()), sorted(gen.to_indices(bleeep[i]).tolist()), msg='failed for state {}'.format(test_states[i]))
 
     @debugTest
     def test_DirectSumIndices(self):
