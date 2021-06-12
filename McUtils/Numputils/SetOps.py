@@ -106,7 +106,6 @@ def unique1d(ar, return_index=False, return_inverse=False,
         sorting = ar.argsort(kind='mergesort') # we want to have stable sorts throughout
     ar = ar[sorting]
 
-
     mask = np.empty(ar.shape, dtype=np.bool_)
     mask[:1] = True
     mask[1:] = ar[1:] != ar[:-1]

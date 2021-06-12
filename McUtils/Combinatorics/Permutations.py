@@ -4,7 +4,7 @@ Utilities for working with permutations and permutation indexing
 
 import numpy as np
 import collections, functools as ft
-from ..Numputils import intersection, contained
+from ..Numputils import unique, intersection, contained
 
 __all__ = [
     "IntegerPartitioner",
@@ -1210,7 +1210,10 @@ class IntegerPartitionPermutations:
                                                                 return_indices=return_indices,
                                                                 classes=c[0], counts=c[1]) for p,c in zip(self.partitions, self._class_counts)]
 
-    def _get_partition_splits(self, perms, assume_standard=False, split_method='direct'):
+    def _get_partition_splits(self, perms,
+                              assume_sorted=False,
+                              assume_standard=False,
+                              split_method='direct'):
         """
 
         :param perms:
@@ -1244,14 +1247,18 @@ class IntegerPartitionPermutations:
                 uinds = IntegerPartitioner.partition_indices(subu, sums=np.full(len(subu), self.int))
             else:
                 partition_inds = IntegerPartitioner.partition_indices(partitions, sums=np.full(len(perms), self.int))
-                uinds, mask = np.unique(partition_inds, return_inverse=True)
-                sorting = np.argsort(mask)
+                if assume_sorted:
+                    sorting = np.arange(len(partition_inds))
+                    uinds, _, mask = unique(partition_inds, sorting=sorting, return_inverse=True)
+                else:
+                    uinds, mask = np.unique(partition_inds, return_inverse=True)
+                    sorting = np.argsort(mask)
                 # now we use `unique` again to split mask position in the sorted array
-                _, inds = np.unique(mask[sorting], return_index=True)
+                _, _, inds = unique(mask[sorting], sorting=np.arange(len(mask)), return_index=True)
 
         return uinds, sorting, inds
 
-    def get_full_equivalence_class_data(self, perms, split_method='direct', assume_standard=False, return_permutations=False):
+    def get_full_equivalence_class_data(self, perms, split_method='direct', assume_sorted=False, assume_standard=False, return_permutations=False):
         """
         Returns the equivalence class data of the given permutations
         :param perms:
@@ -1264,7 +1271,10 @@ class IntegerPartitionPermutations:
 
         # convert perms into their appropriate partitions
         # get the indices of those and then split
-        uinds, sorting, inds = self._get_partition_splits(perms, split_method=split_method)
+        uinds, sorting, inds = self._get_partition_splits(perms,
+                                                          assume_sorted=assume_sorted,
+                                                          assume_standard=assume_standard,
+                                                          split_method=split_method)
 
         groups = np.split(perms[sorting,], inds)[1:]
         partition_data = self._class_counts[uinds]
@@ -1284,7 +1294,9 @@ class IntegerPartitionPermutations:
 
         return uinds, partition_data, partition_groups, groups, sorting, self._cumtotals[uinds]
 
-    def get_equivalence_classes(self, perms, split_method='direct', return_permutations=True):
+    def get_equivalence_classes(self, perms, split_method='direct',
+                                assume_sorted=False,
+                                return_permutations=True):
         """
         Returns the equivalence classes and permutations of the given permutations
         :param perms:
@@ -1295,7 +1307,11 @@ class IntegerPartitionPermutations:
         :rtype:
         """
 
-        _, partition_data, partition_groups, _, sorting, totals = self.get_full_equivalence_class_data(perms, split_method=split_method, return_permutations=return_permutations)
+        _, partition_data, partition_groups, _, sorting, totals = self.get_full_equivalence_class_data(perms,
+                                                                                                       assume_sorted=assume_sorted,
+                                                                                                       split_method=split_method,
+                                                                                                       return_permutations=return_permutations
+                                                                                                       )
 
         return [(c[0], c[1], p) for c,p in zip(partition_data, partition_groups)], totals, sorting
 
@@ -1366,8 +1382,8 @@ class IntegerPartitionPermutations:
         else:
             sorting = None
 
-        insertion_spots = np.searchsorted(self._cumtotals-1, indices)
-        uinds, inds = np.unique(insertion_spots, return_index=True)
+        insertion_spots = np.searchsorted(self._cumtotals-1, indices, sorter=np.arange(len(self._cumtotals)))
+        uinds, _, inds = unique(insertion_spots, sorting=np.arange(len(insertion_spots)), return_index=True)
         groups = np.split(indices, inds)[1:]
         uinds = uinds - 1
 
@@ -1449,7 +1465,10 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
         else:
             return np.zeros((len(indices), self.dim), dtype='int8')
 
-    def _get_partition_splits(self, perms, split_method='direct'):
+    def _get_partition_splits(self, perms,
+                              assume_sorted=False,
+                              assume_standard=False,
+                              split_method='direct'):
         """
 
         :param perms:
@@ -1464,7 +1483,7 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
         splits = [0]
         sorting = np.arange(len(perms))
 
-        return uinds, splits, sorting
+        return uinds, sorting, splits
 
 class SymmetricGroupGenerator:
     """
@@ -1565,7 +1584,7 @@ class SymmetricGroupGenerator:
         else:
             sorting = None
 
-        usums, inds = np.unique(sums, return_index=True)
+        usums, _, inds = unique(sums, sorting=np.arange(len(sums)), return_index=True)
         groups = np.split(perms, inds)[1:]
 
         partitioners, shifts = self._get_partition_perms(usums)
@@ -1605,8 +1624,8 @@ class SymmetricGroupGenerator:
         while self._cumtotals[-1] < max_ind:
             self._get_partition_perms(1+len(self._partition_permutations)*2)
 
-        insertion_spots = np.searchsorted(self._cumtotals - 1, indices)
-        uinds, inds = np.unique(insertion_spots, return_index=True)
+        insertion_spots = np.searchsorted(self._cumtotals - 1, indices, sorter=np.arange(len(self._cumtotals)))
+        uinds, _, inds = unique(insertion_spots, sorting=np.arange(len(insertion_spots)), return_index=True)
         groups = np.split(indices, inds)[1:]
         uinds = uinds - 1
 
@@ -1634,7 +1653,7 @@ class SymmetricGroupGenerator:
         def from_perms(cls, parent, filter_perms):
 
             filter_perms = filter_perms
-            filter_sort = np.flip(np.sort(filter_perms, axis=1), axis=1)
+            filter_sort = None #np.flip(np.sort(filter_perms, axis=1), axis=1) # I don't use this yet
             filter_inds = parent.to_indices(filter_perms)
             filter_sums = np.unique(np.sum(filter_perms, axis=1))
             ind_sort = np.argsort(filter_inds)
@@ -1852,7 +1871,6 @@ class SymmetricGroupGenerator:
 
         perm_counts = np.full(total_perm_count, num_perms*len(classes))
 
-        # print("????", perm_counts)
         if len(dropped_pairs) > 0:
             # raise Exception(storage.shape, num_perms*len(classes))
             mask = np.full(storage.shape, True)
@@ -1874,8 +1892,6 @@ class SymmetricGroupGenerator:
                     perm_counts[cum_counts[i]:cum_counts[i+1]] -= len(submask) - np.count_nonzero(submask)
                     if return_indices:
                         ind_mask[cum_counts[i]:cum_counts[i + 1], idx, j] = submask
-
-            # print("  :", perm_counts)
 
 
             # we take the mask and use it to reshape the storage...
@@ -1925,6 +1941,7 @@ class SymmetricGroupGenerator:
         # if dim is None:
         dim = self.dim
         perms = np.asanyarray(perms)
+        og_perms = perms # for debug
         # next we pad up the perms as needed
         if perms.shape[1] < dim:
             perms = np.concatenate([
@@ -1978,19 +1995,19 @@ class SymmetricGroupGenerator:
             sums = np.sum(perms, axis=1)
 
         if not assume_sorted:
-            sorting = np.argsort(sums)
-            sums = sums[sorting]
-            perms = perms[sorting]
+            sum_sorting = np.argsort(sums)
+            sums = sums[sum_sorting]
+            perms = perms[sum_sorting]
         else:
-            sorting = None
+            sum_sorting = None
 
         # next split up the input permutations
-        usums, inds = np.unique(sums, return_index=True)
+        usums, _, inds = unique(sums, sorting=np.arange(len(sums)), return_index=True)
         groups = np.split(perms, inds)[1:]
 
         partitioners, shifts = self._get_partition_perms(usums)
 
-        class_data = [p.get_equivalence_classes(g) for p,g in zip(partitioners, groups)]
+        class_data = [p.get_equivalence_classes(g, assume_sorted=assume_sorted) for p,g in zip(partitioners, groups)]
 
         perm_classes = [c[0] for c in class_data]
         perm_totals = [c[1] for c in class_data]
@@ -2017,12 +2034,12 @@ class SymmetricGroupGenerator:
 
         rule_counts = [group[0][1] for group in rule_groups]
         rule_classes = [[g[0] for g in group] for group in rule_groups]
+
         for input_classes,base_shift,tots in zip(perm_classes, shifts, perm_totals):
             perm_block = []
             if return_indices:
                 ind_block = []
             for counts, classes in zip(rule_counts, rule_classes):
-                # print(">>>>>>", input_classes[0][0], counts, classes)
                 res = self._build_direct_sums(input_classes, counts, classes,
                                               return_indices=return_indices,
                                               filter=filter
@@ -2030,7 +2047,6 @@ class SymmetricGroupGenerator:
                 if split_results:
                     split_blocks = np.cumsum(res[1][:-1])
                     res_perms = np.split(res[0], split_blocks)
-                    # print("=>", [len(x) for x in res_perms])
                     if return_indices:
                         ind_block.append(np.split(res[2], split_blocks))
                 else:
@@ -2066,15 +2082,16 @@ class SymmetricGroupGenerator:
             for p,s in zip(perms, perm_sorting):
                 new_perms += [p[i] for i in np.argsort(s)]
             perms = new_perms
-            if sorting is not None:
-                inv = np.argsort(sorting)
+            if sum_sorting is not None:
+                inv = np.argsort(sum_sorting)
+                # print(len(perms), max(inv), len(sum_sorting), len(og_perms), wtf_sum)
                 perms = [perms[i] for i in inv]
             if return_indices:
                 new_inds = []
                 for d,s in zip(indices, perm_sorting):
                     new_inds += [d[i] for i in np.argsort(s)]
                 indices = new_inds
-                if sorting is not None:
+                if sum_sorting is not None:
                     indices = [indices[i] for i in inv]
         else:
             perms = np.concatenate(perms, axis=0)
