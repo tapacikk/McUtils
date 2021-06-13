@@ -1679,9 +1679,8 @@ class SymmetricGroupGenerator:
             # reuse it multiple times
 
 
-            filter_perms = np.asanyarray(filter_perms)
-            if filter_perms.dtype == np.dtype(object):
-                filter_perms = tuple(np.asanyarray(o) for o in filter_perms)
+            if not isinstance(filter_perms, np.ndarray):
+                filter_perms = tuple(np.asanyarray(o) if o is not None else o for o in filter_perms)
 
             if isinstance(filter_perms, np.ndarray):
                 if filter_perms.ndim == 1:
