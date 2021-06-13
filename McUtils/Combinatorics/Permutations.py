@@ -1283,12 +1283,6 @@ class IntegerPartitionPermutations:
             # these are the "permutations" in IntegerPartitionPermutations
             partition_sorting = np.argsort(np.argsort(-perms, axis=1), axis=1).astype(_infer_dtype(perms.shape[-1]))
             partition_groups = np.split(partition_sorting[sorting,], inds)[1:]
-
-            # partition_groups = []
-            # for group, data in zip(groups, partition_data):
-            #     partition_groups.append(
-            #         UniquePermutations.get_permutation_swaps(group, classes=data[1], counts=data[2])
-            #     )
         else:
             partition_groups = None
 
@@ -1766,9 +1760,11 @@ class SymmetricGroupGenerator:
         class_sums = np.array([np.sum(counts*c) for c in classes])
         input_sums = np.array([np.sum(x[0]*x[1]) for x in input_perm_classes])
         merged_sums = input_sums[:, np.newaxis] + class_sums[np.newaxis, :]
+
         paritioners = [
             self._get_partition_perms(x, ignore_negatives=True) for x in merged_sums
         ]
+
 
         # set up an initial prefilter to elminate any entirely impossible
         # permutations by our filters/filter_negatives
@@ -1783,14 +1779,16 @@ class SymmetricGroupGenerator:
             cls_inds[i] = np.delete(cls_inds[i], drops)
             if filter is not None and filter.sums is not None:
                 test_sums = np.delete(merged_sums[i], drops)
-                _, _, _, more_drops, _ = intersection(test_sums, filter.sums, sortings=(None, np.arange(len(filter.sums))), return_indices=True)
+                mask, _, _ = contained(test_sums, filter.sums, invert=True,
+                                       sortings=(None, np.arange(len(filter.sums))))
+                more_drops = np.where(mask)
                 drops.extend(cls_inds[i][more_drops])
                 cls_inds[i] = np.delete(cls_inds[i], more_drops)
 
             if len(drops) > 0:
                 dropped_pairs.append((i, slice(None, None, None), drops))
 
-        def on_visit(idx, perm, cts, depth, tree_data):
+        def add_new_perms(idx, perm, cts, depth, tree_data):
             """
 
             :param idx: 
@@ -1862,12 +1860,13 @@ class SymmetricGroupGenerator:
                             full_inds = padding_1 + padding_2 + new_inds
                             indices[cum_counts[i]:cum_counts[i + 1], idx, j] = full_inds
                             if filter is not None:
-                                sort_1 = np.arange(len(full_inds))  # assured sorting
+                                sort_1 = np.arange(len(full_inds))  # assured sorting if the input perms are (?)
                                 mask, _, _ = contained(full_inds, filter.inds,
                                                                 sortings=(sort_1, filter.ind_sort))
+                                # print(mask, full_inds, filter.inds)
                                 dropped_pairs.append((i, idx, j, mask))
 
-        UniquePermutations.walk_permutation_tree(counts, on_visit)
+        UniquePermutations.walk_permutation_tree(counts, add_new_perms)
 
         perm_counts = np.full(total_perm_count, num_perms*len(classes))
 
@@ -1919,6 +1918,7 @@ class SymmetricGroupGenerator:
                                          split_results=False,
                                          filter_perms=None,
                                          return_filter=False,
+                                         preserve_ordering=True,
                                          indexing_method='direct'
                                          ):
         """
@@ -2009,7 +2009,22 @@ class SymmetricGroupGenerator:
 
         class_data = [p.get_equivalence_classes(g, assume_sorted=assume_sorted) for p,g in zip(partitioners, groups)]
 
-        perm_classes = [c[0] for c in class_data]
+        if assume_sorted:
+            perm_classes = [c[0] for c in class_data]
+            perm_subsortings = [None] * len(class_data)
+        else:
+            perm_classes = []
+            perm_subsortings = []
+            for c in class_data:
+                substuff = []
+                subsortstuff = []
+                for s in c[0]:
+                    subsort = np.lexsort(np.flip(s[2], axis=1).T)
+                    new = (s[0], s[1], s[2][subsort] )
+                    substuff.append(new)
+                    subsortstuff.append(subsort)
+                perm_classes.append(substuff)
+                perm_subsortings.append(subsortstuff)
         perm_totals = [c[1] for c in class_data]
         perm_sorting = [c[2] for c in class_data]
 
@@ -2035,7 +2050,7 @@ class SymmetricGroupGenerator:
         rule_counts = [group[0][1] for group in rule_groups]
         rule_classes = [[g[0] for g in group] for group in rule_groups]
 
-        for input_classes,base_shift,tots in zip(perm_classes, shifts, perm_totals):
+        for input_classes,base_shift,tots,sorts in zip(perm_classes, shifts, perm_totals, perm_subsortings):
             perm_block = []
             if return_indices:
                 ind_block = []
@@ -2055,18 +2070,35 @@ class SymmetricGroupGenerator:
                         ind_block.append(res[2])
                 perm_block.append(res_perms)
 
-            if split_results:
+            if split_results or preserve_ordering:
                 # zip to merge
                 new_perms = [
                     np.concatenate(blocks, axis=0)
                     for blocks in zip(*perm_block)
                 ]
+                if preserve_ordering and sorts is not None and len(new_perms) > 0:
+                    cumlens = np.cumsum([0] + [len(x) for x in sorts[:-1]])
+                    sorts = np.concatenate([x+s for x,s in zip(sorts, cumlens)])
+                    argsorts = np.argsort(sorts)
+                    new_perms = [new_perms[i] for i in argsorts]
+                # if not split_results:
+                #     if len(new_perms) == 0:
+                #         new_perms = np.array([], dtype='int8')
+                #     else:
+                #         new_perms = np.concatenate(new_perms, axis=0)
                 perms.append(new_perms)
                 if return_indices:
                     new_inds = [
                         np.concatenate(blocks)
                         for blocks in zip(*ind_block)
                     ]
+                    if preserve_ordering and sorts is not None and len(new_perms) > 0:
+                        new_inds = [new_inds[i] for i in argsorts]
+                    # if not split_results:
+                    #     if len(new_perms) == 0:
+                    #         new_inds = np.array([], dtype='int8')
+                    #     else:
+                    #         new_inds = np.concatenate(new_inds, axis=0)
                     indices.append(new_inds)
             else:
                 new_perms = np.concatenate(perm_block, axis=0)
@@ -2077,22 +2109,39 @@ class SymmetricGroupGenerator:
 
         # now we need to also reshuffle the states so
         # that they come out in the input ordering
-        if split_results:
+        if split_results or preserve_ordering:
             new_perms = []
-            for p,s in zip(perms, perm_sorting):
-                new_perms += [p[i] for i in np.argsort(s)]
-            perms = new_perms
-            if sum_sorting is not None:
+            if preserve_ordering:
+                for p,s in zip(perms, perm_sorting):
+                    if len(p) > 0:
+                        new_perms += [p[i] for i in np.argsort(s)]
+                perms = new_perms
+            else:
+                perms = sum(perms, [])
+            if preserve_ordering and sum_sorting is not None and len(perms) > 0:
                 inv = np.argsort(sum_sorting)
-                # print(len(perms), max(inv), len(sum_sorting), len(og_perms), wtf_sum)
                 perms = [perms[i] for i in inv]
             if return_indices:
-                new_inds = []
-                for d,s in zip(indices, perm_sorting):
-                    new_inds += [d[i] for i in np.argsort(s)]
-                indices = new_inds
-                if sum_sorting is not None:
+                if preserve_ordering:
+                    new_inds = []
+                    for d,s in zip(indices, perm_sorting):
+                        if len(d) > 0:
+                            new_inds += [d[i] for i in np.argsort(s)]
+                    indices = new_inds
+                else:
+                    indices = sum(indices, [])
+                if preserve_ordering and sum_sorting is not None and len(indices) > 0:
                     indices = [indices[i] for i in inv]
+            if not split_results:
+                if len(perms) == 0:
+                    perms = np.array([], dtype='int8')
+                else:
+                    perms = np.concatenate(perms, axis=0)
+                if return_indices:
+                    if len(perms) == 0:
+                        indices = np.array([], dtype='int8')
+                    else:
+                        indices = np.concatenate(indices, axis=0)
         else:
             perms = np.concatenate(perms, axis=0)
             if return_indices:

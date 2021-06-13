@@ -238,7 +238,7 @@ class CombinatoricsTests(TestCase):
         og_perms = part_perms.get_partition_permutations_from_indices(perm_inds)
         self.assertEquals(subperms.tolist(), og_perms.tolist())
 
-    @debugTest
+    @validationTest
     def test_SymmetricGroupGenerator(self):
         """
         Tests the features of the symmetric group generator
@@ -404,7 +404,8 @@ class CombinatoricsTests(TestCase):
                 test_rules,
                 return_indices=True,
                 indexing_method='direct',
-                split_results=True
+                split_results=True,
+                preserve_ordering=False
             )
 
         with BlockProfiler("secondary inds", print_res=False):
@@ -413,7 +414,8 @@ class CombinatoricsTests(TestCase):
                 test_rules,
                 return_indices=True,
                 indexing_method='secondary',
-                split_results=True
+                split_results=True,
+                preserve_ordering=False
             )
 
         self.assertEquals(test_inds[0].tolist(), test_inds2[0].tolist())
@@ -439,5 +441,97 @@ class CombinatoricsTests(TestCase):
                         msg='{} not in {}; {} in'.format(bleeeh[contained], u_tests, bleeeh[np.logical_not(contained)])
                         )
         self.assertTrue(isinstance(filter.sums, np.ndarray))
+
+        # self.assertEquals(np.unique(bleeeh, axis=0).tolist(), u_tests.tolist())
+
+    @debugTest
+    def test_DirectSumBrokenInVPT2(self):
+        """
+        Tests the features of the symmetric group generator
+        :return:
+        :rtype:
+        """
+
+        gen = SymmetricGroupGenerator(6)
+
+        test_states = [
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0],
+            [3, 0, 0, 0, 0, 0],
+            [0, 3, 0, 0, 0, 0],
+            [0, 0, 3, 0, 0, 0],
+            [0, 0, 0, 3, 0, 0],
+            [0, 0, 0, 0, 3, 0],
+            [0, 0, 0, 0, 0, 3],
+            [1, 2, 0, 0, 0, 0],
+            [1, 0, 2, 0, 0, 0],
+            [1, 0, 0, 2, 0, 0],
+            [1, 0, 0, 0, 2, 0],
+            [1, 0, 0, 0, 0, 2],
+            [2, 1, 0, 0, 0, 0]
+        ]
+        test_rules = [(-1,), (1,)]
+
+        filter_perms = [
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 2],
+            [0, 0, 0, 0, 2, 0],
+            [0, 0, 0, 2, 0, 0]
+        ]
+        filter_inds = gen.to_indices((filter_perms))#[0, 6, 5, 4, 3, 2, 1, 12, 11, 10]
+
+        bleeeh, _, filter = gen.take_permutation_rule_direct_sum(
+                test_states,
+                test_rules,
+                return_indices=True,
+                split_results=True,
+                filter_perms=[ filter_perms, None, filter_inds ],
+                return_filter=True
+            )
+        self.assertEquals(filter.inds.tolist(), filter_inds.tolist())
+        self.assertEquals(filter.perms.tolist(), filter_perms)
+        self.assertEquals(sorted(bleeeh[0].tolist()), sorted([
+            [0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0],
+        ]))
+
+        bleeeh2, _, filter = gen.take_permutation_rule_direct_sum(
+            test_states,
+            test_rules,
+            return_indices=True,
+            split_results=True,
+            filter_perms=filter_perms,
+            return_filter=True
+        )
+        self.assertEquals(filter.inds.tolist(), filter_inds.tolist())
+        self.assertEquals(filter.perms.tolist(), filter_perms)
+        self.assertEquals([b.tolist() for b in bleeeh2], [b.tolist() for b in bleeeh])
+
+        # bleeeh, _, filter = gen.take_permutation_rule_direct_sum(
+        #     test_states,
+        #     test_rules,
+        #     return_indices=True,
+        #     split_results=False,
+        #     filter_perms=filter_inds,
+        #     return_filter=True
+        # )
+        # self.assertEquals(filter.inds.tolist(), filter_inds)
+        # self.assertEquals([b.tolist() for b in bleeeh2], [b.tolist() for b in bleeeh])
 
         # self.assertEquals(np.unique(bleeeh, axis=0).tolist(), u_tests.tolist())
