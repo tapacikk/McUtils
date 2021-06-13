@@ -1,5 +1,6 @@
 
 from Peeves.TestUtils import *
+from Peeves import BlockProfiler
 from McUtils.Numputils import *
 from McUtils.Zachary import FiniteDifferenceDerivative
 from unittest import TestCase
@@ -481,3 +482,58 @@ class NumputilsTests(TestCase):
         self.assertEquals(diffs.tolist(), [2, 3])
         self.assertEquals(sortings[0].tolist(), [0, 1, 3, 2, 4])
         self.assertEquals(sortings[1].tolist(), [0, 1, 2, 4, 3])
+
+    @debugTest
+    def test_Sparse(self):
+
+        shape = (1000, 100, 50)
+
+        n_els = 10000
+        np.random.seed(1)
+        inds = tuple(np.random.choice(x, n_els) for x in shape)
+        vals = np.random.rand(n_els)
+        # remove dupes
+        dupe_pos = np.where(
+            np.logical_not(
+                np.logical_and(
+                    np.logical_and(
+                        inds[0] == inds[0],
+                        inds[1] == inds[1]
+                    ),
+                    inds[2] == inds[2]
+                )
+            )
+        )
+        inds = tuple(x[dupe_pos] for x in inds)
+        vals = vals[dupe_pos]
+
+        # `from_data` for backend flexibility
+        array = SparseArray.from_data(
+            (
+                vals,
+                inds
+            ),
+            shape=shape
+        )
+
+        self.assertEquals(array.shape, shape)
+        block_vals, block_inds = array.block_data
+        self.assertEquals(np.sort(block_vals).tolist(), np.sort(vals).tolist())
+        for i in range(len(shape)):
+            self.assertEquals(np.sort(block_inds[i]).tolist(), np.sort(inds[i]).tolist())
+
+        woof = array[:, 1, 1] #type: SparseArray
+        self.assertIs(type(woof), type(array))
+        self.assertEquals(woof.shape, (shape[0],))
+        block_vals, block_inds = woof.block_data
+        filt_pos = np.where(np.logical_and(inds[1] == 1, inds[2] == 1))
+        if len(filt_pos) > 0:
+            self.assertEquals(
+                np.sort(block_vals).tolist(),
+                np.sort(vals[filt_pos]).tolist()
+            )
+
+
+        with BlockProfiler('Sparse sampling', print_res=True):
+            new_woof = array[:, 1, 1]  # type: SparseArray
+

@@ -1277,6 +1277,43 @@ class ScipySparseArray(SparseArray):
         import copy
         return copy.copy(self)
 
+    @classmethod
+    def _find_block_alignment(cls, inds, block, shape):
+        """
+        finds the positions where the block & index align
+        """
+
+        # we do an iterated "and" over the not equals
+        # and apply a "not" at the end
+        filter = np.full(len(inds), True)
+        for j in block:
+            # hastag meta
+            filter[filter] = inds[filter] == j
+        filter = np.logical_not(filter)
+
+        # I was hoping I could make use of that filter stuff to
+        # build the mapping but it honestly seems like the two are completely
+        # different?
+
+        # we find the first position where the positions occur (we assume they _do_ occur)
+        # using `searchsorted`
+        mapping = np.searchsorted(block, np.arange(shape))#, sorter=np.arange(len(block)))
+
+        return filter, mapping
+
+    def _get_filtered_elements(self, blocks, data, inds):
+
+
+        for i, b, s in zip(range(len(blocks)), blocks, self.shape):
+            if b is not None:
+                ixs = inds[i]
+                filter, mapping = self._find_block_alignment(ixs, b, s)
+                inds = [ix[filter] for ix in inds]
+                data = data[filter]
+                inds[i] = mapping[inds[i]]
+
+        return data, inds
+
     def _get_element(self, idx, pull_elements=None):
         """
         Convert idx into a 1D index or slice or whatever and then convert it back to the appropriate 2D shape
@@ -1287,6 +1324,7 @@ class ScipySparseArray(SparseArray):
         :rtype:
         """
 
+        # TODO: take a look at the numpy "fancy indexing" code to speed this up...
         if pull_elements is None:
             # we check first to see if we were asked for just a single vector of elements
             # the detection heuristic is basically: is everything just a slice of ints or nah
@@ -1312,48 +1350,29 @@ class ScipySparseArray(SparseArray):
             return res
         else:
             # need to compute the shape of the resultant block
+            # we treat slice(None, None, None) as a special case because
+            # it's so common
             blocks = [
                 (
                     np.array([i]) if isinstance(i, (int, np.integer)) else (
                         np.arange(s)[i,].flatten()
+                            if not isinstance(s, slice) and s == slice(None, None, None) else
+                        None
                     )
                 )
                 for i, s in zip(idx, self.shape)
             ]
             # we filter out places where new_shape[i] == 1 at a later stage
             # for now we just build out the total shape it _would_ have with axes of len 1
-            new_shape = [len(x) for x in blocks] + list(self.shape[len(blocks):])
+            new_shape = [
+                            len(x) if x is not None else s for x,s in zip(blocks, self.shape[:len(blocks)])
+                         ] + list(self.shape[len(blocks):])
 
             # now we iterate over each block and use it as a successive filter on our non-zero positions
             data, inds = self.block_data
             inds = list(inds)
 
-            def g(b, j):
-                """
-                finds the positions where the block & index align
-                """
-                w = np.argwhere(b == j)
-                if len(w) > 0:
-                    w = w[0][0]
-                else:
-                    w = -1
-                return w
-
-            for i, b, s in zip(range(len(blocks)), blocks, self.shape):
-                k = 0
-                ixs = inds[i]
-                # we add up the indices to give a list of 0 & 1 to use as a mask
-                # we use sum because sum is boolean OR
-                # this will give us the elements of ixs where
-                filter = np.sum(ixs == j for j in b).astype(bool)
-                # we then apply this to the non-zero indices and values we're tracking
-                inds = [ix[filter] for ix in inds]
-                data = data[filter]
-                # finally, we remap the current set of indices so that indices that are
-                # disappearing get removed and the ones that are staying get shifted down
-                # to match that change
-                mapping = np.array([g(b, j) for j in range(s)])
-                inds[i] = mapping[inds[i]]
+            data, inds = self._get_filtered_elements(blocks, data, inds)
 
             # now that we've filtered our data, we filter out axes of size 1
             # print(inds, new_shape)
@@ -1379,7 +1398,7 @@ class ScipySparseArray(SparseArray):
                 total_shape = new_shape
 
             # raise Exception(blocks, new_shape, len(inds), len(unflat))
-            od = data
+            # od = data
             try:
                 data = self._build_data(data, unflat, total_shape)
             except Exception as e:
