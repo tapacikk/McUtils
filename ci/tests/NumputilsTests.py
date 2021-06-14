@@ -483,6 +483,12 @@ class NumputilsTests(TestCase):
         self.assertEquals(sortings[0].tolist(), [0, 1, 3, 2, 4])
         self.assertEquals(sortings[1].tolist(), [0, 1, 2, 4, 3])
 
+        diffs, sortings, merge = contained(
+            [1, 1, 3, 2, 5],
+            [0, 0, 0, 5, 1]
+        )
+        self.assertEquals(diffs.tolist(), [True, True, False, False, True])
+
     @debugTest
     def test_Sparse(self):
 

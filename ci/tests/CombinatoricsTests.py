@@ -517,10 +517,10 @@ class CombinatoricsTests(TestCase):
                 test_rules,
                 return_indices=True,
                 split_results=True,
-                filter_perms=[ filter_perms, None, filter_inds ],
+                filter_perms=[filter_perms, filter_inds],
                 return_filter=True
             )
-        self.assertEquals(filter.inds.tolist(), filter_inds.tolist())
+        self.assertEquals(filter.inds.tolist(), np.sort(filter_inds).tolist())
         self.assertEquals(filter.perms.tolist(), filter_perms)
         self.assertEquals(sorted(bleeeh[0].tolist()), sorted([
             [0, 0, 0, 0, 0, 1],
@@ -542,7 +542,7 @@ class CombinatoricsTests(TestCase):
             return_filter=True
         )
 
-        self.assertEquals(filter.inds.tolist(), filter_inds.tolist())
+        self.assertEquals(filter.inds.tolist(), np.sort(filter_inds).tolist())
         self.assertEquals(filter.perms.tolist(), filter_perms)
         self.assertEquals([b.tolist() for b in bleeeh2], [b.tolist() for b in bleeeh])
 
@@ -554,7 +554,7 @@ class CombinatoricsTests(TestCase):
             filter_perms=filter_inds,
             return_filter=True
         )
-        self.assertEquals(filter.inds.tolist(), filter_inds.tolist())
+        self.assertEquals(filter.inds.tolist(), np.sort(filter_inds).tolist())
 
         for i in range(len(test_states)):
             self.assertEquals(bleeeh2[i].tolist(), bleeeh[i].tolist(), msg='failed for state {}'.format(test_states[i]))
@@ -589,7 +589,7 @@ class CombinatoricsTests(TestCase):
             filter_perms=filter_inds,
             return_filter=True
         )
-        self.assertEquals(filter.inds.tolist(), filter_inds)
+        self.assertEquals(filter.inds.tolist(), np.sort(filter_inds).tolist())
 
         for i in range(len(test_states)):
             self.assertEquals(

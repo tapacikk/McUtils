@@ -12,7 +12,9 @@ __all__ = [
     'difference',
     'find',
     'argsort',
-    'coerce_dtype'
+    'coerce_dtype',
+    'group_by',
+    'split_by_regions'
 ]
 
 def argsort(ar):
@@ -225,14 +227,32 @@ def contained(ar1, ar2, assume_unique=False, invert=False,
         return mask, sortings, union_sorting
 
     # Otherwise use sorting
-    if not assume_unique:
+    if assume_unique is not True and assume_unique is not False: # i.e. it's a bool
+        assume_unique_1, assume_unique_2 = assume_unique
+    else:
+        assume_unique_1 = assume_unique_2 = assume_unique
+    if not assume_unique_1:
         if sortings is None:
             ar1, sorting1, rev_idx = unique1d(ar1, return_inverse=True)
-            ar2, sorting2 = unique1d(ar2)
         else:
             ar1, sorting1, rev_idx = unique1d(ar1, sorting=sortings[0], return_inverse=True)
+    else:
+        if sortings is not None:
+            sorting1 = sortings[0]
+        else:
+            sorting1 = None
+
+    if not assume_unique_2:
+        if sortings is None:
+            ar2, sorting2 = unique1d(ar2)
+        else:
             ar2, sorting2 = unique1d(ar2, sorting=sortings[1])
-        sortings = (sorting1, sorting2)
+    else:
+        if sortings is not None:
+            sorting2 = sortings[1]
+        else:
+            sorting2 = None
+    sortings = (sorting1, sorting2)
 
     ar = np.concatenate((ar1, ar2))
     # We need this to be a stable sort, so always use 'mergesort'
@@ -251,7 +271,7 @@ def contained(ar1, ar2, assume_unique=False, invert=False,
     ret = np.empty(ar.shape, dtype=bool)
     ret[order] = flag
 
-    if assume_unique:
+    if assume_unique_1:
         return ret[:len(ar1)], sortings, order
     else:
         return ret[rev_idx], sortings, order
@@ -342,3 +362,112 @@ def find(ar, to_find, sorting=None, check=True):
     output = find1d(ar, to_find, sorting=sorting, check=check)
     return output
 
+def group_by1d(ar, keys, sorting=None, return_indices=False):
+    """
+    Splits an array by a keys
+    :param ar:
+    :type ar:
+    :param keys:
+    :type keys:
+    :param sorting:
+    :type sorting:
+    :return:
+    :rtype:
+    """
+
+    uinds, sorting, mask = unique(keys, sorting=sorting, return_inverse=True)
+    _, _, inds = unique(mask[sorting], sorting=np.arange(len(mask)), return_index=True)
+    groups = np.split(ar[sorting,], inds)[1:]
+
+    ret = ((uinds, groups), sorting)
+    if return_indices:
+        ret += (inds,)
+    return ret
+
+def group_by(ar, keys, sorting=None, return_indices=False):
+    """
+    Splits an array by a keys
+    :param ar:
+    :type ar:
+    :param keys:
+    :type keys:
+    :param sorting:
+    :type sorting:
+    :return:
+    :rtype:
+    """
+
+    ar = np.asanyarray(ar)
+    keys = np.asanyarray(keys)
+
+    if keys.ndim == 1:
+        ret = group_by1d(ar, keys, sorting=sorting, return_indices=return_indices)
+        return ret
+
+    keys, dtype, orig_shape, orig_dtype = coerce_dtype(keys)
+    output = group_by1d(ar, keys, sorting=sorting, return_indices=return_indices)
+    ukeys, groups = output[0]
+    ukeys = uncoerce_dtype(keys, orig_shape, orig_dtype, None)
+    output = ((ukeys, groups),) + output[1:]
+    return output
+
+def split_by_regions1d(ar, regions, sortings=None, return_indices=False):
+    """
+    :param regions:
+    :type regions:
+    :param ar1:
+    :type ar1:
+    :return:
+    :rtype:
+    """
+
+    if sortings is None:
+        sortings = (None, None)
+    ar_sorting, region_sorting = sortings
+    if ar_sorting is None:
+        ar_sorting = argsort(ar)
+    ar = ar[ar_sorting]
+    if region_sorting is None:
+        region_sorting = argsort(regions)
+
+    insertion_spots = np.searchsorted(regions, ar, sorter=region_sorting)
+    uinds, _, inds = unique(insertion_spots, sorting=np.arange(len(insertion_spots)), return_index=True)
+    groups = np.split(ar, inds)[1:]
+
+    output = (uinds, groups)
+    if return_indices:
+        return output, inds, sortings
+    else:
+        return output, sortings
+
+def split_by_regions(ar, regions, sortings=None, return_indices=False):
+    """
+    Splits an array up by edges defined by regions.
+    Operates in 1D but can take compound dtypes using lexicographic
+    ordering.
+    In that case it is on the user to ensure that lex ordering is what is desired.
+    :param ar:
+    :type ar:
+    :param regions:
+    :type regions:
+    :param sortings:
+    :type sortings:
+    :return:
+    :rtype:
+    """
+
+    ar = np.asanyarray(ar)
+    regions = np.asanyarray(regions)
+
+    if ar.ndim == 1:
+        ret = split_by_regions1d(regions, ar, sortings=sortings, return_indices=return_indices)
+        return ret
+
+    ar, dtype, orig_shape, orig_dtype = coerce_dtype(ar)
+    regions, dtype, orig_shape1, orig_dtype1 = coerce_dtype(ar, dtype=dtype)
+    output = split_by_regions1d(regions, ar, sortings=sortings, return_indices=return_indices)
+    uinds, groups = output[0]
+    groups = uncoerce_dtype(groups, orig_shape, orig_dtype, None)
+    output = ((uinds, groups),) + output[1:]
+
+    return output
