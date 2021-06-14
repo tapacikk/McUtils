@@ -4,7 +4,7 @@ from Peeves import BlockProfiler
 from McUtils.Numputils import *
 from McUtils.Zachary import FiniteDifferenceDerivative
 from unittest import TestCase
-import numpy as np
+import numpy as np, functools as ft
 
 class NumputilsTests(TestCase):
 
@@ -494,24 +494,11 @@ class NumputilsTests(TestCase):
 
         shape = (1000, 100, 50)
 
-        n_els = 10000
+        n_els = 100
         np.random.seed(1)
-        inds = tuple(np.random.choice(x, n_els) for x in shape)
-        vals = np.random.rand(n_els)
-        # remove dupes
-        dupe_pos = np.where(
-            np.logical_not(
-                np.logical_and(
-                    np.logical_and(
-                        inds[0] == inds[0],
-                        inds[1] == inds[1]
-                    ),
-                    inds[2] == inds[2]
-                )
-            )
-        )
-        inds = tuple(x[dupe_pos] for x in inds)
-        vals = vals[dupe_pos]
+        inds = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals = np.random.rand(len(inds))
+        inds = inds.T
 
         # `from_data` for backend flexibility
         array = SparseArray.from_data(
@@ -522,8 +509,10 @@ class NumputilsTests(TestCase):
             shape=shape
         )
 
+
         self.assertEquals(array.shape, shape)
         block_vals, block_inds = array.block_data
+        self.assertEquals(len(block_vals), len(vals))
         self.assertEquals(np.sort(block_vals).tolist(), np.sort(vals).tolist())
         for i in range(len(shape)):
             self.assertEquals(np.sort(block_inds[i]).tolist(), np.sort(inds[i]).tolist())
@@ -539,7 +528,34 @@ class NumputilsTests(TestCase):
                 np.sort(vals[filt_pos]).tolist()
             )
 
+        # with BlockProfiler('Sparse sampling', print_res=True):
+        #     new_woof = array[:, 1, 1]  # type: SparseArray
 
-        with BlockProfiler('Sparse sampling', print_res=True):
-            new_woof = array[:, 1, 1]  # type: SparseArray
+        shape = (28, 3003)
+
+        n_els = 10000
+        np.random.seed(1)
+        inds = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals = np.random.rand(len(inds))
+        inds = inds.T
+
+        # `from_data` for backend flexibility
+        array = SparseArray.from_data(
+            (
+                vals,
+                inds
+            ),
+            shape=shape
+        )
+
+        woof = array[0, :]  # type: SparseArray
+        self.assertIs(type(woof), type(array))
+        self.assertEquals(woof.shape, (shape[1],))
+        block_vals, block_inds = woof.block_data
+        filt_pos = np.where(inds[0] == 0)
+        if len(filt_pos) > 0:
+            self.assertEquals(
+                np.sort(block_vals).tolist(),
+                np.sort(vals[filt_pos]).tolist()
+            )
 

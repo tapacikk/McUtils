@@ -72,7 +72,7 @@ class IntegerPartitioner:
             ext_shape = (
                 cls._partition_counts.shape[0],
                 cls._partition_counts.shape[1],
-                2 * (M - cls._partition_counts.shape[2])
+                2 * (l - cls._partition_counts.shape[2])
             )
             cls._partition_counts = np.concatenate([
                 cls._partition_counts,
@@ -87,7 +87,7 @@ class IntegerPartitioner:
                 cls._partition_counts[i, 0, i:] = 1
 
     @classmethod
-    def count_partitions(cls, n, M=None, l=None, manage_counts=True):
+    def count_partitions(cls, n, M=None, l=None, manage_counts=True, check=True):
         """
         Uses the recurrence relation written out here
         https://en.wikipedia.org/wiki/Partition_(number_theory)#Partitions_in_a_rectangle_and_Gaussian_binomial_coefficients
@@ -157,44 +157,69 @@ class IntegerPartitioner:
 
             counts = cls._partition_counts[n - 1, M - 1, l - 1]
 
-            zero_lens = l == 0
-            zero_size = M == 0
-            should_be_0 = np.where(ft.reduce(np.logical_or,
-                                             [
-                                                 zero_size, zero_lens,
-                                                 l < 0,
-                                                 M < 0,
-                                                 np.logical_and(l == 1, M < n)
-                                             ]))
-            if len(should_be_0) > 0:
-                should_be_0 = should_be_0[0]
-                if len(should_be_0) > 0:
-                    counts[should_be_0] = 0
+            # I think this set of conditions might be overkill?
+            # in any case we can make this faster by doing the inverse
+            should_not_be_0 = l > 0
+            should_not_be_0[should_not_be_0] = M[should_not_be_0] > 0
+            should_not_be_0[should_not_be_0] = np.logical_or(
+                l[should_not_be_0] != 1,
+                M[should_not_be_0] >= n[should_not_be_0]
+            )
+            should_be_0 = np.logical_not(should_not_be_0)
+            counts[should_be_0] = 0
 
-            should_be_1 = np.where(ft.reduce(np.logical_and, [n == 0, zero_size, zero_lens]))
-            if len(should_be_1) > 0:
-                should_be_1 = should_be_1[0]
-                if len(should_be_1) > 0:
-                    counts[should_be_1] = 1
+            should_be_1 = n == 0
+            should_be_1[should_be_1] = M[should_be_1] == 0
+            should_be_1[should_be_1] = l[should_be_1] == 0
+            counts[should_be_1] = 1
 
-            needs_updates = np.where(counts < 0)
+            if check:
+                needs_updates = np.where(counts < 0)
 
-            if len(needs_updates) > 0:
-                needs_updates = needs_updates[0]
                 if len(needs_updates) > 0:
-                    # wtf
-                    n = n[needs_updates]
-                    M = M[needs_updates]
-                    l = l[needs_updates]
-                    t1 = cls.count_partitions(n, M, l - 1, manage_counts=False)
-                    t2 = cls.count_partitions(n - l, M - 1, l, manage_counts=False)
-                    counts[needs_updates] = t1 + t2
-                    cls._partition_counts[n - 1, M - 1, l - 1] = counts[needs_updates]
+                    needs_updates = needs_updates[0]
+                    if len(needs_updates) > 0:
+                        # wtf
+                        n = n[needs_updates]
+                        M = M[needs_updates]
+                        l = l[needs_updates]
+                        t1 = cls.count_partitions(n, M, l - 1, manage_counts=False)
+                        t2 = cls.count_partitions(n - l, M - 1, l, manage_counts=False)
+                        counts[needs_updates] = t1 + t2
+                        cls._partition_counts[n - 1, M - 1, l - 1] = counts[needs_updates]
 
         return counts
 
+
     @classmethod
-    def count_exact_length_partitions(cls, n, M, l):
+    def fill_counts(cls, n, M=None, l=None):
+        """
+        Fills all counts up to (n, M, l)
+        :param n:
+        :type n: int
+        :param M:
+        :type M:
+        :param l:
+        :type l:
+        :return:
+        :rtype:
+        """
+        if M is None:
+            M = n
+        elif M > n:
+            M = n
+        if l is None:
+            l = n
+        elif l > n:
+            l = n
+
+        for i in range(1, n+1):
+            for m in range(1, M+1):
+                for k in range(1, l+1):
+                    cls.count_partitions(i, m, k)
+
+    @classmethod
+    def count_exact_length_partitions(cls, n, M, l, check=True):
         """
         Unexpectedly common thing to want and a non-obvious formula
 
@@ -207,10 +232,10 @@ class IntegerPartitioner:
         :return:
         :rtype:
         """
-        return cls.count_partitions(n - l, M - 1, l)
+        return cls.count_partitions(n - l, M - 1, l, check=check)
 
     @classmethod
-    def count_exact_length_partitions_in_range(cls, n, m, M, l):
+    def count_exact_length_partitions_in_range(cls, n, m, M, l, check=True):
         """
         Returns the partitions with  k > M but length exactly L
 
@@ -223,8 +248,8 @@ class IntegerPartitioner:
         :return:
         :rtype:
         """
-        wat1 = cls.count_exact_length_partitions(n, m, l)
-        wat2 = cls.count_exact_length_partitions(n, M, l)
+        wat1 = cls.count_exact_length_partitions(n, m, l, check=check)
+        wat2 = cls.count_exact_length_partitions(n, M, l, check=check)
         return wat1 - wat2
 
     # @classmethod
@@ -333,7 +358,7 @@ class IntegerPartitioner:
             return storage
 
     @classmethod
-    def partition_indices(cls, parts, sums=None, counts=None):
+    def partition_indices(cls, parts, sums=None, counts=None, check=True):
         """
         Provides a somewhat quick way to get the index of a set of
         integer partitions.
@@ -350,7 +375,7 @@ class IntegerPartitioner:
         :rtype:
         """
 
-        parts = np.asanyarray(parts).astype(int)
+        parts = np.asanyarray(parts)#.astype(int)
         smol = parts.ndim == 1
         if smol:
             parts = parts.reshape((1, parts.shape[0]))
@@ -364,7 +389,13 @@ class IntegerPartitioner:
 
         # num_before = np.zeros(parts.shape[0], dtype=int) # where the indices will be in reverse-lex order
         inds = np.arange(parts.shape[0])
-        num_before = cls.count_partitions(sums, sums, counts - 1)
+        if not check:
+            woofs = counts > 1
+            num_before = np.zeros(len(sums), dtype=int)
+            if woofs.any():
+                num_before[woofs] = cls.count_partitions(sums[woofs], sums[woofs], counts[woofs] - 1, check=check)
+        else:
+            num_before = cls.count_partitions(sums, sums, counts - 1, check=check)
 
         for i in range(np.max(counts) - 1): # exhaust all elements except the last one where contrib will always be zero
             # now we need to figure out where the counts are greater than 1
@@ -375,9 +406,9 @@ class IntegerPartitioner:
                 sums = sums[mask]
                 parts = parts[mask]
                 if i > 0:
-                    subsums = cls.count_exact_length_partitions_in_range(sums, parts[:, i-1], parts[:, i], counts)
+                    subsums = cls.count_exact_length_partitions_in_range(sums, parts[:, i-1], parts[:, i], counts, check=check)
                 else:
-                    subsums = cls.count_exact_length_partitions_in_range(sums, sums, parts[:, i], counts)
+                    subsums = cls.count_exact_length_partitions_in_range(sums, sums, parts[:, i], counts, check=check)
                 #cls.count_partitions(sums - counts, sums - 1, counts) - cls.count_partitions(sums - counts, parts[:, i] - 1, counts)
                 num_before[inds] += subsums
                 counts -= 1
@@ -1195,7 +1226,10 @@ class IntegerPartitionPermutations:
 
         self.dim = dim
 
-        self._class_counts = np.asanyarray([ tuple(np.flip(y) for y in np.unique(x, return_counts=True)) for x in self.partitions ], dtype=object)
+        self._class_counts = np.asanyarray([
+            tuple(np.flip(y) for y in np.unique(x, return_counts=True)) for x in self.partitions
+        ], dtype=object
+        )
         self.partition_counts = np.array([UniquePermutations.count_permutations(x[1]) for x in self._class_counts])
         self._cumtotals = np.cumsum(np.concatenate([[0], self.partition_counts[:-1]]), axis=0)
         self._num_terms = np.sum(self.partition_counts)
@@ -1219,7 +1253,9 @@ class IntegerPartitionPermutations:
     def _get_partition_splits(self, perms,
                               assume_sorted=False,
                               assume_standard=False,
-                              split_method='direct'):
+                              split_method='direct',
+                              check_partition_counts=True
+                              ):
         """
 
         :param perms:
@@ -1237,7 +1273,7 @@ class IntegerPartitionPermutations:
         if len(perms) == 1: # special case
             inds = np.array([0])
             sorting = np.array([0])
-            uinds = IntegerPartitioner.partition_indices(partitions, sums=np.full((1,), self.int))
+            uinds = IntegerPartitioner.partition_indices(partitions, sums=np.full((1,), self.int), check=check_partition_counts)
             groups = [perms]
             splits = ((uinds, groups), sorting, inds)
         else:
@@ -1248,19 +1284,22 @@ class IntegerPartitionPermutations:
                     sorting = None
                 udats, sorting, inds = group_by(perms, partitions, sorting=sorting, return_indices=True)
                 subu, groups = udats
-                uinds = IntegerPartitioner.partition_indices(subu, sums=np.full(len(subu), self.int))
+                uinds = IntegerPartitioner.partition_indices(subu, sums=np.full(len(subu), self.int), check=check_partition_counts)
                 splits = ((uinds, groups), sorting, inds)
             else:
                 if assume_sorted:
                     sorting = np.arange(len(partitions))
                 else:
                     sorting = None
-                partition_inds = IntegerPartitioner.partition_indices(partitions, sums=np.full(len(perms), self.int))
+                partition_inds = IntegerPartitioner.partition_indices(partitions, sums=np.full(len(perms), self.int), check=check_partition_counts)
                 splits = group_by(perms, partition_inds, sorting=sorting, return_indices=True)
 
         return splits
 
-    def get_full_equivalence_class_data(self, perms, split_method='direct', assume_sorted=False, assume_standard=False, return_permutations=False):
+    def get_full_equivalence_class_data(self, perms, split_method='direct', assume_sorted=False, assume_standard=False,
+                                        return_permutations=False,
+                                        check_partition_counts=True
+                                        ):
         """
         Returns the equivalence class data of the given permutations
         :param perms:
@@ -1276,9 +1315,13 @@ class IntegerPartitionPermutations:
         splits, sorting, inds = self._get_partition_splits(perms,
                                                           assume_sorted=assume_sorted,
                                                           assume_standard=assume_standard,
-                                                          split_method=split_method)
+                                                          split_method=split_method,
+                                                          check_partition_counts=check_partition_counts)
         uinds, groups = splits
-        partition_data = self._class_counts[uinds]
+        try:
+            partition_data = self._class_counts[uinds]
+        except:
+            raise Exception(uinds, perms, IntegerPartitioner._partition_counts)
 
         if return_permutations:
             # these are the "permutations" in IntegerPartitionPermutations
@@ -1291,7 +1334,9 @@ class IntegerPartitionPermutations:
 
     def get_equivalence_classes(self, perms, split_method='direct',
                                 assume_sorted=False,
-                                return_permutations=True):
+                                return_permutations=True,
+                                check_partition_counts=True
+    ):
         """
         Returns the equivalence classes and permutations of the given permutations
         :param perms:
@@ -1305,7 +1350,8 @@ class IntegerPartitionPermutations:
         _, partition_data, partition_groups, _, sorting, totals = self.get_full_equivalence_class_data(perms,
                                                                                                        assume_sorted=assume_sorted,
                                                                                                        split_method=split_method,
-                                                                                                       return_permutations=return_permutations
+                                                                                                       return_permutations=return_permutations,
+                                                                                                       check_partition_counts=check_partition_counts
                                                                                                        )
 
         return [(c[0], c[1], p) for c,p in zip(partition_data, partition_groups)], totals, sorting
@@ -1313,7 +1359,10 @@ class IntegerPartitionPermutations:
     def get_partition_permutation_indices(self, perms,
                                           assume_sorted=False,
                                           preserve_ordering=True,
-                                          assume_standard=False, split_method='direct'):
+                                          assume_standard=False,
+                                          check_partition_counts=True,
+                                          split_method='direct'
+                                          ):
         """
         Assumes the perms all add up to the stored int
         They're then grouped by partition index and finally
@@ -1333,6 +1382,7 @@ class IntegerPartitionPermutations:
         uinds, partition_data, partition_groups, groups, sorting, totals = self.get_full_equivalence_class_data(perms,
                                                                                                                 assume_sorted=assume_sorted,
                                                                                                                 assume_standard=assume_standard,
+                                                                                                                check_partition_counts=check_partition_counts,
                                                                                                                 split_method=split_method)
         if assume_standard:
             subinds = [
@@ -1434,7 +1484,9 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
     def get_partition_permutation_indices(self, perms,
                                           assume_sorted=None,
                                           preserve_ordering=None,
-                                          assume_standard=None, split_method=None
+                                          assume_standard=None,
+                                          check_partition_counts=None,
+                                          split_method=None
                                           ):
         """
 
@@ -1471,9 +1523,11 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
             return np.zeros((len(indices), self.dim), dtype='int8')
 
     def _get_partition_splits(self, perms,
-                              assume_sorted=False,
-                              assume_standard=False,
-                              split_method='direct'):
+                              assume_sorted=None,
+                              assume_standard=None,
+                              check_partition_counts=None,
+                              split_method=None
+                              ):
         """
 
         :param perms:
@@ -1564,7 +1618,7 @@ class SymmetricGroupGenerator:
             perms = np.concatenate([np.concatenate(x, axis=0) for x in perms], axis=0)
         return perms
 
-    def to_indices(self, perms, sums=None, assume_sorted=False, assume_standard=False, preserve_ordering=True):
+    def to_indices(self, perms, sums=None, assume_sorted=False, assume_standard=False, check_partition_counts=True, preserve_ordering=True):
         """
         Gets the indices for the given permutations.
         First splits by sum then allows the held integer partitioners to do the rest
@@ -1597,7 +1651,8 @@ class SymmetricGroupGenerator:
         groups = np.split(perms, inds)[1:]
 
         partitioners, shifts = self._get_partition_perms(usums)
-        indices = np.concatenate([ s + p.get_partition_permutation_indices(g, assume_standard=assume_standard, preserve_ordering=preserve_ordering)
+        indices = np.concatenate([ s + p.get_partition_permutation_indices(g, assume_standard=assume_standard,
+                                                                           preserve_ordering=preserve_ordering, check_partition_counts=check_partition_counts)
                                    for p,g,s in zip(partitioners, groups, shifts)], axis=0)
 
         if preserve_ordering and sorting is not None:
@@ -1813,7 +1868,7 @@ class SymmetricGroupGenerator:
         def add_new_perms(idx, perm, cts, depth, tree_data):
             """
 
-            :param idx: 
+            :param idx:
             :type idx:
             :param perm:
             :type perm:
@@ -1874,7 +1929,9 @@ class SymmetricGroupGenerator:
                         )
                         for n,j in enumerate(comp):
                             padding_1 = paritioners[i][1][j]
-                            padding_2 = paritioners[i][0][j].get_partition_permutation_indices([standard_rep_perms[n]], assume_standard=True)
+                            padding_2 = paritioners[i][0][j].get_partition_permutation_indices([standard_rep_perms[n]], assume_standard=True
+                                                                                               , check_partition_counts=False
+                                                                                               )
                             sorting = np.lexsort(-np.flip(new_perms[n], axis=1).T)
                             inv = np.argsort(sorting)
                             sort_perms = new_perms[n][sorting,]
@@ -1972,6 +2029,13 @@ class SymmetricGroupGenerator:
         :rtype:
         """
 
+
+        if sums is None:
+            sums = np.sum(perms, axis=1)
+        max_rule = max(max(r) if len(r) > 0 else 0 for r in rules) if len(rules) > 0 else 0
+        max_term = 1 + max_rule + np.max(sums)
+        IntegerPartitioner.fill_counts(max_term, max_term, self.dim)
+
         # if dim is None:
         dim = self.dim
         perms = np.asanyarray(perms)
@@ -2025,9 +2089,6 @@ class SymmetricGroupGenerator:
             # rule_inv.append(inv)
         # rule_inv = np.concatenate(rule_inv)
 
-        if sums is None:
-            sums = np.sum(perms, axis=1)
-
         if not assume_sorted:
             sum_sorting = np.argsort(sums)
             sums = sums[sum_sorting]
@@ -2041,7 +2102,7 @@ class SymmetricGroupGenerator:
 
         partitioners, shifts = self._get_partition_perms(usums)
 
-        class_data = [p.get_equivalence_classes(g, assume_sorted=assume_sorted) for p,g in zip(partitioners, groups)]
+        class_data = [p.get_equivalence_classes(g, assume_sorted=assume_sorted, check_partition_counts=False) for p,g in zip(partitioners, groups)]
 
         if assume_sorted:
             perm_classes = [c[0] for c in class_data]

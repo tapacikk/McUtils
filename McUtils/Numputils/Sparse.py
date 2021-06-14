@@ -1124,6 +1124,8 @@ class ScipySparseArray(SparseArray):
     def concatenate(self, other, axis=0):
         """
         Concatenates two arrays along the specified axis
+        This is relatively inefficient in terms of not tracking indices
+        throughout
         :param other:
         :type other:
         :param axis:
@@ -1283,13 +1285,28 @@ class ScipySparseArray(SparseArray):
         finds the positions where the block & index align
         """
 
-        # we do an iterated "and" over the not equals
-        # and apply a "not" at the end
-        filter = np.full(len(inds), True)
-        for j in block:
-            # hastag meta
-            filter[filter] = inds[filter] == j
-        filter = np.logical_not(filter)
+        find_spots = np.empty(2*len(block), dtype=inds.dtype)
+        find_spots[0::2] = block
+        find_spots[1::2] = block+1
+        # find where the blocks start and end (doable like this b.c. we ensure sorting)
+        # whenever things are modded
+        filter = np.full(len(inds), False)
+        # print(filter, find_spots)
+        block_ends = np.searchsorted(inds, find_spots)
+        for i in range(0, len(find_spots), 2):
+            start = block_ends[i]
+            end = block_ends[i+1]
+            if start < len(inds) and inds[start] == block[i//2]:
+                filter[start:end] = True
+
+        # OLD METHOD HERE SO I CAN SHIT ON IT AS AN EXAMPLE
+        # # we do an iterated "and" over the not equals
+        # # and apply a "not" at the end
+        # filter = np.full(len(inds), True)
+        # for j in block:
+        #     # hastag meta
+        #     filter[filter] = inds[filter] != j
+        # filter = np.logical_not(filter)
 
         # I was hoping I could make use of that filter stuff to
         # build the mapping but it honestly seems like the two are completely
@@ -1303,11 +1320,12 @@ class ScipySparseArray(SparseArray):
 
     def _get_filtered_elements(self, blocks, data, inds):
 
-
+        inds = list(inds)
         for i, b, s in zip(range(len(blocks)), blocks, self.shape):
             if b is not None:
                 ixs = inds[i]
                 filter, mapping = self._find_block_alignment(ixs, b, s)
+                # print(ixs, b, s, filter)
                 inds = [ix[filter] for ix in inds]
                 data = data[filter]
                 inds[i] = mapping[inds[i]]
@@ -1356,12 +1374,13 @@ class ScipySparseArray(SparseArray):
                 (
                     np.array([i]) if isinstance(i, (int, np.integer)) else (
                         np.arange(s)[i,].flatten()
-                            if not isinstance(s, slice) and s == slice(None, None, None) else
+                            if not (isinstance(s, slice) and s == slice(None, None, None)) else
                         None
                     )
                 )
                 for i, s in zip(idx, self.shape)
             ]
+            # print(">>>>", blocks, idx)
             # we filter out places where new_shape[i] == 1 at a later stage
             # for now we just build out the total shape it _would_ have with axes of len 1
             new_shape = [
@@ -1370,8 +1389,6 @@ class ScipySparseArray(SparseArray):
 
             # now we iterate over each block and use it as a successive filter on our non-zero positions
             data, inds = self.block_data
-            inds = list(inds)
-
             data, inds = self._get_filtered_elements(blocks, data, inds)
 
             # now that we've filtered our data, we filter out axes of size 1

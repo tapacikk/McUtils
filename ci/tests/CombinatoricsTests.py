@@ -8,7 +8,7 @@ import sys, os, numpy as np, itertools
 
 class CombinatoricsTests(TestCase):
 
-    @validationTest
+    @debugTest
     def test_IntegerPartitions(self):
         """
         Tests integer partitioning algs
@@ -108,6 +108,14 @@ class CombinatoricsTests(TestCase):
         test_parts = full_stuff[inds]
         # raise Exception(inds, test_parts, full_stuff)
         test_inds = IntegerPartitioner.partition_indices(test_parts)
+        self.assertEquals(
+            test_inds.tolist(),
+            inds.tolist(),
+            msg="{} should have indices {} but got {}".format(test_parts, inds, test_inds)
+        )
+
+        # just a faster code path if we _know_ we've already computed the relevant bits
+        test_inds = IntegerPartitioner.partition_indices(test_parts, check=False)
         self.assertEquals(
             test_inds.tolist(),
             inds.tolist(),
@@ -444,8 +452,8 @@ class CombinatoricsTests(TestCase):
 
         # self.assertEquals(np.unique(bleeeh, axis=0).tolist(), u_tests.tolist())
 
-    @debugTest
-    def test_DirectSumBrokenInVPT2(self):
+    @validationTest
+    def test_DirectSumExtra(self):
         """
         Tests the features of the symmetric group generator
         :return:
