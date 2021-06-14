@@ -407,7 +407,7 @@ def group_by(ar, keys, sorting=None, return_indices=False):
     keys, dtype, orig_shape, orig_dtype = coerce_dtype(keys)
     output = group_by1d(ar, keys, sorting=sorting, return_indices=return_indices)
     ukeys, groups = output[0]
-    ukeys = uncoerce_dtype(keys, orig_shape, orig_dtype, None)
+    ukeys = uncoerce_dtype(ukeys, orig_shape, orig_dtype, None)
     output = ((ukeys, groups),) + output[1:]
     return output
 

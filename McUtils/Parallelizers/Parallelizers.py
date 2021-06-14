@@ -486,6 +486,17 @@ class Parallelizer(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError("Parallelizer is an abstract base class")
 
+    def __repr__(self):
+        try:
+            id = self.id
+        except:
+            id = None
+        try:
+            nprocs = self.nprocs
+        except:
+            nprocs = None
+        return "{}(id={}, nprocs={})".format(type(self).__name__, id, nprocs)
+
 class SendRecieveParallelizer(Parallelizer):
     """
     Parallelizer that implements `scatter`, `gather`, `broadcast`, and `map`

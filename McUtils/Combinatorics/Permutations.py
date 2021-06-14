@@ -757,67 +757,87 @@ class UniquePermutations:
         init_counts = counts
         counts = np.copy(counts) # we're going to modify this in-place
         nterms = len(counts)
-        # stack = collections.deque()  # stack of current data to reuse
-
+        ndim_range = np.arange(nterms)
+        counts_mask = np.full(nterms, True)
         # determine where each successive permutation differs so we can know how much to reuse
         diffs = np.not_equal(perms[:-1], perms[1:])
-
+        # set up storage for indices
         inds = np.full((len(perms),), -1)
+
+        def backtrack(sn, cur_dim, state,
+                      diffs=diffs, inds=inds,
+                      counts_mask=counts_mask,
+                      ndim=ndim, counts=counts, perms=perms,
+                      init_counts=init_counts, tree_data=tree_data):
+            # we reuse as much work as we can by only backtracking where we need to
+            agree_pos = np.where(diffs[sn - 1])[0]
+            # where the first disagreement occurs...I'd like this to be less inefficient
+            if len(agree_pos) == 0:
+                agree_pos = ndim
+            else:
+                agree_pos = agree_pos[0]
+            num_diff = ndim - agree_pos  # number of differing states
+            if num_diff == 0:  # same state so just reuse the previous value
+                if inds[sn - 1] == -1:
+                    raise ValueError("permutation {} tried to reused bad value from permutation {}".format(
+                        perms[sn], perms[sn - 1]
+                    ))
+                inds[sn] = inds[sn - 1]
+            elif agree_pos == 0:
+                # no need to actually backtrack when we know what we're gonna get
+                cur_dim = ndim - 1
+                tree_data[cur_dim, 1] = num_permutations
+                tree_data[cur_dim, 0] = 0
+                counts[:] = init_counts
+                # counts_mask[:] = True
+            else:
+                prev = perms[sn - 1]
+                # at this point cur_dim gives us the number of trailing
+                # digits that are equivalent in the previous permutation
+                # so we only need to back-track to where the new state begins to
+                # differ from the old one,
+                for i in range(ndim - cur_dim - 2, agree_pos - 1, -1):
+                    j = class_map[prev[i]]
+                    counts[j] += 1
+                    # counts_mask[j] = True
+                    # tree_data[cur_dim, 1] = 0
+                    # tree_data[cur_dim, 0] = 0
+                    cur_dim += 1
+                tree_data[cur_dim, 0] = tree_data[cur_dim + 1, 0]
+
+                state = state[agree_pos:]
+
+            return cur_dim, state, num_diff
+
+        def find_state(cur_dim, nterms=nterms, ndim_range=ndim_range, tree_data=tree_data, counts_mask=counts_mask, counts=counts):
+            # for j in ndim_range[counts_mask]:
+            for j in range(nterms):
+                if counts[j] == 0:
+                    continue
+                subtotal = cls._subtree_counts(tree_data[cur_dim, 1], cur_dim + 1, counts, j)
+                if classes[j] == el:
+                    cur_dim -= 1
+                    counts[j] -= 1
+                    # counts_mask[j] = counts[j] > 0
+                    tree_data[cur_dim, 1] = subtotal
+                    tree_data[cur_dim, 0] = tree_data[cur_dim + 1, 0]
+                    break
+                else:
+                    tree_data[cur_dim, 0] += subtotal
+
+            return cur_dim
+
         for sn, state in enumerate(perms):
             if sn > 0:
-                # we reuse as much work as we can by only backtracking where we need to
-                agree_pos = np.where(diffs[sn-1])[0] # where the first disagreement occurs...I'd like this to be less inefficient
-                if len(agree_pos) == 0:
-                    agree_pos = ndim
-                else:
-                    agree_pos = agree_pos[0]
-                num_diff = ndim - agree_pos  # number of differing states
-                if num_diff == 0:  # same state so just reuse the previous value
-                    if inds[sn - 1] == -1:
-                        raise ValueError("permutation {} tried to reused bad value from permutation {}".format(
-                            perms[sn], perms[sn - 1]
-                        ))
-                    inds[sn] = inds[sn - 1]
+                cur_dim, state, num_diff = backtrack(sn, cur_dim, state)
+                if num_diff == 0:
                     continue
-                elif agree_pos == 0:
-                    # no need to actually backtrack when we know what we're gonna get
-                    cur_dim = ndim - 1
-                    tree_data[cur_dim, 1] = num_permutations
-                    tree_data[cur_dim, 0] = 0
-                    counts = init_counts.copy()
-                else:
-                    prev = perms[sn-1]
-                    # at this point cur_dim gives us the number of trailing
-                    # digits that are equivalent in the previous permutation
-                    # so we only need to back-track to where the new state begins to
-                    # differ from the old one,
-                    for i in range(ndim - cur_dim - 2, agree_pos-1, -1):
-                        j = class_map[prev[i]]
-                        counts[j] += 1
-                        # tree_data[cur_dim, 1] = 0
-                        # tree_data[cur_dim, 0] = 0
-                        cur_dim += 1
-                    # I'm not sure why this didn't break earlier without this...
-                    tree_data[cur_dim, 0] = tree_data[cur_dim+1, 0]
-
-                    state = state[agree_pos:]
 
             # we loop through the elements in the permutation and
             # add up number of elements in the subtree that would precede
             # the state in reverse-lexicographic order
             for i, el in enumerate(state):
-                for j in range(nterms):
-                    if counts[j] == 0:
-                        continue
-                    subtotal = cls._subtree_counts(tree_data[cur_dim, 1], cur_dim+1, counts, j)
-                    if classes[j] == el:
-                        cur_dim -= 1
-                        counts[j] -= 1
-                        tree_data[cur_dim, 1] = subtotal
-                        tree_data[cur_dim, 0] = tree_data[cur_dim+1, 0]
-                        break
-                    else:
-                        tree_data[cur_dim, 0] += subtotal
+                cur_dim = find_state(cur_dim)
 
                 # short circuit if we've gotten down to a terminal node where
                 # there is just one unique element
@@ -1862,17 +1882,18 @@ class SymmetricGroupGenerator:
                 more_drops = np.where(mask)
                 drops.extend(cls_inds[i][more_drops])
                 cls_inds[i] = np.delete(cls_inds[i], more_drops)
-                can_be_negative[i] = np.delete(can_be_negative[i], drops)
+                can_be_negative[i] = np.delete(can_be_negative[i], more_drops)
 
             if len(drops) > 0:
                 dropped_pairs.append((i, slice(None, None, None), drops))
-        _ = []
-        for c in can_be_negative:
-            w = np.where(c)
-            if len(w) > 0:
-                w = w[0]
-            _.append(w)
-        can_be_negative = _
+        # _ = []
+        # for c in can_be_negative:
+        #     w = np.where(c)
+        #     if len(w) > 0:
+        #         w = w[0]
+        #     _.append(w)
+        # can_be_negative = _
+        # can_be_positive = [np.logical_not(x) for x in can_be_negative]
 
         # We split the full algorithm into a bunch of smaller functions to
         # make it easier to determine where the total runtime is
@@ -1882,23 +1903,26 @@ class SymmetricGroupGenerator:
             # if we run into negatives we need to mask them out
             # to make this run faster we only test for the input rules where this
             # _can_ be negative
-            negs = np.any(new_rep_perm[can_be_negative[i],], axis=1)
-            if np.any(negs):
-                negs = negs[0]
-                if negs.ndim > 1:  # weird numpy shit
-                    negs = negs[0]
-                if len(negs) > 0: # map back to
-                    negs, _ = unique(negs, sorting=np.arange(len(negs)))  # the j values to drop
-                    negs = can_be_negative[i][negs]
-                # now we take the complement
-                dropped_pairs.append((i, idx, cls_inds[i][negs]))
+            not_negs = np.full(len(can_be_negative[i]), True)
+            # print(new_rep_perm.shape, can_be_negative[i].shape)
+            comp_mask = np.all(new_rep_perm[can_be_negative[i],] >= 0, axis=1)
+            not_negs[can_be_negative[i]] = comp_mask
+            if not np.all(comp_mask):
+                # negs = negs[0]
+                # if negs.ndim > 1:  # weird numpy shit
+                #     negs = negs[0]
+                # if len(negs) > 0: # map back to
+                #     negs, _ = unique(negs, sorting=np.arange(len(negs)))  # the j values to drop
+                #     negs = can_be_negative[i][negs]
+                # # now we take the complement
+                dropped_pairs.append((i, idx, cls_inds[i][np.logical_not(not_negs)]))
 
-            comp = np.delete(cls_inds[i], negs)
-            sel = np.delete(np.arange(len(cls_inds[i])), negs)
+            comp = cls_inds[i][not_negs]
+            sel = np.arange(len(cls_inds[i]))[not_negs]
             new_perms = new_rep_perm[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
             storage[cum_counts[i]:cum_counts[i + 1], idx, comp] = new_perms.transpose(1, 0, 2)
 
-            return negs, comp, sel, new_perms
+            return comp, sel, new_perms
 
         def filter_from_ind_spec(i, idx, j, full_inds_sorted, inv,
                                  dropped_pairs=dropped_pairs, merged_sums=merged_sums, filter=filter):
@@ -1983,9 +2007,8 @@ class SymmetricGroupGenerator:
                 # This gives us strict ordering relations that we can make use of and allows us to only calculate
                 # the counts once
                 new_rep_perm = rep[np.newaxis, :] + class_perms[cls_inds[i], :]
-                negs = None
                 if filter_negatives:
-                    negs, comp, sel, new_perms = filter_negatives_perms(i, idx, perms, new_rep_perm)
+                    comp, sel, new_perms = filter_negatives_perms(i, idx, perms, new_rep_perm)
                 else:
                     comp = cls_inds[i]
                     sel = np.arange(len(comp))
@@ -1994,10 +2017,6 @@ class SymmetricGroupGenerator:
 
                 if return_indices:
                     # since we're assured sorting we make use of that when getting indices
-                    if negs is None or len(negs) == 0:
-                        comp = cls_inds[i]
-                        sel = np.arange(len(comp))
-
                     if len(comp) > 0:
                         classes_count_data, standard_rep_perms = get_standard_perms(new_rep_perm[sel])
                         for n,j in enumerate(comp):
@@ -2081,6 +2100,8 @@ class SymmetricGroupGenerator:
         :return:
         :rtype:
         """
+
+
 
 
         if sums is None:
