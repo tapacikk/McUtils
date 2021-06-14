@@ -605,11 +605,11 @@ class UniquePermutations:
         :rtype:
         """
         mprod = total * counts[where]
-        if mprod % ndim != 0:
-            raise ValueError("subtree counts {} don't comport with dimension {}".format(
-                mprod, ndim
-            ))
-        return mprod // ndim
+        # if mprod % ndim != 0:
+        #     raise ValueError("subtree counts {} don't comport with dimension {}".format(
+        #         mprod, ndim
+        #     ))
+        return mprod // ndim#, dtype=int)
 
     @staticmethod
     def _reverse_subtree_counts(subtotal, ndim, counts, j):
@@ -1318,10 +1318,7 @@ class IntegerPartitionPermutations:
                                                           split_method=split_method,
                                                           check_partition_counts=check_partition_counts)
         uinds, groups = splits
-        try:
-            partition_data = self._class_counts[uinds]
-        except:
-            raise Exception(uinds, perms, IntegerPartitioner._partition_counts)
+        partition_data = self._class_counts[uinds]
 
         if return_permutations:
             # these are the "permutations" in IntegerPartitionPermutations
@@ -1843,6 +1840,9 @@ class SymmetricGroupGenerator:
             self._get_partition_perms(x, ignore_negatives=True) for x in merged_sums
         ]
 
+
+        can_be_negative = np.array([np.any(c < 0) for c in classes])[np.newaxis, :]
+        can_be_negative = [can_be_negative.copy() for i in range(len(input_perm_classes))]
         # set up an initial prefilter to elminate any entirely impossible
         # permutations by our filters/filter_negatives
         cls_inds = [np.arange(len(classes))]*len(input_perm_classes)
@@ -1854,6 +1854,7 @@ class SymmetricGroupGenerator:
                     drops.append(j)
 
             cls_inds[i] = np.delete(cls_inds[i], drops)
+            can_be_negative[i] = np.delete(can_be_negative[i], drops) # we drop this so the two always align
             if filter is not None and filter.sums is not None:
                 test_sums = np.delete(merged_sums[i], drops)
                 mask, _, _ = contained(test_sums, filter.sums, invert=True,
@@ -1861,11 +1862,98 @@ class SymmetricGroupGenerator:
                 more_drops = np.where(mask)
                 drops.extend(cls_inds[i][more_drops])
                 cls_inds[i] = np.delete(cls_inds[i], more_drops)
+                can_be_negative[i] = np.delete(can_be_negative[i], drops)
 
             if len(drops) > 0:
                 dropped_pairs.append((i, slice(None, None, None), drops))
+        _ = []
+        for c in can_be_negative:
+            w = np.where(c)
+            if len(w) > 0:
+                w = w[0]
+            _.append(w)
+        can_be_negative = _
 
-        def add_new_perms(idx, perm, cts, depth, tree_data):
+        # We split the full algorithm into a bunch of smaller functions to
+        # make it easier to determine where the total runtime is
+        def filter_negatives_perms(i, idx, perms, new_rep_perm,
+                                   can_be_negative=can_be_negative, cls_inds=cls_inds,
+                                   dropped_pairs=dropped_pairs, storage=storage):
+            # if we run into negatives we need to mask them out
+            # to make this run faster we only test for the input rules where this
+            # _can_ be negative
+            negs = np.any(new_rep_perm[can_be_negative[i],], axis=1)
+            if np.any(negs):
+                negs = negs[0]
+                if negs.ndim > 1:  # weird numpy shit
+                    negs = negs[0]
+                if len(negs) > 0: # map back to
+                    negs, _ = unique(negs, sorting=np.arange(len(negs)))  # the j values to drop
+                    negs = can_be_negative[i][negs]
+                # now we take the complement
+                dropped_pairs.append((i, idx, cls_inds[i][negs]))
+
+            comp = np.delete(cls_inds[i], negs)
+            sel = np.delete(np.arange(len(cls_inds[i])), negs)
+            new_perms = new_rep_perm[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
+            storage[cum_counts[i]:cum_counts[i + 1], idx, comp] = new_perms.transpose(1, 0, 2)
+
+            return negs, comp, sel, new_perms
+
+        def filter_from_ind_spec(i, idx, j, full_inds_sorted, inv,
+                                 dropped_pairs=dropped_pairs, merged_sums=merged_sums, filter=filter):
+            sort_1 = np.arange(len(full_inds_sorted))  # assured sorting from before
+            if filter.ind_grps is not None:
+                subinds = filter.ind_grps[merged_sums[i, j]]
+                sort_2 = np.arange(len(subinds))
+                mask, _, _ = contained(full_inds_sorted, subinds,
+                                       assume_unique=(False, True),
+                                       sortings=(sort_1, sort_2))
+            else:
+                mask, _, _ = contained(full_inds_sorted, filter.inds,
+                                       assume_unique=(False, True),
+                                       sortings=(sort_1, filter.ind_sort))
+            # print(mask, full_inds_sorted, filter.inds)
+            dropped_pairs.append((i, idx, j, mask[inv]))
+
+        def get_standard_perms(perms):
+            classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in perms]
+            standard_rep_perms = np.array([
+                UniquePermutations.get_standard_permutation(c[1], c[0]) for c in classes_count_data
+            ], dtype=int
+            )
+            return classes_count_data, standard_rep_perms
+
+        offsets_cache = {}
+        def get_standard_perm_offsets(i, j, perm, class_count_data, paritioners=paritioners, offsets_cache=offsets_cache):
+            padding_1 = paritioners[i][1][j]
+            key = tuple(tuple(x) for x in class_count_data)
+            if key in offsets_cache:
+                padding_2 = offsets_cache[key]
+            else:
+                padding_2 = paritioners[i][0][j].get_partition_permutation_indices([perm],
+                                                                               assume_standard=True
+                                                                               , check_partition_counts=False
+                                                                               )
+                offsets_cache[key] = padding_2
+
+            return padding_1, padding_2
+
+        def get_perm_sorting(perms):
+            sorting = np.lexsort(-np.flip(perms, axis=1).T)
+            inv = np.argsort(sorting)
+            sort_perms =perms[sorting,]
+
+            return sort_perms, sorting, inv
+
+        def get_sort_perm_indices(sort_perms, cls_data):
+            return UniquePermutations.get_permutation_indices(sort_perms,
+                                                       classes=cls_data[0],
+                                                       counts=cls_data[1]
+                                                       , assume_sorted=True
+                                                       )
+
+        def add_new_perms(idx, perm, cts, depth, tree_data, dropped_pairs=dropped_pairs):
             """
 
             :param idx:
@@ -1897,21 +1985,10 @@ class SymmetricGroupGenerator:
                 new_rep_perm = rep[np.newaxis, :] + class_perms[cls_inds[i], :]
                 negs = None
                 if filter_negatives:
-                    # if we run into negatives we need to mask them out
-                    negs = np.where(new_rep_perm < 0)
-                    if len(negs) > 0:
-                        negs = negs[0]
-                        if negs.ndim > 1: # weird numpy shit
-                            negs = negs[0]
-                        negs = np.unique(negs) # the j values to drop
-                        # now we take the complement
-                        dropped_pairs.append((i, idx, cls_inds[i][negs]))
-
-                    comp = np.delete(cls_inds[i], negs)
-                    sel = np.delete(np.arange(len(cls_inds[i])), negs)
-                    new_perms = new_rep_perm[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
-                    storage[cum_counts[i]:cum_counts[i+1], idx, comp] = new_perms.transpose(1, 0, 2)
+                    negs, comp, sel, new_perms = filter_negatives_perms(i, idx, perms, new_rep_perm)
                 else:
+                    comp = cls_inds[i]
+                    sel = np.arange(len(comp))
                     new_perms = new_rep_perm[:, perms].transpose(1, 0, 2)
                     storage[cum_counts[i]:cum_counts[i + 1], idx] = new_perms
 
@@ -1922,40 +1999,15 @@ class SymmetricGroupGenerator:
                         sel = np.arange(len(comp))
 
                     if len(comp) > 0:
-                        classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in new_rep_perm[sel]]
-                        standard_rep_perms = np.array([
-                            UniquePermutations.get_standard_permutation(c[1], c[0]) for c in classes_count_data
-                        ], dtype=int
-                        )
+                        classes_count_data, standard_rep_perms = get_standard_perms(new_rep_perm[sel])
                         for n,j in enumerate(comp):
-                            padding_1 = paritioners[i][1][j]
-                            padding_2 = paritioners[i][0][j].get_partition_permutation_indices([standard_rep_perms[n]], assume_standard=True
-                                                                                               , check_partition_counts=False
-                                                                                               )
-                            sorting = np.lexsort(-np.flip(new_perms[n], axis=1).T)
-                            inv = np.argsort(sorting)
-                            sort_perms = new_perms[n][sorting,]
-                            new_inds = UniquePermutations.get_permutation_indices(sort_perms,
-                                                                                  classes=classes_count_data[n][0], counts=classes_count_data[n][1]
-                                                                                  , assume_sorted=True
-                                                                                  # , preserve_ordering=False# this will do the sort for us
-                                                                                  )
+                            padding_1, padding_2 = get_standard_perm_offsets(i, j, standard_rep_perms[n], classes_count_data[n])
+                            sort_perms, sorting, inv = get_perm_sorting(new_perms[n])
+                            new_inds = get_sort_perm_indices(sort_perms, classes_count_data[n])
                             full_inds_sorted = padding_1 + padding_2 + new_inds
                             indices[cum_counts[i]:cum_counts[i + 1], idx, j] = full_inds_sorted[inv]
                             if filter is not None:
-                                sort_1 = np.arange(len(full_inds_sorted))  # assured sorting from before
-                                if filter.ind_grps is not None:
-                                    subinds = filter.ind_grps[merged_sums[i, j]]
-                                    sort_2 = np.arange(len(subinds))
-                                    mask, _, _ = contained(full_inds_sorted, subinds,
-                                                                    assume_unique=(False, True),
-                                                                    sortings=(sort_1, sort_2))
-                                else:
-                                    mask, _, _ = contained(full_inds_sorted, filter.inds,
-                                                            assume_unique=(False, True),
-                                                            sortings=(sort_1, filter.ind_sort))
-                                # print(mask, full_inds_sorted, filter.inds)
-                                dropped_pairs.append((i, idx, j, mask[inv]))
+                                filter_from_ind_spec(i, idx, j, full_inds_sorted, inv)
 
         UniquePermutations.walk_permutation_tree(counts, add_new_perms)
 
@@ -1966,6 +2018,8 @@ class SymmetricGroupGenerator:
             mask = np.full(storage.shape, True)
             if return_indices:
                 ind_mask = np.full(indices.shape, True)
+            else:
+                ind_mask = None
             for pair in dropped_pairs:
                 if len(pair) == 3:
                     i, idx, negs = pair
@@ -1982,7 +2036,6 @@ class SymmetricGroupGenerator:
                     perm_counts[cum_counts[i]:cum_counts[i+1]] -= 1 - submask
                     if return_indices:
                         ind_mask[cum_counts[i]:cum_counts[i + 1], idx, j] = submask
-
 
             # we take the mask and use it to reshape the storage...
             # but it would be nice to be able to reshape this in terms of the OG terms...

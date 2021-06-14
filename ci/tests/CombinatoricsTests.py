@@ -614,4 +614,35 @@ class CombinatoricsTests(TestCase):
                 )
             )
 
+    @debugTest
+    def test_DirectSumIndicesLarge(self):
+        """
+        Tests the features of the symmetric group generator
+        at scale
+        :return:
+        :rtype:
+        """
+
+        gen = SymmetricGroupGenerator(45)
+
+        test_states = [
+            [0]*3 + [1]*2 + [0]*40,
+            [0]*4 + [1]*2 + [0]*39,
+            [0]*5 + [1]*2 + [0]*38,
+            [0]*5 + [2]*2 + [0]*38,
+        ]
+        test_rules = [
+            [1, 1], [1, -1], [-1, -1]
+        ]
+        with BlockProfiler("direct inds", print_res=True):
+            test_perms, test_inds = gen.take_permutation_rule_direct_sum(
+                test_states,
+                test_rules,
+                return_indices=True,
+                indexing_method='direct',
+                split_results=True,
+                preserve_ordering=False
+            )
+
+        raise Exception(test_perms)
 
