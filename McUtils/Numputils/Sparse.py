@@ -1,5 +1,6 @@
 import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc
-from McUtils.Scaffolding import MaxSizeCache
+from ..Scaffolding import MaxSizeCache
+from .SetOps import contained
 
 __all__ = [
     "SparseArray",
@@ -1285,28 +1286,38 @@ class ScipySparseArray(SparseArray):
         finds the positions where the block & index align
         """
 
-        find_spots = np.empty(2*len(block), dtype=inds.dtype)
-        find_spots[0::2] = block
-        find_spots[1::2] = block+1
-        # find where the blocks start and end (doable like this b.c. we ensure sorting)
-        # whenever things are modded
-        filter = np.full(len(inds), False)
-        # print(filter, find_spots)
-        block_ends = np.searchsorted(inds, find_spots)
-        for i in range(0, len(find_spots), 2):
-            start = block_ends[i]
-            end = block_ends[i+1]
-            if start < len(inds) and inds[start] == block[i//2]:
-                filter[start:end] = True
-
-        # OLD METHOD HERE SO I CAN SHIT ON IT AS AN EXAMPLE
-        # # we do an iterated "and" over the not equals
-        # # and apply a "not" at the end
-        # filter = np.full(len(inds), True)
-        # for j in block:
-        #     # hastag meta
-        #     filter[filter] = inds[filter] != j
-        # filter = np.logical_not(filter)
+        # duh...
+        filter, _, _ = contained(inds, block,
+                                 assume_unique=(False, True),
+                                 sortings=(np.arange(len(inds)), np.arange(len(block)))
+                                 )
+        # if method == 'sorted':
+        #
+        #     find_spots = np.empty(2*len(block), dtype=inds.dtype)
+        #     find_spots[0::2] = block
+        #     find_spots[1::2] = block+1
+        #     # find where the blocks start and end (doable like this b.c. we ensure sorting)
+        #     # whenever things are modded
+        #     filter = np.full(len(inds), False)
+        #     # print(filter, find_spots)
+        #     block_ends = np.searchsorted(inds, find_spots)
+        #     print(find_spots[:10], block_ends[:10], inds[:10])
+        #     for i in range(0, len(find_spots), 2):
+        #         start = block_ends[i]
+        #         end = block_ends[i+1]
+        #         j = block[i//2]
+        #         if start < len(inds) and inds[start] == j and inds[end-1] == j:
+        #             filter[start:end] = True
+        # else:
+        #     # OLD METHOD HERE SO I CAN SHIT ON IT AS AN EXAMPLE
+        #     # we do an iterated "and" over the not equals
+        #     # and apply a "not" at the end
+        #     filter = np.full(len(inds), True)
+        #     for j in block:
+        #         # hastag meta
+        #         filter[filter] = inds[filter] != j
+        #     filter = np.logical_not(filter)
+        # print(len(inds), np.count_nonzero(filter))
 
         # I was hoping I could make use of that filter stuff to
         # build the mapping but it honestly seems like the two are completely
@@ -1374,13 +1385,12 @@ class ScipySparseArray(SparseArray):
                 (
                     np.array([i]) if isinstance(i, (int, np.integer)) else (
                         np.arange(s)[i,].flatten()
-                            if not (isinstance(s, slice) and s == slice(None, None, None)) else
+                            if not (isinstance(i, slice) and i == slice(None, None, None)) else
                         None
                     )
                 )
                 for i, s in zip(idx, self.shape)
             ]
-            # print(">>>>", blocks, idx)
             # we filter out places where new_shape[i] == 1 at a later stage
             # for now we just build out the total shape it _would_ have with axes of len 1
             new_shape = [

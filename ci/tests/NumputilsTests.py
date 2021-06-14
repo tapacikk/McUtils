@@ -559,3 +559,21 @@ class NumputilsTests(TestCase):
                 np.sort(vals[filt_pos]).tolist()
             )
 
+        woof = array[(0, 2), :]  # type: SparseArray
+        self.assertEquals(woof.shape, (2, shape[1]))
+        block_vals, block_inds = woof.block_data
+        filt_pos = np.where(np.logical_or(inds[0] == 0, inds[0] == 2))
+        if len(filt_pos) > 0:
+            self.assertEquals(
+                np.sort(block_vals).tolist(),
+                np.sort(vals[filt_pos]).tolist()
+            )
+
+            self.assertEquals(
+                block_vals[:10].tolist(),
+                [0.26762682146970584, 0.3742446513095977, 0.11369722324344822, 0.4860704109280778,
+                 0.09299008335958303, 0.11229999691948178, 0.0005348158154161453, 0.7711636892670307, 0.6573053253883241, 0.39084691369185387]
+
+            )
+
+
