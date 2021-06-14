@@ -123,6 +123,7 @@ class Logger:
         self.padding = padding
         self.newline = newline
         self.block_level = 0 # just an int to pass to `block(...)` so that it can
+        self.auto_flush = True
 
     def block(self, **kwargs):
         return LoggingBlock(self, block_level=self.block_level, **kwargs)
@@ -167,6 +168,7 @@ class Logger:
         else:
             import json
             return json.dumps(metainfo)
+
     def log_print(self, message, *messrest, print_options=None, padding=None, newline=None, metainfo=None, **kwargs):
         """
         :param message: message to print
@@ -208,7 +210,7 @@ class Logger:
             verbosity = self.default_verbosity
 
         if 'flush' not in print_options:
-            print_options['flush'] = True
+            print_options['flush'] = self.auto_flush
 
         if verbosity <= self.verbosity:
             log = self.log_file
@@ -219,7 +221,7 @@ class Logger:
                     except OSError:
                         pass
                 #O_NONBLOCK is *nix only
-                with open(log, "a", os.O_NONBLOCK) as lf: # this is potentially quite slow but I am also quite lazy
+                with open(log, mode="a", buffering=1 if print_options['flush'] else -1) as lf: # this is potentially quite slow but I am also quite lazy
                     print(self.format_message(message, meta=self.format_metainfo(metainfo), **kwargs), file=lf, **print_options)
             elif log is None:
                 print(self.format_message(message, meta=self.format_metainfo(metainfo), **kwargs), **print_options)
