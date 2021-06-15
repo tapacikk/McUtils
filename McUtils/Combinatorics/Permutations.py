@@ -2117,6 +2117,7 @@ class SymmetricGroupGenerator:
         elif perms.shape[1] > dim:
             raise ValueError("with dimension {} can't handle states of dimension {}".format(dim, perms.shape[-1]))
 
+        rules = [[0] if len(r) == 0 else r for r in rules]
         if self.dim == 1:
             # this becomes very easy and in fact all of the other code breaks...
             rules_1d = np.array([x[0] for x in rules if len(x) == 1]).reshape(-1, 1)
