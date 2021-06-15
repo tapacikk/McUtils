@@ -5,6 +5,7 @@ Utilities for working with permutations and permutation indexing
 import numpy as np
 import collections, functools as ft
 from ..Numputils import unique, contained, group_by, split_by_regions
+from ..Scaffolding import NullLogger
 
 __all__ = [
     "IntegerPartitioner",
@@ -2082,7 +2083,8 @@ class SymmetricGroupGenerator:
                                          filter_perms=None,
                                          return_filter=False,
                                          preserve_ordering=True,
-                                         indexing_method='direct'
+                                         indexing_method='direct',
+                                         logger=None
                                          ):
         """
         Applies `rules` to perms.
@@ -2101,6 +2103,8 @@ class SymmetricGroupGenerator:
         :rtype:
         """
 
+        if logger is None:
+            logger = NullLogger()
 
         # if dim is None:
         dim = self.dim
@@ -2238,6 +2242,19 @@ class SymmetricGroupGenerator:
 
         rule_counts = [group[0][1] for group in rule_groups]
         rule_classes = [[g[0] for g in group] for group in rule_groups]
+
+        if not isinstance(logger, NullLogger): # can be slow to log prettily
+            with logger.block(tag="taking direct product"):
+                with logger.block(tag="input permutations:"):
+                    logger.log_print([
+                            "class: {} counts: {} permutations: {}".format(y[0], y[1], len(y[2])) for x in perm_classes for y in x
+                        ]
+                    )
+                with logger.block(tag="selection rules:"):
+                    logger.log_print([
+                            "classes: {} counts: {}".format(", ".join(str(z) for z in y), x) for x, y in zip(rule_counts, rule_classes)
+                        ]
+                    )
 
         for input_classes,base_shift,tots,sorts in zip(perm_classes, shifts, perm_totals, perm_subsortings):
             perm_block = []

@@ -1278,7 +1278,17 @@ class ScipySparseArray(SparseArray):
 
     def copy(self):
         import copy
-        return copy.copy(self)
+
+        base = copy.copy(self)
+        if base.data is self.data:
+            base.data = base.data.copy()
+        # I'm not sure I mutate anything else?
+
+        # if base._block_inds is not None:
+        #
+        # if self.data is n
+        # base.
+        return base
 
     @classmethod
     def _find_block_alignment(cls, inds, block, shape):
@@ -1518,7 +1528,7 @@ class ScipySparseArray(SparseArray):
                 for i, s in zip(idx, self.shape)
             ]
 
-            block_inds = np.array(ip.product(blocks)).T
+            block_inds = np.array([p for p in ip.product(*blocks)]).T
 
             flat = self._ravel_indices(block_inds, self.shape)
             unflat = self._unravel_indices(flat, self.data.shape)
@@ -1567,7 +1577,7 @@ class ScipySparseArray(SparseArray):
                 for i, s in zip(idx, self.shape)
             ]
 
-            block_inds = np.array(ip.product(blocks)).T
+            block_inds = np.array([p for p in ip.product(*blocks)]).T
 
             flat = self._ravel_indices(block_inds, self.shape)
             unflat = self._unravel_indices(flat, self.data.shape)
