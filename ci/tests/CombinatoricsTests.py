@@ -392,13 +392,54 @@ class CombinatoricsTests(TestCase):
             self.assertEquals(sorted(test_perms2[i].tolist()), sorted(bleeep[i].tolist()), msg='failed for state {}'.format(test_states[i]))
             self.assertEquals(sorted(test_inds2[i].tolist()), sorted(gen.to_indices(bleeep[i]).tolist()), msg='failed for state {}'.format(test_states[i]))
 
-    @validationTest
+    @debugTest
     def test_DirectSumIndices(self):
         """
         Tests the features of the symmetric group generator
         :return:
         :rtype:
         """
+
+        gen = SymmetricGroupGenerator(1)
+        test_states = [
+            [0],
+            [1],
+            [2],
+            [3],
+            [4]
+        ]
+        test_rules = [
+            (-3,), (-1,), (1,), (3,), (-2, -1), (-2, 1), (-1, 2), (1, 2), (-1, -1, -1), (-1, -1, 1), (-1, 1, 1),
+            (1, 1, 1)
+        ]
+        new_exc, new_inds = gen.take_permutation_rule_direct_sum(test_states, test_rules,
+                                                                              return_indices=True,
+                                                                              split_results=True)
+
+        self.assertEquals(new_exc[0].shape, (2, 1))
+
+        test_states = gen.get_terms(range(3), flatten=True)
+        test_rules = [
+            [2], [-2], [-3], [1, 1], [-1, -1], [-1, 1], [-1, -1, 1]
+        ]
+
+        with BlockProfiler("direct inds", print_res=False):
+            test_perms, test_inds = gen.take_permutation_rule_direct_sum(
+                test_states,
+                test_rules,
+                return_indices=True,
+                indexing_method='direct',
+                split_results=True,
+                preserve_ordering=False
+            )
+
+
+        blub = np.array([x for x in test_rules if len(x) == 1])
+        for i in range(len(test_states)):
+            why = test_states[i][np.newaxis, :] + blub
+            why = why[why>=0].reshape(-1, 1)
+            self.assertEquals(test_perms[i].tolist(), why.tolist())
+
 
         gen = SymmetricGroupGenerator(10)
 
@@ -614,7 +655,7 @@ class CombinatoricsTests(TestCase):
                 )
             )
 
-    @debugTest
+    @validationTest
     def test_DirectSumIndicesLarge(self):
         """
         Tests the features of the symmetric group generator
@@ -646,5 +687,5 @@ class CombinatoricsTests(TestCase):
                 preserve_ordering=False
             )
 
-        raise Exception(test_perms)
+        # raise Exception(test_perms)
 

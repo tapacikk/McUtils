@@ -576,4 +576,28 @@ class NumputilsTests(TestCase):
 
             )
 
+        n_els = 1000
+        inds_2 = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals_2 = np.random.rand(len(inds_2))
+        inds_2 = inds_2.T
 
+        # `from_data` for backend flexibility
+        array_2 = SparseArray.from_data(
+            (
+                vals_2,
+                inds_2
+            ),
+            shape=shape
+        )
+
+        meh = array.dot(array_2.transpose((1, 0)))
+        self.assertTrue(
+            np.allclose(
+                meh.asarray(),
+                np.dot(
+                    array.asarray(),
+                    array_2.asarray().T
+                ),
+                3
+            )
+        )

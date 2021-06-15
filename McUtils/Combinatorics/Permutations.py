@@ -2102,18 +2102,10 @@ class SymmetricGroupGenerator:
         """
 
 
-
-
-        if sums is None:
-            sums = np.sum(perms, axis=1)
-        max_rule = max(max(r) if len(r) > 0 else 0 for r in rules) if len(rules) > 0 else 0
-        max_term = 1 + max_rule + np.max(sums)
-        IntegerPartitioner.fill_counts(max_term, max_term, self.dim)
-
         # if dim is None:
         dim = self.dim
         perms = np.asanyarray(perms)
-        og_perms = perms # for debug
+        # og_perms = perms # for debug
         # next we pad up the perms as needed
         if perms.shape[1] < dim:
             perms = np.concatenate([
@@ -2124,6 +2116,33 @@ class SymmetricGroupGenerator:
             )
         elif perms.shape[1] > dim:
             raise ValueError("with dimension {} can't handle states of dimension {}".format(dim, perms.shape[-1]))
+
+        if self.dim == 1:
+            # this becomes very easy and in fact all of the other code breaks...
+            rules_1d = np.array([x[0] for x in rules if len(x) == 1]).reshape(-1, 1)
+            new_perms = perms[:, :, np.newaxis] + rules_1d[np.newaxis, :, :]
+            if split_results:
+                new_perms = [x[x>=0].reshape(-1, 1) for x in new_perms]
+                new_inds = [x.flatten() for x in new_perms]
+            else:
+                new_perms = np.concatenate(new_perms)
+                new_perms = new_perms[new_perms>=0]
+                new_inds = new_perms.flatten()
+
+            if return_indices:
+                if return_filter:
+                    return new_perms, new_inds, filter_perms
+                else:
+                    return new_perms, new_inds
+            else:
+                return new_perms
+
+
+        if sums is None:
+            sums = np.sum(perms, axis=1)
+        max_rule = max(max(r) if len(r) > 0 else 0 for r in rules) if len(rules) > 0 else 0
+        max_term = 1 + max_rule + np.max(sums)
+        IntegerPartitioner.fill_counts(max_term, max_term, self.dim)
 
         # first up we pad the rules
         rules = [
