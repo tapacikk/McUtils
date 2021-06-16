@@ -2244,9 +2244,9 @@ class SymmetricGroupGenerator:
         rule_classes = [[g[0] for g in group] for group in rule_groups]
 
         if not isinstance(logger, NullLogger): # can be slow to log prettily
-            input_classes_fmt = [
-                            "class: {} counts: {} permutations: {}".format(y[0], y[1], len(y[2])) for x in perm_classes for y in x
-                        ]
+            # input_classes_fmt = [
+            #                 "class: {} counts: {} permutations: {}".format(y[0], y[1], len(y[2])) for x in perm_classes for y in x
+            #             ]
             rule_class_fmt = [
                             "classes: {} counts: {}".format(", ".join(str(z) for z in y), x) for x, y in zip(rule_counts, rule_classes)
                         ]
@@ -2254,67 +2254,84 @@ class SymmetricGroupGenerator:
             input_classes_fmt=[]
             rule_class_fmt=[]
         with logger.block(tag="taking direct product"):
-            with logger.block(tag="input permutations:"):
-                logger.log_print(input_classes_fmt)
+            # with logger.block(tag="input permutations:"):
+            #     logger.log_print(input_classes_fmt)
             with logger.block(tag="selection rules:"):
                 logger.log_print(rule_class_fmt)
             start = time.time()
-            for input_classes,base_shift,tots,sorts in zip(perm_classes, shifts, perm_totals, perm_subsortings):
-                perm_block = []
-                if return_indices:
-                    ind_block = []
-                for counts, classes in zip(rule_counts, rule_classes):
-                    res = self._build_direct_sums(input_classes, counts, classes,
-                                                  return_indices=return_indices,
-                                                  filter=filter
-                                                  )
-                    if split_results or preserve_ordering:
-                        split_blocks = np.cumsum(res[1][:-1])
-                        res_perms = np.split(res[0], split_blocks)
-                        if return_indices:
-                            ind_block.append(np.split(res[2], split_blocks))
-                    else:
-                        res_perms = res[0]
-                        if return_indices:
-                            ind_block.append(res[2])
-                    perm_block.append(res_perms)
-
-                if split_results or preserve_ordering:
-                    # zip to merge
-                    new_perms = [
-                        np.concatenate(blocks, axis=0)
-                        for blocks in zip(*perm_block)
-                    ]
-                    if preserve_ordering and sorts is not None and len(new_perms) > 0:
-                        cumlens = np.cumsum([0] + [len(x) for x in sorts[:-1]])
-                        sorts = np.concatenate([x+s for x,s in zip(sorts, cumlens)])
-                        argsorts = np.argsort(sorts)
-                        new_perms = [new_perms[i] for i in argsorts]
-                    # if not split_results:
-                    #     if len(new_perms) == 0:
-                    #         new_perms = np.array([], dtype='int8')
-                    #     else:
-                    #         new_perms = np.concatenate(new_perms, axis=0)
-                    perms.append(new_perms)
+            for input_classes,nq,sorts in zip(perm_classes, usums, perm_subsortings):
+                substart = time.time()
+                with logger.block(tag='sum: {}'.format(nq)):
+                    if not isinstance(logger, NullLogger):  # can be slow to log prettily
+                        input_classes_fmt = ["Class/Counts/Permutations"]+ [
+                             "{}/{}/{}".format(y[0], y[1], len(y[2])) for y in input_classes
+                        ]
+                        logger.log_print(input_classes_fmt)
+                    perm_block = []
                     if return_indices:
-                        new_inds = [
-                            np.concatenate(blocks)
-                            for blocks in zip(*ind_block)
+                        ind_block = []
+                    for counts, classes in zip(rule_counts, rule_classes):
+                        res = self._build_direct_sums(input_classes, counts, classes,
+                                                      return_indices=return_indices,
+                                                      filter=filter
+                                                      )
+                        if split_results or preserve_ordering:
+                            split_blocks = np.cumsum(res[1][:-1])
+                            res_perms = np.split(res[0], split_blocks)
+                            if return_indices:
+                                ind_block.append(np.split(res[2], split_blocks))
+                        else:
+                            res_perms = res[0]
+                            if return_indices:
+                                ind_block.append(res[2])
+                        perm_block.append(res_perms)
+
+                    if split_results or preserve_ordering:
+                        # zip to merge
+                        new_perms = [
+                            np.concatenate(blocks, axis=0)
+                            for blocks in zip(*perm_block)
                         ]
                         if preserve_ordering and sorts is not None and len(new_perms) > 0:
-                            new_inds = [new_inds[i] for i in argsorts]
+                            cumlens = np.cumsum([0] + [len(x) for x in sorts[:-1]])
+                            sorts = np.concatenate([x+s for x,s in zip(sorts, cumlens)])
+                            argsorts = np.argsort(sorts)
+                            new_perms = [new_perms[i] for i in argsorts]
                         # if not split_results:
                         #     if len(new_perms) == 0:
-                        #         new_inds = np.array([], dtype='int8')
+                        #         new_perms = np.array([], dtype='int8')
                         #     else:
-                        #         new_inds = np.concatenate(new_inds, axis=0)
-                        indices.append(new_inds)
-                else:
-                    new_perms = np.concatenate(perm_block, axis=0)
-                    perms.append(new_perms)
-                    if return_indices:
-                        new_inds = np.concatenate(ind_block)
-                        indices.append(new_inds)
+                        #         new_perms = np.concatenate(new_perms, axis=0)
+                        perms.append(new_perms)
+                        if return_indices:
+                            new_inds = [
+                                np.concatenate(blocks)
+                                for blocks in zip(*ind_block)
+                            ]
+                            if preserve_ordering and sorts is not None and len(new_perms) > 0:
+                                new_inds = [new_inds[i] for i in argsorts]
+                            # if not split_results:
+                            #     if len(new_perms) == 0:
+                            #         new_inds = np.array([], dtype='int8')
+                            #     else:
+                            #         new_inds = np.concatenate(new_inds, axis=0)
+                            indices.append(new_inds)
+                    else:
+                        new_perms = np.concatenate(perm_block, axis=0)
+                        perms.append(new_perms)
+                        if return_indices:
+                            new_inds = np.concatenate(ind_block)
+                            indices.append(new_inds)
+
+                    subend = time.time()
+                    logger.log_print([
+                        'got {nt} partition-permutations{and_inds}',
+                        'took {e:.3f}s...'
+                    ],
+                        nt=len(new_perms) if not (split_results or preserve_ordering) else sum(len(x) for x in new_perms),
+                        and_inds=' and indices' if return_indices else '',
+                        e=subend - substart
+                    )
 
             # now we need to also reshuffle the states so
             # that they come out in the input ordering
@@ -2358,8 +2375,8 @@ class SymmetricGroupGenerator:
 
             end = time.time()
             logger.log_print([
-                'got {nt} partition-permutations{and_inds}',
-                'took {e}s...'
+                'in total got {nt} partition-permutations{and_inds}',
+                'took {e:.3f}s...'
                 ],
                 nt=len(perms) if not (split_results or preserve_ordering) else sum(len(x) for x in perms),
                 and_inds=' and indices' if return_indices else '',
