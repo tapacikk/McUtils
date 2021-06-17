@@ -42,30 +42,59 @@ class ParallelizerTests(TestCase):
         data = parallelizer.scatter(data)
         lens = parallelizer.gather(len(data))
         return lens
-    @debugTest
+    @validationTest
     def test_BasicMultiprocessing(self):
         par_lens = MultiprocessingParallelizer().run(self.run_job)
         serial_lens = SerialNonParallelizer().run(self.run_job)
         self.assertEquals(sum(par_lens), serial_lens)
 
-    def mapped_func(self, id):
-        return 1 + id
-    def map_applier(self, parallelizer=None):
+    def mapped_func(self, data):
+        return 1 + data
+    def map_applier(self, n=1000, parallelizer=None):
         if parallelizer.on_main:
-            data = np.arange(1000)
+            data = np.arange(n)
         else:
             data = None
         return parallelizer.map(self.mapped_func, data)
-    @debugTest
+    @validationTest
     def test_MapMultiprocessing(self):
         par_lens = MultiprocessingParallelizer().run(self.map_applier)
         serial_lens = SerialNonParallelizer().run(self.map_applier)
         self.assertEquals(par_lens, serial_lens)
+    @debugTest
+    def test_MapMultiprocessingDataSmall(self):
+        par_lens = MultiprocessingParallelizer().run(self.map_applier, n=3, comm=[0, 1, 2])
+        self.assertEquals(len(par_lens), 3)
+        serial_lens = SerialNonParallelizer().run(self.map_applier, n=3)
+        self.assertEquals(par_lens, serial_lens)
 
     def bcast_parallelizer(self, parallelizer=None):
         root_par = parallelizer.broadcast(parallelizer)
-    @debugTest
+    @validationTest
     def test_BroadcastParallelizer(self):
         with MultiprocessingParallelizer() as parallelizer:
             parallelizer.run(self.bcast_parallelizer)
             parallelizer.run(self.bcast_parallelizer)
+
+    def scatter_gather(self, n=1000, parallelizer=None):
+        if parallelizer.on_main:
+            data = np.arange(n)
+        else:
+            data = None
+        data = parallelizer.scatter(data)
+        l = len(data)
+        res = parallelizer.gather(l)
+        return res
+    @debugTest
+    def test_ScatterGatherMultiprocessing(self):
+        p = MultiprocessingParallelizer()
+        par_lens = p.run(self.scatter_gather)
+        self.assertEquals(len(par_lens), p.nprocs+1)
+        serial_lens = SerialNonParallelizer().run(self.scatter_gather)
+        self.assertEquals(sum(par_lens), serial_lens)
+    @debugTest
+    def test_ScatterGatherMultiprocessingDataSmall(self):
+        par_lens = MultiprocessingParallelizer().run(self.scatter_gather, 3, comm=[0, 1, 2])
+        self.assertEquals(len(par_lens), 3)
+        serial_lens = SerialNonParallelizer().run(self.scatter_gather, 3)
+        self.assertEquals(sum(par_lens), serial_lens)

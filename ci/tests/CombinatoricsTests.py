@@ -4,6 +4,7 @@ from Peeves import BlockProfiler, Timer
 from unittest import TestCase
 from McUtils.Combinatorics import *
 import McUtils.Numputils as nput
+from McUtils.Scaffolding import Logger
 import sys, os, numpy as np, itertools
 
 class CombinatoricsTests(TestCase):
@@ -454,7 +455,8 @@ class CombinatoricsTests(TestCase):
                 return_indices=True,
                 indexing_method='direct',
                 split_results=True,
-                preserve_ordering=False
+                preserve_ordering=False,
+                # logger=Logger()
             )
 
         with BlockProfiler("secondary inds", print_res=False):

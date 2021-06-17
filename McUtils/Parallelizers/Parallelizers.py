@@ -359,7 +359,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError("Parallelizer is an abstract base class")
 
-    def run(self, func, *args, **kwargs):
+    def run(self, func, *args, comm=None, **kwargs):
         """
         Calls `apply`, but makes sure state is handled cleanly
 
@@ -374,7 +374,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
         """
 
         with self:
-            return self.apply(func, *args, **kwargs)
+            return self.apply(func, *args, comm=comm, **kwargs)
 
     mode_map = {}
     @classmethod
@@ -774,12 +774,14 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                      parent: 'MultiprocessingParallelizer',
                      id:int,
                      queues: typing.Iterable['MultiprocessingParallelizer.SendRecvQueuePair'],
-                     initialization_timeout=.5
+                     initialization_timeout:float=.5,
+                     group:typing.Iterable['MultiprocessingParallelizer.PoolCommunicator']=None
                      ):
             self.parent = parent
             self.id = id
             self.queues = tuple(queues)
             self.initialization_timeout=initialization_timeout
+            self.group = tuple(group) if group is not None else None
 
         class PoolError(Exception):
             """
@@ -882,6 +884,15 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                     self.parent.print("Recv: put on {id}", id=self.id)
                 return data
 
+        def get_subcomm(self, idx):
+            return type(self)(
+                self.parent,
+                self.id,
+                tuple(self.queues[i] for i in idx),
+                initialization_timeout=self.initialization_timeout,
+                group=None if self.group is None else tuple(self.group[i] for i in idx)
+            )
+
     _is_worker=False # global flag to be overridden
     def __init__(self,
                  worker=False,
@@ -890,6 +901,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                  manager=None,
                  printer=None,
                  verbose=False,
+                 comm=None,
                  initialization_timeout=.5,
                  **kwargs
                  ):
@@ -900,8 +912,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         self.worker=worker
         self.ctx=context
         self.manager=manager
-        self._comm = None
-        self._comm_list = None
+        self._comm = comm
         self.nproc = None
 
     def get_nprocs(self):
@@ -916,7 +927,17 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         :return:
         :rtype: MultiprocessingParallelizer.PoolCommunicator
         """
+        if self._comm is None:
+            comm_list = [
+                self.PoolCommunicator(self, i, self.queues, initialization_timeout=self.initialization_timeout) for
+                i in range(0, self.nproc + 1)
+            ]
+            self._comm = comm_list[0]
+            self._comm.group = comm_list
         return self._comm
+    @comm.setter
+    def comm(self, c):
+        self._comm = c
 
     def __getstate__(self):
         # most things don't need to be mapped over...
@@ -926,22 +947,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         state['manager'] = None
         state['comm'] = None
         state['_comm'] = None
-        state['_comm_list'] = None
         state['queues'] = None
-        # print(state)
-        # state = {
-        #     'opts': self.opts,
-        #     'pool': None,
-        #     'worker': True,
-        #     'manager': None, #self.manager,
-        #     'comm': None,
-        #     'nproc': self.nproc
-        # }
-        # print(self.runner)
-        # state['runner'] = None
-        # state['comm'] = None
-        # state['worker'] = True # so that the worker processes know they're workers
-        # print(state)
         return state
 
     @staticmethod
@@ -960,16 +966,23 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         :return:
         :rtype:
         """
+        if runner is None: #quick ignore
+            return None
+
         self=comm.parent
         with self:
             self._comm = comm # makes a cyclic dependency...but oh well
             if self.verbose and self.on_main:
-                self.print("Starting Parallelizer with {runner}", runner=runner)
+                self.print(
+                    "Starting Parallelizer with {runner} over processor group {grp}",
+                    runner=runner,
+                    grp=self.comm.locations
+                )
             self._comm.initialize()
             kwargs['parallelizer'] = comm.parent
             return runner(*args, **kwargs)
 
-    def apply(self, func, *args, **kwargs):
+    def apply(self, func, *args, comm=None, **kwargs):
         """
         Applies func to args in parallel on all of the processes
 
@@ -985,24 +998,51 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         """
         import multiprocessing as mp
 
-        if self._comm_list is None:
-            self._comm_list = [self.PoolCommunicator(self, i, self.queues, initialization_timeout=self.initialization_timeout) for i in range(0, self.nproc+1)]
-        self._comm = self._comm_list[0]
-        mapping = list(zip(
-                [func] * self.nproc,
-                self._comm_list[1:],
-                [args] * self.nproc,
-                [kwargs] * self.nproc
-            ))
-        pool = self.pool #type: mp.pool.Pool
-        subsidiary = pool.starmap_async(self._run, mapping)
+        if comm is None:
+            comm = self.comm
+        elif not isinstance(comm, SendRecieveParallelizer.SendReceieveCommunicator):
+            comm = self.comm.get_subcomm(comm)
+
+        _comm = self.comm
         try:
-            main = self._run(func, self.PoolCommunicator(self, 0, self.queues, initialization_timeout=self.initialization_timeout), args, kwargs)
-        except self.PoolCommunicator.PoolError:
-            # check for errors on subsidiary...
-            subsidiary.get(timeout=self.initialization_timeout)
-            raise
-        subs = subsidiary.get() # just to effect a wait
+            self.comm = comm
+
+            # since comm might be smaller than the pool
+            # we need to send "ignore" flags to those pools
+            if comm.group is None:
+                raise ValueError("{} needs to have a processor group to parallelize over".format(
+                    comm
+                ))
+            group_map = {g.id:g for g in comm.group}
+            if 0 not in group_map:
+                raise ValueError("{} needs to have the main process in it as designed".format(
+                    comm
+                ))
+
+            mapping = [
+                [
+                    func,
+                    group_map[i],
+                    args,
+                    kwargs
+                ] if i in group_map else [
+                    None,
+                    None,
+                    None,
+                    None
+                ] for i in range(1, self.nproc+1)
+            ]
+            pool = self.pool #type: mp.pool.Pool
+            subsidiary = pool.starmap_async(self._run, mapping)
+            try:
+                main = self._run(func, comm, args, kwargs)
+            except self.PoolCommunicator.PoolError:
+                # check for errors on subsidiary...
+                subsidiary.get(timeout=self.initialization_timeout)
+                raise
+            subs = subsidiary.get() # just to effect a wait
+        finally:
+            self.comm = _comm
         return main
 
     def _get_pool(self,
@@ -1024,7 +1064,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
     def _reset_mp_caches(self):
         self.pool = None
         self.queues = None
-        self._comm_list = None
+        self.comm = None
     @classmethod
     def _set_is_worker(cls, *args):
         """
@@ -1621,7 +1661,7 @@ class SerialNonParallelizer(Parallelizer):
 
         return list(map(function, data, **kwargs))
 
-    def apply(self, func, *args, **kwargs):
+    def apply(self, func, *args, comm=None, **kwargs):
         kwargs['parallelizer'] = self
         return func(*args, **kwargs)
 
