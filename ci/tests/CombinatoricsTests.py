@@ -393,7 +393,7 @@ class CombinatoricsTests(TestCase):
             self.assertEquals(sorted(test_perms2[i].tolist()), sorted(bleeep[i].tolist()), msg='failed for state {}'.format(test_states[i]))
             self.assertEquals(sorted(test_inds2[i].tolist()), sorted(gen.to_indices(bleeep[i]).tolist()), msg='failed for state {}'.format(test_states[i]))
 
-    @debugTest
+    @validationTest
     def test_DirectSumIndices(self):
         """
         Tests the features of the symmetric group generator
@@ -495,7 +495,7 @@ class CombinatoricsTests(TestCase):
 
         # self.assertEquals(np.unique(bleeeh, axis=0).tolist(), u_tests.tolist())
 
-    @validationTest
+    @debugTest
     def test_DirectSumExtra(self):
         """
         Tests the features of the symmetric group generator

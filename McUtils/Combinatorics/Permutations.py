@@ -2085,6 +2085,13 @@ class SymmetricGroupGenerator:
                     # since we're assured sorting we make use of that when getting indices
                     if len(comp) > 0:
                         classes_count_data, standard_rep_perms = get_standard_perms(new_rep_perm[sel])
+                        # TODO: I could be faster here by keeping a cache of equivalent `classes_count_data`
+                        # calls (assuming I don't hit cache issues...but could always use a max-size cache)
+                        # which would allow be to do only one call to `UniquePermutations.get_indices`
+                        # and as that will directly de-duplicate (or make it easy to) I can
+                        # get results hopefully considerably faster
+                        # I can also just track where the indices to get are which will allow
+                        # me to not have many copies of the memory hopefully
                         for n,j in enumerate(comp):
                             padding_1, padding_2 = get_standard_perm_offsets(i, j, standard_rep_perms[n], classes_count_data[n])
                             sort_perms, sorting, inv = get_perm_sorting(new_perms[n])
