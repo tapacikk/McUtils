@@ -1950,13 +1950,13 @@ class SymmetricGroupGenerator:
             comp = cls_inds[i][not_negs]
             if len(comp) < len(cls_inds[i]):
                 not_sel = np.where(np.logical_not(not_negs))[0]
-                mask_inds = idx_starts + not_sel
+                mask_inds = np.reshape(not_sel[:, np.newaxis] + idx_starts[np.newaxis, :], -1)
                 mask[mask_inds] = False
                 perm_counts[cum_counts[i]:cum_counts[i + 1], idx] -= len(not_negs) - len(comp)
             if len(comp) > 0:
                 sel = np.where(not_negs)[0]
                 new_perms = new_rep_perm[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
-                stored_inds = idx_starts + sel
+                stored_inds = np.reshape(sel[:, np.newaxis] + idx_starts[np.newaxis, :], -1)
                 storage[stored_inds] = new_perms.reshape(-1, ndim)
             else:
                 sel = []
@@ -1964,7 +1964,7 @@ class SymmetricGroupGenerator:
 
             return comp, sel, new_perms
 
-        def filter_from_ind_spec(i, j, idx, idx_s, full_inds_sorted, inv, mask=mask,
+        def filter_from_ind_spec(i, j, idx, insert_inds, full_inds_sorted, inv, mask=mask,
                                  merged_sums=merged_sums, filter=filter):
             sort_1 = np.arange(len(full_inds_sorted))  # assured sorting from before
             if filter.ind_grps is not None:
@@ -1977,15 +1977,7 @@ class SymmetricGroupGenerator:
                 submask, _, _ = contained(full_inds_sorted, filter.inds,
                                        assume_unique=(False, True),
                                        sortings=(sort_1, filter.ind_sort))
-
-            # TODO: handle masking properly, basically have the initial block offset
-            #       and then `j` which should be multiplied into `full_inds_sorted` I think?
-            #       I think blocks are all the same size? If not we gotta do some kind of fuckery
-            #       but I don't exactly know what
-
-            idx_s2 = idx_s + j * len(full_inds_sorted)
-            idx_e2 = idx_s2+len(full_inds_sorted)
-            mask[idx_s2:idx_e2] = submask[inv]
+            mask[insert_inds] = submask[inv]
             perm_counts[cum_counts[i]:cum_counts[i+1], idx] -= len(submask) - np.count_nonzero(submask)
 
         def get_standard_perms(perms):
@@ -2099,12 +2091,16 @@ class SymmetricGroupGenerator:
                             sort_perms, sorting, inv = get_perm_sorting(new_perms[n])
                             new_inds = get_sort_perm_indices(sort_perms, classes_count_data[n])
                             full_inds_sorted = padding_1 + padding_2 + new_inds
-                            stored_inds = idx_starts + n
+                            stored_inds = idx_starts + sel[n]
                             indices[stored_inds] = full_inds_sorted[inv]
+                            # print(stored_inds)
                             if filter is not None:
-                                filter_from_ind_spec(i, j, idx, idx_starts, full_inds_sorted, inv)
+                                filter_from_ind_spec(i, j, idx, stored_inds, full_inds_sorted, inv)
 
         UniquePermutations.walk_permutation_tree(counts, add_new_perms, include_positions=False)
+
+        # print(storage)
+        # print(mask)
 
         if mask is not None:
             storage = storage[mask]
@@ -2112,9 +2108,8 @@ class SymmetricGroupGenerator:
                 indices = indices[mask]
         perm_counts = np.sum(perm_counts, axis=1)
 
-        print(storage)
-        print(mask)
-        print(perm_counts)
+        # print(storage)
+        # print(perm_counts)
         # storage = storage.reshape((-1, ndim))
         # if return_indices:
         #     indices = indices.flatten()

@@ -568,7 +568,7 @@ class CombinatoricsTests(TestCase):
                 test_rules,
                 return_indices=True,
                 split_results=True,
-                # filter_perms=[filter_perms, filter_inds],
+                filter_perms=[filter_perms, filter_inds],
                 return_filter=True,
                 logger=Logger()
             )
