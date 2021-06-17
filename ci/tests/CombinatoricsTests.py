@@ -525,27 +525,27 @@ class CombinatoricsTests(TestCase):
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0],
             [3, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 1, 0, 0],
-            [0, 0, 1, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0],
-            [1, 0, 0, 0, 0, 0],
-            [0, 3, 0, 0, 0, 0],
-            [0, 0, 3, 0, 0, 0],
-            [0, 0, 0, 3, 0, 0],
-            [0, 0, 0, 0, 3, 0],
-            [0, 0, 0, 0, 0, 3],
-            [1, 2, 0, 0, 0, 0],
-            [1, 0, 2, 0, 0, 0],
-            [1, 0, 0, 2, 0, 0],
-            [1, 0, 0, 0, 2, 0],
-            [1, 0, 0, 0, 0, 2],
-            [2, 1, 0, 0, 0, 0],
-            [2, 2, 1, 1, 0, 0],
-            [2, 2, 1, 0, 1, 0],
-            [2, 2, 1, 0, 0, 1],
-            [0, 0, 1, 1, 1, 1]
+            # [0, 0, 0, 0, 0, 1],
+            # [0, 0, 0, 0, 1, 0],
+            # [0, 0, 0, 1, 0, 0],
+            # [0, 0, 1, 0, 0, 0],
+            # [0, 1, 0, 0, 0, 0],
+            # [1, 0, 0, 0, 0, 0],
+            # [0, 3, 0, 0, 0, 0],
+            # [0, 0, 3, 0, 0, 0],
+            # [0, 0, 0, 3, 0, 0],
+            # [0, 0, 0, 0, 3, 0],
+            # [0, 0, 0, 0, 0, 3],
+            # [1, 2, 0, 0, 0, 0],
+            # [1, 0, 2, 0, 0, 0],
+            # [1, 0, 0, 2, 0, 0],
+            # [1, 0, 0, 0, 2, 0],
+            # [1, 0, 0, 0, 0, 2],
+            # [2, 1, 0, 0, 0, 0],
+            # [2, 2, 1, 1, 0, 0],
+            # [2, 2, 1, 0, 1, 0],
+            # [2, 2, 1, 0, 0, 1],
+            # [0, 0, 1, 1, 1, 1]
         ]
         test_rules = [(-1,), (1,)]
 
@@ -568,11 +568,12 @@ class CombinatoricsTests(TestCase):
                 test_rules,
                 return_indices=True,
                 split_results=True,
-                filter_perms=[filter_perms, filter_inds],
-                return_filter=True
+                # filter_perms=[filter_perms, filter_inds],
+                return_filter=True,
+                logger=Logger()
             )
-        self.assertEquals(filter.inds.tolist(), np.sort(filter_inds).tolist())
-        self.assertEquals(filter.perms.tolist(), filter_perms)
+        # self.assertEquals(filter.inds.tolist(), np.sort(filter_inds).tolist())
+        # self.assertEquals(filter.perms.tolist(), filter_perms)
         self.assertEquals(sorted(bleeeh[0].tolist()), sorted([
             [0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 1, 0],

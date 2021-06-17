@@ -1894,11 +1894,12 @@ class SymmetricGroupGenerator:
         for pair in dropped_pairs:
             i, idx, negs = pair
             perm_counts[cum_counts[i]:cum_counts[i+1], idx] -= len(negs)
-        dropped_pairs = []
         # we use this to first get the total number of permutations
         total_perm_count = np.sum(perm_counts)
         # and then for each initial input permutation (i.e. the old `total_perm_count`)
         # we figure out how many permutations it has now
+        # I might be able to take a shortcut here based on the fact that I'm only dropping the
+        # totally impossible stuff
         subcounts = np.sum(perm_counts, axis=1, dtype=int)
         perm_subcounts = np.concatenate([
             np.zeros(len(perm_counts), dtype=int)[:, np.newaxis],
@@ -1924,23 +1925,19 @@ class SymmetricGroupGenerator:
         if return_indices:
             indices = np.zeros((total_perm_count,), dtype=int)  # might be able to bound this dtype but not sure...
 
+        # print(any(np.any(x) for x in can_be_negative), can_be_negative)
         if filter is not None or (filter_negatives and any(np.any(x) for x in can_be_negative)):
             mask = np.full((total_perm_count,), True)
-            # if return_indices:
-            #     ind_mask = np.full(indices.shape, True)
-            # else:
-            #     ind_mask = None
         else:
             mask = None
-            # ind_mask = None
 
         # We split the full algorithm into a bunch of smaller functions to
         # make it easier to determine where the total runtime is
         # del cls_inds
-        def filter_negatives_perms(i, idx_s, perms, new_rep_perm,
+        def filter_negatives_perms(i, idx, idx_starts, perms, new_rep_perm,
                                    mask=mask,
                                    can_be_negative=can_be_negative,
-                                   dropped_pairs=dropped_pairs, storage=storage):
+                                   storage=storage):
             # if we run into negatives we need to mask them out
             # to make this run faster we only test for the input rules where this
             # _can_ be negative
@@ -1950,18 +1947,16 @@ class SymmetricGroupGenerator:
             not_negs = np.full(len(cls_inds[i]), True)
             comp_mask = np.all(new_rep_perm[can_be_negative[i],] >= 0, axis=1)
             not_negs[can_be_negative[i]] = comp_mask
-            if not np.all(comp_mask):
-                mask[idx_s:idx_s+len(not_negs)] = not_negs
-                # if ind_mask is not None:
-                #     ind_mask[idx_s:idx_s+len(not_negs)] = not_negs
             comp = cls_inds[i][not_negs]
+            if len(comp) < len(cls_inds[i]):
+                not_sel = np.where(np.logical_not(not_negs))[0]
+                mask_inds = idx_starts + not_sel
+                mask[mask_inds] = False
+                perm_counts[cum_counts[i]:cum_counts[i + 1], idx] -= len(not_negs) - len(comp)
             if len(comp) > 0:
                 sel = np.where(not_negs)[0]
                 new_perms = new_rep_perm[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
-                # print(comp, new_perms.shape, new_rep_perm.shape, len(perms))
-                stored_inds = idx_s + comp[:, np.newaxis]*len(perms) + np.arange(len(perms))[np.newaxis, :]
-                stored_inds = stored_inds.flatten()
-                # print(comp, sel, new_perms.shape, new_rep_perm.shape, len(perms), stored_inds)
+                stored_inds = idx_starts + sel
                 storage[stored_inds] = new_perms.reshape(-1, ndim)
             else:
                 sel = []
@@ -1969,22 +1964,29 @@ class SymmetricGroupGenerator:
 
             return comp, sel, new_perms
 
-        def filter_from_ind_spec(i, idx, j, full_inds_sorted, inv,
-                                 dropped_pairs=dropped_pairs, merged_sums=merged_sums, filter=filter):
+        def filter_from_ind_spec(i, j, idx, idx_s, full_inds_sorted, inv, mask=mask,
+                                 merged_sums=merged_sums, filter=filter):
             sort_1 = np.arange(len(full_inds_sorted))  # assured sorting from before
             if filter.ind_grps is not None:
                 subinds = filter.ind_grps[merged_sums[i, j]]
                 sort_2 = np.arange(len(subinds))
-                mask, _, _ = contained(full_inds_sorted, subinds,
+                submask, _, _ = contained(full_inds_sorted, subinds,
                                        assume_unique=(False, True),
                                        sortings=(sort_1, sort_2))
             else:
-                mask, _, _ = contained(full_inds_sorted, filter.inds,
+                submask, _, _ = contained(full_inds_sorted, filter.inds,
                                        assume_unique=(False, True),
                                        sortings=(sort_1, filter.ind_sort))
-            # print(mask, full_inds_sorted, filter.inds)
-            raise NotImplementedError("just adjust the main mask...")
-            dropped_pairs.append((i, idx, j, mask[inv]))
+
+            # TODO: handle masking properly, basically have the initial block offset
+            #       and then `j` which should be multiplied into `full_inds_sorted` I think?
+            #       I think blocks are all the same size? If not we gotta do some kind of fuckery
+            #       but I don't exactly know what
+
+            idx_s2 = idx_s + j * len(full_inds_sorted)
+            idx_e2 = idx_s2+len(full_inds_sorted)
+            mask[idx_s2:idx_e2] = submask[inv]
+            perm_counts[cum_counts[i]:cum_counts[i+1], idx] -= len(submask) - np.count_nonzero(submask)
 
         def get_standard_perms(perms):
             classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in perms]
@@ -2026,8 +2028,7 @@ class SymmetricGroupGenerator:
         def add_new_perms(idx, perm, cls_pos, cts, depth, tree_data,
                           classes=classes,
                           input_perm_classes=input_perm_classes,
-                          class_negatives=class_negatives,
-                          dropped_pairs=dropped_pairs
+                          class_negatives=class_negatives
                           ):
             """
 
@@ -2058,8 +2059,7 @@ class SymmetricGroupGenerator:
                 # but we collapsed this down to a 2D shape so we could use less memory/calculate less
                 # stuff/not need to reshape & copy
                 # this means we need to figure out where the relevant block starts and where it ends
-                idx_s = input_class_counts[i] + perm_subcounts[i, idx]
-                idx_e = input_class_counts[i] + perm_subcounts[i, idx+1]
+                idx_starts = input_class_counts[cum_counts[i]:cum_counts[i+1]] + perm_subcounts[cum_counts[i]:cum_counts[i+1], idx]
 
                 cls, cts, perms, rep = class_data
                 # we make use of the fact that first adding the `class_perms` and _then_
@@ -2069,16 +2069,18 @@ class SymmetricGroupGenerator:
                 # This gives us strict ordering relations that we can make use of and allows us to only calculate
                 # the counts once
                 new_rep_perm = rep[np.newaxis, :] + class_perms[cls_inds[i], :]
-                # print(cls_inds[i], class_perms.shape, new_rep_perm.shape, len(classes))
+                # print(i, idx, idx_starts, new_rep_perm.shape)
                 if filter_negatives:
-                    comp, sel, new_perms = filter_negatives_perms(i, idx_s, perms, new_rep_perm)
+                    comp, sel, new_perms = filter_negatives_perms(i, idx, idx_starts, perms, new_rep_perm)
                 else:
+                    raise NotImplementedError("need to get storage right but never touch this code path anymore")
                     comp = cls_inds[i]
                     sel = np.arange(len(comp))
                     new_perms = new_rep_perm[:, perms].transpose(1, 0, 2)
                     # shape used to be `(total_perm_count, num_perms, len(classes), ndim)`
                     # but we collapsed this down to a 2D shape so we could use less memory/calculate less
                     # stuff/not need to reshape & copy
+
                     storage[idx_s:idx_e] = new_perms
 
                 if return_indices:
@@ -2086,60 +2088,33 @@ class SymmetricGroupGenerator:
                     if len(comp) > 0:
                         classes_count_data, standard_rep_perms = get_standard_perms(new_rep_perm[sel])
                         # TODO: I could be faster here by keeping a cache of equivalent `classes_count_data`
-                        # calls (assuming I don't hit cache issues...but could always use a max-size cache)
-                        # which would allow be to do only one call to `UniquePermutations.get_indices`
-                        # and as that will directly de-duplicate (or make it easy to) I can
-                        # get results hopefully considerably faster
-                        # I can also just track where the indices to get are which will allow
-                        # me to not have many copies of the memory hopefully
-                        for n,j in enumerate(comp):
+                        #       calls (assuming I don't hit cache issues...but could always use a max-size cache)
+                        #       which would allow be to do only one call to `UniquePermutations.get_indices`
+                        #       and as that will directly de-duplicate (or make it easy to) I can
+                        #       get results hopefully considerably faster
+                        #       I can also just track where the indices to get are which will allow
+                        #       me to not have many copies of the memory hopefully
+                        for n,j in enumerate(comp): # we're iterating over classes (not input_classes) here
                             padding_1, padding_2 = get_standard_perm_offsets(i, j, standard_rep_perms[n], classes_count_data[n])
                             sort_perms, sorting, inv = get_perm_sorting(new_perms[n])
                             new_inds = get_sort_perm_indices(sort_perms, classes_count_data[n])
                             full_inds_sorted = padding_1 + padding_2 + new_inds
-                            stored_inds = idx_s + j*len(perms) + np.arange(len(perms))
+                            stored_inds = idx_starts + n
                             indices[stored_inds] = full_inds_sorted[inv]
                             if filter is not None:
-                                filter_from_ind_spec(i, idx, j, full_inds_sorted, inv)
+                                filter_from_ind_spec(i, j, idx, idx_starts, full_inds_sorted, inv)
 
         UniquePermutations.walk_permutation_tree(counts, add_new_perms, include_positions=False)
 
-        perm_counts = np.full(total_perm_count, num_perms*len(classes))
-
-        if len(dropped_pairs) > 0:
-            raise ValueError("AAAAAAAAAAAAAAAAAH")
-            # raise Exception(storage.shape, num_perms*len(classes))
-            mask = np.full(storage.shape, True)
-            if return_indices:
-                ind_mask = np.full(indices.shape, True)
-            else:
-                ind_mask = None
-            for pair in dropped_pairs:
-                if len(pair) == 3:
-                    i, idx, negs = pair
-                    mask[cum_counts[i]:cum_counts[i+1], idx, negs] = False
-                    if isinstance(idx, (int, np.integer)):
-                        perm_counts[cum_counts[i]:cum_counts[i+1]] -= len(negs)
-                    else:
-                        perm_counts[cum_counts[i]:cum_counts[i+1]] -= mask.shape[1] * len(negs)
-                    if return_indices:
-                        ind_mask[cum_counts[i]:cum_counts[i + 1], idx, negs] = False
-                else:
-                    i, idx, j, submask = pair
-                    mask[cum_counts[i]:cum_counts[i+1], idx, j] = submask[:, np.newaxis]
-                    perm_counts[cum_counts[i]:cum_counts[i+1]] -= 1 - submask
-                    if return_indices:
-                        ind_mask[cum_counts[i]:cum_counts[i + 1], idx, j] = submask
-
-            # we take the mask and use it to reshape the storage...
-            # but it would be nice to be able to reshape this in terms of the OG terms...
-            # like if that's possible...is that assured to be possible? I don't know
-            # we basically drop a bunch of intermediate stuff but I'm guessing it'll work
-            # to reshape the final thing
+        if mask is not None:
             storage = storage[mask]
             if return_indices:
                 indices = indices[mask]
+        perm_counts = np.sum(perm_counts, axis=1)
 
+        print(storage)
+        print(mask)
+        print(perm_counts)
         # storage = storage.reshape((-1, ndim))
         # if return_indices:
         #     indices = indices.flatten()
