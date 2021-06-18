@@ -39,6 +39,8 @@ class FunctionExpansion:
         :param weight_coefficients: whether the derivative terms need to be weighted or not
         :type weight_coefficients: bool
         """
+
+        raise NotImplementedError("doesn't deal with higher-order expansions properly yet")
         self._derivs = self.FunctionDerivatives(derivatives, weight_coefficients)
         self._center = center
         self.ref = ref

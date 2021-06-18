@@ -8,6 +8,8 @@ import sys, h5py, math, numpy as np
 
 class FiniteDifferenceTests(TestCase):
 
+    #region setup
+
     def setUp(self):
         self.save_data = TestManager.data_gen_tests
 
@@ -42,6 +44,9 @@ class FiniteDifferenceTests(TestCase):
             "Order: {}.{}\nCumulative Error: {}\nMax Error: {}\nMean Error: {}".format(n, order, *errs[1:])
         )
 
+    #endregion
+
+    #region FD inputs
     @validationTest
     def test_stirs(self):
         stir = StirlingS1(8)
@@ -123,8 +128,11 @@ class FiniteDifferenceTests(TestCase):
                 print((norm, e, w[-1]), file=sys.stderr)
         self.assertIs(passed, True)
 
+    #endregion
+
+    #region FD
     # @dataGenTest
-    @debugTest
+    @validationTest
     def test_finite_difference(self):
         sin_grid = np.arange(0, 1, .001)
         sin_vals = np.sin(sin_grid)
@@ -183,7 +191,6 @@ class FiniteDifferenceTests(TestCase):
             if print_error:
                 self.print_error(n, ord, errs)
             self.assertLess(errs[1], .05 / ord)
-
 
     @validationTest
     def test_FD2D(self):
@@ -395,6 +402,10 @@ class FiniteDifferenceTests(TestCase):
         #         )
         # gg.show()
 
+    #endregion
+
+    #region Mesh
+
     @validationTest
     def test_LinSpaceMesh(self):
         mg = Mesh(np.linspace(-1, 1, 3))
@@ -441,5 +452,155 @@ class FiniteDifferenceTests(TestCase):
             # just to make it accessible through Mesh
             self.assertIs(bad.mesh_type, MeshType.Indeterminate)
 
+    #endregion Mesh
 
+    #region Tensor Derivatives
+    @validationTest
+    def test_TensorTerms(self):
+
+        n_Q = 10
+        n_X = 20
+        x_derivs = [
+            np.random.rand(n_Q, n_X),
+            np.random.rand(n_Q, n_Q, n_X),
+            np.random.rand(n_Q, n_Q, n_Q, n_X),
+            np.random.rand(n_Q, n_Q, n_Q, n_Q, n_X)
+            ]
+        v_derivs = [
+            np.random.rand(n_X),
+            np.random.rand(n_X, n_X),
+            np.random.rand(n_X, n_X, n_X),
+            np.random.rand(n_X, n_X, n_X, n_X)
+            ]
+        terms = TensorExpansionTerms(x_derivs, v_derivs)
+
+        q1 = terms.QX(1)
+        self.assertEquals(str(q1), 'Q[1]')
+
+        q11 = terms.QX(1) + terms.QX(1)
+        self.assertEquals(str(q11), 'Q[1]+Q[1]')
+
+        qshift = q11.shift(2, 1)
+        self.assertEquals(str(qshift), '[Q[1]+Q[1]|2->1]')
+
+        vQ = terms.QX(1).dot(terms.XV(1), 2, 1)
+        self.assertEquals(str(vQ), '<Q[1]:2,1:V[1]>')
+
+        self.assertIsInstance(vQ, TensorExpansionTerms.ContractionTerm)
+        # self.assertIsInstance(vQ.simplify(), TensorExpansionTerms.BasicContractionTerm)
+
+        vdQQ = vQ.dQ()
+        self.assertIn("V[2]", str(vdQQ))
+        self.assertIn("<Q[2]:3,1:V[1]>", str(vdQQ))
+
+        vdQQQQ = vdQQ.dQ().dQ().simplify()
+        self.assertIsInstance(vdQQQQ, TensorExpansionTerms.SumTerm)
+        self.assertEquals(len(vdQQQQ.terms), 15)
+
+        # arr = vdQQQQ.array
+
+        xv_derivs = [
+            [None, np.random.rand(n_Q, n_X, n_X)],
+            [None, np.random.rand(n_Q, n_Q, n_X, n_X)]
+            ]
+
+        mixed_terms = TensorExpansionTerms(x_derivs, v_derivs, qxv_terms=xv_derivs)
+
+        vdQ = mixed_terms.QX(1).dot(mixed_terms.XV(1), 2, 1)
+
+        mixed_vdQXX = vdQ.dQ().dQ().simplify()
+
+        vdQQQQ_subbed = mixed_vdQXX.dQ().simplify()
+
+        self.assertEquals(len(vdQQQQ_subbed.terms), 14)
+
+        self.assertEquals(vdQQQQ_subbed.array.shape, (n_Q, n_Q, n_Q, n_Q))
+
+    def test_TensorConversion(self):
+
+        n_Q = 10
+        n_X = 20
+        x_derivs = [
+            np.random.rand(n_Q, n_X),
+            np.random.rand(n_Q, n_Q, n_X),
+            np.random.rand(n_Q, n_Q, n_Q, n_X),
+            np.random.rand(n_Q, n_Q, n_Q, n_Q, n_X)
+        ]
+        v_derivs = [
+            np.random.rand(n_X),
+            np.random.rand(n_X, n_X),
+            np.random.rand(n_X, n_X, n_X),
+            np.random.rand(n_X, n_X, n_X, n_X)
+        ]
+        xv_derivs = [
+            [None, np.random.rand(n_Q, n_X, n_X)],
+            [None, np.random.rand(n_Q, n_Q, n_X, n_X)]
+            ]
+
+        t = TensorDerivativeConverter(x_derivs, v_derivs)
+
+        new = t.convert()
+        self.assertEquals(len(new), 4)
+        self.assertEquals(new[1].shape, (n_Q, n_Q))
+
+
+        t2 = TensorDerivativeConverter(x_derivs, v_derivs, mixed_terms=xv_derivs)
+
+        new = t2.convert()
+        self.assertEquals(len(new), 4)
+        self.assertEquals(new[1].shape, (n_Q, n_Q))
+
+
+    #endregion Tensor Derivatives
+
+    #region Function expansions
+
+    @validationTest
+    def test_ExpandFunction(self):
+        dtype = np.float32
+
+        def sin_xy(pt):
+            ax = -1 if pt.ndim > 1 else 0
+            return np.prod(np.sin(pt), axis=ax)
+
+        point = np.array([.5, .5], dtype=dtype)
+        exp = FunctionExpansion.expand_function(sin_xy, point, function_shape=((2,), 0), order=4, stencil=6)
+
+        hmm = np.vstack(
+            [np.linspace(-.5, .5, 100, dtype=dtype), np.zeros((100,), dtype=dtype)]
+        ).T + point[np.newaxis]
+        # print(hmm)
+        ref = sin_xy(hmm)
+        test = exp(hmm)
+
+        plot_error = False
+        if plot_error:
+            exp2 = FunctionExpansion.expand_function(sin_xy, point, function_shape=((2,), 0), order=1, stencil=5)
+            g = hmm[:, 0]
+            gg = GraphicsGrid(nrows=1, ncols=2, tighten=True)
+            gg[0, 0] = Plot(g, exp(hmm), figure=Plot(g, sin_xy(hmm), figure=gg[0, 0]))
+            gg[0, 1] = Plot(g, exp2(hmm), figure=Plot(g, sin_xy(hmm), figure=gg[0, 1]))
+            gg.show()
+
+        plot2Derror = False
+        if plot2Derror:
+            # -0.008557147793556821113 0.007548466137326598213 0.0019501675856203966399
+            mesh = np.meshgrid(
+                np.linspace(.4, .6, 100, dtype=dtype),
+                np.linspace(.4, .6, 100, dtype=dtype)
+            )
+            grid = np.array(mesh).T
+            gg = GraphicsGrid(nrows=1, ncols=2, tighten=True)
+            ref2 = sin_xy(grid)
+            test2 = exp(grid)
+            err2 = ref2 - test2
+            # print(np.min(err2), np.max(err2), np.average(np.abs(err2)))
+            gg[0, 1] = ContourPlot(*mesh, ref2 - test2, figure=gg[0, 1], plot_style=dict(vmin=-.2, vmax=.2))
+            gg[0, 0] = ContourPlot(*mesh, test2, figure=gg[0, 0])
+            gg.show()
+
+        self.assertEquals(exp(point), exp.ref)
+        self.assertLess(np.linalg.norm(test - ref), .01)
+
+    #endregion
 
