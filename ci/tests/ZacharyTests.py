@@ -520,6 +520,7 @@ class FiniteDifferenceTests(TestCase):
 
         n_Q = 10
         n_X = 20
+        np.random.seed(1)
         x_derivs = [
             np.random.rand(n_Q, n_X),
             np.random.rand(n_Q, n_Q, n_X),
@@ -546,6 +547,68 @@ class FiniteDifferenceTests(TestCase):
         new = t2.convert()
         self.assertEquals(len(new), 4)
         self.assertEquals(new[1].shape, (n_Q, n_Q))
+
+        g_derivs = [
+            np.random.rand(n_Q, n_Q),
+            np.random.rand(n_Q, n_Q, n_Q),
+            np.random.rand(n_Q, n_Q, n_Q, n_Q),
+            np.random.rand(n_Q, n_Q, n_Q, n_Q, n_Q)
+        ]
+        g_terms = TensorExpansionTerms(g_derivs[1:], None, base_qx=g_derivs[0], q_name='G')
+        detG = g_terms.QX(0).det()
+        self.assertIsInstance(detG.array, float)
+        self.assertEquals(detG.array, np.linalg.det(g_derivs[0]))
+
+        new_tr = g_terms.QX(0).tr()
+        self.assertEquals(new_tr.array.shape, ())
+        self.assertTrue(np.allclose(new_tr.array, np.trace(g_derivs[0])))
+
+        newdQ = detG.dQ()
+        self.assertEquals(newdQ.array.shape, (n_Q,))
+
+        i_derivs = [
+            np.random.rand(n_Q, n_Q),
+            np.random.rand(n_Q, n_Q, n_Q),
+            np.random.rand(n_Q, n_Q, n_Q, n_Q),
+            np.random.rand(n_Q, n_Q, n_Q, n_Q, n_Q)
+        ]
+        i_terms = TensorExpansionTerms(i_derivs[1:], None, base_qx=i_derivs[0], q_name='I')
+        detI = i_terms.QX(0).det()
+
+        gam = detG / detI
+        self.assertEquals(gam.array.shape, ())
+        self.assertEquals(gam.array, detG.array / detI.array)
+        self.assertEquals(gam.array, np.linalg.det(g_derivs[0]) / np.linalg.det(i_derivs[0]))
+
+        inv_gam = 1/gam
+        self.assertEquals(inv_gam.array.shape, ())
+        self.assertEquals(inv_gam.array, detI.array / detG.array)
+        self.assertEquals(inv_gam.array, 1/gam.array)
+
+        gamdQ = gam.dQ().simplify(check_arrays=True)
+        gamdQQ = gamdQ.dQ().simplify(check_arrays=True)
+
+        self.assertEquals(gamdQ.array.shape, (n_Q,))
+        self.assertEquals(gamdQQ.array.shape, (n_Q, n_Q))
+
+        wat = g_terms.QX(0).dot(gamdQQ, [1, 2], [1, 2])
+        self.assertEquals(wat.array.shape, ())
+
+        wat_2 = g_terms.QX(1).dot(gamdQ, 3, 1).tr()
+        self.assertEquals(wat_2.array.shape, ())
+
+        doot = gamdQ.dot(g_terms.QX(0), 1, 1)
+        self.assertEquals(doot.array.shape, (n_Q,))
+
+        wat_3 = -3 / 4 * gamdQ.dot(doot, 1, 1)
+        self.assertEquals(wat_3.array.shape, ())
+
+        wat_4 = -3 / 4 * inv_gam * gamdQ.dot(doot, 1, 1)
+        self.assertEquals(wat_4.array.shape, ())
+
+        wat_5 = inv_gam * wat_3
+        self.assertEquals(wat_4.array, wat_5.array)
+
 
 
     #endregion Tensor Derivatives

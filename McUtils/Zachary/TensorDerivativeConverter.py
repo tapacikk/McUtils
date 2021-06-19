@@ -110,7 +110,10 @@ class TensorExpansionTerms:
             else:
                 return TensorExpansionTerms.ScalingTerm(self, 1/other)
         def __rtruediv__(self, other):
-            return self.__truediv__(other)
+            if isinstance(other, TensorExpansionTerms.TensorExpansionTerm):
+                return other.__truediv__(self)
+            else:
+                return TensorExpansionTerms.ScalingTerm(self.divided(), other)
         def __neg__(self):
             return -1 * self
         def dot(self, other, i, j):
@@ -243,6 +246,9 @@ class TensorExpansionTerms:
             super().__init__(term, -1, array=array)
         def __repr__(self):
             return '1/{}'.format(self.term)
+        def asarray(self):
+            out = 1 / self.term.array
+            return out
         def reduce_terms(self, check_arrays=False):
             if isinstance(self.term, TensorExpansionTerms.FlippedTerm):
                 wat = self.term.term.simplify(check_arrays=check_arrays)
@@ -365,7 +371,10 @@ class TensorExpansionTerms:
                     j = j-1
                 else:
                     j = [x-1 for x in j]
-                return np.tensordot(t1, t2, axes=[i, j])
+                try:
+                    return np.tensordot(t1, t2, axes=[i, j])
+                except:
+                    raise TensorExpansionError('failed to contract {}[{}]x{}[{}] for {} and {}'.format(t1.shape, i, t2.shape, j, self.left, self.right))
                 # except (ValueError, IndexError):
                 #     raise ValueError("failed to execute {}".format(self))
         def rank(self):
@@ -601,11 +610,11 @@ class TensorExpansionTerms:
             self.term = term
             self.axis = axis
         def rank(self):
-            return self.term.ndim - 1
+            return self.term.ndim - 2
         def asarray(self):
-            return np.sum(self.term.array, axis=self.axis-1)
+            return np.trace(self.term.array, axis1=self.axis-1, axis2=self.axis)
         def __repr__(self):
-            return 'Tr[{}]'.format(self.term)
+            return 'Tr[{},{}]'.format(self.term, self.axis)
         def reduce_terms(self, check_arrays=False):
             return type(self)(self.term.simplify(check_arrays=check_arrays), axis=self.axis, array=self._arr)
         def dQ(self):
@@ -623,13 +632,16 @@ class TensorExpansionTerms:
         def reduce_terms(self, check_arrays=False):
             return type(self)(self.term.simplify(check_arrays=check_arrays), array=self._arr)
         def dQ(self):
-            return TensorExpansionTerms.TraceTerm(
+            tr = TensorExpansionTerms.TraceTerm(
                 self*TensorExpansionTerms.InverseTerm(self.term).dot(
                     self.term.dQ(),
                     self.ndim,
                     2
                 )
-            ).shift(self.ndim, 1)
+            )
+            if self.ndim > 1:
+                tr = tr.shift(self.ndim, 1)
+            return tr
 
 class TensorDerivativeConverter:
     """
