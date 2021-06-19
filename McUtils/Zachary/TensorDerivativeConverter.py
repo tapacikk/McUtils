@@ -195,7 +195,12 @@ class TensorExpansionTerms:
             scaling = self.scaling
             if isinstance(self.scaling, TensorExpansionTerms.TensorExpansionTerm):
                 scaling = scaling.simplify(check_arrays=check_arrays)
-            return type(self)(self.term.simplify(check_arrays=check_arrays), scaling, array=self._arr)
+            if isinstance(scaling, (int, float, np.integer, np.floating)) and scaling == 1:
+                return self.term.simplify(check_arrays=check_arrays)
+            elif isinstance(scaling, (int, float, np.integer, np.floating)) and scaling == 0:
+                return 0
+            else:
+                return type(self)(self.term.simplify(check_arrays=check_arrays), scaling, array=self._arr)
         def dQ(self):
             return type(self)(self.term.dQ(),
                               self.scaling.dQ() if isinstance(self.scaling, TensorExpansionTerms.TensorExpansionTerm) else self.scaling
@@ -211,11 +216,20 @@ class TensorExpansionTerms:
         def rank(self):
             return self.term.rank()
         def asarray(self):
-            return np.power(self.term.array, self.pow)
+            wat = self.term.array
+            out = wat**self.pow
+            return out
         def __repr__(self):
             return '{}**{}'.format(self.term, self.pow)
         def reduce_terms(self, check_arrays=False):
-            return type(self)(self.term.simplify(check_arrays=check_arrays), self.pow, array=self._arr)
+            if self.pow == 1:
+                return self.term.simplify(check_arrays=check_arrays)
+            elif self.pow == 0:
+                return 1
+            elif self.pow == -1:
+                return TensorExpansionTerms.FlippedTerm(self.term.simplify(check_arrays=True), array=self._arr)
+            else:
+                return type(self)(self.term.simplify(check_arrays=check_arrays), self.pow, array=self._arr)
         def dQ(self):
             return TensorExpansionTerms.ScalingTerm(
                 self.pow * self.term.dQ(),
@@ -225,15 +239,17 @@ class TensorExpansionTerms:
         """
         Represents 1/x. Only can get valid derivatives for scalar terms. Beware of that.
         """
-        def __init__(self, term: 'TensorExpansionTerms.TensorExpansionTerm', array=None):
+        def __init__(self, term: 'TensorExpansionTerms.TensorExpansionTerm', pow=-1, array=None):
             super().__init__(term, -1, array=array)
         def __repr__(self):
             return '1/{}'.format(self.term)
         def reduce_terms(self, check_arrays=False):
-            if isinstance(self.term, type(self)):
-                return self.term.term
+            if isinstance(self.term, TensorExpansionTerms.FlippedTerm):
+                wat = self.term.term.simplify(check_arrays=check_arrays)
+                if check_arrays: self._check_simp(wat)
+                return wat
             else:
-                return self
+                return super().reduce_terms(check_arrays=check_arrays)
     class AxisShiftTerm(TensorExpansionTerm):
         def __init__(self, term:'TensorExpansionTerms.TensorExpansionTerm', start:int, end:int, array=None):
             super().__init__(array=array)
@@ -591,7 +607,7 @@ class TensorExpansionTerms:
         def __repr__(self):
             return 'Tr[{}]'.format(self.term)
         def reduce_terms(self, check_arrays=False):
-            return type(self)(self.term.simplify(check_arrays=check_arrays), array=self._arr)
+            return type(self)(self.term.simplify(check_arrays=check_arrays), axis=self.axis, array=self._arr)
         def dQ(self):
             return type(self)(self.term.dQ(), axis=self.axis+1)
     class DeterminantTerm(TensorExpansionTerm):
