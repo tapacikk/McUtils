@@ -61,7 +61,7 @@ class ParallelizerTests(TestCase):
         par_lens = MultiprocessingParallelizer().run(self.map_applier)
         serial_lens = SerialNonParallelizer().run(self.map_applier)
         self.assertEquals(par_lens, serial_lens)
-    @debugTest
+    @validationTest
     def test_MapMultiprocessingDataSmall(self):
         par_lens = MultiprocessingParallelizer().run(self.map_applier, n=3, comm=[0, 1, 2])
         self.assertEquals(len(par_lens), 3)
@@ -85,16 +85,35 @@ class ParallelizerTests(TestCase):
         l = len(data)
         res = parallelizer.gather(l)
         return res
-    @debugTest
+    @validationTest
     def test_ScatterGatherMultiprocessing(self):
         p = MultiprocessingParallelizer()
         par_lens = p.run(self.scatter_gather)
         self.assertEquals(len(par_lens), p.nprocs+1)
         serial_lens = SerialNonParallelizer().run(self.scatter_gather)
         self.assertEquals(sum(par_lens), serial_lens)
-    @debugTest
+    @validationTest
     def test_ScatterGatherMultiprocessingDataSmall(self):
         par_lens = MultiprocessingParallelizer().run(self.scatter_gather, 3, comm=[0, 1, 2])
         self.assertEquals(len(par_lens), 3)
         serial_lens = SerialNonParallelizer().run(self.scatter_gather, 3)
         self.assertEquals(sum(par_lens), serial_lens)
+
+    def simple_scatter_1(self, parallelizer=None):
+        data = [
+            np.array([[0, 0]]), np.array([[0, 1]]), np.array([[0, 2]]),
+            np.array([[1, 0]]), np.array([[1, 1]]), np.array([[1, 2]]),
+            np.array([[2, 0]]), np.array([[2, 1]]), np.array([[2, 2]])
+        ]
+        data = parallelizer.scatter(data)
+        l = len(data)
+        l = parallelizer.gather(l)
+        return l
+    def simple_print(self, parallelizer=None):
+        parallelizer.print(1)
+    @validationTest
+    def test_MiscProblems(self):
+
+        l = MultiprocessingParallelizer().run(self.simple_scatter_1, comm=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+        MultiprocessingParallelizer().run(self.simple_print, comm=[0, 1, 2])
+        # raise Exception(l)

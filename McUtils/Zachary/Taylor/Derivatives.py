@@ -3,6 +3,7 @@ Module that provides a FiniteDifferenceDerivative class that does finite-differe
 """
 
 from .FiniteDifferenceFunction import FiniteDifferenceFunction
+from ...Parallelizers import Parallelizer, SerialNonParallelizer
 import numpy as np, itertools as it, scipy.sparse as sparse
 
 __all__ = [
@@ -34,8 +35,8 @@ class FiniteDifferenceDerivative:
             f = FunctionSpec(f, *function_shape)
         self.f = f
         self.parallelizer=parallelizer
-        if parallelizer is not None:
-            raise NotImplementedError("need to figure out how I want to work parallelism in")
+        # if parallelizer is not None:
+        #     raise NotImplementedError("need to figure out how I want to work parallelism in")
         self._fd_opts = fd_opts
 
     def __call__(self, *args, **opts):
@@ -80,6 +81,7 @@ class FiniteDifferenceDerivative:
         return DerivativeGenerator(
             f,
             center,
+            parallelizer=self.parallelizer,
             **fd_opts
         )
 
@@ -174,11 +176,11 @@ class DerivativeGenerator:
 
         # configure the function for handling displacements
         if displacement_function is None:
-            displacement_function = lambda c,a:a
+            displacement_function = self._default_displace
 
         # define a function to prep the system
         if prep is None:
-            prep = lambda c, a, b: (a, b)
+            prep = self._default_prep
 
         self.f = f_spec
         self.config_shape = configs_dims
@@ -200,6 +202,14 @@ class DerivativeGenerator:
         self._cache = {}
 
         self.parallelizer = parallelizer
+
+    @staticmethod
+    def _default_displace(c, a):
+        return a
+
+    @staticmethod
+    def _default_prep(c, a, b):
+        return (a, b)
 
     def _get_fdf(self, ci, mesh_spacing):
         # create the different types of finite differences we'll compute for the different coordinates of interest
@@ -547,7 +557,20 @@ class DerivativeGenerator:
 
         return [self._idx(s) for s in specs], specs
 
-    def compute_derivatives(self, order, pos=(), coordinates=None, lazy=None):
+    def _parallel_derivs(self, specs=None, parallelizer=None):
+        # if main_kwargs is not None:
+        #     specs = main_kwargs['specs']
+        # else:
+        #     specs = None
+        specs = parallelizer.scatter(specs)
+        derivs = np.array([x for x in self._spec_derivs(specs)])
+        # parallelizer.print(derivs)
+        derivs = parallelizer.gather(derivs)
+        if parallelizer.on_main:
+            if not isinstance(derivs, np.ndarray):
+                derivs = np.concatenate(derivs, axis=0)
+        return derivs
+    def compute_derivatives(self, order, pos=(), coordinates=None, lazy=None, parallelizer=None):
         """
         Computes the derivatives up to `order` filtered by `pos` over the `coordinates`
 
@@ -573,19 +596,36 @@ class DerivativeGenerator:
         def lazy_derivs(ders):
             for d in ders:
                 yield d
-        for which, o in enumerate(order):
-            specs, raw = self._get_specs(o, pos, coordinates)
-            lazy = self.lazy if lazy is None else lazy
-            derivs = self._spec_derivs(specs)
-            if lazy:
+
+        lazy = self.lazy if lazy is None else lazy
+        if lazy:
+            for which, o in enumerate(order):
+                specs, raw = self._get_specs(o, pos, coordinates)
+                derivs = self._spec_derivs(specs)
                 res[which] = lazy_derivs(derivs)
+        else:
+            if parallelizer is None:
+                parallelizer = self.parallelizer
+            par = Parallelizer.lookup(parallelizer)
+            if isinstance(par, SerialNonParallelizer):
+                for which, o in enumerate(order):
+                    specs, raw = self._get_specs(o, pos, coordinates)
+                    derivs = np.array([s for s in self._spec_derivs(specs)])
+                    res[which] = derivs
             else:
-                res[which] = list(derivs)
+                with par:
+                    for which, o in enumerate(order):
+                        specs, raw = self._get_specs(o, pos, coordinates)
+                        comm = None if len(specs)>=par.nprocs else list(range(len(specs)))
+                        derivs = par.run(self._parallel_derivs, main_kwargs={'specs':specs},
+                                         comm=comm
+                                         )
+                        res[which] = derivs
         if single:
             res = res[0]
         return res
 
-    def derivative_tensor(self, order, pos=(), coordinates=None):
+    def derivative_tensor(self, order, pos=(), coordinates=None, parallelizer=None):
         """
         Computes a given derivative tensor
 
@@ -599,6 +639,9 @@ class DerivativeGenerator:
         :rtype:
         """
 
+        if parallelizer is None:
+            parallelizer = self.parallelizer
+
         if isinstance(order, (int, np.integer)):
             single = True
             order = [order]
@@ -606,30 +649,44 @@ class DerivativeGenerator:
             single = False
 
         res = [None]*len(order)
-        for which, o in enumerate(order):
-            pos = [slice(None, None, None) if a is None else a for a in pos]
-            if coordinates is None:
-                coordinates = np.arange(np.product(self.coord_shape))
-            elif not isinstance(coordinates[0], (int, np.integer)):
-                coordinates = self._fidx(coordinates)
-            sub_specs = [coordinates[a] if not isinstance(a, (int, np.integer)) else (coordinates[a],) for a in pos]
-            sub_specs = sub_specs + [coordinates for i in range(o - len(pos))]
-            specs, raw = self._get_specs(o, pos, coordinates)
-            derivs = self._spec_derivs(specs)
 
-            d_tensor = None
-            # apply symmetry
-            for s, d in zip(raw, derivs):
-                if d_tensor is None:
-                    d_tensor = np.ones(tuple(len(s) for s in sub_specs) + d.shape)
+        if parallelizer is None:
+            parallelizer = self.parallelizer
+        par = Parallelizer.lookup(parallelizer)
+        with par:
+            for which, o in enumerate(order):
+                pos = [slice(None, None, None) if a is None else a for a in pos]
+                if coordinates is None:
+                    coordinates = np.arange(np.product(self.coord_shape))
+                elif not isinstance(coordinates[0], (int, np.integer)):
+                    coordinates = self._fidx(coordinates)
 
-                for p in it.permutations(s, len(s)):
-                    try:
-                        d_tensor[p] = d
-                    except IndexError:
-                        pass
+                sub_specs = [coordinates[a] if not isinstance(a, (int, np.integer)) else (coordinates[a],) for a in pos]
+                sub_specs = sub_specs + [coordinates for i in range(o - len(pos))]
+                specs, raw = self._get_specs(o, pos, coordinates)
 
-            res[which] = d_tensor
+                if isinstance(par, SerialNonParallelizer):
+                    derivs = np.array([s for s in self._spec_derivs(specs)])
+                else:
+                    comm = None if len(specs) >= par.nprocs else list(range(len(specs)))
+                    derivs = par.run(self._parallel_derivs, main_kwargs={'specs':specs},
+                                     comm=comm
+                                     )
+                # derivs = self._spec_derivs(specs)
+
+                d_tensor = None
+                # apply symmetry
+                for s, d in zip(raw, derivs):
+                    if d_tensor is None:
+                        d_tensor = np.ones(tuple(len(s) for s in sub_specs) + d.shape)
+
+                    for p in it.permutations(s, len(s)):
+                        try:
+                            d_tensor[p] = d
+                        except IndexError:
+                            pass
+
+                res[which] = d_tensor
 
         if single:
             res = res[0]

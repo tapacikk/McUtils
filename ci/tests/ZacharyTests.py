@@ -538,14 +538,11 @@ class FiniteDifferenceTests(TestCase):
             ]
 
         t = TensorDerivativeConverter(x_derivs, v_derivs)
-
         new = t.convert()
         self.assertEquals(len(new), 4)
         self.assertEquals(new[1].shape, (n_Q, n_Q))
 
-
         t2 = TensorDerivativeConverter(x_derivs, v_derivs, mixed_terms=xv_derivs)
-
         new = t2.convert()
         self.assertEquals(len(new), 4)
         self.assertEquals(new[1].shape, (n_Q, n_Q))

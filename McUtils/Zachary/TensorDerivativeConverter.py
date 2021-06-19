@@ -78,7 +78,19 @@ class TensorExpansionTerms:
         def dQ(self):
             return type(self)(*(s.dQ() for s in self.terms))
         def asarray(self):
-            return np.sum([s.array for s in self.terms], axis=0)
+            all_terms = [(i, s.array) for i,s in enumerate(self.terms)]
+            clean_terms = [s for s in all_terms if not (isinstance(s[1], (int, float, np.integer, np.floating)) and s[1]==0)]
+            for s in clean_terms:
+                if s[1].shape != clean_terms[0][1].shape:
+                    raise Exception("this term is bad {} in {} (shape {} instead of shape {})".format(self.terms[s[0]], self,
+                                                                                                      s[1].shape,
+                                                                                                      clean_terms[0][1].shape
+                                                                                                      ))
+            clean_terms = [c[1] for c in clean_terms]
+            try:
+                return np.sum(clean_terms, axis=0)
+            except:
+                raise Exception(clean_terms)
         def rank(self):
             return self.terms[0].ndim
         def simplify(self):
@@ -415,7 +427,7 @@ class TensorDerivativeConverter:
         arrays.append(deriv.array)
 
         for i in range(2, order+1):
-            deriv = deriv.dQ().simplify()
+            deriv = deriv.dQ()#.simplify() # there's an occasional issue with shift simplifications
             arrays.append(deriv.array)
 
         return arrays
