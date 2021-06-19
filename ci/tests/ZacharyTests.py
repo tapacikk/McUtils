@@ -493,7 +493,7 @@ class FiniteDifferenceTests(TestCase):
         self.assertIn("V[2]", str(vdQQ))
         self.assertIn("<Q[2]:3,1:V[1]>", str(vdQQ))
 
-        vdQQQQ = vdQQ.dQ().dQ().simplify()
+        vdQQQQ = vdQQ.dQ().dQ().reduce_terms()
         self.assertIsInstance(vdQQQQ, TensorExpansionTerms.SumTerm)
         self.assertEquals(len(vdQQQQ.terms), 15)
 
@@ -508,9 +508,9 @@ class FiniteDifferenceTests(TestCase):
 
         vdQ = mixed_terms.QX(1).dot(mixed_terms.XV(1), 2, 1)
 
-        mixed_vdQXX = vdQ.dQ().dQ().simplify()
+        mixed_vdQXX = vdQ.dQ().dQ().reduce_terms()
 
-        vdQQQQ_subbed = mixed_vdQXX.dQ().simplify()
+        vdQQQQ_subbed = mixed_vdQXX.dQ().reduce_terms()
 
         self.assertEquals(len(vdQQQQ_subbed.terms), 14)
 

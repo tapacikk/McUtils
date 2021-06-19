@@ -16,6 +16,9 @@ __all__ = [
     "SerialNonParallelizer"
 ]
 
+class ChildProcessRuntimeError(RuntimeError):
+    ...
+
 class Parallelizer(metaclass=abc.ABCMeta):
     """
     Abstract base class to help manage parallelism.
@@ -993,7 +996,15 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             kwargs['parallelizer'] = comm.parent
             if main_kwargs is None:
                 main_kwargs = {}
-            return runner(*args, **main_kwargs, **kwargs)
+            if self.on_main:
+                return runner(*args, **main_kwargs, **kwargs)
+            else:
+                try:
+                    return runner(*args, **main_kwargs, **kwargs)
+                except Exception as e:
+                    self.print(e)
+                    comm.send(e, 0)
+                    raise
 
     def apply(self, func, *args, comm=None, main_kwargs=None, **kwargs):
         """
