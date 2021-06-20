@@ -4,7 +4,7 @@ from McUtils.Zachary import *
 from McUtils.Zachary.Taylor.ZachLib import *
 from McUtils.Plots import *
 from unittest import TestCase
-import sys, h5py, math, numpy as np
+import sys, h5py, math, numpy as np, itertools
 
 class FiniteDifferenceTests(TestCase):
 
@@ -548,12 +548,55 @@ class FiniteDifferenceTests(TestCase):
         self.assertEquals(len(new), 4)
         self.assertEquals(new[1].shape, (n_Q, n_Q))
 
+
+        trace_derivs = TensorExpansionTerms([0, 0, 0, 0, 0], [0, 0, 0, 0, 0])
+        t1 = trace_derivs.QX(1).tr().dQ()
+        self.assertEquals(str(t1), 'Tr[Q[2],2+3]')
+
+        t1 = trace_derivs.QX(1).det().dQ().dQ()
+
+        t1 = trace_derivs.QX(1).inverse().dQ()
+
+        # raise Exception(t1)
+        # raise Exception(t1)
+
+
+    @debugTest
+    def test_PseudopotentialTerms(self):
+
+        n_Q = 10
+        np.random.seed(1)
+        n_X = 3
+
+        i_derivs = [
+            np.random.rand(n_X, n_X),
+            np.random.rand(n_Q, n_X, n_X),
+            np.random.rand(n_Q, n_Q, n_X, n_X),
+            np.random.rand(n_Q, n_Q, n_Q, n_X, n_X)
+        ]
+        # for x in i_derivs: # symmetrize
+        #     inds = np.indices(x.shape).T.reshape(-1, x.ndim)
+        #     for i in inds:
+        #         n_X_part = i[-2:]
+        #         n_Q_part = i[:-2]
+        #         parent = np.concatenate([np.sort(n_Q_part), np.sort(n_X_part)])
+        #         x[i] = x[parent]
+        i_terms = TensorExpansionTerms(i_derivs[1:], None, base_qx=i_derivs[0], q_name='I')
+        detI = i_terms.QX(0).det()
+
         g_derivs = [
             np.random.rand(n_Q, n_Q),
             np.random.rand(n_Q, n_Q, n_Q),
             np.random.rand(n_Q, n_Q, n_Q, n_Q),
             np.random.rand(n_Q, n_Q, n_Q, n_Q, n_Q)
         ]
+        # for x in g_derivs: # symmetrize
+        #     inds = np.indices(x.shape).T.reshape(-1, x.ndim)
+        #     for i in inds:
+        #         n_X_part = i[-2:]
+        #         n_Q_part = i[:-2]
+        #         parent = np.concatenate([np.sort(n_Q_part), np.sort(n_X_part)])
+        #         x[i] = x[parent]
         g_terms = TensorExpansionTerms(g_derivs[1:], None, base_qx=g_derivs[0], q_name='G')
         detG = g_terms.QX(0).det()
         self.assertIsInstance(detG.array, float)
@@ -563,39 +606,56 @@ class FiniteDifferenceTests(TestCase):
         self.assertEquals(new_tr.array.shape, ())
         self.assertTrue(np.allclose(new_tr.array, np.trace(g_derivs[0])))
 
+        new_inv = ~g_terms.QX(0)
+        self.assertTrue(np.allclose(new_inv.array, np.linalg.inv(g_derivs[0])))
+
         newdQ = detG.dQ()
         self.assertEquals(newdQ.array.shape, (n_Q,))
 
         i_derivs = [
-            np.random.rand(n_Q, n_Q),
-            np.random.rand(n_Q, n_Q, n_Q),
-            np.random.rand(n_Q, n_Q, n_Q, n_Q),
-            np.random.rand(n_Q, n_Q, n_Q, n_Q, n_Q)
+            np.random.rand(n_X, n_X),
+            np.random.rand(n_Q, n_X, n_X),
+            np.random.rand(n_Q, n_Q, n_X, n_X),
+            np.random.rand(n_Q, n_Q, n_Q, n_X, n_X)
         ]
+        # for x in i_derivs: # symmetrize
+        #     inds = np.indices(x.shape).T.reshape(-1, x.ndim)
+        #     for i in inds:
+        #         n_X_part = i[-2:]
+        #         n_Q_part = i[:-2]
+        #         parent = np.concatenate([np.sort(n_Q_part), np.sort(n_X_part)])
+        #         x[i] = x[parent]
         i_terms = TensorExpansionTerms(i_derivs[1:], None, base_qx=i_derivs[0], q_name='I')
         detI = i_terms.QX(0).det()
 
         gam = detG / detI
         self.assertEquals(gam.array.shape, ())
-        self.assertEquals(gam.array, detG.array / detI.array)
-        self.assertEquals(gam.array, np.linalg.det(g_derivs[0]) / np.linalg.det(i_derivs[0]))
+        self.assertTrue(np.allclose(gam.array, detG.array / detI.array))
+        self.assertTrue(np.allclose(gam.array, np.linalg.det(g_derivs[0]) / np.linalg.det(i_derivs[0])))
+
+
+        five_gam = 5 * detG / detI
+        self.assertAlmostEquals(five_gam.array, 5 * detG.array / detI.array, 8)
 
         inv_gam = 1/gam
         self.assertEquals(inv_gam.array.shape, ())
-        self.assertEquals(inv_gam.array, detI.array / detG.array)
+        self.assertTrue(np.allclose(inv_gam.array, detI.array / detG.array))
         self.assertEquals(inv_gam.array, 1/gam.array)
 
         gamdQ = gam.dQ().simplify(check_arrays=True)
-        gamdQQ = gamdQ.dQ().simplify(check_arrays=True)
 
         self.assertEquals(gamdQ.array.shape, (n_Q,))
-        self.assertEquals(gamdQQ.array.shape, (n_Q, n_Q))
+        # self.assertEquals(gamdQQ.array.shape, (n_Q, n_Q))
 
-        wat = g_terms.QX(0).dot(gamdQQ, [1, 2], [1, 2])
-        self.assertEquals(wat.array.shape, ())
+        # wat = g_terms.QX(0).dot(gamdQQ, [1, 2], [1, 2])
+        # self.assertEquals(wat.array.shape, ())
 
         wat_2 = g_terms.QX(1).dot(gamdQ, 3, 1).tr()
         self.assertEquals(wat_2.array.shape, ())
+        wat_21 = g_terms.QX(2).tr(axis1=1, axis2=4)
+        self.assertEquals(wat_21.array.shape, (n_Q, n_Q))
+        self.assertTrue(np.allclose(wat_21.array, np.trace(g_derivs[2], axis1=0, axis2=3)))
+
 
         doot = gamdQ.dot(g_terms.QX(0), 1, 1)
         self.assertEquals(doot.array.shape, (n_Q,))
@@ -607,9 +667,112 @@ class FiniteDifferenceTests(TestCase):
         self.assertEquals(wat_4.array.shape, ())
 
         wat_5 = inv_gam * wat_3
-        self.assertEquals(wat_4.array, wat_5.array)
+        self.assertTrue(np.allclose(wat_4.array, wat_5.array))
+
+        I0, I0Q, I0QQ = i_derivs[:3]
+        G, GQ, GQQ = g_derivs[:3]
+
+        detI = np.linalg.det(I0); invI = np.linalg.inv(I0); adjI = invI * detI
+        detG = np.linalg.det(G); invG = np.linalg.inv(G); adjG = invG * detG
 
 
+        invIdQ_new = i_terms.QX(0).inverse().dQ()
+        invIdQ = - np.tensordot(np.tensordot(invI, I0Q, axes=[-1, 1]), invI, axes=[-1, 0]).transpose(1, 0, 2)
+        self.assertEquals(invIdQ_new.array.shape, invIdQ.shape)
+        self.assertTrue(np.allclose(invIdQ_new.array, invIdQ))
+
+        invGdQ = - np.tensordot(np.tensordot(invG, GQ, axes=[-1, 1]), invG, axes=[-1, 0]).transpose(1, 0, 2)
+
+        # not quite enough terms to want to be clever here...
+        nQ = GQ.shape[0]
+        ## First derivatives of the determinant
+        detIdQ = np.array([
+            np.trace(np.dot(adjI, I0Q[i]))
+            for i in range(nQ)
+        ])
+        detIdQ2 = np.trace(
+            np.tensordot(adjI, I0Q, axes=[1, 1]),
+            axis1=0,
+            axis2=2
+        )
+        detI_new = i_terms.QX(0).det()
+        detIdQ_new = detI_new.dQ()
+        self.assertTrue(np.allclose(detIdQ2, detIdQ))
+        self.assertEquals(detIdQ_new.array.shape, detIdQ.shape)
+        self.assertTrue(np.allclose(detIdQ_new.array, detIdQ))
+
+        detGdQ = np.array([
+            np.trace(np.dot(adjG, GQ[i]))
+            for i in range(nQ)
+        ])
+        detG_new = g_terms.QX(0).det()
+        detGdQ_new = detG_new.dQ()
+        self.assertEquals(detGdQ_new.array.shape, detGdQ.shape)
+        self.assertTrue(np.allclose(detGdQ_new.array, detGdQ))
+
+        # two_dot = g_terms.QX(0).dot(gamdQQ, [1, 2], [1, 2])
+        # self.assertTrue(np.allclose(two_dot.array, np.tensordot(g_terms.QX(0).array, gamdQQ.array, axes=[[0, 1], [0, 1]])))
+        gamdQ = (detI_new.dQ()/detI_new + -1 * detG_new.dQ()/detG_new).simplify(check_arrays=True)
+
+        # gamdQQ = gamdQ.dQ().simplify(check_arrays=True)
+
+        ## Derivatives of ln Gamma
+        gamdQ_I = 1 / detI * detIdQ
+        gamdQ_G = 1 / detG * detGdQ
+        gamdQ_og = gamdQ_I - gamdQ_G
+
+        self.assertTrue(np.allclose(gamdQ.array, gamdQ_og))
+
+        adjIdQ = detI * invIdQ + detIdQ[:, np.newaxis, np.newaxis] * invI[np.newaxis, :, :]
+        np.array([
+            np.trace(np.dot(adjI, I0Q[i]))
+            for i in range(nQ)
+        ])
+        detIdQQ = np.array([
+            [
+                np.tensordot(I0Q[i], adjIdQ[j], axes=2)
+                + np.tensordot(adjI, I0QQ[i, j], axes=2)
+                for i in range(nQ)
+            ]
+            for j in range(nQ)
+        ])
+
+        detIdQQ2_terms = [
+            np.array([
+                [
+                    np.tensordot(I0Q[i], adjIdQ[j], axes=2)
+                    for i in range(nQ)
+                ]
+                for j in range(nQ)
+            ]),
+            np.array([
+                [
+                    np.tensordot(adjI, I0QQ[i, j], axes=2)
+                    for i in range(nQ)
+                ]
+                for j in range(nQ)
+            ])
+        ]
+        detIdQQ2 = np.sum(detIdQQ2_terms, axis=0)
+
+        detIdQQ_new = detIdQ_new.dQ().simplify(check_arrays=True)
+
+        adjI_new = i_terms.QX(0).det() * i_terms.QX(0).inverse()
+        self.assertTrue(np.allclose(adjI_new.array, adjI))
+
+        adjIdQ_new = adjI_new.dQ().simplify()
+        # raise Exception(adjIdQ_new.terms[0])
+        self.assertTrue(np.allclose(adjIdQ_new.array, adjIdQ))
+
+        # raise Exception(detIdQQ_new, detIdQQ2_terms[1])
+        self.assertTrue(np.allclose(detIdQQ2, detIdQQ))
+        # raise Exception(detIdQQ_new)
+        # raise Exception
+        raise Exception(detIdQQ_new.array, detIdQQ)
+        self.assertEquals(detIdQQ_new.array.shape, detIdQQ.shape)
+        self.assertTrue(np.allclose(detIdQQ_new.array, detIdQQ))
+
+        gamdQQ_I = -1 / detI ** 2 * np.outer(detIdQ, detIdQ) + 1 / detI * detIdQQ
 
     #endregion Tensor Derivatives
 
