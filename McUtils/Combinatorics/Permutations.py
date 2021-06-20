@@ -1972,8 +1972,8 @@ class SymmetricGroupGenerator:
 
             return comp, sel, new_perms
 
-        def filter_from_ind_spec(i, j, idx, insert_inds, full_inds_sorted, inv, mask=mask,
-                                 merged_sums=merged_sums, filter=filter):
+        def filter_from_ind_spec(i, j, block_idx, block_sizes, insert_inds, full_inds_sorted, inv, *,
+                                 mask=mask, merged_sums=merged_sums, filter=filter):
             sort_1 = np.arange(len(full_inds_sorted))  # assured sorting from before
             if filter.ind_grps is not None:
                 subinds = filter.ind_grps[merged_sums[i, j]]
@@ -1985,8 +1985,10 @@ class SymmetricGroupGenerator:
                 submask, _, _ = contained(full_inds_sorted, filter.inds,
                                        assume_unique=(False, True),
                                        sortings=(sort_1, filter.ind_sort))
-            mask[insert_inds] = submask[inv]
-            perm_counts[cum_counts[i]:cum_counts[i+1], idx] -= len(submask) - np.count_nonzero(submask)
+            sort_mask = submask[inv]
+            mask[insert_inds] = sort_mask
+            for idx,s in zip(block_idx, np.split(sort_mask, block_sizes)):
+                perm_counts[cum_counts[i]:cum_counts[i+1], idx] -= len(s) - np.count_nonzero(s)
 
         def get_standard_perms(perms):
             classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in perms]
@@ -2031,7 +2033,7 @@ class SymmetricGroupGenerator:
                 classes_count_data = [np.array(x) for x in k]
                 standard_rep_perms = block_dat['standards']
                 i, j = block_dat['indices']
-                perm_pos = np.concatenate(block_dat['blocks'])
+                perm_pos = np.concatenate([b[0] for b in block_dat['blocks']])
                 new_perms = storage[perm_pos]
 
                 padding_1, padding_2 = get_standard_perm_offsets(i, j, standard_rep_perms, classes_count_data)
@@ -2041,7 +2043,9 @@ class SymmetricGroupGenerator:
                 indices[perm_pos] = full_inds_sorted[inv]
                 # print(stored_inds)
                 if filter is not None:
-                    filter_from_ind_spec(i, j, idx, standard_rep_perms, full_inds_sorted, inv)
+                    block_idx = [b[1] for b in block_dat['blocks']]
+                    block_sizes = np.cumsum([0] + [len(x[0]) for x in block_dat['blocks']])
+                    filter_from_ind_spec(i, j, block_idx, block_sizes, perm_pos, full_inds_sorted, inv)
 
         def add_new_perms(idx, perm, cls_pos, cts, depth, tree_data,
                           classes=classes,
@@ -2115,12 +2119,12 @@ class SymmetricGroupGenerator:
                             key = tuple(tuple(x) for x in classes_count_data[n])
                             stored_inds = idx_starts + sel[n]
                             if key in cls_cache:
-                                cls_cache[key]['blocks'].append(stored_inds)
+                                cls_cache[key]['blocks'].append((stored_inds, idx))
                             else:
                                 cls_cache[key] = {
                                     'standards': standard_rep_perms[n],
                                     'indices': (i, j), # the same set should work for all of these
-                                    'blocks': [stored_inds]
+                                    'blocks': [(stored_inds, idx)]
                                 }
 
         UniquePermutations.walk_permutation_tree(counts, add_new_perms, include_positions=True)
