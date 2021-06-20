@@ -1264,10 +1264,9 @@ class IntegerPartitionPermutations:
 
         self.dim = dim
 
-        self._class_counts = np.asanyarray([
-            tuple(np.flip(y) for y in np.unique(x, return_counts=True)) for x in self.partitions
-        ], dtype=object
-        )
+        self._class_counts = np.full(len(self.partitions), None, dtype=object)
+        for i, x in enumerate(self.partitions):
+            self._class_counts[i] = UniquePermutations.get_permutation_class_counts(x)
         self.partition_counts = np.array([UniquePermutations.count_permutations(x[1]) for x in self._class_counts])
         self._cumtotals = np.cumsum(np.concatenate([[0], self.partition_counts[:-1]]), axis=0)
         self._num_terms = np.sum(self.partition_counts)
@@ -1500,8 +1499,8 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
             dim = 1
 
         self.dim = dim
-
-        self._class_counts = np.array([ [np.array([0]), np.array([dim])] ], dtype=object)
+        self._class_counts = np.full(1, None, dtype=object)
+        self._class_counts[0] = [np.array([0], dtype='int8'), np.array([dim], dtype='int8')]
         self.partition_counts = np.array([], dtype='int8')
         self._cumtotals = np.array([0, 1])
         self._num_terms = 1
@@ -1933,7 +1932,6 @@ class SymmetricGroupGenerator:
         if return_indices:
             indices = np.zeros((total_perm_count,), dtype=int)  # might be able to bound this dtype but not sure...
 
-        # print(any(np.any(x) for x in can_be_negative), can_be_negative)
         if filter is not None or (filter_negatives and any(len(x)>0 for x in can_be_negative)):
             mask = np.full((total_perm_count,), True)
         else:
@@ -2041,7 +2039,6 @@ class SymmetricGroupGenerator:
                 new_inds = get_sort_perm_indices(sort_perms, classes_count_data)
                 full_inds_sorted = padding_1 + padding_2 + new_inds
                 indices[perm_pos] = full_inds_sorted[inv]
-                # print(stored_inds)
                 if filter is not None:
                     block_idx = [b[1] for b in block_dat['blocks']]
                     block_sizes = np.cumsum([0] + [len(x[0]) for x in block_dat['blocks']])
@@ -2069,7 +2066,6 @@ class SymmetricGroupGenerator:
             """
 
             class_perms = np.array([c[perm] for c in classes])
-            # print(cls_pos)
             class_neg_list = [
                 np.concatenate([cls_pos[j] for j in neg]) if len(neg) > 0 else ()
                 for neg in class_negatives
@@ -2092,11 +2088,8 @@ class SymmetricGroupGenerator:
                 # This gives us strict ordering relations that we can make use of and allows us to only calculate
                 # the counts once
                 new_rep_perm = rep[np.newaxis, :] + class_perms[cls_inds[i], :]
-                # print(cls_inds[i])
-                # print(i, idx, idx_starts, new_rep_perm.shape)
                 if filter_negatives:
                     class_negs = [class_neg_list[j] for j in cls_inds[i]]
-                    # print(class_negs, new_rep_perm)
                     comp, sel, new_perms = filter_negatives_perms(i, idx, idx_starts, perms, new_rep_perm,
                                                                   class_negs
                                                                   )
@@ -2131,25 +2124,112 @@ class SymmetricGroupGenerator:
         if return_indices:
             process_cached_index_blocks(storage)
 
-        # print(storage)
-        # print(mask)
-
         if mask is not None:
             storage = storage[mask]
             if return_indices:
                 indices = indices[mask]
         perm_counts = np.sum(perm_counts, axis=1)
 
-        # print(storage)
-        # print(perm_counts)
-        # storage = storage.reshape((-1, ndim))
-        # if return_indices:
-        #     indices = indices.flatten()
-
         if return_indices:
             return storage, perm_counts, indices
         else:
             return storage, perm_counts
+
+    def _get_direct_sum_rule_groups(self, rules, dim, dtype):
+        # first up we pad the rules
+        rules = [
+            np.concatenate([np.array(r, dtype=dtype), np.zeros(dim - len(r), dtype=dtype)]) if len(
+                r) < dim else np.array(r, dtype=dtype)
+            for r in rules
+            if len(r) <= dim
+        ]
+
+        # raise Exception(rules[0].dtype)
+
+        # get counts so we can split them up
+        wat = [UniquePermutations.get_permutation_class_counts(rule, sort_by_counts=True) for rule in rules]
+        rule_counts = np.asanyarray(wat, dtype=object)
+
+        # first split by length
+        count_lens = np.array([len(x[0]) for x in rule_counts])
+        len_sort = np.argsort(count_lens)
+        len_invs = np.argsort(len_sort)
+        _, len_split = np.unique(count_lens[len_sort], return_index=True)
+        rule_counts = rule_counts[len_sort]
+        rule_count_splits = np.split(rule_counts, len_split)[1:]
+        invs_splits = np.split(len_invs, len_split)[1:]
+        # next sort and split the rules for real
+        rule_groups = []  # no reason to be fancy here
+        # rule_inv = []
+        # raise Exception(rule_count_splits)
+        for split, inv in zip(rule_count_splits, invs_splits):
+            rule_counts = np.array([x[1] for x in split], dtype=_infer_dtype(dim))
+            split_sort = np.lexsort(np.flip(rule_counts, axis=1).T)
+            rule_counts = rule_counts[split_sort,]
+            inv = inv[split_sort,]
+            split = split[split_sort,]
+            ucounts, sub_split = np.unique(rule_counts, axis=0, return_index=True)
+            count_splits = np.split(split, sub_split)[1:]
+
+            rule_groups.extend(count_splits)
+            # rule_inv.append(inv)
+        # rule_inv = np.concatenate(rule_inv)
+
+        return rule_groups
+
+    def get_equivalence_classes(self, perms, sums=None, assume_sorted=False):
+        """
+        Gets permutation equivalence classes
+        :param perms:
+        :type perms:
+        :param sums:
+        :type sums:
+        :param assume_sorted:
+        :type assume_sorted:
+        :return:
+        :rtype:
+        """
+
+        if sums is None:
+            sums = np.sum(perms, axis=1)
+
+        if not assume_sorted:
+            sum_sorting = np.argsort(sums)
+            sums = sums[sum_sorting]
+            perms = perms[sum_sorting]
+        else:
+            sum_sorting = None
+
+        usums, _, inds = unique(sums, sorting=np.arange(len(sums)), return_index=True)
+        groups = np.split(perms, inds)[1:]
+
+        partitioners, shifts = self._get_partition_perms(usums)
+        class_data = [
+            p.get_equivalence_classes(g, assume_sorted=assume_sorted, check_partition_counts=False) for p, g
+            in zip(partitioners, groups)
+        ]
+
+        if assume_sorted:
+            perm_classes = [c[0] for c in class_data]
+            perm_subsortings = [None] * len(class_data)
+        else:
+            perm_classes = []
+            perm_subsortings = []
+            for c in class_data:
+                substuff = []
+                subsortstuff = []
+                for s in c[0]:
+                    subsort = np.lexsort(np.flip(s[2], axis=1).T)
+                    new = (s[0], s[1], s[2][subsort])
+                    substuff.append(new)
+                    subsortstuff.append(subsort)
+                perm_classes.append(substuff)
+                perm_subsortings.append(subsortstuff)
+
+        # perm_totals = [c[1] for c in class_data]
+        perm_sorting = [c[2] for c in class_data]
+
+        return sum_sorting, perm_sorting, usums, perm_classes, perm_subsortings
 
     def take_permutation_rule_direct_sum(self, perms, rules,
                                          sums=None,
@@ -2218,86 +2298,17 @@ class SymmetricGroupGenerator:
             else:
                 return new_perms
 
-
+        # fill counts arrays so we don't need to recalculate this a bunch
         if sums is None:
             sums = np.sum(perms, axis=1)
         max_rule = max(max(r) if len(r) > 0 else 0 for r in rules) if len(rules) > 0 else 0
         max_term = 1 + max_rule + np.max(sums)
         IntegerPartitioner.fill_counts(max_term, max_term, self.dim)
 
-        # first up we pad the rules
-        rules = [
-            np.concatenate([np.array(r, dtype=perms.dtype), np.zeros(dim - len(r), dtype=perms.dtype)]) if len(r) < dim else np.array(r, dtype=perms.dtype)
-            for r in rules
-            if len(r) <= dim
-        ]
-
-        # raise Exception(rules[0].dtype)
-
-        # get counts so we can split them up
-        wat = [UniquePermutations.get_permutation_class_counts(rule, sort_by_counts=True) for rule in rules]
-        rule_counts = np.asanyarray(wat, dtype=object)
-
-        # first split by length
-        count_lens = np.array([len(x[0]) for x in rule_counts])
-        len_sort = np.argsort(count_lens)
-        len_invs = np.argsort(len_sort)
-        _, len_split = np.unique(count_lens[len_sort], return_index=True)
-        rule_counts = rule_counts[len_sort]
-        rule_count_splits = np.split(rule_counts, len_split)[1:]
-        invs_splits = np.split(len_invs, len_split)[1:]
-        # next sort and split the rules for real
-        rule_groups = [] # no reason to be fancy here
-        # rule_inv = []
-        # raise Exception(rule_count_splits)
-        for split, inv in zip(rule_count_splits, invs_splits):
-            rule_counts = np.array([x[1] for x in split], dtype=_infer_dtype(dim))
-            split_sort = np.lexsort(np.flip(rule_counts, axis=1).T)
-            rule_counts = rule_counts[split_sort,]
-            inv = inv[split_sort,]
-            split = split[split_sort,]
-            ucounts, sub_split = np.unique(rule_counts, axis=0, return_index=True)
-            count_splits = np.split(split, sub_split)[1:]
-
-            rule_groups.extend(count_splits)
-            # rule_inv.append(inv)
-        # rule_inv = np.concatenate(rule_inv)
-
-        if not assume_sorted:
-            sum_sorting = np.argsort(sums)
-            sums = sums[sum_sorting]
-            perms = perms[sum_sorting]
-        else:
-            sum_sorting = None
+        rule_groups = self._get_direct_sum_rule_groups(rules, dim, perms.dtype)
 
         # next split up the input permutations
-        usums, _, inds = unique(sums, sorting=np.arange(len(sums)), return_index=True)
-        groups = np.split(perms, inds)[1:]
-
-        partitioners, shifts = self._get_partition_perms(usums)
-
-        class_data = [p.get_equivalence_classes(g, assume_sorted=assume_sorted, check_partition_counts=False) for p,g in zip(partitioners, groups)]
-
-        if assume_sorted:
-            perm_classes = [c[0] for c in class_data]
-            perm_subsortings = [None] * len(class_data)
-        else:
-            perm_classes = []
-            perm_subsortings = []
-            for c in class_data:
-                substuff = []
-                subsortstuff = []
-                for s in c[0]:
-                    subsort = np.lexsort(np.flip(s[2], axis=1).T)
-                    new = (s[0], s[1], s[2][subsort] )
-                    substuff.append(new)
-                    subsortstuff.append(subsort)
-                perm_classes.append(substuff)
-                perm_subsortings.append(subsortstuff)
-        perm_totals = [c[1] for c in class_data]
-        perm_sorting = [c[2] for c in class_data]
-
-        # raise Exception(perm_classes, groups)
+        sum_sorting, perm_sorting, usums, perm_classes, perm_subsortings = self.get_equivalence_classes(perms, sums=sums, assume_sorted=assume_sorted)
 
         if return_indices and indexing_method == 'secondary':
             secondary_inds = True
@@ -2308,7 +2319,6 @@ class SymmetricGroupGenerator:
         perms = []
         if return_indices:
             indices = []
-
 
         # we now set up filtering so that we can efficiently prune branches
         # as we calculate partition permutations
@@ -2330,12 +2340,10 @@ class SymmetricGroupGenerator:
             input_classes_fmt=[]
             rule_class_fmt=[]
         with logger.block(tag="taking direct product"):
-            # with logger.block(tag="input permutations:"):
-            #     logger.log_print(input_classes_fmt)
             with logger.block(tag="selection rules:"):
                 logger.log_print(rule_class_fmt)
             start = time.time()
-            for input_classes,nq,sorts in zip(perm_classes, usums, perm_subsortings):
+            for input_classes, nq, sorts in zip(perm_classes, usums, perm_subsortings):
                 substart = time.time()
                 with logger.block(tag='sum: {}'.format(nq)):
                     if not isinstance(logger, NullLogger):  # can be slow to log prettily
