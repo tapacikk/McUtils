@@ -2018,12 +2018,30 @@ class SymmetricGroupGenerator:
 
             return sort_perms, sorting, inv
 
+        cls_cache = {}
         def get_sort_perm_indices(sort_perms, cls_data):
             return UniquePermutations.get_permutation_indices(sort_perms,
                                                        classes=cls_data[0],
                                                        counts=cls_data[1]
                                                        , assume_sorted=True
                                                        )
+
+        def process_cached_index_blocks(storage):
+            for k, block_dat in cls_cache.items():
+                classes_count_data = [np.array(x) for x in k]
+                standard_rep_perms = block_dat['standards']
+                i, j = block_dat['indices']
+                perm_pos = np.concatenate(block_dat['blocks'])
+                new_perms = storage[perm_pos]
+
+                padding_1, padding_2 = get_standard_perm_offsets(i, j, standard_rep_perms, classes_count_data)
+                sort_perms, sorting, inv = get_perm_sorting(new_perms)
+                new_inds = get_sort_perm_indices(sort_perms, classes_count_data)
+                full_inds_sorted = padding_1 + padding_2 + new_inds
+                indices[perm_pos] = full_inds_sorted[inv]
+                # print(stored_inds)
+                if filter is not None:
+                    filter_from_ind_spec(i, j, idx, standard_rep_perms, full_inds_sorted, inv)
 
         def add_new_perms(idx, perm, cls_pos, cts, depth, tree_data,
                           classes=classes,
@@ -2093,25 +2111,21 @@ class SymmetricGroupGenerator:
                     # since we're assured sorting we make use of that when getting indices
                     if len(comp) > 0:
                         classes_count_data, standard_rep_perms = get_standard_perms(new_rep_perm[sel])
-                        # TODO: I could be faster here by keeping a cache of equivalent `classes_count_data`
-                        #       calls (assuming I don't hit cache issues...but could always use a max-size cache)
-                        #       which would allow be to do only one call to `UniquePermutations.get_indices`
-                        #       and as that will directly de-duplicate (or make it easy to) I can
-                        #       get results hopefully considerably faster
-                        #       I can also just track where the indices to get are which will allow
-                        #       me to not have many copies of the memory hopefully
                         for n,j in enumerate(comp): # we're iterating over classes (not input_classes) here
-                            padding_1, padding_2 = get_standard_perm_offsets(i, j, standard_rep_perms[n], classes_count_data[n])
-                            sort_perms, sorting, inv = get_perm_sorting(new_perms[n])
-                            new_inds = get_sort_perm_indices(sort_perms, classes_count_data[n])
-                            full_inds_sorted = padding_1 + padding_2 + new_inds
+                            key = tuple(tuple(x) for x in classes_count_data[n])
                             stored_inds = idx_starts + sel[n]
-                            indices[stored_inds] = full_inds_sorted[inv]
-                            # print(stored_inds)
-                            if filter is not None:
-                                filter_from_ind_spec(i, j, idx, stored_inds, full_inds_sorted, inv)
+                            if key in cls_cache:
+                                cls_cache[key]['blocks'].append(stored_inds)
+                            else:
+                                cls_cache[key] = {
+                                    'standards': standard_rep_perms[n],
+                                    'indices': (i, j), # the same set should work for all of these
+                                    'blocks': [stored_inds]
+                                }
 
         UniquePermutations.walk_permutation_tree(counts, add_new_perms, include_positions=True)
+        if return_indices:
+            process_cached_index_blocks(storage)
 
         # print(storage)
         # print(mask)
