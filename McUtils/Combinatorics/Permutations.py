@@ -1092,7 +1092,7 @@ class UniquePermutations:
                     if test > idx:  # or j == nterms-1: there's got to be _some_ index at which we get past idx I think...
                         if include_positions:
                             k = init_counts[j] - counts[j]
-                            pos_map[i][k] = depth
+                            pos_map[j][k] = depth
                         depth += 1
                         counts[j] -= 1
                         perm[i] = classes[j]
@@ -1107,10 +1107,13 @@ class UniquePermutations:
                             if include_positions:
                                 d = depth
                                 for l in range(nterms):
-                                    if counts[l] > 0:
-                                        k = init_counts[l] - counts[l]
-                                        pos_map[i][k:k+counts[l]] = d + np.arange(l)
-                                        d += l
+                                    if counts[l] > 0: # we fill the rest of the pos_map block
+                                        k = init_counts[l] - counts[l] # how many have we already filled in
+                                        # print(d + np.arange(counts[l]), counts[l], init_counts[l], k,
+                                        #       pos_map[i][k:]
+                                        #       )
+                                        pos_map[l][k:] = d + np.arange(counts[l]) # and now fill in the rest
+                                        d += counts[l]
                             perm[i + 1:] = insertion
                             done = True
                         break
@@ -1889,6 +1892,11 @@ class SymmetricGroupGenerator:
             if len(drops) > 0:
                 dropped_pairs.append((i, slice(None, None, None), drops))
 
+            w = np.where(can_be_negative[i])
+            if len(w) > 0:
+                w = w[0]
+            can_be_negative[i] = w
+
         # now we do an initial filtering to hopefully keep the size of `storage` smaller
         perm_counts = np.full((total_perm_count, num_perms), len(classes))
         for pair in dropped_pairs:
@@ -1926,7 +1934,7 @@ class SymmetricGroupGenerator:
             indices = np.zeros((total_perm_count,), dtype=int)  # might be able to bound this dtype but not sure...
 
         # print(any(np.any(x) for x in can_be_negative), can_be_negative)
-        if filter is not None or (filter_negatives and any(np.any(x) for x in can_be_negative)):
+        if filter is not None or (filter_negatives and any(len(x)>0 for x in can_be_negative)):
             mask = np.full((total_perm_count,), True)
         else:
             mask = None
@@ -1935,18 +1943,18 @@ class SymmetricGroupGenerator:
         # make it easier to determine where the total runtime is
         # del cls_inds
         def filter_negatives_perms(i, idx, idx_starts, perms, new_rep_perm,
+                                   class_negs,
                                    mask=mask,
                                    can_be_negative=can_be_negative,
                                    storage=storage):
             # if we run into negatives we need to mask them out
-            # to make this run faster we only test for the input rules where this
-            # _can_ be negative
-            # TODO: this can be made much faster by also using the direct positions
-            #       where things can be negative and not comparing a bunch of places where
-            #       nothing can go wrong
             not_negs = np.full(len(cls_inds[i]), True)
-            comp_mask = np.all(new_rep_perm[can_be_negative[i],] >= 0, axis=1)
-            not_negs[can_be_negative[i]] = comp_mask
+            for j in can_be_negative[i]:
+                all_clean = np.all(new_rep_perm[j][class_negs[j],]>=0)
+                not_negs[j] = all_clean
+
+            # comp_mask = [np.all(new_rep_perm[j]>0) for j in can_be_negative[i]]#np.all(new_rep_perm[can_be_negative[i],] >= 0, axis=1)
+            # not_negs[can_be_negative[i]] = comp_mask
             comp = cls_inds[i][not_negs]
             if len(comp) < len(cls_inds[i]):
                 not_sel = np.where(np.logical_not(not_negs))[0]
@@ -2039,8 +2047,9 @@ class SymmetricGroupGenerator:
             """
 
             class_perms = np.array([c[perm] for c in classes])
-            class_negs = [
-                [cls_pos[j] for j in neg]
+            # print(cls_pos)
+            class_neg_list = [
+                np.concatenate([cls_pos[j] for j in neg]) if len(neg) > 0 else ()
                 for neg in class_negatives
             ]
             for i,class_data in enumerate(input_perm_classes):
@@ -2061,9 +2070,14 @@ class SymmetricGroupGenerator:
                 # This gives us strict ordering relations that we can make use of and allows us to only calculate
                 # the counts once
                 new_rep_perm = rep[np.newaxis, :] + class_perms[cls_inds[i], :]
+                # print(cls_inds[i])
                 # print(i, idx, idx_starts, new_rep_perm.shape)
                 if filter_negatives:
-                    comp, sel, new_perms = filter_negatives_perms(i, idx, idx_starts, perms, new_rep_perm)
+                    class_negs = [class_neg_list[j] for j in cls_inds[i]]
+                    # print(class_negs, new_rep_perm)
+                    comp, sel, new_perms = filter_negatives_perms(i, idx, idx_starts, perms, new_rep_perm,
+                                                                  class_negs
+                                                                  )
                 else:
                     raise NotImplementedError("need to get storage right but never touch this code path anymore")
                     comp = cls_inds[i]
@@ -2097,7 +2111,7 @@ class SymmetricGroupGenerator:
                             if filter is not None:
                                 filter_from_ind_spec(i, j, idx, stored_inds, full_inds_sorted, inv)
 
-        UniquePermutations.walk_permutation_tree(counts, add_new_perms, include_positions=False)
+        UniquePermutations.walk_permutation_tree(counts, add_new_perms, include_positions=True)
 
         # print(storage)
         # print(mask)
