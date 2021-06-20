@@ -713,9 +713,9 @@ class FiniteDifferenceTests(TestCase):
         # two_dot = g_terms.QX(0).dot(gamdQQ, [1, 2], [1, 2])
         # self.assertTrue(np.allclose(two_dot.array, np.tensordot(g_terms.QX(0).array, gamdQQ.array, axes=[[0, 1], [0, 1]])))
         gamdQ = (detI_new.dQ()/detI_new + -1 * detG_new.dQ()/detG_new).simplify(check_arrays=True)
-        gamdQ_I = (detI_new.dQ()/detI_new).simplify(check_arrays=True)
-
-        # gamdQQ = gamdQ.dQ().simplify(check_arrays=True)
+        detI_new.name = "|I|"
+        gamdQ_I_new = (detI_new.dQ()/detI_new).simplify(check_arrays=True)
+        # raise Exception(gamdQ_I_new)
 
         ## Derivatives of ln Gamma
         gamdQ_I = 1 / detI * detIdQ
@@ -746,8 +746,6 @@ class FiniteDifferenceTests(TestCase):
                 for j in range(nQ)
             ])
 
-        # self.assertTrue(np.allclose(detIdQQ_real, detIdQQ))
-
         detIdQQ2_terms = [
             np.tensordot(I0Q, adjIdQ, axes=[[1, 2], [2, 1]]).T,
             np.tensordot(adjI, I0QQ, axes=[[1, 0], [2, 3]]).T
@@ -763,20 +761,17 @@ class FiniteDifferenceTests(TestCase):
         adjIdQ_new = adjI_new.dQ().simplify()
         self.assertTrue(np.allclose(adjIdQ_new.array, adjIdQ))
 
-        detIdQQ_new_terms = detIdQQ_new.terms
-
-        # raise Exception(detIdQQ2, detIdQQ)
         self.assertTrue(np.allclose(detIdQQ2, detIdQQ))
-        # woof_term2 = detIdQQ_new_terms[1].scaling*detIdQQ_new_terms[1].term.terms[1]
-        # woof_term3 = detIdQQ_new_terms[1].scaling*detIdQQ_new_terms[1].term.terms[0]
-        # woof_term4 = detIdQQ_new_terms[0]
-        # raise Exception(woof_term3, woof_term3.array.T[0] + woof_term4.array.T[0], detIdQQ2_terms[0][0])
-        # raise Exception(detIdQQ_new_terms[1], detIdQQ2_terms[0])
         self.assertEquals(detIdQQ_new.array.shape, detIdQQ.shape)
         self.assertTrue(np.allclose(detIdQQ_new.array.T, detIdQQ))
 
         gamdQQ_I = -1 / detI ** 2 * np.outer(detIdQ, detIdQ) + 1 / detI * detIdQQ
 
+        gamdQQ_I_new = gamdQ_I_new.dQ().simplify(check_arrays=True)
+
+        # raise Exception(gamdQ_I_new, gamdQQ_I_new)
+        # raise Exception(gamdQQ_I_new.array.T, gamdQQ_I[0])
+        self.assertTrue(np.allclose(gamdQQ_I_new.array.T, gamdQQ_I))
 
     #endregion Tensor Derivatives
 

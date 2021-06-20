@@ -42,11 +42,17 @@ class TensorExpansionTerms:
         return self.QXVTerm(self,n,  m)
 
     class TensorExpansionTerm(metaclass=abc.ABCMeta):
-        def __init__(self, array=None):
+        def __init__(self, array=None, name=None):
             self._arr = array
+            self.name = name
         @abc.abstractmethod
-        def dQ(self)->'TensorExpansionTerms.TensorExpansionTerm':
+        def deriv(self)->'TensorExpansionTerms.TensorExpansionTerm':
             raise NotImplementedError("base class")
+        def dQ(self):
+            new_term = self.deriv()
+            if self.name is not None:
+                new_term.name = 'dQ({})'.format(self.name)
+            return new_term
         @abc.abstractmethod
         def asarray(self)->np.ndarray:
             raise NotImplementedError("base class")
@@ -70,8 +76,13 @@ class TensorExpansionTerms:
         def ndim(self):
             return self.rank()
         @abc.abstractmethod
-        def __repr__(self)->str:
+        def to_string(self)->str:
             raise NotImplementedError("base class")
+        def __repr__(self):
+            if self.name is None:
+                return self.to_string()
+            else:
+                return self.name
         @abc.abstractmethod
         def reduce_terms(self, check_arrays=False)-> 'TensorExpansionTerms.TensorExpansionTerm':
             raise NotImplementedError("base class")
@@ -88,9 +99,14 @@ class TensorExpansionTerms:
                 new = red.array
                 if not np.allclose(arr, new):
                     raise TensorExpansionError("bad simplification {} -> {}".format(self, red))
-                return red
+                new = red
             else:
-                return self.reduce_terms()
+                new = self.reduce_terms()
+            if new.name is None:
+                new.name = self.name
+            if new._arr is None:
+                new._arr = self._arr
+            return new
         def __add__(self, other):
             return TensorExpansionTerms.SumTerm(self, other)
         def __mul__(self, other):
@@ -139,7 +155,7 @@ class TensorExpansionTerms:
         def __init__(self, *terms:'TensorExpansionTerms.TensorExpansionTerm', array=None):
             super().__init__(array=array)
             self.terms=terms
-        def dQ(self):
+        def deriv(self):
             return type(self)(*(s.dQ() for s in self.terms))
         def asarray(self):
             all_terms = [(i, s.array) for i,s in enumerate(self.terms)]
@@ -168,7 +184,7 @@ class TensorExpansionTerms:
                     full_terms.append(t)
             full_terms = list(sorted(full_terms, key=lambda t:str(t))) # canonical sorting is string sorting b.c. why not
             return type(self)(*full_terms, array=self._arr)
-        def __repr__(self):
+        def to_string(self):
             return '+'.join(str(x) for x in self.terms)
         def substitute(self, other):
             """substitutes other in to the sum by matching up all necessary terms"""
@@ -213,7 +229,7 @@ class TensorExpansionTerms:
             else:
                 term = self.term.array
             return scaling*term
-        def __repr__(self):
+        def to_string(self):
             meh_1 = '({})'.format(self.scaling) if isinstance(self.scaling, TensorExpansionTerms.SumTerm) else self.scaling
             meh_2 = '({})'.format(self.term) if isinstance(self.term, TensorExpansionTerms.SumTerm) else self.term
             return '{}*{}'.format(meh_1, meh_2)
@@ -227,7 +243,7 @@ class TensorExpansionTerms:
                 return 0
             else:
                 return type(self)(self.term.simplify(check_arrays=check_arrays), scaling, array=self._arr)
-        def dQ(self):
+        def deriv(self):
             term = type(self)(self.term.dQ(), self.scaling)
             if isinstance(self.scaling, TensorExpansionTerms.TensorExpansionTerm):
                 ugh2 = type(self)(self.scaling.dQ(), self.term)
@@ -247,8 +263,8 @@ class TensorExpansionTerms:
             wat = self.term.array
             out = wat**self.pow
             return out
-        def __repr__(self):
-            return '{}**{}'.format(self.term, self.pow)
+        def to_string(self):
+            return '({}**{})'.format(self.term, self.pow)
         def reduce_terms(self, check_arrays=False):
             if self.pow == 1:
                 return self.term.simplify(check_arrays=check_arrays)
@@ -257,11 +273,11 @@ class TensorExpansionTerms:
             elif self.pow == -1:
                 return TensorExpansionTerms.FlippedTerm(self.term.simplify(check_arrays=True), array=self._arr)
             else:
-                return type(self)(self.term.simplify(check_arrays=check_arrays), self.pow, array=self._arr)
-        def dQ(self):
+                return TensorExpansionTerms.PowerTerm(self.term.simplify(check_arrays=check_arrays), self.pow, array=self._arr)
+        def deriv(self):
             return TensorExpansionTerms.ScalingTerm(
                 self.pow * self.term.dQ(),
-                type(self)(self, self.pow-1)
+                TensorExpansionTerms.PowerTerm(self.term, self.pow-1)
             )
     class FlippedTerm(PowerTerm):
         """
@@ -269,7 +285,7 @@ class TensorExpansionTerms:
         """
         def __init__(self, term: 'TensorExpansionTerms.TensorExpansionTerm', pow=-1, array=None):
             super().__init__(term, -1, array=array)
-        def __repr__(self):
+        def to_string(self):
             return '1/{}'.format(self.term)
         def asarray(self):
             out = 1 / self.term.array
@@ -287,7 +303,7 @@ class TensorExpansionTerms:
             self.term=term
             self.a=start
             self.b=end
-        def dQ(self):
+        def deriv(self):
             return type(self)(self.term.dQ(), self.a+1, self.b+1)
         def asarray(self):
             t = self.term.array
@@ -297,7 +313,7 @@ class TensorExpansionTerms:
                 return np.moveaxis(self.term.array, self.a-1, self.b-1)
         def rank(self):
             return self.term.ndim
-        def __repr__(self):
+        def to_string(self):
             return '{{{}#{}->{}}}'.format(self.term, self.a, self.b)
         def reduce_terms(self, check_arrays=False):
             """We simplify over the possible swap classes"""
@@ -404,7 +420,7 @@ class TensorExpansionTerms:
                 #     raise ValueError("failed to execute {}".format(self))
         def rank(self):
             return self.left.ndim + self.right.ndim - 2
-        def dQ(self):
+        def deriv(self):
             return (
                 type(self)(self.left.dQ(), self.i+1, self.j, self.right)
                 + type(self)(
@@ -414,7 +430,7 @@ class TensorExpansionTerms:
                         self.right.dQ()
                     ).shift(self.left.ndim, 1)
             )
-        def __repr__(self):
+        def to_string(self):
             return '<{}:{},{}:{}>'.format(self.left, self.i, self.j, self.right)
         def reduce_terms(self, check_arrays=False):
             cls = type(self)
@@ -497,7 +513,7 @@ class TensorExpansionTerms:
             super().__init__(array=array)
             self.terms = terms
             self.n = n
-        def dQ(self):
+        def deriv(self):
             return type(self)(self.terms, self.n+1)
         def asarray(self):
             if self.n == 0:
@@ -509,7 +525,7 @@ class TensorExpansionTerms:
                 return self.n + 1
             else:
                 return self.array.ndim
-        def __repr__(self):
+        def to_string(self):
             return '{}[{}]'.format(self.terms.q_name, self.n)
         def reduce_terms(self, check_arrays=False):
             return self
@@ -518,7 +534,7 @@ class TensorExpansionTerms:
             super().__init__(array=array)
             self.terms = terms
             self.m = m
-        def dQ(self):
+        def deriv(self):
             mixed_terms = self.terms.qxv_terms
             if (
                     mixed_terms is not None
@@ -540,7 +556,7 @@ class TensorExpansionTerms:
                 return self.m
             else:
                 return self.array.ndim
-        def __repr__(self):
+        def to_string(self):
             return '{}[{}]'.format(self.terms.v_name, self.m)
         def reduce_terms(self, check_arrays=False):
             return self
@@ -550,7 +566,7 @@ class TensorExpansionTerms:
             self.terms = terms
             self.n = n
             self.m = m
-        def dQ(self):
+        def deriv(self):
             return type(self)(self.terms, self.n+1, self.m)
         def asarray(self):
             return self.terms.qxv_terms[self.n-1][self.m-1]
@@ -559,7 +575,7 @@ class TensorExpansionTerms:
                 return self.n + self.m
             else:
                 return self.array.ndim
-        def __repr__(self):
+        def to_string(self):
             return '{}{}[{},{}]'.format(self.terms.q_name, self.terms.v_name, self.n, self.m)
         def reduce_terms(self, check_arrays=False):
             return self
@@ -575,7 +591,7 @@ class TensorExpansionTerms:
             self.m = m
             self.i = i
             self.j = j
-        def dQ(self):
+        def deriv(self):
             return self.terms.SumTerm(
                 type(self)(
                     self.terms,
@@ -601,7 +617,7 @@ class TensorExpansionTerms:
             return np.tensordot(self.terms.qx_terms[self.n-1], self.terms.xv_terms[self.m-1], axes=[self.i, self.j])
         def rank(self):
             return self.terms.qx_terms[self.n-1].ndim + self.terms.xv_terms[self.m-1].ndim - 2
-        def __repr__(self):
+        def to_string(self):
             return '<Q[{}]:{},{}:V[{}]>'.format(self.n, self.i, self.j, self.m)
         def reduce_terms(self, check_arrays=False):
             return self
@@ -615,11 +631,11 @@ class TensorExpansionTerms:
             return self.term.rank()
         def asarray(self):
             return np.linalg.inv(self.term.array)
-        def __repr__(self):
+        def to_string(self):
             return '({}^-1)'.format(self.term)
         def reduce_terms(self, check_arrays=False):
             return type(self)(self.term.simplify(check_arrays=check_arrays), array=self._arr)
-        def dQ(self):
+        def deriv(self):
             dq = self.term.dQ()
             sub = dq.dot(self, 2, self.ndim)  # self.dot(self.term.dQ(), self.ndim, 2)
             return -sub.dot(self, sub.ndim-1, 1)  # .shift(self.ndim, 1)
@@ -633,7 +649,7 @@ class TensorExpansionTerms:
             return self.term.ndim - 2
         def asarray(self):
             return np.trace(self.term.array, axis1=self.axis1-1, axis2=self.axis2-1)
-        def __repr__(self):
+        def to_string(self):
             return 'Tr[{},{}+{}]'.format(self.term, self.axis1, self.axis2)
         def reduce_terms(self, check_arrays=False):
             simp = self.term.simplify(check_arrays=check_arrays)
@@ -654,7 +670,7 @@ class TensorExpansionTerms:
             else:
                 new = type(self)(simp, axis1=self.axis1, axis2=self.axis2, array=self._arr)
             return new
-        def dQ(self):
+        def deriv(self):
             wat = self.term.dQ()
             return type(self)(wat, axis1=self.axis1+1, axis2=self.axis2+1)
     class DeterminantTerm(TensorExpansionTerm):
@@ -665,11 +681,11 @@ class TensorExpansionTerms:
             return 0
         def asarray(self):
             return np.linalg.det(self.term.array)
-        def __repr__(self):
+        def to_string(self):
             return '|{}|'.format(self.term)
         def reduce_terms(self, check_arrays=False):
             return type(self)(self.term.simplify(check_arrays=check_arrays), array=self._arr)
-        def dQ(self):
+        def deriv(self):
             inv_dot = TensorExpansionTerms.InverseTerm(self.term).dot(
                     self.term.dQ(),
                     self.term.ndim,
