@@ -386,14 +386,15 @@ def group_by1d(ar, keys, sorting=None, return_indices=False):
 
 def group_by(ar, keys, sorting=None, return_indices=False):
     """
-    Splits an array by a keys
+    Groups an array by keys
+
     :param ar:
     :type ar:
     :param keys:
     :type keys:
     :param sorting:
     :type sorting:
-    :return:
+    :return: group pairs & sorting info
     :rtype:
     """
 

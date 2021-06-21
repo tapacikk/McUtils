@@ -1596,7 +1596,7 @@ class SymmetricGroupGenerator:
         self.dim = dim
         self._partition_permutations = [EmptyIntegerPartitionPermutations(0, dim=self.dim)] #type: list[IntegerPartitionPermutations]
         self._counts = [1] #type: list[int]
-        self._cumtotals = [0]
+        self._cumtotals = np.array([0])
 
     def __repr__(self):
         return "{}({})".format(type(self).__name__, self.dim)
