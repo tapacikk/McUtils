@@ -36,7 +36,8 @@ def _infer_pos_neg_dtype(max_dim):
     else:
         minimal_dtype = 'int64'
     return minimal_dtype
-_infer_dtype = _infer_pos_neg_dtype # makes my life a little easier right now...
+
+_infer_dtype = lambda why: 'int64' # makes my life a little easier right now...
 
 class IntegerPartitioner:
 

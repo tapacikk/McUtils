@@ -353,6 +353,13 @@ def find(ar, to_find, sorting=None, check=True):
     ar = np.asanyarray(ar)
     to_find = np.asanyarray(to_find)
 
+    if ar.dtype < to_find.dtype:
+        ar = ar.astype(to_find.dtype)
+    elif to_find.dtype < ar.dtype:
+        to_find = to_find.astype(ar.dtype)
+
+    # print(ar.dtype, to_find.dtype )
+
     if ar.ndim == 1:
         ret = find1d(ar, to_find, sorting=sorting, check=check)
         return ret
