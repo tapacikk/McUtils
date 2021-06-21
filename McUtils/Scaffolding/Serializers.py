@@ -425,6 +425,7 @@ class HDF5Serializer(BaseSerializer):
                 if try_numpy:
                     for x in data:
                         try:
+                            iter(x)
                             if isinstance(x0, np.ndarray):
                                 try_numpy = x.shape == l
                             else:
@@ -548,6 +549,17 @@ class HDF5Serializer(BaseSerializer):
             data is None
             or isinstance(data, np.ndarray)
         )
+    def _prune_existing(self, h5_obj, key):
+        try:
+            del h5_obj[key]
+        except OSError:
+            raise IOError("failed to remove key {} from {}".format(key, h5_obj))
+    def _destroy_and_add(self, h5_obj, key, data):
+        self._prune_existing(h5_obj, key)
+        try:
+            ds = self._create_dataset(h5_obj, key, data)
+        except TypeError:
+            raise TypeError("can't coerce {}:{} to HDF5 format".format(key, data))
     def _write_data(self, h5_obj, key, data):
         """
         Writes a numpy array into a group
@@ -581,6 +593,7 @@ class HDF5Serializer(BaseSerializer):
             else:
                 if isinstance(h5_obj, self.api.Dataset):
                     h5_obj = h5_obj.parent
+                # self._destroy_and_add(h5_obj, key, data)
                 try:
                     ds = self._create_dataset(h5_obj, key, data)
                 except TypeError:
@@ -588,10 +601,12 @@ class HDF5Serializer(BaseSerializer):
         except ValueError:
             if isinstance(h5_obj, self.api.Dataset):
                 h5_obj = h5_obj.parent
-            try:
-                ds = self._create_dataset(h5_obj, key, data)
-            except TypeError:
-                raise TypeError("can't coerce {}:{} to HDF5 format".format(key, data))
+            self._destroy_and_add(h5_obj, key, data)
+            # self._prune_existing(h5_obj, key)
+            # try:
+            #     ds = self._create_dataset(h5_obj, key, data)
+            # except TypeError:
+            #     raise TypeError("can't coerce {}:{} to HDF5 format".format(key, data))
         else:
             dt = ds.dtype
             if (
@@ -600,17 +615,12 @@ class HDF5Serializer(BaseSerializer):
             ): # record arrays are a pain
                 if data is None:
                     data = self.api.Empty("i")
-                try:
-                    del h5_obj[key]
-                except OSError:
-                    raise IOError("failed to remove key {} from {}".format(key, h5_obj))
-                try:
-                    ds = self._create_dataset(h5_obj, key, data)
-                except TypeError:
-                    raise TypeError("can't coerce {}:{} to HDF5 format".format(key, data))
+                self._destroy_and_add(h5_obj, key, data)
             else:
                 try:
                     ds[...] = data
+                except TypeError:
+                    self._destroy_and_add(h5_obj, key, data)
                 except:
                     raise IOError("failed to write key '{}' to HDF5 dataset {}".format(key, ds))
         # no need to return stuff, since we're just serializing
@@ -625,6 +635,7 @@ class HDF5Serializer(BaseSerializer):
         :rtype:
         """
         for k,v in data.items():
+            # print(h5_obj, k)
             # we want to either make a new Group or write the array to the key
             if isinstance(v, dict):
                 try:
@@ -632,6 +643,7 @@ class HDF5Serializer(BaseSerializer):
                 except KeyError:
                     new_grp = h5_obj.create_group(k)
                 self._write_dict(new_grp, v)
+                # print(new_grp)
             else:
                 self._write_data(h5_obj, k, v)
 
@@ -660,10 +672,11 @@ class HDF5Serializer(BaseSerializer):
                 res = None
             else:
                 res = np.empty(data.shape, dtype=data.dtype)
-                data.read_direct(res)
-                names = res.dtype.names
-                if names is not None and 'item_0' in names:
-                    res = [ res['item_'+str(i)][0] for i in range(len(names))]
+                if data.shape != (0,):
+                    data.read_direct(res)
+                    names = res.dtype.names
+                    if names is not None and 'item_0' in names:
+                        res = [ res['item_'+str(i)][0] for i in range(len(names))]
         else:
             # we loop through the keys and recursively build up a dict
             res = {}

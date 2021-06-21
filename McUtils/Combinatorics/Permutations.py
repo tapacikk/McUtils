@@ -2,7 +2,7 @@
 Utilities for working with permutations and permutation indexing
 """
 
-import numpy as np, time
+import numpy as np, time, gc
 import collections, functools as ft
 from ..Numputils import unique, contained, group_by, split_by_regions
 from ..Scaffolding import NullLogger
@@ -37,7 +37,7 @@ def _infer_pos_neg_dtype(max_dim):
         minimal_dtype = 'int64'
     return minimal_dtype
 
-_infer_dtype = lambda why: 'int64' # makes my life a little easier right now...
+# _infer_dtype = _infer_dtype#lambda why: 'int64' # makes my life a little easier right now...
 
 class IntegerPartitioner:
 
@@ -1424,6 +1424,7 @@ class IntegerPartitionPermutations:
                                           preserve_ordering=True,
                                           assume_standard=False,
                                           check_partition_counts=True,
+                                          dtype=None,
                                           split_method='direct'
                                           ):
         """
@@ -1453,9 +1454,14 @@ class IntegerPartitionPermutations:
                 for d, g, s in zip(partition_data, groups, totals)
             ]
         else:
+            ushifts = [
+                UniquePermutations.get_permutation_indices(g, d[0], d[1], self.dim)
+                for d, g in zip(partition_data, groups)
+            ]
+            if dtype is None:
+                dtype = _infer_dtype(np.max([np.max(s) for s in ushifts]) + np.max(totals))
             subinds = [
-                s + UniquePermutations.get_permutation_indices(g, d[0], d[1], self.dim)
-                for d, g, s in zip(partition_data, groups, totals)
+                (g.astype(dtype) + s) for g,s in zip(ushifts, totals)
             ]
 
         # raise Exception(groups, subinds)
@@ -1549,6 +1555,7 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
                                           preserve_ordering=None,
                                           assume_standard=None,
                                           check_partition_counts=None,
+                                          dtype=None,
                                           split_method=None
                                           ):
         """
@@ -1564,7 +1571,7 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
         if woof.ndim == 1:
             return 0
         else:
-            return np.zeros(len(woof), dtype='int8')
+            return np.zeros(len(woof), dtype='int8' if dtype is None else dtype)
 
     def get_partition_permutations_from_indices(self, indices,
                                                 assume_sorted=None,
@@ -1972,7 +1979,6 @@ class SymmetricGroupGenerator:
             mask = None
 
         storage_indexing_dtype = _infer_dtype(total_perm_count)
-
         # We split the full algorithm into a bunch of smaller functions to
         # make it easier to determine where the total runtime is
         # del cls_inds
@@ -2025,10 +2031,12 @@ class SymmetricGroupGenerator:
                 perm_counts[cum_counts[i]:cum_counts[i+1], idx] -= len(s) - np.count_nonzero(s)
 
         def get_standard_perms(perms):
-            classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in perms]
+            classes_count_data = [
+                UniquePermutations.get_permutation_class_counts(p) for p in perms
+            ]
             standard_rep_perms = np.array([
                 UniquePermutations.get_standard_permutation(c[1], c[0]) for c in classes_count_data
-            ], dtype=_infer_dtype(np.max(np.concatenate([x[0] for x in classes_count_data])))
+            ], dtype=_infer_dtype( np.max(np.concatenate([x[0] for x in classes_count_data])) )
             )
             return classes_count_data, standard_rep_perms
 
@@ -2042,7 +2050,9 @@ class SymmetricGroupGenerator:
                 padding_2 = paritioners[i][0][j].get_partition_permutation_indices([perm],
                                                                                assume_standard=True
                                                                                , check_partition_counts=False
+                                                                               , dtype=inds_dtype
                                                                                )
+
                 offsets_cache[key] = padding_2
 
             return padding_1, padding_2
@@ -2056,11 +2066,15 @@ class SymmetricGroupGenerator:
 
         cls_cache = {}
         def get_sort_perm_indices(sort_perms, cls_data):
-            return UniquePermutations.get_permutation_indices(sort_perms,
+            hmm = UniquePermutations.get_permutation_indices(sort_perms,
                                                        classes=cls_data[0],
                                                        counts=cls_data[1]
                                                        , assume_sorted=True
+                                                       , dtype=inds_dtype
                                                        )
+
+            return hmm
+
 
         def process_cached_index_blocks(storage):
             for k, block_dat in cls_cache.items():
@@ -2398,6 +2412,7 @@ class SymmetricGroupGenerator:
                                                       return_indices=return_indices,
                                                       filter=filter, inds_dtype=inds_dtype
                                                       )
+                        # gc.collect()
                         if split_results or preserve_ordering:
                             split_blocks = np.cumsum(res[1][:-1])
                             res_perms = np.split(res[0], split_blocks)

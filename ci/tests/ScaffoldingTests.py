@@ -276,6 +276,7 @@ class ScaffoldingTests(TestCase):
     def test_HDF5Problems(self):
 
         test = os.path.expanduser('~/Desktop/woof.hdf5')
+        os.remove(test)
         checkpointer = Checkpointer.from_file(test)
         with checkpointer:
             checkpointer['why'] = [
@@ -289,6 +290,15 @@ class ScaffoldingTests(TestCase):
                 np.array(0),
                 np.array(0)
             ]
+        with checkpointer:
+            checkpointer['why2'] = [
+                np.random.rand(1001, 5, 5),
+                np.array(0),
+                np.array(0)
+            ]
+
+        with checkpointer as chk:
+            self.assertEquals(list(chk.keys()), ['why', 'why2'])
 
     #endregion
 

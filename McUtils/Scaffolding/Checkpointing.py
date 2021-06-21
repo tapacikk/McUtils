@@ -19,7 +19,10 @@ class Checkpointer(metaclass=abc.ABCMeta):
     def __init__(self, checkpoint_file):
         self.checkpoint_file = checkpoint_file
         self._came_open = not isinstance(checkpoint_file, str)
+        self._open_depth = 0
         self._stream = None
+    def __repr__(self):
+        return "{}({!r})".format(type(self).__name__, self.checkpoint_file)
 
     _ext_map = None
     @classmethod
@@ -62,13 +65,16 @@ class Checkpointer(metaclass=abc.ABCMeta):
         return ext_map[ext](file, **opts)
 
     def __enter__(self):
+        self._open_depth+=1
         if self._stream is None:
             self._stream = self.open_checkpoint_file(self.checkpoint_file)
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self._open_depth-=1
         if self._stream is not None:
-            self.close_checkpoint_file(self._stream)
-            self._stream = None
+            if self._open_depth == 0:
+                self.close_checkpoint_file(self._stream)
+                self._stream = None
 
     @property
     def is_open(self):
@@ -136,7 +142,6 @@ class Checkpointer(metaclass=abc.ABCMeta):
         :rtype:
         """
         raise NotImplementedError("Checkpointer is an abstract base class...")
-
 
 class DumpCheckpointer(Checkpointer):
     """
@@ -318,7 +323,7 @@ class HDF5Checkpointer(Checkpointer):
         if not self._came_open:
             try:
                 if os.path.exists(chk):
-                    return open(chk, 'a+b')
+                    return open(chk, 'r+b')
                 else:
                     return open(chk, "w+b")
             except ValueError as e:
@@ -351,6 +356,8 @@ class HDF5Checkpointer(Checkpointer):
         :rtype:
         """
         # HDF5 serialization is an updateable process
+        if self.stream is None:
+            raise IOError("stream for {} got closed and won't reopen".format(self.checkpoint_file))
         self.serializer.serialize(self.stream, {key:value})
 
     def load_parameter(self, key):
@@ -364,8 +371,10 @@ class HDF5Checkpointer(Checkpointer):
         return self.serializer.deserialize(self.stream, key=key)
 
     def keys(self):
-        fff = self.serializer.api.File(self.stream)
-        return fff.keys()
+        file = self.stream
+        if not isinstance(file, (self.serializer.api.File, self.serializer.api.Group)):
+            file = self.serializer.api.File(file, "a")
+        return file.keys()
 
 class NullCheckpointer(Checkpointer):
     """
