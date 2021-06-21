@@ -6,6 +6,7 @@ import numpy as np, io, os, sys, tempfile as tmpf
 
 class ScaffoldingTests(TestCase):
 
+    #region Checkpointing
     @debugTest
     def test_Pseudopickle(self):
 
@@ -15,7 +16,7 @@ class ScaffoldingTests(TestCase):
         spa = SparseArray.from_diag([1, 2, 3, 4])
         serial = pickler.serialize(spa)
         deserial = pickler.deserialize(serial)
-        self.assertTrue(np.allclose(spa.toarray(), deserial.toarray()))
+        self.assertTrue(np.allclose(spa.asarray(), deserial.asarray()))
 
     @validationTest
     def test_HDF5Serialization(self):
@@ -98,9 +99,9 @@ class ScaffoldingTests(TestCase):
         tmp.seek(0)
         loaded = serializer.deserialize(tmp)
 
-        self.assertTrue(np.allclose(loaded.toarray(), data.toarray()))
+        self.assertTrue(np.allclose(loaded.asarray(), data.asarray()))
 
-    @debugTest
+    @validationTest
     def test_HDF5PseudoPickleSerialization(self):
 
         from McUtils.Numputils import SparseArray
@@ -114,8 +115,7 @@ class ScaffoldingTests(TestCase):
         tmp.seek(0)
         loaded = serializer.deserialize(tmp)
 
-        self.assertTrue(np.allclose(loaded.toarray(), data.toarray()))
-
+        self.assertTrue(np.allclose(loaded.asarray(), data.asarray()))
 
     @validationTest
     def test_NumPySerialization(self):
@@ -233,6 +233,7 @@ class ScaffoldingTests(TestCase):
         finally:
             os.remove(my_file)
 
+
     class DataHolderClass:
         def __init__(self, **keys):
             self.data = keys
@@ -241,7 +242,7 @@ class ScaffoldingTests(TestCase):
         @classmethod
         def from_state(cls, state, serializer=None):
             return cls(**state)
-    @debugTest
+    @validationTest
     def test_HDF5CheckpointingPsuedopickle(self):
 
         with tmpf.NamedTemporaryFile(mode="w+b") as chk_file:
@@ -271,6 +272,27 @@ class ScaffoldingTests(TestCase):
         finally:
             os.remove(my_file)
 
+    @debugTest
+    def test_HDF5Problems(self):
+
+        test = os.path.expanduser('~/Desktop/woof.hdf5')
+        checkpointer = Checkpointer.from_file(test)
+        with checkpointer:
+            checkpointer['why'] = [
+                np.random.rand(1000, 5, 5),
+                np.array(0),
+                np.array(0)
+            ]
+        with checkpointer:
+            checkpointer['why'] = [
+                np.random.rand(1001, 5, 5),
+                np.array(0),
+                np.array(0)
+            ]
+
+    #endregion
+
+    #region Logging
     @validationTest
     def test_BasicLogging(self):
         stdout = io.StringIO()
@@ -347,6 +369,9 @@ class ScaffoldingTests(TestCase):
         finally:
             os.remove(log_dump)
 
+    #endregion
+
+    #region Jobs
     @validationTest
     def test_Persistence(self):
         persist_dir = TestManager.test_data("persistence_tests")
@@ -484,4 +509,4 @@ class ScaffoldingTests(TestCase):
                 doop_str = doopy.read()
                 self.assertNotEqual("", doop_str)
 
-
+    #endregion

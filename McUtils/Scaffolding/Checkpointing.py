@@ -316,10 +316,16 @@ class HDF5Checkpointer(Checkpointer):
         :rtype:
         """
         if not self._came_open:
-            if os.path.exists(chk):
-                return open(chk, 'a+b')
-            else:
-                return open(chk, "w+b")
+            try:
+                if os.path.exists(chk):
+                    return open(chk, 'a+b')
+                else:
+                    return open(chk, "w+b")
+            except ValueError as e:
+                if e.args[0] == 'seek of closed file':
+                    raise IOError("existing HDF5 file {} is corrupted and can't be opened".format(chk))
+                else:
+                    raise
         elif 'b' not in chk.mode:
             raise IOError("{} isn't opened in binary mode (HDF5 needs that)".format(chk))
 

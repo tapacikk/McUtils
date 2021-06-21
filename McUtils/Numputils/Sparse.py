@@ -569,6 +569,7 @@ class ScipySparseArray(SparseArray):
             try:
                 data = fmt((block_vals, init_inds), shape=total_shape)
             except TypeError:
+                print(fmt)
                 data = fmt(sp.coo_matrix((block_vals, init_inds)), shape=total_shape)
             except MemoryError:
                 if total_shape[0] > total_shape[1]:

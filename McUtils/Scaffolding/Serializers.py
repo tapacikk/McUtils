@@ -142,6 +142,9 @@ class PseudoPickler:
         :return: spec for the pseudo-pickled data
         :rtype: dict
         """
+        if obj is None:
+            return obj
+
         reset_cache = False
         if cache is None:
             if self._cache is None:
@@ -171,7 +174,6 @@ class PseudoPickler:
     #     for a in subnames:
     #         woof = getattr(woof, a)
     #     return woof
-
     def deserialize(self, spec):
         """
         Deserializes from an object spec, dispatching
@@ -399,23 +401,43 @@ class HDF5Serializer(BaseSerializer):
     def _none_to_none(self, data):
         return None
 
+    allow_records = False
     def _iterable_to_numpy(self, data):
-        try:
-            arr = np.asarray(data)
-        except ValueError:
-            arr = np.empty(shape=(len(data),), dtype=object)
-            for i,v in enumerate(data):
-                arr[i] = v
+        # we do an initial pass to check if data is a numpy array
+        # or if it needs to be/can conceivably be converted
+
+        if isinstance(data, np.ndarray):
+            arr = data
+        else:
+            try:
+                x0 = data[0]
+            except IndexError:
+                arr = np.asarray(data)
+            else:
+                l = len(x0)
+                try_numpy = True
+                for x in data:
+                    try:
+                        try_numpy = len(x) == l
+                    except TypeError:
+                        try_numpy = False
+                    if not try_numpy: break
+
+                if try_numpy:
+                    arr = np.array(data)
+                else:
+                    arr = np.empty(shape=(len(data),), dtype=object)
+                    for i, v in enumerate(data):
+                        arr[i] = v
 
         if arr.dtype == np.dtype(object):
             # map iterable into a stack of datasets :|
-
             records = [self._convert(v) for i,v in enumerate(data)]
-            if all(isinstance(v, np.ndarray) for v in records):
-
+            if self.allow_records and all(isinstance(v, np.ndarray) for v in records):
                 # create record dtype...
                 ds_dtype = [
-                    ('item_{}'.format(i), v.dtype, v.shape if v.shape != (0,) else ()) for i,v in enumerate(records)
+                    ('item_{}'.format(i), v.dtype, v.shape if v.shape != (0,) else ())
+                    for i,v in enumerate(records)
                 ]
                 ds_arr = np.recarray((1,), dtype=ds_dtype)
                 for i,v in enumerate(records):
@@ -424,15 +446,17 @@ class HDF5Serializer(BaseSerializer):
                         ds_arr[key] = v
                 return ds_arr
             else:
-                return dict({
-                    '_list_item_'+str(i):v for i,v in enumerate(records)},
+                return dict(
+                    {
+                        '_list_item_'+str(i): v
+                        for i, v in enumerate(records)
+                    },
                     _list_numitems=self._convert(len(records))
                 )
         else:
             return arr
 
     def _psuedo_pickle_to_numpy(self, data):
-
         data = self.psuedopickler.serialize(data)
         # return self._convert(data, allow_pickle=False)
         return self._convert(data)
@@ -456,11 +480,14 @@ class HDF5Serializer(BaseSerializer):
                 if isinstance(k, tuple):  # check if we're dispatching based on type
                     if isinstance(data, k):
                         converter = f
+                        break
                 elif isinstance(k, str):  # check if we're duck typing based on attributes
                     if hasattr(data, k):
                         converter = f
+                        break
                 elif k(data):  # assume dispatch key is a callable that tells us if data is compatible
                     converter = f
+                    break
 
             if converter is None and allow_pickle:
                 converter = lambda x, s: s._psuedo_pickle_to_numpy(x)
@@ -469,7 +496,6 @@ class HDF5Serializer(BaseSerializer):
                 raise TypeError("no registered converter to coerce {} into HDF5 compatible format".format(data))
 
             woof = converter(data, self)
-            # print(">>>>", data, woof)
             return woof
 
         finally:
@@ -536,7 +562,9 @@ class HDF5Serializer(BaseSerializer):
 
         try:
             ds = h5_obj[key] #type: h5py.Dataset
-        except KeyError:
+        except (KeyError, ValueError):
+            if isinstance(h5_obj, self.api.Dataset):
+                h5_obj = h5_obj.parent
             try:
                 ds = self._create_dataset(h5_obj, key, data)
             except TypeError:
@@ -544,7 +572,17 @@ class HDF5Serializer(BaseSerializer):
         else:
             if data is None:
                 data = self.api.Empty("i")
-            ds[...] = data
+            dt = ds.dtype
+            if dt != data.dtype and dt.names is not None: # record arrays are a pain
+                try:
+                    ds = self._create_dataset(h5_obj, key, data)
+                except TypeError:
+                    raise TypeError("can't coerce {}:{} to HDF5 format".format(key, data))
+            else:
+                try:
+                    ds[...] = data
+                except OSError:
+                    raise IOError("failed to write key '{}' to HDF5 dataset {}".format(key, ds))
         # no need to return stuff, since we're just serializing
     def _write_dict(self, h5_obj, data):
         """
@@ -593,6 +631,9 @@ class HDF5Serializer(BaseSerializer):
             else:
                 res = np.empty(data.shape, dtype=data.dtype)
                 data.read_direct(res)
+                names = res.dtype.names
+                if names is not None and 'item_0' in names:
+                    res = [ res['item_'+str(i)][0] for i in range(len(names))]
         else:
             # we loop through the keys and recursively build up a dict
             res = {}
@@ -601,7 +642,7 @@ class HDF5Serializer(BaseSerializer):
             if '_list_numitems' in res:
                 # actually an iterable but with inconsistent shape
                 n_items = res['_list_numitems']
-                res = [ res['_list_item_' + str(i)] for i in range(n_items) ]
+                res = [ res['_list_item_'+str(i)] for i in range(n_items) ]
             elif list(res.keys()) == ['_data']: # special case for if we just saved a single array to file
                 res = res['_data']
 
@@ -615,7 +656,6 @@ class HDF5Serializer(BaseSerializer):
                 except:
                     pass
             res = res.tolist()
-
 
         if self.allow_pickle:
             res = self.psuedopickler.deserialize(res)
@@ -676,11 +716,14 @@ class NumPySerializer(BaseSerializer):
             if isinstance(k, tuple):  # check if we're dispatching based on type
                 if isinstance(data, k):
                     converter = f
+                    break
             elif isinstance(k, str):  # check if we're duck typing based on attributes
                 if hasattr(data, k):
                     converter = f
+                    break
             elif k(data):  # assume dispatch key is a callable that tells us if data is compatible
                 converter = f
+                break
 
         if converter is None:
             raise TypeError("no registered converter to coerce {} into HDF5 compatible format".format(data))
