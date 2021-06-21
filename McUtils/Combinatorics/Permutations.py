@@ -16,14 +16,27 @@ __all__ = [
 
 def _infer_dtype(max_dim):
     if max_dim < 256:
+        minimal_dtype = 'uint8'
+    elif max_dim < 65536:
+        minimal_dtype = 'uint16'
+    elif max_dim < 4294967296:
+        minimal_dtype = 'uint32'
+    else:
+        minimal_dtype = 'uint64'
+    return minimal_dtype
+
+def _infer_pos_neg_dtype(max_dim):
+    # max_dim = abs(max_dim)
+    if max_dim < 128:
         minimal_dtype = 'int8'
-    elif max_dim < 65535:
+    elif max_dim < 32768:
         minimal_dtype = 'int16'
-    elif max_dim < 4294967295:
+    elif max_dim < 2147483648:
         minimal_dtype = 'int32'
     else:
         minimal_dtype = 'int64'
     return minimal_dtype
+_infer_dtype = _infer_pos_neg_dtype # makes my life a little easier right now...
 
 class IntegerPartitioner:
 
@@ -156,6 +169,14 @@ class IntegerPartitioner:
             if manage_counts:
                 cls._manage_counts_array(np.max(n), np.max(M), np.max(l))
 
+
+            should_be_1 = n == 0
+            should_be_1[should_be_1] = M[should_be_1] == 0
+            should_be_1[should_be_1] = l[should_be_1] == 0
+            n[should_be_1] = 1
+            M[should_be_1] = 1
+            l[should_be_1] = 1
+
             counts = cls._partition_counts[n - 1, M - 1, l - 1]
 
             # I think this set of conditions might be overkill?
@@ -168,10 +189,6 @@ class IntegerPartitioner:
             )
             should_be_0 = np.logical_not(should_not_be_0)
             counts[should_be_0] = 0
-
-            should_be_1 = n == 0
-            should_be_1[should_be_1] = M[should_be_1] == 0
-            should_be_1[should_be_1] = l[should_be_1] == 0
             counts[should_be_1] = 1
 
             if check:
@@ -715,7 +732,8 @@ class UniquePermutations:
 
 
     @classmethod
-    def get_permutation_indices(cls, perms, classes=None, counts=None, assume_sorted=False, preserve_ordering=True, dim=None, num_permutations=None):
+    def get_permutation_indices(cls, perms, classes=None, counts=None, assume_sorted=False,
+                                preserve_ordering=True, dim=None, num_permutations=None, dtype=None):
         """
         Classmethod interface to get indices for permutations
         :param perms:
@@ -730,6 +748,7 @@ class UniquePermutations:
 
         if classes is None or counts is None:
             classes, counts = cls.get_permutation_class_counts(perms[0])
+        classes = classes.astype(perms.dtype)
 
         smol = perms.ndim == 1
         if smol:
@@ -763,8 +782,9 @@ class UniquePermutations:
         # determine where each successive permutation differs so we can know how much to reuse
         diffs = np.not_equal(perms[:-1], perms[1:])
         # set up storage for indices
-        inds = np.full((len(perms),), -1)
-
+        if dtype is None:
+            dtype = _infer_dtype(num_permutations)
+        inds = np.full((len(perms),), 0, dtype=dtype)
         def backtrack(sn, cur_dim, state,
                       diffs=diffs, inds=inds,
                       counts_mask=counts_mask,
@@ -798,7 +818,10 @@ class UniquePermutations:
                 # so we only need to back-track to where the new state begins to
                 # differ from the old one,
                 for i in range(ndim - cur_dim - 2, agree_pos - 1, -1):
-                    j = class_map[prev[i]]
+                    try:
+                        j = class_map[prev[i]]
+                    except:
+                        raise Exception(class_map, prev[i], perms.dtype, prev, inds.dtype)
                     counts[j] += 1
                     # counts_mask[j] = True
                     # tree_data[cur_dim, 1] = 0
@@ -902,8 +925,13 @@ class UniquePermutations:
         counts = np.copy(counts) # we're going to modify this in-place
         nterms = len(counts)
 
-        max_term = np.max(np.abs(classes))
-        perms = np.zeros((len(indices), dim), dtype=_infer_dtype(max_term))
+
+        if np.any(classes < 0):
+            max_term = np.max(np.abs(classes))
+            perms = np.zeros((len(indices), dim), dtype=_infer_pos_neg_dtype(max_term))
+        else:
+            max_term = np.max(np.abs(classes))
+            perms = np.zeros((len(indices), dim), dtype=_infer_dtype(max_term))
 
         for sn, idx in enumerate(indices):
 
@@ -1047,7 +1075,7 @@ class UniquePermutations:
         counts = np.copy(counts)  # we're going to modify this in-place
         nterms = len(counts)
 
-        perm = np.zeros(dim, dtype=_infer_dtype(dim))
+        perm = np.zeros(dim, dtype=_infer_pos_neg_dtype(dim))
 
         if indices is None:
             indices = range(num_permutations)
@@ -1817,11 +1845,13 @@ class SymmetricGroupGenerator:
             else:
                 raise NotImplementedError("Unsure how to use filter spec {}".format(filter_perms))
 
+    # from memory_profiler import profile
+    # @profile
     def _build_direct_sums(self, input_perm_classes, counts, classes,
                            return_indices=False,
                            filter_negatives=True,
                            allow_widen_dtypes=True,
-                           filter=None
+                           filter=None, inds_dtype=None
                            ):
         """
         Creates direct sums of `input_perm_classes` with the unique permutations of `classes` where
@@ -1843,6 +1873,9 @@ class SymmetricGroupGenerator:
 
         # set up storage
         num_perms = UniquePermutations.count_permutations(counts)
+
+        if inds_dtype is None:
+            inds_dtype = int
 
         perm_counts = [len(x[2]) for x in input_perm_classes]
         cum_counts = np.cumsum([0] + perm_counts)
@@ -1930,12 +1963,14 @@ class SymmetricGroupGenerator:
 
         storage = np.zeros((total_perm_count, ndim), dtype=dtype)
         if return_indices:
-            indices = np.zeros((total_perm_count,), dtype=int)  # might be able to bound this dtype but not sure...
+            indices = np.zeros((total_perm_count,), dtype=inds_dtype)
 
         if filter is not None or (filter_negatives and any(len(x)>0 for x in can_be_negative)):
             mask = np.full((total_perm_count,), True)
         else:
             mask = None
+
+        storage_indexing_dtype = _infer_dtype(total_perm_count)
 
         # We split the full algorithm into a bunch of smaller functions to
         # make it easier to determine where the total runtime is
@@ -1992,7 +2027,7 @@ class SymmetricGroupGenerator:
             classes_count_data = [UniquePermutations.get_permutation_class_counts(p) for p in perms]
             standard_rep_perms = np.array([
                 UniquePermutations.get_standard_permutation(c[1], c[0]) for c in classes_count_data
-            ], dtype=int
+            ], dtype=_infer_dtype(np.max(np.concatenate([x[0] for x in classes_count_data])))
             )
             return classes_count_data, standard_rep_perms
 
@@ -2037,6 +2072,7 @@ class SymmetricGroupGenerator:
                 padding_1, padding_2 = get_standard_perm_offsets(i, j, standard_rep_perms, classes_count_data)
                 sort_perms, sorting, inv = get_perm_sorting(new_perms)
                 new_inds = get_sort_perm_indices(sort_perms, classes_count_data)
+
                 full_inds_sorted = padding_1 + padding_2 + new_inds
                 indices[perm_pos] = full_inds_sorted[inv]
                 if filter is not None:
@@ -2110,7 +2146,7 @@ class SymmetricGroupGenerator:
                         classes_count_data, standard_rep_perms = get_standard_perms(new_rep_perm[sel])
                         for n,j in enumerate(comp): # we're iterating over classes (not input_classes) here
                             key = tuple(tuple(x) for x in classes_count_data[n])
-                            stored_inds = idx_starts + sel[n]
+                            stored_inds = (idx_starts + sel[n]).astype(storage_indexing_dtype)
                             if key in cls_cache:
                                 cls_cache[key]['blocks'].append((stored_inds, idx))
                             else:
@@ -2304,6 +2340,8 @@ class SymmetricGroupGenerator:
         max_rule = max(max(r) if len(r) > 0 else 0 for r in rules) if len(rules) > 0 else 0
         max_term = 1 + max_rule + np.max(sums)
         IntegerPartitioner.fill_counts(max_term, max_term, self.dim)
+        _, total_possible_counts = self._get_partition_perms([max_term])
+        inds_dtype = _infer_dtype(total_possible_counts[0])
 
         rule_groups = self._get_direct_sum_rule_groups(rules, dim, perms.dtype)
 
@@ -2357,7 +2395,7 @@ class SymmetricGroupGenerator:
                     for counts, classes in zip(rule_counts, rule_classes):
                         res = self._build_direct_sums(input_classes, counts, classes,
                                                       return_indices=return_indices,
-                                                      filter=filter
+                                                      filter=filter, inds_dtype=inds_dtype
                                                       )
                         if split_results or preserve_ordering:
                             split_blocks = np.cumsum(res[1][:-1])
@@ -2369,6 +2407,10 @@ class SymmetricGroupGenerator:
                             if return_indices:
                                 ind_block.append(res[2])
                         perm_block.append(res_perms)
+
+                    # if nq == 5:# and len(counts) == 3 and counts[-1] == 9:
+                    #     #     raise Exception(perm_pos.dtype)
+                    #     raise Exception("oookay")
 
                     if split_results or preserve_ordering:
                         # zip to merge

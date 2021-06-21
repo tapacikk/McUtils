@@ -414,14 +414,24 @@ class HDF5Serializer(BaseSerializer):
             except IndexError:
                 arr = np.asarray(data)
             else:
-                l = len(x0)
                 try_numpy = True
-                for x in data:
+                if isinstance(x0, np.ndarray):
+                    l = x0.shape
+                else:
                     try:
-                        try_numpy = len(x) == l
+                        l = len(x0)
                     except TypeError:
                         try_numpy = False
-                    if not try_numpy: break
+                if try_numpy:
+                    for x in data:
+                        try:
+                            if isinstance(x0, np.ndarray):
+                                try_numpy = x.shape == l
+                            else:
+                                try_numpy = len(x) == l
+                        except (TypeError, AttributeError):
+                            try_numpy = False
+                        if not try_numpy: break
 
                 if try_numpy:
                     arr = np.array(data)
@@ -562,7 +572,20 @@ class HDF5Serializer(BaseSerializer):
 
         try:
             ds = h5_obj[key] #type: h5py.Dataset
-        except (KeyError, ValueError):
+        except KeyError as e:
+            if e.args[0] in {
+                "Unable to open object (bad flag combination for message)",
+                "Unable to open object (message type not found)",
+            }:
+                raise KeyError("failed to load key {} in {}".format(key, h5_obj))
+            else:
+                if isinstance(h5_obj, self.api.Dataset):
+                    h5_obj = h5_obj.parent
+                try:
+                    ds = self._create_dataset(h5_obj, key, data)
+                except TypeError:
+                    raise TypeError("can't coerce {}:{} to HDF5 format".format(key, data))
+        except ValueError:
             if isinstance(h5_obj, self.api.Dataset):
                 h5_obj = h5_obj.parent
             try:
@@ -570,10 +593,17 @@ class HDF5Serializer(BaseSerializer):
             except TypeError:
                 raise TypeError("can't coerce {}:{} to HDF5 format".format(key, data))
         else:
-            if data is None:
-                data = self.api.Empty("i")
             dt = ds.dtype
-            if dt != data.dtype and dt.names is not None: # record arrays are a pain
+            if (
+                    data is None
+                    or dt != data.dtype and dt.names is not None
+            ): # record arrays are a pain
+                if data is None:
+                    data = self.api.Empty("i")
+                try:
+                    del h5_obj[key]
+                except OSError:
+                    raise IOError("failed to remove key {} from {}".format(key, h5_obj))
                 try:
                     ds = self._create_dataset(h5_obj, key, data)
                 except TypeError:
@@ -581,7 +611,7 @@ class HDF5Serializer(BaseSerializer):
             else:
                 try:
                     ds[...] = data
-                except OSError:
+                except:
                     raise IOError("failed to write key '{}' to HDF5 dataset {}".format(key, ds))
         # no need to return stuff, since we're just serializing
     def _write_dict(self, h5_obj, data):
