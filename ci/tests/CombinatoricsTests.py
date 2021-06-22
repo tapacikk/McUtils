@@ -602,7 +602,7 @@ class CombinatoricsTests(TestCase):
             [UniquePermutations(x + (0,) * (6 - len(x))).permutations() for x in test_rules],
             axis=0
         )
-        full_perms = np.array(subtest)[:, np.newaxis, :] + bleh[np.newaxis, :, :]
+        full_perms = subtest[:, np.newaxis, :] + bleh[np.newaxis, :, :]
         nonneg_perms = []
         for f in full_perms:
             # full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
@@ -615,25 +615,6 @@ class CombinatoricsTests(TestCase):
                               list(sorted(nonneg_perms[i].tolist())),
                               msg='bad for {}'.format(test_states[i])
                               )
-
-        bleh = np.concatenate(
-            [UniquePermutations(x + (0,) * (6 - len(x))).permutations() for x in test_rules],
-            axis=0
-        )
-        full_perms = np.array(subtest)[:, np.newaxis, :] + bleh[np.newaxis, :, :]
-        nonneg_perms = []
-        for f in full_perms:
-            # full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
-            neg_pos = np.where(f < 0)[0]
-            comp = np.setdiff1d(np.arange(len(f)), neg_pos)
-            f = f[comp,]
-            nonneg_perms.append(f)
-        for i in range(len(test_states)):
-            self.assertEquals(list(sorted(test_perms[i].tolist())),
-                              list(sorted(nonneg_perms[i].tolist())),
-                              msg='bad for {}'.format(test_states[i])
-                              )
-
 
         # test that filtering is working
         bleeeh, _, filter = gen.take_permutation_rule_direct_sum(

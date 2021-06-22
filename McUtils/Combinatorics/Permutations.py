@@ -2167,6 +2167,45 @@ class SymmetricGroupGenerator:
             mask[k] = False
         perm_counts[start:end, idx] -= len(not_negs) - len(comp)
 
+    @staticmethod
+    def _filter_negs_by_comp_old(comp, not_negs, idx, idx_starts, mask, perm_counts, start, end):
+        not_sel = np.where(np.logical_not(not_negs))[0]
+        mask_inds = np.reshape(not_sel[:, np.newaxis] + idx_starts[np.newaxis, :], -1)
+        mask[mask_inds] = False
+        perm_counts[start:end, idx] -= len(not_negs) - len(comp)
+
+    @classmethod
+    def _filter_negatives_perms(cls,
+                                i, idx, idx_starts, perms, new_rep_perm,
+                                storage,
+                                ndim,
+                                cls_inds, class_negs,
+                                perm_counts, cum_counts,
+                                mask, can_be_negative
+                                ):
+        # if we run into negatives we need to mask them out
+        if len(can_be_negative[i]) == 0:
+            not_negs = np.full(len(cls_inds), True)
+        else:
+            not_negs = cls._get_filter_mask(new_rep_perm, cls_inds[i], can_be_negative[i], class_negs)
+
+        # comp_mask = [np.all(new_rep_perm[j]>0) for j in can_be_negative[i]]#np.all(new_rep_perm[can_be_negative[i],] >= 0, axis=1)
+        # not_negs[can_be_negative[i]] = comp_mask
+        comp = cls_inds[i][not_negs]
+        if len(comp) < len(cls_inds[i]):
+            cls._filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, cum_counts[i],
+                                      cum_counts[i + 1])
+        if len(comp) > 0:
+            sel = np.where(not_negs)[0]
+            new_perms = new_rep_perm[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
+            stored_inds = np.reshape(sel[:, np.newaxis] + idx_starts[np.newaxis, :], -1)
+            storage[stored_inds] = new_perms.reshape(-1, ndim)
+        else:
+            sel = []
+            new_perms = None
+
+        return comp, sel, new_perms
+
     def _build_direct_sums(self, input_perm_classes, counts, classes,
                            return_indices=False,
                            filter_negatives=True,
@@ -2297,12 +2336,7 @@ class SymmetricGroupGenerator:
         # make it easier to determine where the total runtime is
         # del cls_inds
 
-        def filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, cum_counts):
-            not_sel = np.where(np.logical_not(not_negs))[0]
-            mask_inds = np.reshape(not_sel[:, np.newaxis] + idx_starts[np.newaxis, :], -1)
-            mask[mask_inds] = False
-            perm_counts[cum_counts[i]:cum_counts[i + 1], idx] -= len(not_negs) - len(comp)
-        def filter_negatives_perms(i, idx, idx_starts, perms, new_rep_perm,
+        def filter_negatives_perms_(i, idx, idx_starts, perms, new_rep_perm,
                                    class_negs,
                                    mask=mask,
                                    can_be_negative=can_be_negative,
@@ -2313,7 +2347,7 @@ class SymmetricGroupGenerator:
                 not_negs = self._get_filter_mask(new_rep_perm, cls_inds[i], can_be_negative[i], class_negs)
             comp = cls_inds[i][not_negs]
             if len(comp) < len(cls_inds[i]):
-                filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, cum_counts)
+                filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, cum_counts[i], cum_counts[i + 1])
                 # self._filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, cum_counts[i], cum_counts[i + 1])
 
             if len(comp) > 0:
@@ -2455,9 +2489,14 @@ class SymmetricGroupGenerator:
                 new_rep_perm = rep[np.newaxis, :] + class_perms[cls_inds[i], :]
                 if filter_negatives and mask is not None:
                     class_negs = tuple(np.array(class_neg_list[j], dtype=class_negatives[0].dtype) for j in cls_inds[i])
-                    comp, sel, new_perms = filter_negatives_perms(i, idx, idx_starts, perms, new_rep_perm,
-                                                                  class_negs
-                                                                  )
+                    comp, sel, new_perms = self._filter_negatives_perms(
+                                i, idx, idx_starts, perms, new_rep_perm,
+                                storage,
+                                ndim,
+                                cls_inds, class_negs,
+                                perm_counts, cum_counts,
+                                mask, can_be_negative
+                                )
                 else:
                     comp = cls_inds[i]
                     sel = np.arange(len(cls_inds[i]))#np.where(not_negs)[0]
