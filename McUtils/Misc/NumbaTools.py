@@ -7,7 +7,8 @@ __all__ = [
     'njit',
     'jit',
     'type_spec',
-    'numba_decorator'
+    'numba_decorator',
+    'objmode'
 ]
 
 def load_numba(warn=False):
@@ -44,3 +45,18 @@ def type_spec(t, warn=False):
         return getattr(numba, t)
     else:
         return typing.Any
+
+class _noop_context:
+    def __init__(self, *args, **kwargs):
+        pass
+    def __enter__(self):
+        pass
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+def objmode(*args, warn=False, **kwargs):
+    nb = load_numba(warn=warn)
+    if nb is not None:
+        return nb.objmode(*args, **kwargs)
+    else:
+        return _noop_context()
