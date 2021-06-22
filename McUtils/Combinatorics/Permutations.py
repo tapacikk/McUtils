@@ -2167,13 +2167,6 @@ class SymmetricGroupGenerator:
             mask[k] = False
         perm_counts[start:end, idx] -= len(not_negs) - len(comp)
 
-    @staticmethod
-    def _filter_negs_by_comp_old(comp, not_negs, idx, idx_starts, mask, perm_counts, start, end):
-        not_sel = np.where(np.logical_not(not_negs))[0]
-        mask_inds = np.reshape(not_sel[:, np.newaxis] + idx_starts[np.newaxis, :], -1)
-        mask[mask_inds] = False
-        perm_counts[start:end, idx] -= len(not_negs) - len(comp)
-
     @classmethod
     def _filter_negatives_perms(cls,
                                 i, idx, idx_starts, perms, new_rep_perm,
@@ -2335,31 +2328,6 @@ class SymmetricGroupGenerator:
         # We split the full algorithm into a bunch of smaller functions to
         # make it easier to determine where the total runtime is
         # del cls_inds
-
-        def filter_negatives_perms_(i, idx, idx_starts, perms, new_rep_perm,
-                                   class_negs,
-                                   mask=mask,
-                                   can_be_negative=can_be_negative,
-                                   storage=storage):
-            if len(can_be_negative[i]) == 0:
-                not_negs = np.full(len(cls_inds), True)
-            else:
-                not_negs = self._get_filter_mask(new_rep_perm, cls_inds[i], can_be_negative[i], class_negs)
-            comp = cls_inds[i][not_negs]
-            if len(comp) < len(cls_inds[i]):
-                filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, cum_counts[i], cum_counts[i + 1])
-                # self._filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, cum_counts[i], cum_counts[i + 1])
-
-            if len(comp) > 0:
-                sel = np.where(not_negs)[0]
-                new_perms = new_rep_perm[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
-                stored_inds = np.reshape(sel[:, np.newaxis] + idx_starts[np.newaxis, :], -1)
-                storage[stored_inds] = new_perms.reshape(-1, ndim)
-            else:
-                sel = []
-                new_perms = None
-
-            return comp, sel, new_perms
 
         def filter_from_ind_spec(i, j, block_idx, block_sizes, insert_inds, full_inds_sorted, inv, *,
                                  mask=mask, merged_sums=merged_sums, filter=filter):
