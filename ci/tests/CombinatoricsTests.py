@@ -519,11 +519,23 @@ class CombinatoricsTests(TestCase):
                      908
                      ]
         # just making sure no crashes
-        gen.from_indices(test_inds)
+        p = gen.from_indices(test_inds)
+        self.assertEquals(gen.to_indices(p).tolist(), test_inds)
+
+        basic_exc, _ = gen.take_permutation_rule_direct_sum(
+                [
+                    [1, 0, 0, 0, 0, 2],
+                    [2, 0, 0, 4, 0, 0]
+                ],
+                [(-1,), (1,)],
+                return_indices=True,
+                split_results=True
+            )
 
         test_states = [
-            [0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0],
+            # [0, 0, 0, 0, 0, 0],
+            # [0, 0, 0, 0, 0, 0],
+            [2, 2, 1, 0, 1, 0],
             [3, 0, 0, 0, 0, 0],
             # [0, 0, 0, 0, 0, 1],
             # [0, 0, 0, 0, 1, 0],
@@ -562,7 +574,39 @@ class CombinatoricsTests(TestCase):
             [0, 0, 0, 2, 0, 0]
         ]
         filter_inds = gen.to_indices(filter_perms)#[0, 6, 5, 4, 3, 2, 1, 12, 11, 10]
+        wat = gen.from_indices(filter_inds)
+        self.assertEquals(
+            wat.tolist(),
+            filter_perms
+        )
 
+        # test that basic application works
+        subtest = np.array(test_states)
+        test_perms, test_inds = gen.take_permutation_rule_direct_sum(
+            subtest,
+            test_rules,
+            return_indices=True,
+            split_results=True
+        )
+        bleh = np.concatenate(
+            [UniquePermutations(x + (0,) * (6 - len(x))).permutations() for x in test_rules],
+            axis=0
+        )
+        full_perms = np.array(subtest)[:, np.newaxis, :] + bleh[np.newaxis, :, :]
+        nonneg_perms = []
+        for f in full_perms:
+            # full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
+            neg_pos = np.where(f < 0)[0]
+            comp = np.setdiff1d(np.arange(len(f)), neg_pos)
+            f = f[comp,]
+            nonneg_perms.append(f)
+        for i in range(len(test_states)):
+            self.assertEquals(list(sorted(test_perms[i].tolist())),
+                              list(sorted(nonneg_perms[i].tolist())),
+                              msg='bad for {}'.format(test_states[i])
+                              )
+
+        # test that filtering is working
         bleeeh, _, filter = gen.take_permutation_rule_direct_sum(
                 test_states,
                 test_rules,
@@ -572,18 +616,55 @@ class CombinatoricsTests(TestCase):
                 return_filter=True,
                 logger=Logger()
             )
-        # self.assertEquals(filter.inds.tolist(), np.sort(filter_inds).tolist())
-        # self.assertEquals(filter.perms.tolist(), filter_perms)
-        self.assertEquals(sorted(bleeeh[0].tolist()), sorted([
-            [0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 1, 0, 0],
-            [0, 0, 1, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0],
-            [1, 0, 0, 0, 0, 0],
-        ]))
 
-        self.assertEquals(bleeeh[2].tolist(), [])
+        bleh = np.concatenate(
+            [UniquePermutations(x + (0,) * (6 - len(x))).permutations() for x in test_rules],
+            axis=0
+        )
+        full_perms = np.array(subtest)[:, np.newaxis, :] + bleh[np.newaxis, :, :]
+        nonneg_perms = []
+        for f in full_perms:
+            # full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
+            neg_pos = np.where(f < 0)[0]
+            comp = np.setdiff1d(np.arange(len(f)), neg_pos)
+            f = f[comp,]
+            nonneg_perms.append(f)
+        for i in range(len(test_states)):
+            self.assertEquals(list(sorted(test_perms[i].tolist())),
+                              list(sorted(nonneg_perms[i].tolist())),
+                              msg='bad for {}'.format(test_states[i])
+                              )
+
+        nonneg_perms = []
+        for f in full_perms:
+            # full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
+            neg_pos = np.where(f < 0)[0]
+            comp = np.setdiff1d(np.arange(len(f)), neg_pos)
+            f = f[comp,]
+            cont_terms, _, _ = nput.contained(f, filter_perms)
+            nonneg_perms.append(f[cont_terms,])
+        for i in range(len(test_states)):
+            self.assertEquals(list(sorted(test_perms[i].tolist())),
+                              list(sorted(nonneg_perms[i].tolist())),
+                              msg='bad for {}'.format(test_states[i])
+                              )
+
+        bleh = np.concatenate(
+            [UniquePermutations(x + (0,) * (6 - len(x))).permutations() for x in test_rules],
+            axis=0
+        )
+        full_perms = np.array(test_states)[:, np.newaxis, :] + bleh[np.newaxis, :, :]
+        full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
+        neg_pos = np.where(full_perms < 0)[0]
+        comp = np.setdiff1d(np.arange(len(full_perms)), neg_pos)
+        full_perms = full_perms[comp,]
+        for i in range(len(test_states)):
+            cont_terms = nput.contained(full_perms[i], filter_perms)
+            self.assertEquals(list(sorted(bleeeh[i].tolist())),
+                              list(sorted(full_perms[i][cont_terms].tolist()))
+                              )
+
+        raise Exception([b.tolist() for b in bleeeh])
 
         bleeeh2, _, filter = gen.take_permutation_rule_direct_sum(
             test_states,
