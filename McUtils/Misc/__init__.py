@@ -11,3 +11,5 @@ from .InteractiveTools import *; from .InteractiveTools import __all__ as _all
 __all__ += _all
 from .SBatchHelper import *; from .SBatchHelper import __all__ as _all
 __all__ += _all
+from .NumbaTools import *; from .NumbaTools import __all__ as _all
+__all__ += _all
