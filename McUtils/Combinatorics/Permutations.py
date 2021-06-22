@@ -934,6 +934,100 @@ class UniquePermutations:
 
         return inds
 
+    @staticmethod
+    @jit(nopython=True)
+    def _fill_permutations_from_indices(perms, indices, counts, classes, dim, num_permutations):
+        tree_data = np.zeros((dim, 2), dtype=int)
+        depth = 0  # where we're currently writing
+        tree_data[depth, 1] = num_permutations
+        # we make a constant-time lookup for what a value maps to in
+        # terms of position in the counts array
+        class_map = {}
+        for i, v in enumerate(classes):
+            class_map[v] = i
+        init_counts = counts
+        counts = np.copy(counts)  # we're going to modify this in-place
+        nterms = len(counts)
+        for sn, idx in enumerate(indices):
+            # we back track directly to where the sum of the subtotal and the current num_before
+            # is greater than the target index
+            if sn > 0:
+                tree_sums = tree_data[:depth, 0] + tree_data[1:depth + 1, 1]
+                target_depth = np.where(tree_sums > idx)[0]
+                if len(target_depth) > 0:
+                    target_depth = np.max(target_depth)
+                    # backtracks = len(tree_sums) - 1 - np.max()
+                    # target_depth = depth - backtracks
+                    prev = perms[sn - 1]
+                    for d in range(depth - 1, target_depth, -1):
+                        inc_el = prev[d]
+                        j = class_map[inc_el]
+                        depth -= 1
+                        counts[j] += 1
+                    perms[sn, :depth] = prev[:depth]
+                    tree_data[depth, 0] = tree_data[depth - 1, 0]
+                elif target_depth == dim:
+                    # we don't need to do any work
+                    perms[sn] = perms[sn - 1]
+                    continue
+                else:
+                    # means we need to backtrack completely
+                    # so why even walk?
+                    depth = 0
+                    counts = init_counts.copy()
+                    tree_data[depth, 1] = num_permutations
+                    tree_data[depth, 0] = 0
+
+            done = False
+            for i in range(depth, dim - 1):  # we only need to do at most cur_dim writes
+                # We'll get each element 1-by-1 in an O(d) fashion.
+                # This isn't blazingly fast but it'll work okay
+
+                # loop over the classes of elements and see at which point dropping an element exceeds the current index
+                # which tells is that the _previous_ term was the correct one
+                for j in range(nterms):
+                    if counts[j] == 0:
+                        continue
+
+                    mprod = tree_data[depth, 1] * counts[j]
+                    # if mprod % ndim != 0:
+                    #     raise ValueError("subtree counts {} don't comport with dimension {}".format(
+                    #         mprod, ndim
+                    #     ))
+                    subtotal = mprod // (dim - depth)
+                    # subtotal = cls._subtree_counts(tree_data[depth, 1], dim - depth, counts, j)
+                    test = tree_data[depth, 0] + subtotal
+                    if test > idx:  # or j == nterms-1: there's got to be _some_ index at which we get past idx I think...
+                        depth += 1
+                        counts[j] -= 1
+                        perms[sn, i] = classes[j]
+                        tree_data[depth, 1] = subtotal
+                        tree_data[depth, 0] = tree_data[depth - 1, 0]
+                        if tree_data[depth, 0] == idx:
+                            # we know that every next iteration will _also_ do an insertion
+                            # so we can just do that all at once
+                            remaining_counts = np.sum(counts)
+                            insertion = np.zeros(remaining_counts, dtype=perms.dtype)
+                            d = 0
+                            for l in range(nterms):
+                                if counts[l] > 0:
+                                    insertion[d:d + counts[l]] = np.full(counts[l], classes[l], dtype=perms.dtype)
+                                    d += counts[l]
+                            # insertion = np.concatenate(
+                            #     [
+                            #         np.full(counts[l], classes[l], dtype=perms.dtype)
+                            #         for l in range(nterms) if counts[l] > 0
+                            #     ]
+                            # )
+                            perms[sn, i + 1:] = insertion
+                            done = True
+                        break
+                    else:
+                        tree_data[depth, 0] = test
+
+                if done:
+                    break
+
     @classmethod
     def get_permutations_from_indices(cls, classes, counts, indices, assume_sorted=False, preserve_ordering=True,
                                       dim=None, num_permutations=None, check_indices=True, no_backtracking=False):
@@ -962,10 +1056,9 @@ class UniquePermutations:
         # and the number of total remaining permutations (used to calculate the first)
         if dim is None:
             dim = int(np.sum(counts))
-        tree_data = np.zeros((dim, 2), dtype=int)
-        depth = 0 # where we're currently writing
         if num_permutations is None:
             num_permutations = cls.count_permutations(counts)
+
         if check_indices:
             bad_spots = np.where(indices >= num_permutations)[0]
             if len(bad_spots) > 0:
@@ -973,14 +1066,6 @@ class UniquePermutations:
                     classes, counts, num_permutations,
                     indices[bad_spots]
                 ))
-
-        tree_data[depth, 1] = num_permutations
-        # we make a constant-time lookup for what a value maps to in
-        # terms of position in the counts array
-        class_map = {v:i for i,v in enumerate(classes)}
-        init_counts = counts
-        counts = np.copy(counts) # we're going to modify this in-place
-        nterms = len(counts)
 
 
         if np.any(classes < 0):
@@ -990,81 +1075,8 @@ class UniquePermutations:
             max_term = np.max(np.abs(classes))
             perms = np.zeros((len(indices), dim), dtype=_infer_dtype(max_term))
 
-        for sn, idx in enumerate(indices):
+        cls._fill_permutations_from_indices()
 
-            # we back track directly to where the sum of the subtotal and the current num_before
-            # is greater than the target index
-            if no_backtracking:
-
-                # so we can make sure a non-backtracking solution still works
-                depth = 0
-                counts = init_counts.copy()
-                tree_data[depth, 1] = num_permutations
-                tree_data[depth, 0] = 0
-
-            elif sn > 0:
-                tree_sums = tree_data[:depth, 0] + tree_data[1:depth+1, 1]
-                target_depth = np.where(tree_sums > idx)[0]
-                if len(target_depth) > 0:
-                    target_depth = np.max(target_depth)
-                    # backtracks = len(tree_sums) - 1 - np.max()
-                    # target_depth = depth - backtracks
-                    prev = perms[sn-1]
-                    for d in range(depth - 1, target_depth, -1):
-                        inc_el = prev[d]
-                        j = class_map[inc_el]
-                        depth -= 1
-                        counts[j] += 1
-                    perms[sn, :depth] = prev[:depth]
-                    tree_data[depth, 0] = tree_data[depth-1, 0]
-                elif target_depth == dim:
-                    # we don't need to do any work
-                    perms[sn] = perms[sn-1]
-                    continue
-                else:
-                    # means we need to backtrack completely
-                    # so why even walk?
-                    depth = 0
-                    counts = init_counts.copy()
-                    tree_data[depth, 1] = num_permutations
-                    tree_data[depth, 0] = 0
-
-            done = False
-            for i in range(depth, dim-1): # we only need to do at most cur_dim writes
-                # We'll get each element 1-by-1 in an O(d) fashion.
-                # This isn't blazingly fast but it'll work okay
-
-                # loop over the classes of elements and see at which point dropping an element exceeds the current index
-                # which tells is that the _previous_ term was the correct one
-                for j in range(nterms):
-                    if counts[j] == 0:
-                        continue
-
-                    subtotal = cls._subtree_counts(tree_data[depth, 1], dim - depth, counts, j)
-                    test = tree_data[depth, 0] + subtotal
-                    if test > idx: # or j == nterms-1: there's got to be _some_ index at which we get past idx I think...
-                        depth += 1
-                        counts[j] -= 1
-                        perms[sn, i] = classes[j]
-                        tree_data[depth, 1] = subtotal
-                        tree_data[depth, 0] = tree_data[depth-1, 0]
-                        if tree_data[depth, 0] == idx:
-                            # we know that every next iteration will _also_ do an insertion
-                            # so we can just do that all at once
-                            insertion = np.concatenate(
-                                [
-                                    np.full(counts[l], classes[l], dtype=perms.dtype)
-                                    for l in range(nterms) if counts[l] > 0
-                                 ]
-                            )
-                            perms[sn, i + 1:] = insertion
-                            done = True
-                        break
-                    else:
-                        tree_data[depth, 0] = test
-
-                if done:
-                    break
 
         if preserve_ordering and sorting is not None:
             perms = perms[np.argsort(sorting)]
@@ -1094,9 +1106,10 @@ class UniquePermutations:
                                 [np.full(counts[l], classes[l], dtype=classes.dtype) for l in range(len(counts)) if counts[l] > 0]
                             )
 
+    # leaving this here so I remember how it works...
     @staticmethod
     @jit(nopython=True)
-    def _walk_perm_generator(counts:type_spec('int64')[:], dim, num_permutations, indices, include_positions):
+    def _walk_perm_generator(counts, dim, num_permutations, indices, include_positions):
 
         tree_data = np.zeros((dim, 2), dtype='int64')
         depth = 0  # where we're currently writing
@@ -1188,7 +1201,6 @@ class UniquePermutations:
                         UniquePermutations._tree_walk_callback(idx, perm, pos_map, counts, depth, tree_data)
                     break
 
-    _tree_walk_callback=None
     @classmethod
     def walk_permutation_tree(cls, counts, on_visit,
                               indices=None, dim=None, num_permutations=None,
@@ -1217,19 +1229,94 @@ class UniquePermutations:
         # and the number of total remaining permutations (used to calculate the first)
         if dim is None:
             dim = int(np.sum(counts))
+        tree_data = np.zeros((dim, 2), dtype=int)
+        depth = 0  # where we're currently writing
         if num_permutations is None:
             num_permutations = cls.count_permutations(counts)
-        if indices is None:
-            indices = np.arange(num_permutations)
-        elif not isinstance(indices, np.ndarray):
-            indices = np.array(list(indices))
+        tree_data[depth, 1] = num_permutations
+        init_counts = counts
+        classes = np.arange(len(counts))
+        pos_map = [np.full(c, -1) for c in counts]
+        counts = np.copy(counts)  # we're going to modify this in-place
+        nterms = len(counts)
 
-        cb = cls._tree_walk_callback
-        try:
-            cls._tree_walk_callback = on_visit
-            cls._walk_perm_generator(counts, dim, num_permutations, indices, include_positions)
-        finally:
-            cls._tree_walk_callback = cb
+        perm = np.zeros(dim, dtype=_infer_pos_neg_dtype(dim))
+
+        if indices is None:
+            indices = range(num_permutations)
+
+        allow_bracktracking = False
+        for idx in indices:
+            # we back track directly to where the sum of the subtotal and the current num_before
+            # is greater than the target index
+            if allow_bracktracking:
+                tree_sums = tree_data[:depth, 0] + tree_data[1:depth + 1, 1]
+                target_depth = np.where(tree_sums > idx)[0]
+                if len(target_depth) > 0:
+                    target_depth = np.max(target_depth)
+                    for d in range(depth - 1, target_depth, -1):
+                        j = perm[d]
+                        depth -= 1
+                        counts[j] += 1
+                    tree_data[depth, 0] = tree_data[depth - 1, 0]
+                else:
+                    # means we need to backtrack completely
+                    # so why even walk?
+                    depth = 0
+                    counts = init_counts.copy()
+                    tree_data[depth, 1] = num_permutations
+                    tree_data[depth, 0] = 0
+            else:
+                allow_bracktracking = True
+
+            done = False
+            for i in range(depth, dim):  # we only need to do at most cur_dim writes
+                # We'll get each element 1-by-1 in an O(d) fashion.
+                # This isn't blazingly fast but it'll work okay
+
+                # loop over the classes of elements and see at which point dropping an element exceeds the current index
+                # which tells is that the _previous_ term was the correct one
+                for j in range(nterms):
+                    if counts[j] == 0:
+                        continue
+
+                    subtotal = cls._subtree_counts(tree_data[depth, 1], dim - depth, counts, j)
+                    test = tree_data[depth, 0] + subtotal
+                    if test > idx:  # or j == nterms-1: there's got to be _some_ index at which we get past idx I think...
+                        if include_positions:
+                            k = init_counts[j] - counts[j]
+                            pos_map[j][k] = depth
+                        depth += 1
+                        counts[j] -= 1
+                        perm[i] = classes[j]
+                        tree_data[depth, 1] = subtotal
+                        tree_data[depth, 0] = tree_data[depth - 1, 0]
+                        if tree_data[depth, 0] == idx:
+                            # we know that every next iteration will _also_ do an insertion
+                            # so we can just do that all at once
+                            insertion = np.concatenate(
+                                [np.full(counts[l], classes[l], dtype=perm.dtype) for l in range(nterms) if
+                                 counts[l] > 0]
+                            )
+                            if include_positions:
+                                d = depth
+                                for l in range(nterms):
+                                    if counts[l] > 0:  # we fill the rest of the pos_map block
+                                        k = init_counts[l] - counts[l]  # how many have we already filled in
+                                        # print(d + np.arange(counts[l]), counts[l], init_counts[l], k,
+                                        #       pos_map[i][k:]
+                                        #       )
+                                        pos_map[l][k:] = d + np.arange(counts[l])  # and now fill in the rest
+                                        d += counts[l]
+                            perm[i + 1:] = insertion
+                            done = True
+                        break
+                    else:
+                        tree_data[depth, 0] = test
+
+                if done:
+                    on_visit(idx, perm, pos_map, counts, depth, tree_data)
+                    break
 
     @classmethod
     def descend_permutation_tree_indices(cls, perms, on_visit, classes=None, counts=None, dim=None, assume_sorted=False, num_permutations=None):
@@ -2099,8 +2186,6 @@ class SymmetricGroupGenerator:
                                    storage=storage):
 
             not_negs = self._get_filter_mask(new_rep_perm, cls_inds[i], can_be_negative[i], class_negs)
-            # comp_mask = [np.all(new_rep_perm[j]>0) for j in can_be_negative[i]]#np.all(new_rep_perm[can_be_negative[i],] >= 0, axis=1)
-            # not_negs[can_be_negative[i]] = comp_mask
             comp = cls_inds[i][not_negs]
             if len(comp) < len(cls_inds[i]):
                 filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, cum_counts)
@@ -2179,7 +2264,6 @@ class SymmetricGroupGenerator:
                                                        )
 
             return hmm
-
 
         def process_cached_index_blocks(storage):
             for k, block_dat in cls_cache.items():
