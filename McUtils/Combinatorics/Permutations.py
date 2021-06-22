@@ -190,7 +190,6 @@ class IntegerPartitioner:
             n[should_be_1] = 1
             M[should_be_1] = 1
             l[should_be_1] = 1
-
             counts = cls._partition_counts[n - 1, M - 1, l - 1]
 
             # I think this set of conditions might be overkill?
@@ -407,7 +406,9 @@ class IntegerPartitioner:
         :rtype:
         """
 
-        parts = np.asanyarray(parts)#.astype(int)
+        parts = np.asanyarray(parts)#.astype('int16')
+        if not isinstance(parts.dtype, np.integer):
+            parts = parts.astype(int)
         smol = parts.ndim == 1
         if smol:
             parts = parts.reshape((1, parts.shape[0]))
@@ -937,7 +938,7 @@ class UniquePermutations:
     @staticmethod
     @jit(nopython=True)
     def _fill_permutations_from_indices(perms, indices, counts, classes, dim, num_permutations):
-        tree_data = np.zeros((dim, 2), dtype=int)
+        tree_data = np.zeros((dim, 2), dtype='int64')
         depth = 0  # where we're currently writing
         tree_data[depth, 1] = num_permutations
         # we make a constant-time lookup for what a value maps to in
@@ -1075,8 +1076,7 @@ class UniquePermutations:
             max_term = np.max(np.abs(classes))
             perms = np.zeros((len(indices), dim), dtype=_infer_dtype(max_term))
 
-        cls._fill_permutations_from_indices()
-
+        cls._fill_permutations_from_indices(perms, indices, counts, classes, dim, num_permutations)
 
         if preserve_ordering and sorting is not None:
             perms = perms[np.argsort(sorting)]
@@ -1303,9 +1303,6 @@ class UniquePermutations:
                                 for l in range(nterms):
                                     if counts[l] > 0:  # we fill the rest of the pos_map block
                                         k = init_counts[l] - counts[l]  # how many have we already filled in
-                                        # print(d + np.arange(counts[l]), counts[l], init_counts[l], k,
-                                        #       pos_map[i][k:]
-                                        #       )
                                         pos_map[l][k:] = d + np.arange(counts[l])  # and now fill in the rest
                                         d += counts[l]
                             perm[i + 1:] = insertion
@@ -2026,7 +2023,7 @@ class SymmetricGroupGenerator:
     @jit(nopython=True)
     def _get_filter_mask(new_rep_perm, cls_inds, can_be_negative, class_negs):
         # if we run into negatives we need to mask them out
-        not_negs = np.full(len(cls_inds), True)
+        not_negs = np.full(len(cls_inds), True)#, dtype=bool)
         for j in can_be_negative:
             all_clean = np.all(new_rep_perm[j][class_negs[j],] >= 0)
             not_negs[j] = all_clean
@@ -2184,8 +2181,10 @@ class SymmetricGroupGenerator:
                                    mask=mask,
                                    can_be_negative=can_be_negative,
                                    storage=storage):
-
-            not_negs = self._get_filter_mask(new_rep_perm, cls_inds[i], can_be_negative[i], class_negs)
+            if len(can_be_negative[i]) == 0:
+                not_negs = np.full(len(cls_inds), True)
+            else:
+                not_negs = self._get_filter_mask(new_rep_perm, cls_inds[i], can_be_negative[i], class_negs)
             comp = cls_inds[i][not_negs]
             if len(comp) < len(cls_inds[i]):
                 filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, cum_counts)
@@ -2394,7 +2393,9 @@ class SymmetricGroupGenerator:
 
         # get counts so we can split them up
         wat = [UniquePermutations.get_permutation_class_counts(rule, sort_by_counts=True) for rule in rules]
-        rule_counts = np.asanyarray(wat, dtype=object)
+        rule_counts = np.empty(len(wat), dtype=object)
+        for i in range(len(wat)):
+            rule_counts[i] = wat[i]
 
         # first split by length
         count_lens = np.array([len(x[0]) for x in rule_counts])
