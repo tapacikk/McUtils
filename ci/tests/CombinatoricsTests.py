@@ -505,6 +505,16 @@ class CombinatoricsTests(TestCase):
 
         # there was a crash from an improperly handled duplicate state
         gen = SymmetricGroupGenerator(6)
+
+        # raise Exception(
+        # #     gen.from_indices([778, 779, 779, 779])
+        # # )
+        #
+        # # just making sure no crashes
+        test_inds = [200, 758, 203, 204, 780, 769, 781, 770, 779, 779, 782,]
+        p = gen.from_indices(test_inds)
+        self.assertEquals(gen.to_indices(p).tolist(), test_inds)
+
         test_inds = [ 200, 758, 203, 204, 780, 769, 781, 770, 779, 779, 782,
                      904, 904, 911, 901, 901, 915, 914, 2808, 789, 796, 794,
                      797, 795, 798, 895, 896, 2844, 2824, 2825, 897, 2828, 2838,
@@ -533,31 +543,31 @@ class CombinatoricsTests(TestCase):
             )
 
         test_states = [
-            # [0, 0, 0, 0, 0, 0],
-            # [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
             [2, 2, 1, 0, 1, 0],
             [3, 0, 0, 0, 0, 0],
-            # [0, 0, 0, 0, 0, 1],
-            # [0, 0, 0, 0, 1, 0],
-            # [0, 0, 0, 1, 0, 0],
-            # [0, 0, 1, 0, 0, 0],
-            # [0, 1, 0, 0, 0, 0],
-            # [1, 0, 0, 0, 0, 0],
-            # [0, 3, 0, 0, 0, 0],
-            # [0, 0, 3, 0, 0, 0],
-            # [0, 0, 0, 3, 0, 0],
-            # [0, 0, 0, 0, 3, 0],
-            # [0, 0, 0, 0, 0, 3],
-            # [1, 2, 0, 0, 0, 0],
-            # [1, 0, 2, 0, 0, 0],
-            # [1, 0, 0, 2, 0, 0],
-            # [1, 0, 0, 0, 2, 0],
-            # [1, 0, 0, 0, 0, 2],
-            # [2, 1, 0, 0, 0, 0],
-            # [2, 2, 1, 1, 0, 0],
-            # [2, 2, 1, 0, 1, 0],
-            # [2, 2, 1, 0, 0, 1],
-            # [0, 0, 1, 1, 1, 1]
+            [0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0],
+            [0, 3, 0, 0, 0, 0],
+            [0, 0, 3, 0, 0, 0],
+            [0, 0, 0, 3, 0, 0],
+            [0, 0, 0, 0, 3, 0],
+            [0, 0, 0, 0, 0, 3],
+            [1, 2, 0, 0, 0, 0],
+            [1, 0, 2, 0, 0, 0],
+            [1, 0, 0, 2, 0, 0],
+            [1, 0, 0, 0, 2, 0],
+            [1, 0, 0, 0, 0, 2],
+            [2, 1, 0, 0, 0, 0],
+            [2, 2, 1, 1, 0, 0],
+            [2, 2, 1, 0, 1, 0],
+            [2, 2, 1, 0, 0, 1],
+            [0, 0, 1, 1, 1, 1]
         ]
         test_rules = [(-1,), (1,)]
 
@@ -606,17 +616,6 @@ class CombinatoricsTests(TestCase):
                               msg='bad for {}'.format(test_states[i])
                               )
 
-        # test that filtering is working
-        bleeeh, _, filter = gen.take_permutation_rule_direct_sum(
-                test_states,
-                test_rules,
-                return_indices=True,
-                split_results=True,
-                filter_perms=[filter_perms, filter_inds],
-                return_filter=True,
-                logger=Logger()
-            )
-
         bleh = np.concatenate(
             [UniquePermutations(x + (0,) * (6 - len(x))).permutations() for x in test_rules],
             axis=0
@@ -635,6 +634,18 @@ class CombinatoricsTests(TestCase):
                               msg='bad for {}'.format(test_states[i])
                               )
 
+
+        # test that filtering is working
+        bleeeh, _, filter = gen.take_permutation_rule_direct_sum(
+                test_states,
+                test_rules,
+                return_indices=True,
+                split_results=True,
+                filter_perms=[filter_perms, filter_inds],
+                return_filter=True,
+                # logger=Logger()
+            )
+
         nonneg_perms = []
         for f in full_perms:
             # full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
@@ -644,27 +655,10 @@ class CombinatoricsTests(TestCase):
             cont_terms, _, _ = nput.contained(f, filter_perms)
             nonneg_perms.append(f[cont_terms,])
         for i in range(len(test_states)):
-            self.assertEquals(list(sorted(test_perms[i].tolist())),
+            self.assertEquals(list(sorted(bleeeh[i].tolist())),
                               list(sorted(nonneg_perms[i].tolist())),
                               msg='bad for {}'.format(test_states[i])
                               )
-
-        bleh = np.concatenate(
-            [UniquePermutations(x + (0,) * (6 - len(x))).permutations() for x in test_rules],
-            axis=0
-        )
-        full_perms = np.array(test_states)[:, np.newaxis, :] + bleh[np.newaxis, :, :]
-        full_perms = full_perms.reshape((-1, full_perms.shape[-1]))
-        neg_pos = np.where(full_perms < 0)[0]
-        comp = np.setdiff1d(np.arange(len(full_perms)), neg_pos)
-        full_perms = full_perms[comp,]
-        for i in range(len(test_states)):
-            cont_terms = nput.contained(full_perms[i], filter_perms)
-            self.assertEquals(list(sorted(bleeeh[i].tolist())),
-                              list(sorted(full_perms[i][cont_terms].tolist()))
-                              )
-
-        raise Exception([b.tolist() for b in bleeeh])
 
         bleeeh2, _, filter = gen.take_permutation_rule_direct_sum(
             test_states,
