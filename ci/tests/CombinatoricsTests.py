@@ -627,6 +627,25 @@ class CombinatoricsTests(TestCase):
                 # logger=Logger()
             )
 
+        self.assertEquals(len(bleeeh), len(test_states))
+        for i in range(len(test_states)):
+            print(">>>", test_states[i])
+            print(bleeeh[i])
+            print("-"*50)
+            woof = list(test_states[i])
+            woof[0] += 1
+            if woof in filter_perms:
+                self.assertIn(
+                    woof,
+                    bleeeh[i].tolist()
+                )
+            else:
+                self.assertNotIn(
+                    woof,
+                    bleeeh[i].tolist()
+                )
+        # self.assertEquals(len(bleeeh), len(test_states))
+
         nonneg_perms = []
         for f in full_perms:
             # full_perms = full_perms.reshape((-1, full_perms.shape[-1]))

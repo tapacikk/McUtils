@@ -133,6 +133,11 @@ def intersection(ar1, ar2,
     ar1 = np.asanyarray(ar1)
     ar2 = np.asanyarray(ar2)
 
+    if ar1.dtype < ar2.dtype:
+        ar1 = ar1.astype(ar2.dtype)
+    elif ar1.dtype < ar2.dtype:
+        ar2 = ar2.astype(ar1.dtype)
+
     if ar1.ndim == 1:
         ret = intersect1d(ar1, ar2, assume_unique=assume_unique, return_indices=return_indices,
                           sortings=sortings, union_sorting=union_sorting)
@@ -203,6 +208,11 @@ def contained(ar1, ar2, assume_unique=False, invert=False,
     # Ravel both arrays, behavior for the first array could be different
     ar1 = np.asanyarray(ar1)
     ar2 = np.asanyarray(ar2)
+
+    if ar1.dtype < ar2.dtype:
+        ar1 = ar1.astype(ar2.dtype)
+    elif ar2.dtype < ar1.dtype:
+        ar2 = ar2.astype(ar1.dtype)
 
     if ar1.ndim > 1:
         ar1, dtype, orig_shape1, orig_dtype1 = coerce_dtype(ar1)
@@ -283,6 +293,11 @@ def difference(ar1, ar2, assume_unique=False, sortings=None, union_sorting=None)
 
     ar1 = np.asanyarray(ar1)
     ar2 = np.asanyarray(ar2)
+
+    if ar1.dtype < ar2.dtype:
+        ar1 = ar1.astype(ar2.dtype)
+    elif ar2.dtype < ar1.dtype:
+        ar2 = ar2.astype(ar1.dtype)
 
     if ar1.ndim == 1:
         ret = difference1d(ar1, ar2, assume_unique=assume_unique,
