@@ -5,7 +5,7 @@ Utilities for working with permutations and permutation indexing
 import numpy as np, time, typing, gc
 # import collections, functools as ft
 from ..Misc import jit
-from ..Numputils import coerce_dtype, unique, contained, group_by, split_by_regions, find
+from ..Numputils import coerce_dtype, uncoerce_dtype, unique, contained, group_by, split_by_regions, find
 from ..Scaffolding import NullLogger
 
 __all__ = [
@@ -2304,7 +2304,7 @@ class SymmetricGroupGenerator:
     @classmethod
     def _process_cached_index_blocks(cls, storage, cache, paritioners, indices,
                                     filter, mask, perm_counts, merged_sums,
-                                    inds_dtype=None):
+                                    inds_dtype=None, full_basis=None):
         for k, block_dat in cache.items():
             classes_count_data = [np.array(x) for x in k]
             standard_rep_perms = block_dat['standards']
@@ -2312,25 +2312,30 @@ class SymmetricGroupGenerator:
             perm_pos = np.concatenate(block_dat['storage_blocks'])
             new_perms = storage[perm_pos]
 
-            # padding_1, padding_2 = get_standard_perm_offsets(i, j, standard_rep_perms, classes_count_data)
-            padding_1 = paritioners[i][1][j]
-            padding_2 = paritioners[i][0][j].get_partition_permutation_indices([standard_rep_perms],
-                                                                               assume_standard=True
-                                                                               , check_partition_counts=False
-                                                                               , dtype=inds_dtype
-                                                                               )
+            if full_basis is not None:
+                full_inds = full_basis.find(new_perms)
+                sorting = np.argsort(full_inds)
+                inv = np.argsort(sorting)
+                full_inds_sorted = full_inds[sorting]
+            else:
+                # padding_1, padding_2 = get_standard_perm_offsets(i, j, standard_rep_perms, classes_count_data)
+                padding_1 = paritioners[i][1][j]
+                padding_2 = paritioners[i][0][j].get_partition_permutation_indices([standard_rep_perms],
+                                                                                   assume_standard=True
+                                                                                   , check_partition_counts=False
+                                                                                   , dtype=inds_dtype
+                                                                                   )
+                sorting = np.lexsort(-new_perms.T)
+                inv = np.argsort(sorting)
+                sort_perms = new_perms[sorting,]
+                new_inds = UniquePermutations.get_permutation_indices(sort_perms,
+                                                             classes=classes_count_data[0],
+                                                             counts=classes_count_data[1]
+                                                             , assume_sorted=True
+                                                             , dtype=inds_dtype
+                                                             )
 
-            sorting = np.lexsort(-new_perms.T)
-            inv = np.argsort(sorting)
-            sort_perms = new_perms[sorting,]
-            new_inds = UniquePermutations.get_permutation_indices(sort_perms,
-                                                         classes=classes_count_data[0],
-                                                         counts=classes_count_data[1]
-                                                         , assume_sorted=True
-                                                         , dtype=inds_dtype
-                                                         )
-
-            full_inds_sorted = padding_1 + padding_2 + new_inds
+                full_inds_sorted = padding_1 + padding_2 + new_inds
             indices[perm_pos] = full_inds_sorted[inv]
             if filter is not None:
                 sort_1 = np.arange(len(full_inds_sorted))  # assured sorting from before
@@ -2356,9 +2361,11 @@ class SymmetricGroupGenerator:
 
     def _build_direct_sums(self, input_perm_classes, counts, classes,
                            return_indices=False,
+                           return_excitations=True,
                            filter_negatives=True,
                            allow_widen_dtypes=True,
-                           filter=None, inds_dtype=None
+                           filter=None, inds_dtype=None,
+                           full_basis=None
                            ):
         """
         Creates direct sums of `input_perm_classes` with the unique permutations of `classes` where
@@ -2582,14 +2589,18 @@ class SymmetricGroupGenerator:
         if return_indices:
             self._process_cached_index_blocks(storage, cls_cache, paritioners, indices,
                                          filter, mask, perm_counts, merged_sums,
-                                         inds_dtype=inds_dtype)
+                                         inds_dtype=inds_dtype, full_basis=full_basis)
             # process_cached_index_blocks(storage)
 
         if mask is not None:
-            storage = storage[mask]
+            if return_excitations:
+                storage = storage[mask]
             if return_indices:
                 indices = indices[mask]
         perm_counts = np.sum(perm_counts, axis=1)
+
+        if not return_excitations:
+            storage = None
 
         if return_indices:
             return storage, perm_counts, indices
@@ -2698,6 +2709,8 @@ class SymmetricGroupGenerator:
                                          sums=None,
                                          assume_sorted=False,
                                          return_indices=False,
+                                         return_excitations=True,
+                                         full_basis=None,
                                          split_results=False,
                                          filter_perms=None,
                                          return_filter=False,
@@ -2721,6 +2734,9 @@ class SymmetricGroupGenerator:
         :return:
         :rtype:
         """
+
+        if full_basis is not None:
+            return_excitations = False
 
         if logger is None:
             logger = NullLogger()
@@ -2769,6 +2785,8 @@ class SymmetricGroupGenerator:
         max_rule = max(max(r) if len(r) > 0 else 0 for r in rules) if len(rules) > 0 else 0
         max_term = 1 + max_rule + np.max(sums)
         IntegerPartitioner.fill_counts(max_term, max_term, self.dim)
+        if full_basis is not None:
+            full_basis.load_to_sum(max_term)
         _, total_possible_counts = self._get_partition_perms([max_term])
         inds_dtype = _infer_dtype(total_possible_counts[0])
 
@@ -2824,7 +2842,9 @@ class SymmetricGroupGenerator:
                     for counts, classes in zip(rule_counts, rule_classes):
                         res = self._build_direct_sums(input_classes, counts, classes,
                                                       return_indices=return_indices,
-                                                      filter=filter, inds_dtype=inds_dtype
+                                                      return_excitations=return_excitations,
+                                                      filter=filter, inds_dtype=inds_dtype,
+                                                      full_basis=full_basis
                                                       )
                         # gc.collect()
                         if split_results or preserve_ordering:
@@ -2970,8 +2990,15 @@ class CompleteSymmetricGroupSpace:
         self.generator = SymmetricGroupGenerator(dim)
         self._basis = None
         self._basis_sorting = None
-        _, self._contracted_dtype, _, _ = coerce_dtype(np.zeros((1, dim), dtype=self.permutation_dtype))
+        _, self._contracted_dtype, _, self._og_dtype = coerce_dtype(np.zeros((1, dim), dtype=self.permutation_dtype))
+    @property
+    def dim(self):
+        return self.generator.dim
 
+    def __getstate__(self):
+        return {'dim':self.dim}
+    def __setstate__(self, state):
+        self.__init__(state['dim'])
     def _contract_dtype(self, perms):
         if self._contracted_dtype is not None and perms.dtype == self._contracted_dtype:
             return perms
@@ -2982,7 +3009,7 @@ class CompleteSymmetricGroupSpace:
                 new, self._contracted_dtype, _, _ = coerce_dtype(perms.astype(self.permutation_dtype))
                 return new
 
-    def _load_basis_to_size(self, size):
+    def load_to_size(self, size):
         cur_basis_size = 0 if self._basis is None else len(self._basis)
         if cur_basis_size < size:
             self.generator.load_to_size(size)
@@ -3001,20 +3028,29 @@ class CompleteSymmetricGroupSpace:
                 else:
                     self._basis = np.concatenate([self._basis] + new_bases)
 
-    def _load_basis_to_quanta(self, max_sum):
+    def load_to_sum(self, max_sum):
         _, offset = self.generator._get_partition_perms([max_sum + 1])
-        self._load_basis_to_size(offset[0])
+        self.load_to_size(offset[0])
 
-    def __getitem__(self, item):
+    def take(self, item, uncoerce=False):
         if isinstance(item, (int, np.integer)):
-            self._load_basis_to_size(item)
-            return self._basis[item]
+            self.load_to_size(item)
+            res = self._basis[item]
         # elif isinstance(item, slice):
         #     return self._basis[item]
         else:
             max_size = np.max(item)
-            self._load_basis_to_size(max_size)
-            return self._basis[max_size]
+            self.load_to_size(max_size)
+            res = self._basis[max_size]
+
+        if uncoerce:
+            # orig_shape, orig_dtype, axis
+            res = uncoerce_dtype(res, (len(res), self.dim), self._og_dtype)
+
+        return res
+
+    def __getitem__(self, item):
+        return self.take(item)
 
     def find(self, perms, check_sums=True):
         p = np.asanyarray(perms)
@@ -3024,7 +3060,7 @@ class CompleteSymmetricGroupSpace:
 
         if check_sums:
             sums = np.sum(p, axis=1)
-            self._load_basis_to_quanta(np.max(sums))
+            self.load_to_sum(np.max(sums))
 
         if self._basis_sorting is not None and len(self._basis_sorting) == len(self._basis):
             inds, self._basis_sorting = find(self._basis, self._contract_dtype(p), sorting=self._basis_sorting)

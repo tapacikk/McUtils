@@ -13,6 +13,7 @@ __all__ = [
     'find',
     'argsort',
     'coerce_dtype',
+    'uncoerce_dtype',
     'group_by',
     'split_by_regions'
 ]
@@ -61,7 +62,20 @@ def coerce_dtype(ar, dtype=None):
 
     return consolidated, dtype, orig_shape, orig_dtype
 
-def uncoerce_dtype(consolidated, orig_shape, orig_dtype, axis):
+def uncoerce_dtype(consolidated, orig_shape, orig_dtype, axis=None):
+    """
+    Converts a coerced array back to a full array
+    :param consolidated:
+    :type consolidated:
+    :param orig_shape:
+    :type orig_shape:
+    :param orig_dtype:
+    :type orig_dtype:
+    :param axis: where to shift the main axis
+    :type axis:
+    :return:
+    :rtype:
+    """
     n = len(consolidated)
     uniq = consolidated.view(orig_dtype)
     uniq = uniq.reshape(n, *orig_shape[1:])
