@@ -2,17 +2,18 @@
 Utilities for working with permutations and permutation indexing
 """
 
-import numpy as np, time, typing, gc, numba
+import numpy as np, time, typing, gc
 # import collections, functools as ft
-from ..Misc import jit, type_spec, objmode
-from ..Numputils import unique, contained, group_by, split_by_regions
+from ..Misc import jit
+from ..Numputils import coerce_dtype, unique, contained, group_by, split_by_regions, find
 from ..Scaffolding import NullLogger
 
 __all__ = [
     "IntegerPartitioner",
     "UniquePermutations",
     "IntegerPartitionPermutations",
-    "SymmetricGroupGenerator"
+    "SymmetricGroupGenerator",
+    "CompleteSymmetricGroupSpace"
 ]
 
 def _infer_dtype(max_dim):
@@ -561,12 +562,72 @@ class UniquePermutations:
             inds = None
 
         part = initial_permutation.copy()
-        cls._fill_permutations_direct(storage, inds, part, dim)
+        if initial_permutation.dtype != np.dtype(object):
+            cls._fill_permutations_direct_jit(storage, inds, part, dim)
+        else:
+            cls._fill_permutations_direct(storage, inds, part, dim)
 
         if return_indices:
             return inds, storage
         else:
             return storage
+
+    @staticmethod
+    @jit(nopython=True)
+    def _fill_permutations_direct_jit(storage, inds, partition, dim):
+        """
+        Builds off of this algorithm for generating permutations
+        in lexicographic order: https://en.wikipedia.org/wiki/Permutation#Generation_in_lexicographic_order
+        Then we adapt it so that it works in _reverse_ lex order since that's how our partitions come in
+        This adaption is done just by pretending the the numbers are all negated so all ordering relations
+        flip
+
+        :param storage:
+        :type storage:
+        :param inds:
+        :type inds:
+        :return:
+        :rtype:
+        """
+
+        swap = np.arange(len(partition))
+        for i in range(len(storage)):
+            storage[i] = partition
+            if inds is not None:
+                inds[i] = swap
+
+            # find largest index such that the next element in the
+            # partition is smaller (i.e. find where we need to do our next swap)
+            # I'd like to do this with numpy builtins instead of a loop
+            # or maybe some partial ordering approach or something
+            # but don't have it quite figured out yet
+            for i in range(dim-2, -1, -1):
+                if partition[i] > partition[i+1]:
+                    break
+            else:
+                break
+
+            # find the next-smallest index such that
+            # the partition element is smaller than the one at the swap
+            # position
+            for j in range(dim-1, i, -1):
+                if partition[i] > partition[j]:
+                    break
+
+            # swap the terms and reverse the sequence of elements leading
+            # up to it
+            tmp = partition[j]
+            partition[j] = partition[i]
+            partition[i] = tmp
+            partition[i+1:] = np.flip(partition[i+1:])
+
+            if inds is not None:
+                tmp = swap[j]
+                swap[j] = swap[i]
+                swap[i] = tmp
+                swap[i+1:] = np.flip(swap[i+1:])
+
+        return storage
 
     @classmethod
     def _fill_permutations_direct(cls, storage, inds, partition, dim):
@@ -688,7 +749,7 @@ class UniquePermutations:
         :rtype:
         """
 
-        raise ValueError("Haven't gotten this working yet")
+        raise NotImplementedError("Haven't gotten this working yet")
 
         if prev is not None:
             diffs = np.not_equal(cur, prev)
@@ -1598,7 +1659,7 @@ class IntegerPartitionPermutations:
     def num_elements(self):
         return self._num_terms
 
-    def get_partition_permutations(self, return_indices=False):
+    def get_partition_permutations(self, return_indices=False, dtype=None, flatten=False):
         """
 
 
@@ -1606,9 +1667,23 @@ class IntegerPartitionPermutations:
         :rtype:
         """
 
-        return [UniquePermutations.get_subsequent_permutations(p,
+        if dtype is not None:
+            input_data = [
+                (p.astype(dtype), (c[0].astype(dtype), c[1]))
+                for p, c in zip(self.partitions, self._class_counts)
+            ]
+        else:
+            input_data = zip(self.partitions, self._class_counts)
+
+        basic = [UniquePermutations.get_subsequent_permutations(p,
                                                                 return_indices=return_indices,
-                                                                classes=c[0], counts=c[1]) for p,c in zip(self.partitions, self._class_counts)]
+                                                                classes=c[0],
+                                                                counts=c[1]
+                                                               ) for p,c in input_data]
+        if flatten:
+            return np.concatenate(basic, axis=0)
+        else:
+            return basic
 
     def _get_partition_splits(self, perms,
                               assume_sorted=False,
@@ -1933,11 +2008,12 @@ class SymmetricGroupGenerator:
 
     def _get_partition_perms(self, iterable, ignore_negatives=False):
         """
+        returns IntegerPartitionPermutation objects and cum totals for the provided quanta
 
         :param iterable:
         :type iterable:
         :return:
-        :rtype: tuple[list[IntegerPartitionPermutations], list[int]]
+        :rtype: Tuple[List[IntegerPartitionPermutations], List]
         """
 
         inds = list(iterable)
@@ -1963,6 +2039,11 @@ class SymmetricGroupGenerator:
             t2 = [self._cumtotals[n] for n in inds] #type: list[int]
 
         return t1, t2
+
+    def load_to_size(self, size):
+        while self._cumtotals[-1] < size:
+            # fills stuff up until we have everything covered
+            self._get_partition_perms([1+len(self._partition_permutations)*2])
 
     def get_terms(self, n, flatten=True):
         """
@@ -2878,8 +2959,76 @@ class SymmetricGroupGenerator:
             else:
                 return perms
 
+class CompleteSymmetricGroupSpace:
+    """
+    An object representing a full integer partition-permutation basis
+    which will work nominally at any level of excitation
+    """
 
+    permutation_dtype = 'uint8' # if we need to go up beyond dim 256 we're fucked anyway
+    def __init__(self, dim):
+        self.generator = SymmetricGroupGenerator(dim)
+        self._basis = None
+        self._basis_sorting = None
+        _, self._contracted_dtype, _, _ = coerce_dtype(np.zeros((1, dim), dtype=self.permutation_dtype))
 
+    def _contract_dtype(self, perms):
+        if self._contracted_dtype is not None and perms.dtype == self._contracted_dtype:
+            return perms
+        else:
+            if self._contracted_dtype is not None:
+                return coerce_dtype(perms.astype(self.permutation_dtype), dtype=self._contracted_dtype)[0]
+            else:
+                new, self._contracted_dtype, _, _ = coerce_dtype(perms.astype(self.permutation_dtype))
+                return new
 
+    def _load_basis_to_size(self, size):
+        cur_basis_size = 0 if self._basis is None else len(self._basis)
+        if cur_basis_size < size:
+            self.generator.load_to_size(size)
+            need_to_load = np.where(self.generator._cumtotals > cur_basis_size)
+            if len(need_to_load) > 0:
+                if not isinstance(need_to_load[0], (int, np.integer)):
+                    need_to_load = need_to_load[0]
+                partitioners = self.generator._get_partition_perms(need_to_load)[0] #type: list[IntegerPartitionPermutations]
+                new_bases = [
+                    self._contract_dtype(c) for p in partitioners for c in
+                    p.get_partition_permutations(dtype=self.permutation_dtype)
+                ]
 
+                if self._basis is None:
+                    self._basis = np.concatenate(new_bases)
+                else:
+                    self._basis = np.concatenate([self._basis] + new_bases)
 
+    def _load_basis_to_quanta(self, max_sum):
+        _, offset = self.generator._get_partition_perms([max_sum + 1])
+        self._load_basis_to_size(offset[0])
+
+    def __getitem__(self, item):
+        if isinstance(item, (int, np.integer)):
+            self._load_basis_to_size(item)
+            return self._basis[item]
+        # elif isinstance(item, slice):
+        #     return self._basis[item]
+        else:
+            max_size = np.max(item)
+            self._load_basis_to_size(max_size)
+            return self._basis[max_size]
+
+    def find(self, perms, check_sums=True):
+        p = np.asanyarray(perms)
+        smol = p.ndim == 1
+        if smol:
+            p = p[np.newaxis]
+
+        if check_sums:
+            sums = np.sum(p, axis=1)
+            self._load_basis_to_quanta(np.max(sums))
+
+        if self._basis_sorting is not None and len(self._basis_sorting) == len(self._basis):
+            inds, self._basis_sorting = find(self._basis, self._contract_dtype(p), sorting=self._basis_sorting)
+        else:
+            inds, self._basis_sorting = find(self._basis, self._contract_dtype(p))
+
+        return inds

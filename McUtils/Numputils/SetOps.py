@@ -333,17 +333,22 @@ def find1d(ar, to_find, sorting=None, check=True):
     Finds elements in an array and returns sorting
     """
 
+    presorted = isinstance(sorting, str) and sorting == 'sorted'
     if sorting is None:
         sorting = np.argsort(ar, kind='mergesort')
-    vals = np.searchsorted(ar, to_find, sorter=sorting)
+    if presorted:
+        vals = np.searchsorted(ar, to_find)
+    else:
+        vals = np.searchsorted(ar, to_find, sorter=sorting)
     if isinstance(vals, (np.integer, int)):
         vals = np.array([vals])
     # we have the ordering according to the _sorted_ version of `ar`
     # so now we need to invert that back to the unsorted version
     if len(sorting) > 0:
-        big_vals = vals == len(sorting)
+        big_vals = vals == len(ar)
         vals[big_vals] = -1
-        vals = sorting[vals]
+        if not presorted:
+            vals = sorting[vals]
         # now because of how searchsorted works, we need to check if the found values
         # truly agree with what we asked for
         bad_vals = ar[vals] != to_find
