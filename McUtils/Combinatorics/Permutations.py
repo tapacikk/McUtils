@@ -38,6 +38,7 @@ def _infer_pos_neg_dtype(max_dim):
     else:
         minimal_dtype = 'int64'
     return minimal_dtype
+_infer_dtype = _infer_pos_neg_dtype
 
 def _infer_nearest_pos_neg_dtype(og_dtype):
     if og_dtype == np.uint8:
@@ -3053,7 +3054,7 @@ class CompleteSymmetricGroupSpace:
         cur_basis_size = -1 if self._basis is None else len(self._basis)
         if cur_basis_size < size:
             self.generator.load_to_size(size)
-            need_to_load = np.where(self.generator._cumtotals > cur_basis_size)
+            need_to_load = np.where(self.generator._cumtotals >= cur_basis_size)
             if len(need_to_load) > 0:
                 if not isinstance(need_to_load[0], (int, np.integer)):
                     need_to_load = need_to_load[0]
@@ -3105,7 +3106,7 @@ class CompleteSymmetricGroupSpace:
 
         if check_sums:
             sums = np.sum(p, axis=1, dtype=int)
-            self.load_to_sum(np.max(sums))
+            self.load_to_sum(np.max(sums) + 1)
 
         if self._basis_sorting is not None and len(self._basis_sorting) == len(self._basis):
             inds, self._basis_sorting = find(self._basis, self._contract_dtype(p), sorting=self._basis_sorting)
