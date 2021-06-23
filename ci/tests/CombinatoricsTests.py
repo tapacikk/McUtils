@@ -769,15 +769,20 @@ class CombinatoricsTests(TestCase):
 
         # raise Exception(test_perms)
 
-    @validationTest
+    @debugTest
     def test_FullBasis(self):
 
         full_basis = CompleteSymmetricGroupSpace(12)
 
-        self.assertEquals(tuple(full_basis[554]), (0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0))
-        self.assertEquals(full_basis.find([0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0]), 554)
+        self.assertEquals(tuple(full_basis[0]), (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+        self.assertEquals(tuple(full_basis[555]), (0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0))
+        self.assertEquals(full_basis.find([0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0]), 555)
+        self.assertEquals(full_basis.find([
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 3],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0]
+        ]).tolist(), [556, 555])
 
         full_basis.load_to_sum(11)
-        self.assertEquals(full_basis._basis.shape[0], 5200299)
-        self.assertEquals(full_basis.find([10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), 293929)
+        self.assertEquals(full_basis._basis.shape[0], 5195932)
+        self.assertEquals(full_basis.find([10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), 289562)
 

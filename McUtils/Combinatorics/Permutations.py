@@ -51,6 +51,13 @@ def _infer_nearest_pos_neg_dtype(og_dtype):
     else:
         return og_dtype
 
+def _as_pos_neg_dtype(ar):
+    dt = _infer_nearest_pos_neg_dtype(ar.dtype)
+    if dt != ar.dtype:
+        return ar.astype(dt)
+    else:
+        return ar
+
 # _infer_dtype = _infer_dtype#lambda why: 'int64' # makes my life a little easier right now...
 
 class IntegerPartitioner:
@@ -1909,7 +1916,7 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
         self._cumtotals = np.array([0, 1])
         self._num_terms = 1
 
-    def get_partition_permutations(self, return_indices=False):
+    def get_partition_permutations(self, return_indices=False, dtype=None):
         """
 
 
@@ -1917,7 +1924,7 @@ class EmptyIntegerPartitionPermutations(IntegerPartitionPermutations):
         :rtype:
         """
 
-        return [np.zeros((1, self.dim), dtype='int8')]
+        return [np.zeros((1, self.dim), dtype='int8' if dtype is None else dtype)]
 
     def get_partition_permutation_indices(self, perms,
                                           assume_sorted=None,
@@ -2383,7 +2390,9 @@ class SymmetricGroupGenerator:
         :rtype:
         """
 
-        input_perm_classes = [(x[0], x[1], x[2], UniquePermutations.get_standard_permutation(x[1], x[0])) for x in input_perm_classes]
+        input_perm_classes = [(_as_pos_neg_dtype(x[0]), _as_pos_neg_dtype(x[1]), x[2],
+                               UniquePermutations.get_standard_permutation(_as_pos_neg_dtype(x[1]), _as_pos_neg_dtype(x[0]))
+                               ) for x in input_perm_classes]
 
         # set up storage
         num_perms = UniquePermutations.count_permutations(counts)
@@ -2402,8 +2411,8 @@ class SymmetricGroupGenerator:
         dropped_pairs = [] # set up storage for when things go negative
 
         # precompute a bunch of the partition data we'll need
-        class_sums = np.array([np.sum(counts*c) for c in classes])
-        input_sums = np.array([np.sum(x[0]*x[1]) for x in input_perm_classes])
+        class_sums = np.array([np.sum(counts*c, dtype=int) for c in classes])
+        input_sums = np.array([np.sum(x[0]*x[1], dtype=int) for x in input_perm_classes])
         merged_sums = input_sums[:, np.newaxis] + class_sums[np.newaxis, :]
 
         paritioners = [
@@ -2467,15 +2476,18 @@ class SymmetricGroupGenerator:
         input_class_counts = np.concatenate([[0], np.cumsum(subcounts)])
 
         # we widen the dtype if necessary
-        dtype = input_perm_classes[0][2][0].dtype
-        if dtype is np.dtype(object):
-            raise ValueError("Can't get permutations for object-dtype inputs")
-        if allow_widen_dtypes:
-            max_val = np.max([np.max(x[0]) for x in input_perm_classes])
-            max_rule = np.max(classes)
-            inferred = _infer_dtype(max_val + max_rule)
-            if inferred > dtype:
-                dtype = inferred
+        if full_basis is not None:
+            dtype = full_basis.permutation_dtype
+        else:
+            dtype = input_perm_classes[0][2][0].dtype
+            if dtype is np.dtype(object):
+                raise ValueError("Can't get permutations for object-dtype inputs")
+            if allow_widen_dtypes:
+                max_val = np.max([np.max(x[0]) for x in input_perm_classes])
+                max_rule = np.max(classes)
+                inferred = _infer_dtype(max_val + max_rule)
+                if inferred > dtype:
+                    dtype = inferred
 
         storage = np.zeros((total_perm_count, ndim), dtype=dtype)
         if return_indices:
@@ -2783,7 +2795,8 @@ class SymmetricGroupGenerator:
         if sums is None:
             sums = np.sum(perms, axis=1)
         max_rule = max(max(r) if len(r) > 0 else 0 for r in rules) if len(rules) > 0 else 0
-        max_term = 1 + max_rule + np.max(sums)
+        max_term = int(1 + max_rule + np.max(sums)) # numpy dtype shit sometimes goes weird
+        # raise Exception(max_rule, max_term, np.max(sums))
         IntegerPartitioner.fill_counts(max_term, max_term, self.dim)
         if full_basis is not None:
             full_basis.load_to_sum(max_term)
@@ -2849,14 +2862,17 @@ class SymmetricGroupGenerator:
                         # gc.collect()
                         if split_results or preserve_ordering:
                             split_blocks = np.cumsum(res[1][:-1])
-                            res_perms = np.split(res[0], split_blocks)
+                            if return_excitations:
+                                res_perms = np.split(res[0], split_blocks)
                             if return_indices:
                                 ind_block.append(np.split(res[2], split_blocks))
                         else:
-                            res_perms = res[0]
+                            if return_excitations:
+                                res_perms = res[0]
                             if return_indices:
                                 ind_block.append(res[2])
-                        perm_block.append(res_perms)
+                        if return_excitations:
+                            perm_block.append(res_perms)
 
                     # if nq == 5:# and len(counts) == 3 and counts[-1] == 9:
                     #     #     raise Exception(perm_pos.dtype)
@@ -2864,27 +2880,32 @@ class SymmetricGroupGenerator:
 
                     if split_results or preserve_ordering:
                         # zip to merge
-                        new_perms = [
-                            np.concatenate(blocks, axis=0)
-                            for blocks in zip(*perm_block)
-                        ]
-                        if preserve_ordering and sorts is not None and len(new_perms) > 0:
-                            cumlens = np.cumsum([0] + [len(x) for x in sorts[:-1]])
-                            sorts = np.concatenate([x+s for x,s in zip(sorts, cumlens)])
-                            argsorts = np.argsort(sorts)
-                            new_perms = [new_perms[i] for i in argsorts]
-                        # if not split_results:
-                        #     if len(new_perms) == 0:
-                        #         new_perms = np.array([], dtype='int8')
-                        #     else:
-                        #         new_perms = np.concatenate(new_perms, axis=0)
-                        perms.append(new_perms)
+                        if return_excitations:
+                            new_perms = [
+                                np.concatenate(blocks, axis=0)
+                                for blocks in zip(*perm_block)
+                            ]
+                            if preserve_ordering and sorts is not None and len(new_perms) > 0:
+                                cumlens = np.cumsum([0] + [len(x) for x in sorts[:-1]])
+                                sorts = np.concatenate([x+s for x,s in zip(sorts, cumlens)])
+                                argsorts = np.argsort(sorts)
+                                new_perms = [new_perms[i] for i in argsorts]
+                            # if not split_results:
+                            #     if len(new_perms) == 0:
+                            #         new_perms = np.array([], dtype='int8')
+                            #     else:
+                            #         new_perms = np.concatenate(new_perms, axis=0)
+                            perms.append(new_perms)
                         if return_indices:
                             new_inds = [
                                 np.concatenate(blocks)
                                 for blocks in zip(*ind_block)
                             ]
-                            if preserve_ordering and sorts is not None and len(new_perms) > 0:
+                            if preserve_ordering and sorts is not None and len(new_inds) > 0:
+                                if not return_excitations:
+                                    cumlens = np.cumsum([0] + [len(x) for x in sorts[:-1]])
+                                    sorts = np.concatenate([x + s for x, s in zip(sorts, cumlens)])
+                                    argsorts = np.argsort(sorts)
                                 new_inds = [new_inds[i] for i in argsorts]
                             # if not split_results:
                             #     if len(new_perms) == 0:
@@ -2893,36 +2914,49 @@ class SymmetricGroupGenerator:
                             #         new_inds = np.concatenate(new_inds, axis=0)
                             indices.append(new_inds)
                     else:
-                        new_perms = np.concatenate(perm_block, axis=0)
-                        perms.append(new_perms)
+                        if return_excitations:
+                            new_perms = np.concatenate(perm_block, axis=0)
+                            perms.append(new_perms)
                         if return_indices:
                             new_inds = np.concatenate(ind_block)
                             indices.append(new_inds)
 
-                    subend = time.time()
-                    logger.log_print([
-                        'got {nt} partition-permutations{and_inds}',
-                        'took {e:.3f}s...'
-                    ],
-                        nt=len(new_perms) if not (split_results or preserve_ordering) else sum(len(x) for x in new_perms),
-                        and_inds=' and indices' if return_indices else '',
-                        e=subend - substart
-                    )
+                    if return_excitations:
+                        subend = time.time()
+                        logger.log_print([
+                            'got {nt} partition-permutations{and_inds}',
+                            'took {e:.3f}s...'
+                        ],
+                            nt=len(new_perms) if not (split_results or preserve_ordering) else sum(len(x) for x in new_perms),
+                            and_inds=' and indices' if return_indices else '',
+                            e=subend - substart
+                        )
+                    else:
+                        subend = time.time()
+                        logger.log_print([
+                            'got {nt} partition-permutations indices',
+                            'took {e:.3f}s...'
+                        ],
+                            nt=len(new_inds) if not (split_results or preserve_ordering) else sum(len(x) for x in new_inds),
+                            e=subend - substart
+                        )
 
             # now we need to also reshuffle the states so
             # that they come out in the input ordering
             if split_results or preserve_ordering:
-                new_perms = []
-                if preserve_ordering:
-                    for p,s in zip(perms, perm_sorting):
-                        if len(p) > 0:
-                            new_perms += [p[i] for i in np.argsort(s)]
-                    perms = new_perms
-                else:
-                    perms = sum(perms, [])
-                if preserve_ordering and sum_sorting is not None and len(perms) > 0:
-                    inv = np.argsort(sum_sorting)
-                    perms = [perms[i] for i in inv]
+
+                if return_excitations:
+                    new_perms = []
+                    if preserve_ordering:
+                        for p,s in zip(perms, perm_sorting):
+                            if len(p) > 0:
+                                new_perms += [p[i] for i in np.argsort(s)]
+                        perms = new_perms
+                    else:
+                        perms = sum(perms, [])
+                    if preserve_ordering and sum_sorting is not None and len(perms) > 0:
+                        inv = np.argsort(sum_sorting)
+                        perms = [perms[i] for i in inv]
                 if return_indices:
                     if preserve_ordering:
                         new_inds = []
@@ -2933,19 +2967,23 @@ class SymmetricGroupGenerator:
                     else:
                         indices = sum(indices, [])
                     if preserve_ordering and sum_sorting is not None and len(indices) > 0:
+                        if not return_excitations:
+                            inv = np.argsort(sum_sorting)
                         indices = [indices[i] for i in inv]
                 if not split_results:
-                    if len(perms) == 0:
-                        perms = np.array([], dtype='int8')
-                    else:
-                        perms = np.concatenate(perms, axis=0)
+                    if return_excitations:
+                        if len(perms) == 0:
+                            perms = np.array([], dtype='int8')
+                        else:
+                            perms = np.concatenate(perms, axis=0)
                     if return_indices:
                         if len(perms) == 0:
                             indices = np.array([], dtype='int8')
                         else:
                             indices = np.concatenate(indices, axis=0)
             else:
-                perms = np.concatenate(perms, axis=0)
+                if return_excitations:
+                    perms = np.concatenate(perms, axis=0)
                 if return_indices:
                     indices = np.concatenate(indices)
 
@@ -2959,6 +2997,8 @@ class SymmetricGroupGenerator:
                 e=end-start
             )
 
+            if not return_excitations:
+                perms = None
             if return_indices:
                 if return_filter:
                     return perms, indices, filter
@@ -2985,7 +3025,7 @@ class CompleteSymmetricGroupSpace:
     which will work nominally at any level of excitation
     """
 
-    permutation_dtype = 'uint8' # if we need to go up beyond dim 256 we're fucked anyway
+    permutation_dtype = 'int8' # if we need to go up beyond dim 256 we're fucked anyway
     def __init__(self, dim):
         self.generator = SymmetricGroupGenerator(dim)
         self._basis = None
@@ -3010,7 +3050,7 @@ class CompleteSymmetricGroupSpace:
                 return new
 
     def load_to_size(self, size):
-        cur_basis_size = 0 if self._basis is None else len(self._basis)
+        cur_basis_size = -1 if self._basis is None else len(self._basis)
         if cur_basis_size < size:
             self.generator.load_to_size(size)
             need_to_load = np.where(self.generator._cumtotals > cur_basis_size)
@@ -3034,18 +3074,23 @@ class CompleteSymmetricGroupSpace:
 
     def take(self, item, uncoerce=False):
         if isinstance(item, (int, np.integer)):
-            self.load_to_size(item)
+            self.load_to_size(item+1)
             res = self._basis[item]
         # elif isinstance(item, slice):
         #     return self._basis[item]
         else:
-            max_size = np.max(item)
+            max_size = np.max(item) + 1
             self.load_to_size(max_size)
-            res = self._basis[max_size]
+            res = self._basis[item]
 
         if uncoerce:
             # orig_shape, orig_dtype, axis
-            res = uncoerce_dtype(res, (len(res), self.dim), self._og_dtype)
+            if len(res) == 0:
+                res = np.empty((0, self.dim), dtype=self.permutation_dtype)
+            elif isinstance(item, (int, np.integer)):
+                res = uncoerce_dtype(res, (1, self.dim), self._og_dtype)
+            else:
+                res = uncoerce_dtype(res, (len(res), self.dim), self._og_dtype)
 
         return res
 
@@ -3059,7 +3104,7 @@ class CompleteSymmetricGroupSpace:
             p = p[np.newaxis]
 
         if check_sums:
-            sums = np.sum(p, axis=1)
+            sums = np.sum(p, axis=1, dtype=int)
             self.load_to_sum(np.max(sums))
 
         if self._basis_sorting is not None and len(self._basis_sorting) == len(self._basis):
