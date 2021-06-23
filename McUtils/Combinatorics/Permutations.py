@@ -2222,30 +2222,24 @@ class SymmetricGroupGenerator:
 
     @classmethod
     def _process_cached_index_blocks(cls, storage, cache, paritioners, indices,
-                                    filter, mask, perm_counts, cum_counts, merged_sums,
+                                    filter, mask, perm_counts, merged_sums,
                                     inds_dtype=None):
         for k, block_dat in cache.items():
             classes_count_data = [np.array(x) for x in k]
             standard_rep_perms = block_dat['standards']
             i, j = block_dat['indices']
-            perm_pos = np.concatenate([b[0] for b in block_dat['blocks']])
+            perm_pos = np.concatenate(block_dat['storage_blocks'])
             new_perms = storage[perm_pos]
 
             # padding_1, padding_2 = get_standard_perm_offsets(i, j, standard_rep_perms, classes_count_data)
             padding_1 = paritioners[i][1][j]
-            # key = tuple(tuple(x) for x in class_count_data)
-            # if key in offsets_cache:
-            #     padding_2 = offsets_cache[key]
-            # else:
             padding_2 = paritioners[i][0][j].get_partition_permutation_indices([standard_rep_perms],
                                                                                assume_standard=True
                                                                                , check_partition_counts=False
                                                                                , dtype=inds_dtype
                                                                                )
 
-                # offsets_cache[key] = padding_2
-            # sort_perms, sorting, inv = get_perm_sorting(new_perms)
-            sorting = np.lexsort(-np.flip(new_perms, axis=1).T)
+            sorting = np.lexsort(-new_perms.T)
             inv = np.argsort(sorting)
             sort_perms = new_perms[sorting,]
             new_inds = UniquePermutations.get_permutation_indices(sort_perms,
@@ -2258,10 +2252,7 @@ class SymmetricGroupGenerator:
             full_inds_sorted = padding_1 + padding_2 + new_inds
             indices[perm_pos] = full_inds_sorted[inv]
             if filter is not None:
-                block_idx = [b[1] for b in block_dat['blocks']]
-                block_sizes = np.cumsum([0] + [len(x[0]) for x in block_dat['blocks']])
                 sort_1 = np.arange(len(full_inds_sorted))  # assured sorting from before
-
                 if filter.ind_grps is not None:
                     subinds = filter.ind_grps[merged_sums[i, j]]
                     sort_2 = np.arange(len(subinds))
@@ -2272,10 +2263,13 @@ class SymmetricGroupGenerator:
                     submask, _, _ = contained(full_inds_sorted, filter.inds,
                                               assume_unique=(False, True),
                                               sortings=(sort_1, filter.ind_sort))
+
                 sort_mask = submask[inv]
                 mask[perm_pos] = sort_mask
-                for idx, s in zip(block_idx, np.split(sort_mask, block_sizes)):
-                    perm_counts[cum_counts[i]:cum_counts[i + 1], idx] -= len(s) - np.count_nonzero(s)
+                # 'storage_blocks': [stored_inds],
+                block_sizes = np.cumsum([len(x) for x in block_dat['storage_blocks']])
+                for b, s in zip(block_dat['idx_blocs'], np.split(sort_mask, block_sizes)):
+                    perm_counts[b[0]:b[1], b[2]] -= 1 - s
 
                 # filter_from_ind_spec(i, j, block_idx, block_sizes, perm_pos, full_inds_sorted, inv)
 
@@ -2487,20 +2481,27 @@ class SymmetricGroupGenerator:
                         for n,j in enumerate(comp): # we're iterating over classes (not input_classes) here
                             key = tuple(tuple(x) for x in classes_count_data[n])
                             stored_inds = (idx_starts + sel[n]).astype(storage_indexing_dtype)
+                            # print(key, standard_rep_perms[n],
+                            #       paritioners[i][1][j],
+                            #       paritioners[i][0][j],
+                            #       )
+
                             if key in cls_cache:
-                                cls_cache[key]['blocks'].append((stored_inds, idx))
+                                cls_cache[key]['storage_blocks'].append(stored_inds)
+                                cls_cache[key]['idx_blocs'].append((cum_counts[i], cum_counts[i + 1], idx))
                             else:
                                 cls_cache[key] = {
                                     'standards': standard_rep_perms[n],
                                     'indices': (i, j), # the same set should work for all of these
-                                    'blocks': [(stored_inds, idx)]
+                                    'storage_blocks': [stored_inds],
+                                    'idx_blocs': [(cum_counts[i], cum_counts[i + 1], idx)]
                                 }
 
         UniquePermutations.walk_permutation_tree(counts, add_new_perms, include_positions=True)
         if return_indices:
             self._process_cached_index_blocks(storage, cls_cache, paritioners, indices,
-                                         filter, mask, perm_counts, cum_counts, merged_sums,
-                                         inds_dtype=None)
+                                         filter, mask, perm_counts, merged_sums,
+                                         inds_dtype=inds_dtype)
             # process_cached_index_blocks(storage)
 
         if mask is not None:

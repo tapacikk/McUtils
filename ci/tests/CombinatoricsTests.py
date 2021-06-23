@@ -510,7 +510,7 @@ class CombinatoricsTests(TestCase):
         # #     gen.from_indices([778, 779, 779, 779])
         # # )
         #
-        # # just making sure no crashes
+        # just making sure no crashes
         test_inds = [200, 758, 203, 204, 780, 769, 781, 770, 779, 779, 782,]
         p = gen.from_indices(test_inds)
         self.assertEquals(gen.to_indices(p).tolist(), test_inds)
@@ -629,9 +629,6 @@ class CombinatoricsTests(TestCase):
 
         self.assertEquals(len(bleeeh), len(test_states))
         for i in range(len(test_states)):
-            print(">>>", test_states[i])
-            print(bleeeh[i])
-            print("-"*50)
             woof = list(test_states[i])
             woof[0] += 1
             if woof in filter_perms:
@@ -655,6 +652,11 @@ class CombinatoricsTests(TestCase):
             cont_terms, _, _ = nput.contained(f, filter_perms)
             nonneg_perms.append(f[cont_terms,])
         for i in range(len(test_states)):
+            # print(">>>", test_states[i])
+            # print(bleeeh[i])
+            # print(".")
+            # print(nonneg_perms[i])
+            # print("-"*50)
             self.assertEquals(list(sorted(bleeeh[i].tolist())),
                               list(sorted(nonneg_perms[i].tolist())),
                               msg='bad for {}'.format(test_states[i])
