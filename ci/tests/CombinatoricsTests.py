@@ -783,6 +783,13 @@ class CombinatoricsTests(TestCase):
         ]).tolist(), [556, 555])
 
         full_basis.load_to_sum(11)
-        self.assertEquals(full_basis._basis.shape[0], 5195932)
-        self.assertEquals(full_basis.find([10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), 289562)
+
+        why = np.random.choice(full_basis._basis.shape[0], size=100000)
+        ms = np.max(why)
+        with BlockProfiler(inactive=True, mode='deterministic'):
+            for i in range(100):
+                full_basis.take(why, max_size=ms)
+
+        self.assertEquals(full_basis._basis.shape[0], 5200300)
+        self.assertEquals(full_basis.find([10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), 293930)
 

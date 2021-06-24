@@ -342,7 +342,7 @@ def difference1d(ar1, ar2, assume_unique=False, sortings=None, union_sorting=Non
     in_spec = contained(ar1, ar2, sortings=sortings, union_sorting=union_sorting, assume_unique=True, invert=True)
     return (ar1[in_spec[0]],) + in_spec[1:]
 
-def find1d(ar, to_find, sorting=None, check=True):
+def find1d(ar, to_find, sorting=None, search_space_sorting=None, return_search_space_sorting=False, check=True):
     """
     Finds elements in an array and returns sorting
     """
@@ -350,7 +350,20 @@ def find1d(ar, to_find, sorting=None, check=True):
     presorted = isinstance(sorting, str) and sorting == 'sorted'
     if sorting is None:
         sorting = np.argsort(ar, kind='mergesort')
+
+    if search_space_sorting is None and return_search_space_sorting:
+        search_space_sorting = np.argsort(to_find, kind='mergesort')
+
+    if search_space_sorting is not None:
+        if isinstance(search_space_sorting, np.ndarray):
+            search_space_inverse_sorting = np.argsort(search_space_sorting)
+        else:
+            search_space_sorting, search_space_inverse_sorting = search_space_sorting
+
+        to_find = to_find[search_space_sorting]
+
     if presorted:
+        ar.searchsorted()
         vals = np.searchsorted(ar, to_find)
     else:
         vals = np.searchsorted(ar, to_find, sorter=sorting)
@@ -377,9 +390,18 @@ def find1d(ar, to_find, sorting=None, check=True):
         vals = np.full_like(vals, -1)
     if check and bad_vals.any():
         raise IndexError("{} not in array".format(to_find[bad_vals]))
-    return vals, sorting
 
-def find(ar, to_find, sorting=None, check=True):
+    if search_space_sorting is not None:
+        vals = vals[search_space_inverse_sorting]
+    ret = (vals, sorting,)
+    if return_search_space_sorting:
+        ret += ((search_space_sorting, search_space_inverse_sorting),)
+    return ret
+
+def find(ar, to_find, sorting=None,
+         search_space_sorting=None,
+         return_search_space_sorting=False,
+         check=True):
     """
     Finds elements in an array and returns sorting
     """
@@ -395,12 +417,18 @@ def find(ar, to_find, sorting=None, check=True):
     # print(ar.dtype, to_find.dtype )
 
     if ar.ndim == 1:
-        ret = find1d(ar, to_find, sorting=sorting, check=check)
+        ret = find1d(ar, to_find, sorting=sorting, check=check,
+                     search_space_sorting=search_space_sorting,
+                     return_search_space_sorting=return_search_space_sorting
+                     )
         return ret
 
     ar, dtype, orig_shape1, orig_dtype1 = coerce_dtype(ar)
     to_find, dtype, orig_shape2, orig_dtype2 = coerce_dtype(to_find, dtype=dtype)
-    output = find1d(ar, to_find, sorting=sorting, check=check)
+    output = find1d(ar, to_find, sorting=sorting, check=check,
+                     search_space_sorting=search_space_sorting,
+                     return_search_space_sorting=return_search_space_sorting
+                    )
     return output
 
 def group_by1d(ar, keys, sorting=None, return_indices=False):
