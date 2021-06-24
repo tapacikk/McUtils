@@ -3043,11 +3043,13 @@ class CompleteSymmetricGroupSpace:
     """
 
     permutation_dtype = 'int8' # if we need to go up beyond dim 256 we're fucked anyway
-    def __init__(self, dim):
+    def __init__(self, dim, memory_constrained=False):
         self.generator = SymmetricGroupGenerator(dim)
         self._basis = None
         self._basis_sorting = None
         _, self._contracted_dtype, _, self._og_dtype = coerce_dtype(np.zeros((1, dim), dtype=self.permutation_dtype))
+        self.memory_constrained = memory_constrained
+
     @property
     def dim(self):
         return self.generator.dim
@@ -3067,6 +3069,8 @@ class CompleteSymmetricGroupSpace:
                 return new
 
     def load_to_size(self, size):
+        if self.memory_constrained:
+            return True
         cur_basis_size = -1 if self._basis is None else len(self._basis)
         if cur_basis_size < size:
             self.generator.load_to_size(size)
@@ -3092,6 +3096,8 @@ class CompleteSymmetricGroupSpace:
         self.load_to_size(offset[0])
 
     def take(self, item, uncoerce=False, max_size=None):
+        if self.memory_constrained:
+            return self.generator.from_indices(item)
         if isinstance(item, (int, np.integer)):
             self.load_to_size(item+1)
             res = self._basis[item]
@@ -3123,6 +3129,9 @@ class CompleteSymmetricGroupSpace:
              max_sum=None,
              search_space_sorting=None
              ):
+        if self.memory_constrained:
+            return self.generator.to_indices(perms)
+
         p = np.asanyarray(perms)
         smol = p.ndim == 1
         if smol:
