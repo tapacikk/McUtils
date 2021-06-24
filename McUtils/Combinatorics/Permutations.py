@@ -1029,8 +1029,11 @@ class UniquePermutations:
         init_counts = counts
         nterms = len(counts)
 
-        n_steps = np.ceil(len(perms) / block_size)
-        block_counts = [np.copy(counts) for _ in n_steps]
+        n_steps = int(np.ceil(len(perms) / block_size))
+        block_counts = np.zeros((n_steps, len(counts)), dtype=counts.dtype)
+        for i in range(n_steps):
+            block_counts[i] = counts
+
         for _ in prange(n_steps):
             start_idx = block_size * _
 
