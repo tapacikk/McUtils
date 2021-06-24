@@ -214,7 +214,7 @@ def intersect1d(ar1, ar2,
         return int1d, sortings, union_sorting
 
 def contained(ar1, ar2, assume_unique=False, invert=False,
-                sortings=None, union_sorting=None):
+                sortings=None, union_sorting=None, method=None):
     """
     Test whether each element of `ar1` is also present in `ar2`.
     """
@@ -278,29 +278,37 @@ def contained(ar1, ar2, assume_unique=False, invert=False,
             sorting2 = None
     sortings = (sorting1, sorting2)
 
-    ar = np.concatenate((ar1, ar2))
-    # We need this to be a stable sort, so always use 'mergesort'
-    # here. The values from the first array should always come before
-    # the values from the second array.
-    if union_sorting is None:
-        order = ar.argsort(kind='mergesort')
+    if method is not None and method == 'find':
+        find_pos, _ = find(ar2, ar1, sorting='sorted', check=False) #binary search is fast
+        if invert:
+            ret = ar2[find_pos] != ar1
+        else:
+            ret = ar2[find_pos] == ar1
+        order = None
     else:
-        order = union_sorting
-    sar = ar[order]
-    if invert:
-        bool_ar = (sar[1:] != sar[:-1])
-    else:
-        bool_ar = (sar[1:] == sar[:-1])
-    flag = np.concatenate((bool_ar, [invert]))
-    ret = np.empty(ar.shape, dtype=bool)
-    ret[order] = flag
+        ar = np.concatenate((ar1, ar2))
+        # We need this to be a stable sort, so always use 'mergesort'
+        # here. The values from the first array should always come before
+        # the values from the second array.
+        if union_sorting is None:
+            order = ar.argsort(kind='mergesort')
+        else:
+            order = union_sorting
+        sar = ar[order]
+        if invert:
+            bool_ar = (sar[1:] != sar[:-1])
+        else:
+            bool_ar = (sar[1:] == sar[:-1])
+        flag = np.concatenate((bool_ar, [invert]))
+        ret = np.empty(ar.shape, dtype=bool)
+        ret[order] = flag
 
     if assume_unique_1:
         return ret[:len(ar1)], sortings, order
     else:
         return ret[rev_idx], sortings, order
 
-def difference(ar1, ar2, assume_unique=False, sortings=None, union_sorting=None):
+def difference(ar1, ar2, assume_unique=False, sortings=None, method=None, union_sorting=None):
     """
     Calculates set differences over any shape of array
     """
@@ -314,18 +322,18 @@ def difference(ar1, ar2, assume_unique=False, sortings=None, union_sorting=None)
         ar2 = ar2.astype(ar1.dtype)
 
     if ar1.ndim == 1:
-        ret = difference1d(ar1, ar2, assume_unique=assume_unique,
+        ret = difference1d(ar1, ar2, assume_unique=assume_unique, method=method,
                           sortings=sortings, union_sorting=union_sorting)
         return ret
 
     ar1, dtype, orig_shape1, orig_dtype1 = coerce_dtype(ar1)
     ar2, dtype, orig_shape2, orig_dtype2 = coerce_dtype(ar2, dtype=dtype)
-    output = difference1d(ar1, ar2, assume_unique=assume_unique,
+    output = difference1d(ar1, ar2, assume_unique=assume_unique, method=method,
                           sortings=sortings, union_sorting=union_sorting)
     output = (uncoerce_dtype(output[0], orig_shape1, orig_dtype1, None),) + output[1:]
     return output
 
-def difference1d(ar1, ar2, assume_unique=False, sortings=None, union_sorting=None):
+def difference1d(ar1, ar2, assume_unique=False, sortings=None, method=None, union_sorting=None):
     """
     Calculates set differences in 1D
     """
@@ -339,7 +347,7 @@ def difference1d(ar1, ar2, assume_unique=False, sortings=None, union_sorting=Non
             ar2, sorting2 = unique(ar2)
         sortings = (sorting1, sorting2)
 
-    in_spec = contained(ar1, ar2, sortings=sortings, union_sorting=union_sorting, assume_unique=True, invert=True)
+    in_spec = contained(ar1, ar2, sortings=sortings, union_sorting=union_sorting, assume_unique=True, method=method, invert=True)
     return (ar1[in_spec[0]],) + in_spec[1:]
 
 def find1d(ar, to_find, sorting=None, search_space_sorting=None, return_search_space_sorting=False, check=True):
@@ -363,7 +371,6 @@ def find1d(ar, to_find, sorting=None, search_space_sorting=None, return_search_s
         to_find = to_find[search_space_sorting]
 
     if presorted:
-        ar.searchsorted()
         vals = np.searchsorted(ar, to_find)
     else:
         vals = np.searchsorted(ar, to_find, sorter=sorting)
@@ -376,15 +383,16 @@ def find1d(ar, to_find, sorting=None, search_space_sorting=None, return_search_s
         vals[big_vals] = -1
         if not presorted:
             vals = sorting[vals]
-        # now because of how searchsorted works, we need to check if the found values
-        # truly agree with what we asked for
-        bad_vals = ar[vals] != to_find
-        if vals.shape == ():
-            if bad_vals:
-                vals = -1
-        else:
-            # print(vals, bad_vals)
-            vals[bad_vals] = -1
+        if check:
+            # now because of how searchsorted works, we need to check if the found values
+            # truly agree with what we asked for
+            bad_vals = ar[vals] != to_find
+            if vals.shape == ():
+                if bad_vals:
+                    vals = -1
+            else:
+                # print(vals, bad_vals)
+                vals[bad_vals] = -1
     else:
         bad_vals = np.full_like(to_find, True)
         vals = np.full_like(vals, -1)

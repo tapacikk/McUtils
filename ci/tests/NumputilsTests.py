@@ -489,6 +489,22 @@ class NumputilsTests(TestCase):
         )
         self.assertEquals(diffs.tolist(), [True, True, False, False, True])
 
+        ugh = np.arange(1000)
+        bleh = np.random.choice(1000, size=100)
+        diffs, sortings, merge = contained(
+            bleh,
+            ugh
+        )
+        self.assertEquals(diffs.tolist(), np.isin(bleh, ugh).tolist())
+
+        diffs2, sortings, merge = contained(
+            bleh,
+            ugh,
+            method='find'
+        )
+
+        self.assertEquals(diffs.tolist(), diffs2.tolist())
+
     @debugTest
     def test_Sparse(self):
 
