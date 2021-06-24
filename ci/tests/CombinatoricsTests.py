@@ -247,7 +247,7 @@ class CombinatoricsTests(TestCase):
         og_perms = part_perms.get_partition_permutations_from_indices(perm_inds)
         self.assertEquals(subperms.tolist(), og_perms.tolist())
 
-    @validationTest
+    @debugTest
     def test_SymmetricGroupGenerator(self):
         """
         Tests the features of the symmetric group generator
@@ -258,7 +258,6 @@ class CombinatoricsTests(TestCase):
         gen = SymmetricGroupGenerator(8)
 
         part_perms = gen.get_terms([1, 2, 3, 4, 5])
-
         inds = gen.to_indices(part_perms)
         self.assertEquals(inds[:100,].tolist(), list(range(1, 101)))
 
@@ -410,8 +409,8 @@ class CombinatoricsTests(TestCase):
             [4]
         ]
         test_rules = [
-            (-3,), (-1,), (1,), (3,), (-2, -1), (-2, 1), (-1, 2), (1, 2), (-1, -1, -1), (-1, -1, 1), (-1, 1, 1),
-            (1, 1, 1)
+            (-3,), (-1,), (1,), (3,), (-2, -1), (-2, 1), (-1, 2), (1, 2),
+            (-1, -1, -1), (-1, -1, 1), (-1, 1, 1), (1, 1, 1)
         ]
         new_exc, new_inds = gen.take_permutation_rule_direct_sum(test_states, test_rules,
                                                                               return_indices=True,
@@ -769,7 +768,7 @@ class CombinatoricsTests(TestCase):
 
         # raise Exception(test_perms)
 
-    @debugTest
+    @validationTest
     def test_FullBasis(self):
 
         full_basis = CompleteSymmetricGroupSpace(12)
