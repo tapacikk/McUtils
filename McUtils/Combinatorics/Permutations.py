@@ -859,7 +859,7 @@ class UniquePermutations:
         for i in range(n_steps):
             block_counts[i] = counts
 
-        block_tree_datas = np.zeros((n_steps, dim, np.array([2])[0]), dtype=counts.dtype)# numba hack
+        block_tree_datas = np.zeros((n_steps, dim, 2), dtype=counts.dtype)
         cur_dims = np.full(n_steps, dim - 1)
         block_tree_datas[:, cur_dims[0], 1] = num_permutations
 
@@ -927,15 +927,10 @@ class UniquePermutations:
                         if classes[j] == el:
                             cur_dim -= 1
                             cts[j] -= 1
-                            # counts_mask[j] = counts[j] > 0
                             tree_data[cur_dim, 1] = subtotal
-                            # if subtotal <= 0:
-                            #     print(2, "??????!!?!??!!")
                             tree_data[cur_dim, 0] = tree_data[cur_dim + 1, 0]
                             break
                         else:
-                            if subtotal <= 0:
-                                print(2, "??????!!?!??!!")
                             tree_data[cur_dim, 0] += subtotal
                     # cur_dim = find_state(cur_dim, el)
 
@@ -1037,7 +1032,7 @@ class UniquePermutations:
         for _ in prange(n_steps):
             start_idx = block_size * _
 
-            tree_data = np.zeros((dim, np.array([2])[0]), dtype='int64')# numba hack
+            tree_data = np.zeros((dim, 2), dtype=np.int64)
             depth = 0  # where we're currently writing
             tree_data[depth, 1] = num_permutations
             counts = block_counts[_]  # we're going to modify this in-place
@@ -1196,16 +1191,16 @@ class UniquePermutations:
     @jit(nopython=True)
     def _walk_perm_generator(counts, dim, num_permutations, indices, include_positions):
 
-        tree_data = np.zeros((dim, 2), dtype='int64')
+        tree_data = np.zeros((dim, 2), dtype=np.int64)
         depth = 0  # where we're currently writing
         tree_data[depth, 1] = num_permutations
         init_counts = counts
         classes = np.arange(len(counts))
         max_count = np.max(counts)
-        pos_map = np.full((len(counts), max_count), -1, dtype='int64')
+        pos_map = np.full((len(counts), max_count), -1, dtype=np.int64)
         counts = np.copy(counts)  # we're going to modify this in-place
         nterms = len(counts)
-        perm = np.zeros(dim, dtype='int64')
+        perm = np.zeros(dim, dtype=np.int64)
 
         allow_bracktracking = False
         for idx in indices:
@@ -2812,11 +2807,6 @@ class SymmetricGroupGenerator:
                                     sorts = np.concatenate([x + s for x, s in zip(sorts, cumlens)])
                                     argsorts = np.argsort(sorts)
                                 new_inds = [new_inds[i] for i in argsorts]
-                            # if not split_results:
-                            #     if len(new_perms) == 0:
-                            #         new_inds = np.array([], dtype='int8')
-                            #     else:
-                            #         new_inds = np.concatenate(new_inds, axis=0)
                             indices.append(new_inds)
                     else:
                         if return_excitations:
