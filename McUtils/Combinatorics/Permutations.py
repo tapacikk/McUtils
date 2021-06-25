@@ -2165,13 +2165,14 @@ class SymmetricGroupGenerator:
                                 ):
         # if we run into negatives we need to mask them out
         if len(can_be_negative[i]) == 0:
-            not_negs = np.full(len(cls_inds), True)
+            not_negs = np.full(len(cls_inds[i]), True)
         else:
             not_negs = cls._get_filter_mask(new_rep_perm, cls_inds[i], can_be_negative[i], class_negs)
 
-        # comp_mask = [np.all(new_rep_perm[j]>0) for j in can_be_negative[i]]#np.all(new_rep_perm[can_be_negative[i],] >= 0, axis=1)
-        # not_negs[can_be_negative[i]] = comp_mask
+        # try:
         comp = cls_inds[i][not_negs]
+        # except:
+        #     raise Exception(cls_inds[i], not_negs)
         if len(comp) < len(cls_inds[i]):
             cls._filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, cum_counts[i],
                                       cum_counts[i + 1])
