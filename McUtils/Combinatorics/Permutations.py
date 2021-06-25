@@ -859,7 +859,7 @@ class UniquePermutations:
         for i in range(n_steps):
             block_counts[i] = counts
 
-        block_tree_datas = np.zeros((n_steps, dim, 2), dtype=counts.dtype)
+        block_tree_datas = np.zeros((n_steps, dim, np.array([2])[0]), dtype=counts.dtype)# numba hack
         cur_dims = np.full(n_steps, dim - 1)
         block_tree_datas[:, cur_dims[0], 1] = num_permutations
 
@@ -1037,7 +1037,7 @@ class UniquePermutations:
         for _ in prange(n_steps):
             start_idx = block_size * _
 
-            tree_data = np.zeros((dim, 2), dtype='int64')
+            tree_data = np.zeros((dim, np.array([2])[0]), dtype='int64')# numba hack
             depth = 0  # where we're currently writing
             tree_data[depth, 1] = num_permutations
             counts = block_counts[_]  # we're going to modify this in-place
