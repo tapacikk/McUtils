@@ -7,13 +7,29 @@ __all__ = [
     'njit',
     'jit',
     'type_spec',
+    'without_numba',
     'numba_decorator',
     'import_from_numba',
     'objmode',
     'prange'
 ]
 
+class NumbaState:
+    numba_disabled = False
+
+class without_numba:
+    def __init__(self):
+        self._numba_state = None
+    def __enter__(self):
+        self._numba_state = NumbaState.numba_disabled
+        _numba_disabled = True
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        NumbaState.numba_disabled = self._numba_state
+        self._numba_state = None
+
 def load_numba(warn=False):
+    if NumbaState.numba_disabled:
+        return None
     try:
         import numba
     except ImportError:
