@@ -1,7 +1,6 @@
 import numpy as np
 from .TransformationFunction import TransformationFunction
-from ...Numputils import affine_matrix
-from ...Numputils import merge_transformation_matrix
+from ...Numputils import affine_matrix, merge_transformation_matrix, one_pad_vecs
 
 ######################################################################################################
 ##
@@ -101,13 +100,17 @@ class AffineTransform(TransformationFunction):
 
         tmat = self.transf
         if tmat.shape[-1] == 4:
-            shift = tmat[:3, -1]
-            tmat = tmat[:3, :3]
+            if not translate:
+                tmat = tmat[:3, :3]
+            else:
+                adj_coord = one_pad_vecs(adj_coord)
+            adj_coord = np.tensordot(adj_coord, tmat, axes=[1, 1])
             if translate:
-                adj_coord = adj_coord + shift[np.newaxis]
-
-        adj_coord = np.tensordot(adj_coord, tmat, axes=[1, 1])
-        adj_coord = adj_coord.reshape(coord_shape)
+                adj_coord = adj_coord[..., :3]
+            adj_coord = adj_coord.reshape(coord_shape)
+        else:
+            adj_coord = np.tensordot(adj_coord, tmat, axes=[1, 1])
+            adj_coord = adj_coord.reshape(coord_shape)
 
         return adj_coord
 

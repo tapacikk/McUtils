@@ -35,6 +35,9 @@ class CoordinateTransform:
         self.condense_transforms()
 
     @property
+    def is_affine(self):
+        return isinstance(self._trans, AffineTransform)
+    @property
     def transformation_function(self):
         """
 
@@ -51,14 +54,14 @@ class CoordinateTransform:
         return tfunc.operate(coords, shift=shift)
     def __call__(self, coords, shift=True):
         if isinstance(coords, (TransformationFunction, CoordinateTransform)):
-            return type(self)(coords, self) # just constructing a new transform...
+            return type(self)(self, coords) # just constructing a new transform...
         else:
             return self.apply(coords)
 
     def condense_transforms(self):
         self._trans = self._transform_list[-1]
-        for t in self._transform_list[:-1]:
-            self._trans = self._trans.merge(t)
+        for t in self._transform_list[::-1][1:]:
+            self._trans = t.merge(self._trans)
 
     @property
     def inverse(self):
