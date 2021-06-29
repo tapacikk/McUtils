@@ -416,8 +416,8 @@ class CoordinateSystem:
                  coords,
                  system,
                  order=1,
-                 coordinates = None,
-                 converter_options = None,
+                 coordinates=None,
+                 converter_options=None,
                  all_numerical=False,
                  analytic_deriv_order=None,
                  **finite_difference_options
@@ -452,8 +452,6 @@ class CoordinateSystem:
 
         deriv_tensors = None # default return value
 
-        # print(">>>>>", order, self)
-
         self_shape = self.coordinate_shape
         if self_shape is None:
             self_shape = coords.shape[1:]
@@ -472,7 +470,6 @@ class CoordinateSystem:
             ret_d_key = self.return_derivs_key
             rd = converter_options[ret_d_key] if ret_d_key in converter_options else None
             converter_options[ret_d_key] = True if analytic_deriv_order is None else analytic_deriv_order
-            # print(">>>>", converter_options[ret_d_key])
             test_crd, test_opts = self.convert_coords(coords, system, **converter_options)
             if rd is None:
                 del converter_options[ret_d_key]
@@ -508,10 +505,11 @@ class CoordinateSystem:
 
                 convert = self._converter(system, deriv_key, self, num_derivs, kw)
             else:
+                print(">>>", converter_options)
                 convert = self._converter(system, deriv_key, self, None, converter_options)
                 # convert = lambda c, s=system, kw=converter_options:
         else:
-                convert = self._converter(system, None, self, None, converter_options)
+            convert = self._converter(system, None, self, None, converter_options)
             # convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
         need_derivs = (len(order) > 0 and max(order) > 0) if not isinstance(order, int) else order > 0
         if need_derivs:

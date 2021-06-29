@@ -706,7 +706,11 @@ class TensorDerivativeConverter:
     involving derivatives in one coordinate system in another
     """
     #TODO: add way to not recompute terms over and over
-    def __init__(self, jacobians, derivatives=None, mixed_terms=None):
+    def __init__(self, jacobians, derivatives=None,
+                 mixed_terms=None,
+                 jacobians_name='Q',
+                 values_name='V'
+                 ):
         """
 
         :param jacobians: The Jacobian and higher-order derivatives between the coordinate systems
@@ -720,7 +724,7 @@ class TensorDerivativeConverter:
         if derivatives is None:
             derivatives = [0] * len(jacobians)
 
-        self.terms = TensorExpansionTerms(jacobians, derivatives, qxv_terms=mixed_terms)
+        self.terms = TensorExpansionTerms(jacobians, derivatives, qxv_terms=mixed_terms, q_name=jacobians_name, v_name=values_name)
 
     def convert(self, order=None, check_arrays=False):
 
