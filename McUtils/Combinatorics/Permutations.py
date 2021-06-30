@@ -1978,6 +1978,10 @@ class SymmetricGroupGenerator:
             assume_sorted = True
             perms = perms[np.newaxis]
 
+        big_shp = perms.shape[:-1]
+        if perms.ndim > 2:
+            perms = np.reshape(perms, (-1, perms.shape[-1]))
+
         if sums is None:
             sums = np.sum(perms, axis=1)
 
@@ -2003,6 +2007,9 @@ class SymmetricGroupGenerator:
         if preserve_ordering and sorting is not None:
             indices = indices[np.argsort(sorting)]
 
+        if len(big_shp) > 1:
+            indices = np.reshape(indices, big_shp)
+
         return indices
 
     def from_indices(self, indices, assume_sorted=False, preserve_ordering=True):
@@ -2022,6 +2029,10 @@ class SymmetricGroupGenerator:
             indices = np.array([smol])
         else:
             indices = np.asanyarray(indices)
+
+        big_shp = indices.shape
+        if indices.ndim > 1:
+            indices = np.reshape(indices, -1)
 
         if not assume_sorted:
             sorting = np.argsort(indices)
@@ -2051,6 +2062,9 @@ class SymmetricGroupGenerator:
 
         if preserve_ordering and sorting is not None:
             perms = perms[np.argsort(sorting),]
+
+        if len(big_shp) > 1:
+            perms = perms.reshape(big_shp + (-1,))
 
         return perms
 
