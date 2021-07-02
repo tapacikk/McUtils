@@ -86,10 +86,10 @@ class StringParser:
 
     def parse(self,
               txt,
-              regex = None,
-              block_handlers = None,
-              dtypes = None,
-              out = None
+              regex=None,
+              block_handlers=None,
+              dtypes=None,
+              out=None
               ):
         """Finds a single match for the and applies parsers for the specified regex in txt
 
@@ -145,7 +145,7 @@ class StringParser:
             else:
                 out = {'array':out, 'single':True}
 
-            res = parser.parse_all(txt, dtypes = dtypes, out = out)
+            res = parser.parse_all(txt, dtypes=dtypes, out=out)
 
         else:
             if block_handlers is None and isinstance(regex, RegexPattern):
@@ -173,11 +173,25 @@ class StringParser:
                 single = None
 
             # if we're given a non-string regex we compile it
+            pattern = None
             if isinstance(regex, RegexPattern):
+                pattern = regex
                 regex = regex.compiled
 
             match = re.search(regex, txt)
-            self._handle_parse_match(match, res, block_handlers, append = append, single = single)
+            try:
+                self._handle_parse_match(match, res, block_handlers, append=append, single=single)
+            except:
+                if append or (isinstance(append, int) and append == 0):
+                    raise StringParserException('failed to append to results array {} for match {}'.format(
+                        res,
+                        match
+                    ))
+                else:
+                    raise StringParserException('failed to insert into results array {} for match {}'.format(
+                        res,
+                        match
+                    ))
 
         # one issue here is that by default this would return a list or some structured object like that
         # sometimes we don't _want_ that list
@@ -401,13 +415,7 @@ class StringParser:
         # we'll always force our dtypes and results to be a StructuredType and StructuredTypeArray
         # as these will force the results to be conformaing
         res = StructuredTypeArray(dtypes)
-        # print("="*50,
-        #       dtypes,
-        #       res.dict_like,
-        #       "="*50,
-        #       sep="\n"
-        #       )
-        return StructuredTypeArray(dtypes)
+        return res
 
     #endregion
 
@@ -466,7 +474,7 @@ class StringParser:
         # print("<"*50)
         return gg # groups should now be chunked into groups if it wasn't before
 
-    def _handle_insert_result(self, array, handler, data, single = True, append = False):
+    def _handle_insert_result(self, array, handler, data, single=True, append=False):
         """Handles the process of actually inserting the matches data/groups into array, applying any necessary
         handler in the process
 
@@ -482,22 +490,25 @@ class StringParser:
         :type append: bool | iterable[int]
         """
         if handler is not None:
-            data = handler(data, array = array, append = append)
+            data = handler(data, array=array, append=append)
+
         if data is not None:
-            if single and (append or (isinstance(append, int) and append == 0)):
+            if array.has_indeterminate_shape:
+                array.fill(data)
+            elif single and (append or (isinstance(append, int) and append == 0)):
                 # print("pre-append:>", array)
                 # print("axis:", append)
                 # print("total axis:", append + array.append_depth)
                 # print(data)
                 if append is True:
                     append = 0
-                array.append(data, axis = append)
+                array.append(data, axis=append)
                 # print("<:post-append", array)
             elif (append or (isinstance(append, int) and append == 0)):
                 # print("pre-extend:>", array)
                 if append is True:
                     append = 0
-                array.extend(data, single = single, axis = append)
+                array.extend(data, single=single, axis=append)
                 # print("<:post-extend", array)
             else:
                 # print("pre-fill:>", array)
@@ -505,8 +516,8 @@ class StringParser:
                 # print("<:post-fill", array)
     def _handle_parse_match(self, match, res,
                             block_handlers,
-                            append = False,
-                            single = None,
+                            append=False,
+                            single=None,
                             default_value = ""
                             ):
         """Figures out how to handle the matched data from the parser
@@ -629,7 +640,7 @@ class StringParser:
                 # print("-"*10 + "Multiple Handlers" + "-"*10)
                 # print(block_handlers, res, groups)
                 for b,a,g in zip(block_handlers, res._array, groups):
-                    self._handle_insert_result(a, b, g, single = single, append = append)
+                    self._handle_insert_result(a, b, g, single=single, append=append)
 
         else:
             # we have named groups so we only use the data associated with them
@@ -660,7 +671,25 @@ class StringParser:
                         block_handlers
                     ))
 
-                self._handle_insert_result(r, handler, v, single = single, append = append)
+                try:
+                    self._handle_insert_result(r, handler, v, single=single, append=append)
+                except:
+                    if append or (isinstance(append, int) and append == 0):
+                        raise StringParserException(
+                            "failed to append to key '{}' for results array {}; block handler={}, value={}".format(
+                                k,
+                                res,
+                                handler,
+                                v[:50] + "...<{}>...".format(len(v) - 50) + v[-50:] if len(v) > 100 else v
+                            ))
+                    else:
+                        raise StringParserException("failed to insert into key '{}' for results array {}; block handler={}, value={}".format(
+                            k,
+                            res,
+                            handler,
+                            v[:50] + "...<{}>...".format(len(v) - 50) + v[-50:] if len(v) > 100 else v
+                        ))
+
 
     @classmethod
     def _get_regex_handler(cls, r):
@@ -746,7 +775,7 @@ class StringParser:
                         }
                         # print(append_depth, append + append_depth, array)
                         app_depth = append + append_depth
-                        array.set_filling( 0, axis = app_depth)
+                        array.set_filling(0, axis = app_depth)
                     # print("????", t)
                     for i, l in enumerate(t):
                         # we gotta basically go line-by-line and add our stuff in

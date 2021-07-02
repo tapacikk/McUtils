@@ -476,7 +476,7 @@ ScanEnergiesParser = StringParser(
                 ),
                 "Coords",
                 prefix=Newline,
-                handler=StringParser.array_handler()
+                handler=StringParser.array_handler(dtype=float)
             ),
         ),
         joiner=NonCapturing(Repeating([Whitespace, Repeating(["-"])]))

@@ -22,7 +22,8 @@ class FiniteDifferenceDerivative:
                  f,
                  function_shape=(0, 0),
                  parallelizer=None,
-                 **fd_opts):
+                 **fd_opts
+                 ):
         """
         :param f: the function we would like to take derivatives of
         :type f: FunctionSpec | callable

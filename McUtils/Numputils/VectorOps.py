@@ -18,6 +18,8 @@ __all__ = [
     "vec_sins",
     "vec_cos",
     "vec_outer",
+    "pts_norms",
+    "pts_angles",
     "pts_normals",
     "pts_dihedrals",
     "mat_vec_muls",
@@ -459,6 +461,39 @@ def vec_tdot(tensa, tensb, axes=[[-1], [1]]):
 
     return vec_tensordot(tensa, tensb, axes=axes)
 
+################################################
+#
+#       pts_norms
+#
+def pts_norms(pts1, pts2):
+    """Provides the vector normal to the plane of the three points
+
+    :param pts1:
+    :type pts1: np.ndarray
+    :param pts2:
+    :type pts2: np.ndarray
+    :return:
+    :rtype: np.ndarray
+    """
+    return vec_norms(pts2-pts1)
+
+################################################
+#
+#       pts_angles
+#
+def pts_angles(pts1, pts2, pts3):
+    """Provides the vector normal to the plane of the three points
+
+    :param pts1:
+    :type pts1: np.ndarray
+    :param pts2:
+    :type pts2: np.ndarray
+    :param pts3:
+    :type pts3: np.ndarray
+    :return:
+    :rtype: np.ndarray
+    """
+    return vec_angles(pts1-pts2, pts3-pts2)
 
 ################################################
 #

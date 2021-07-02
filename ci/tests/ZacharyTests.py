@@ -6,7 +6,7 @@ from McUtils.Plots import *
 from unittest import TestCase
 import sys, h5py, math, numpy as np, itertools
 
-class FiniteDifferenceTests(TestCase):
+class ZacharyTests(TestCase):
 
     #region setup
 
@@ -516,6 +516,7 @@ class FiniteDifferenceTests(TestCase):
 
         self.assertEquals(vdQQQQ_subbed.array.shape, (n_Q, n_Q, n_Q, n_Q))
 
+    @validationTest
     def test_TensorConversion(self):
 
         n_Q = 10
@@ -560,8 +561,7 @@ class FiniteDifferenceTests(TestCase):
         # raise Exception(t1)
         # raise Exception(t1)
 
-
-    @debugTest
+    @validationTest
     def test_PseudopotentialTerms(self):
 
         n_Q = 10
@@ -826,3 +826,72 @@ class FiniteDifferenceTests(TestCase):
 
     #endregion
 
+    #region Interpolation
+    @inactiveTest
+    def test_Interpolator1D(self):
+
+        sin_grid = np.arange(0, 1, .1)
+        sin_vals = np.sin(sin_grid)
+        reg_interp = RegularGridInterpolator(sin_grid, sin_vals)
+        raise NotImplementedError("need to finish test")
+
+        d2 = reg_interp.derivative(2)
+
+    @inactiveTest
+    def test_Interpolator2D(self):
+
+        sin_grid = np.arange(0, 1, .1)
+        x, y, z = np.meshgrid(sin_grid, sin_grid)
+        sin_vals = np.sin(x) * np.cos(y)
+        reg_interp = RegularGridInterpolator([sin_grid, sin_grid], sin_vals)
+        raise NotImplementedError("need to finish test")
+
+        d2_x = reg_interp.derivative((2, 0))
+        d2_y = reg_interp.derivative((0, 2))
+
+    @debugTest
+    def test_InterpolatorND(self):
+
+        cos_grid = np.linspace(0, 1, 8)
+        sin_grid1 = np.linspace(0, 1, 11)
+        sin_grid = np.linspace(0, 1, 12)
+
+        grids = [sin_grid, sin_grid1, cos_grid]
+
+        x, y, z = np.meshgrid(*grids, indexing='ij')
+        sin_vals = np.sin(x) + np.sin(y) + np.cos(z)
+        reg_interp = RegularGridInterpolator(grids, sin_vals, order=(3, 2, 4))
+
+        test_points = np.reshape(np.moveaxis(np.array([x, y, z]), 0, 3), (-1, 3))
+        vals = reg_interp(test_points)
+        self.assertTrue(np.allclose(vals, np.reshape(sin_vals, -1)))
+
+        test_points = np.random.uniform(0, 1, size=(100, 3))
+        test_vals = np.sin(test_points[:, 0]) + np.sin(test_points[:, 1]) + np.cos(test_points[:, 2])
+        interp_vals = reg_interp(test_points)
+        self.assertTrue(np.allclose(interp_vals, test_vals, atol=5e-5))
+
+        deriv = reg_interp.derivative((2, 0, 0))
+        test_deriv_vals = -np.sin(test_points[:, 0])# + np.sin(test_points[:, 1]) + np.cos(test_points[:, 2])
+        interp_vals = deriv(test_points)
+        self.assertTrue(np.allclose(interp_vals, test_deriv_vals, atol=5e-3))
+
+        cos_grid = np.linspace(0, 1, 8)
+        sin_grid1 = np.linspace(0, 1, 11)
+        sin_grid = np.linspace(0, 1, 12)
+
+        grids = [sin_grid, sin_grid1, cos_grid]
+
+        sin_vals = np.sin(x) * np.sin(y) * np.cos(z)
+        reg_interp = RegularGridInterpolator(grids, sin_vals)
+        deriv = reg_interp.derivative((1, 1, 0))
+        test_deriv_vals = np.cos(test_points[:, 0]) * np.cos(test_points[:, 1]) * np.cos(test_points[:, 2])
+        interp_vals = deriv(test_points)
+        self.assertTrue(np.allclose(interp_vals, test_deriv_vals, atol=5e-4))
+
+
+
+
+
+
+    #endregion

@@ -26,7 +26,6 @@ class Surface:
         :type metadata:
         """
         self.metadata = metadata
-
         if len(data) == 2 and isinstance(data[1], dict):
             data, opts = data
         elif isinstance(data, dict):
@@ -37,6 +36,10 @@ class Surface:
         if base is None:
             base = self.detect_base(data, opts)
         self.base = base(*data, dimension=dimension, **opts)
+
+    @property
+    def data(self):
+        return self.base.data
 
     def minimize(self, initial_guess=None, function_options=None, **opts):
         """

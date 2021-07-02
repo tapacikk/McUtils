@@ -87,7 +87,10 @@ class GaussianLogReader(FileStreamReader):
         else:
             for k in keys:
                 comp = self.registered_components[k]
-                res[k] = self.parse_key_block(**comp, num=num)
+                try:
+                    res[k] = self.parse_key_block(**comp, num=num)
+                except:
+                    raise GaussianLogReaderException("failed to parse block for key '{}'".format(k))
         return res
 
     job_default_keys = {
