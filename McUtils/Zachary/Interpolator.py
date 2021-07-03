@@ -271,7 +271,7 @@ class Interpolator:
         :param vals: the values at the grid points
         :type vals: np.ndarray
         :param interpolation_function: the basic function to be used to handle the raw interpolation
-        :type interpolation_function: None | function
+        :type interpolation_function: None | BasicInterpolator
         :param interpolation_order: the order of extrapolation to use (when applicable)
         :type interpolation_order: int | str | None
         :param extrapolator: the extrapolator to use for data points not on the grid
@@ -422,7 +422,7 @@ class Interpolator:
         :return:
         :rtype:
         """
-        # determining what points are "inside" a region is quite tough
+        # determining what points are "inside" an interpolator region is quite tough
         # instead it is probably better to allow the basic thing to interpolate and do its thing
         # and then allow the extrapolator to post-process that result
         vals = self.interpolator(grid_points, **opts)
@@ -440,8 +440,12 @@ class Interpolator:
         :return:
         :rtype:
         """
-
-        raise NotImplementedError("need to finish this")
+        return type(self)(
+            self.grid,
+            self.vals,
+            interpolation_function=self.interpolator.derivative(order),
+            extrapolator=self.extrapolator.derivative(order) if self.extrapolator is not None else self.extrapolator
+        )
 
     def __call__(self, *args, **kwargs):
         return self.apply(*args, **kwargs)
@@ -463,7 +467,7 @@ class Extrapolator:
                  ):
         """
         :param extrapolation_function: the function to handle extrapolation off the interpolation grid
-        :type extrapolation_function: None | function | Callable
+        :type extrapolation_function: None | function | Callable | Interpolator
         :param warning: whether to emit a message warning about extrapolation occurring
         :type warning: bool
         :param opts: the options to feed into the extrapolator call
@@ -472,6 +476,12 @@ class Extrapolator:
         self.extrapolator = extrapolation_function
         self.extrap_warning = warning
         self.opts = opts
+
+    def derivative(self, n):
+        return type(self)(
+            self.extrapolator.derivative(n),
+            warning=self.extrapolator
+        )
 
     def find_extrapolated_points(self, gps, vals, extrap_value=np.nan):
         """
