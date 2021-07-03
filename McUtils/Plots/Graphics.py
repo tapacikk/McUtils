@@ -46,7 +46,7 @@ class GraphicsBase(metaclass=ABCMeta):
         'epilog'
         'prolog'
     }
-    def _get_def_opt(self, key, val):
+    def _get_def_opt(self, key, val, theme):
         if val is None:
             try:
                 v = object.__getattribute__(self, '_'+key) # we overloaded getattr
@@ -57,6 +57,8 @@ class GraphicsBase(metaclass=ABCMeta):
                     v = None
             if v is None and key in self.default_style:
                 v = self.default_style[key]
+            if v is None and theme is not None and key in theme:
+                v = theme[key]
             return v
         else:
             return val
@@ -108,9 +110,18 @@ class GraphicsBase(metaclass=ABCMeta):
             image_size = self.parent.image_size
         if aspect_ratio is None and parent is not None:
             aspect_ratio = self.parent.aspect_ratio
-        aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio)
-        image_size = self._get_def_opt('image_size', image_size)
-        padding = self._get_def_opt('padding', padding)
+
+
+        theme = self._get_def_opt('theme', theme, {})
+        self.theme=theme
+        self.theme_manager=theme_manager
+        if theme is not None:
+            theme_dict = theme_manager.resolve_theme(theme)[1]
+        else:
+            theme_dict = {}
+        aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio, theme)
+        image_size = self._get_def_opt('image_size', image_size, theme)
+        padding = self._get_def_opt('padding', padding, theme)
         if figure is None and image_size is not None and 'figsize' not in subplot_kw:
             try:
                 w, h = image_size
@@ -135,9 +146,6 @@ class GraphicsBase(metaclass=ABCMeta):
                 image_size = (w, h)
             subplot_kw['figsize'] = (w/72., h/72.)
 
-        theme = self._get_def_opt('theme', theme)
-        self.theme = theme
-        self.theme_manager =theme_manager
         if theme is not None:
             with theme_manager.from_spec(theme):
                 self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
@@ -497,7 +505,7 @@ class Graphics(GraphicsBase):
         frame=((True, False), (True, False)),
         aspect_ratio=1,
         image_size=300,
-        padding = ((30, 10), (30, 10))
+        padding=((60, 10), (35, 10))
     )
 
     def set_options(self,
@@ -541,7 +549,7 @@ class Graphics(GraphicsBase):
             ('colorbar', colorbar)
         )
         for oname, oval in opts:
-            oval = self._get_def_opt(oname, oval)
+            oval = self._get_def_opt(oname, oval, {})
             if oval is not None:
                 setattr(self, oname, oval)
     # attaching custom property setters
@@ -930,7 +938,7 @@ class GraphicsGrid(GraphicsBase):
     default_style = dict(
         theme='mccoy',
         spacings=(50, 0),
-        padding=((30, 10), (40, 10))
+        padding=((50, 10), (50, 10))
     )
     def __init__(self,
                  *args,
@@ -1007,9 +1015,9 @@ class GraphicsGrid(GraphicsBase):
         else:
             subimage_size = kw['image_size']
         if figure is None:
-            padding = self._get_def_opt('padding', padding)
-            subimage_aspect_ratio = self._get_def_opt('padding', subimage_aspect_ratio)
-            spacings = self._get_def_opt('spacings', spacings)
+            padding = self._get_def_opt('padding', padding, {})
+            subimage_aspect_ratio = self._get_def_opt('padding', subimage_aspect_ratio, {})
+            spacings = self._get_def_opt('spacings', spacings, {})
             if subplot_kw is None:
                 subplot_kw = {}
             if fig_kw is None:
@@ -1089,7 +1097,7 @@ class GraphicsGrid(GraphicsBase):
             ('colorbar', colorbar)
         )
         for oname, oval in opts:
-            oval = self._get_def_opt(oname, oval)
+            oval = self._get_def_opt(oname, oval, {})
             if oval is not None:
                 setattr(self, oname, oval)
 

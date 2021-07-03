@@ -404,56 +404,6 @@ class ZacharyTests(TestCase):
 
     #endregion
 
-    #region Mesh
-
-    @validationTest
-    def test_LinSpaceMesh(self):
-        mg = Mesh(np.linspace(-1, 1, 3))
-        self.assertIs(mg.mesh_type, MeshType.Structured)
-        self.assertEquals(mg.shape, (3,))
-
-    @validationTest
-    def test_MeshGridMesh(self):
-        mg = np.meshgrid(np.array([-1, 0, 1]), np.array([-1, 0, 1]))
-        regmesh = Mesh(mg)
-        self.assertIs(regmesh.mesh_type, MeshType.Structured)
-        self.assertEquals(regmesh.shape, (3, 3, 2))
-
-    @validationTest
-    def test_RegularMesh(self):
-        regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
-        self.assertIs(regmesh.mesh_type, MeshType.Structured)
-        self.assertEquals(regmesh.shape, (3, 3, 2))
-
-    @validationTest
-    def test_RegMeshSubgrids(self):
-        regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
-        m = [Mesh(g) for g in regmesh.subgrids]
-        self.assertTrue(all(g.mesh_type is MeshType.Structured for g in m))
-
-    @inactiveTest
-    def test_SemiStructuredMesh(self):
-        # class MeshType(enum.Enum):
-        #     Structured = "structured"
-        #     Unstructured = "unstructured"
-        #     SemiStructured = "semistructured"
-        #     Indeterminate = "indeterminate"
-        semi_mesh = Mesh([[np.arange(i)] for i in range(10, 25)])
-        self.assertIs(semi_mesh.mesh_type, MeshType.SemiStructured)
-
-    @validationTest
-    def test_MeshFromList(self):
-        try:
-            wat = np.asarray([[-1, 0, 1], [-1, 0, 1]])
-            bad = Mesh(wat)
-        except Mesh.MeshError:
-            pass
-        else:
-            # just to make it accessible through Mesh
-            self.assertIs(bad.mesh_type, MeshType.Indeterminate)
-
-    #endregion Mesh
-
     #region Tensor Derivatives
     @validationTest
     def test_TensorTerms(self):
@@ -827,30 +777,77 @@ class ZacharyTests(TestCase):
     #endregion
 
     #region Interpolation
+    # @inactiveTest
+    # def test_Interpolator1D(self):
+    #
+    #     sin_grid = np.arange(0, 1, .1)
+    #     sin_vals = np.sin(sin_grid)
+    #     reg_interp = RegularGridInterpolator(sin_grid, sin_vals)
+    #     raise NotImplementedError("need to finish test")
+    #
+    #     d2 = reg_interp.derivative(2)
+
+
+    #region Mesh
+
+    @validationTest
+    def test_LinSpaceMesh(self):
+        mg = Mesh(np.linspace(-1, 1, 3))
+        self.assertIs(mg.mesh_type, MeshType.Structured)
+        self.assertEquals(mg.shape, (3,))
+
+    @validationTest
+    def test_MeshGridMesh(self):
+        mg = np.array(np.meshgrid(np.array([-1, 0, 1]), np.array([-1, 0, 1]), indexing='ij'))
+        regmesh = Mesh(mg)
+        self.assertIs(regmesh.mesh_type, MeshType.Regular)
+        self.assertEquals(regmesh.shape, (3, 3, 2))
+
+    @validationTest
+    def test_StructuredMesh(self):
+        mg = np.array(np.meshgrid(np.array([-1, -.5, 0, 1]), np.array([-1, 0, 1]), indexing='ij'))
+        regmesh = Mesh(mg)
+        self.assertIs(regmesh.mesh_type, MeshType.Structured)
+        self.assertEquals(regmesh.shape, (4, 3, 2))
+
+    @validationTest
+    def test_UnstructuredMesh(self):
+        mg = np.random.rand(100, 10, 2)
+        regmesh = Mesh(mg)
+        self.assertIs(regmesh.mesh_type, MeshType.Unstructured)
+
+    @validationTest
+    def test_RegularMesh(self):
+        regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
+        self.assertIs(regmesh.mesh_type, MeshType.Regular)
+        self.assertEquals(regmesh.shape, (3, 3, 2))
+
+    @validationTest
+    def test_RegMeshSubgrids(self):
+        regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
+        m = [Mesh(g) for g in regmesh.subgrids]
+        self.assertTrue(all(g.mesh_type is MeshType.Regular for g in m))
+
     @inactiveTest
-    def test_Interpolator1D(self):
+    def test_SemiStructuredMesh(self):
+        semi_mesh = Mesh([[np.arange(i)] for i in range(10, 25)])
+        self.assertIs(semi_mesh.mesh_type, MeshType.SemiStructured)
 
-        sin_grid = np.arange(0, 1, .1)
-        sin_vals = np.sin(sin_grid)
-        reg_interp = RegularGridInterpolator(sin_grid, sin_vals)
-        raise NotImplementedError("need to finish test")
+    @validationTest
+    def test_MeshFromList(self):
+        try:
+            wat = np.asarray([[-1, 0, 1], [-1, 0, 1]])
+            bad = Mesh(wat)
+        except Mesh.MeshError:
+            pass
+        else:
+            # just to make it accessible through Mesh
+            self.assertIs(bad.mesh_type, MeshType.Indeterminate)
 
-        d2 = reg_interp.derivative(2)
+    #endregion Mesh
 
-    @inactiveTest
-    def test_Interpolator2D(self):
-
-        sin_grid = np.arange(0, 1, .1)
-        x, y, z = np.meshgrid(sin_grid, sin_grid)
-        sin_vals = np.sin(x) * np.cos(y)
-        reg_interp = RegularGridInterpolator([sin_grid, sin_grid], sin_vals)
-        raise NotImplementedError("need to finish test")
-
-        d2_x = reg_interp.derivative((2, 0))
-        d2_y = reg_interp.derivative((0, 2))
-
-    @debugTest
-    def test_InterpolatorND(self):
+    @validationTest
+    def test_RegularGridInterpolatorND(self):
 
         cos_grid = np.linspace(0, 1, 8)
         sin_grid1 = np.linspace(0, 1, 11)
@@ -860,7 +857,7 @@ class ZacharyTests(TestCase):
 
         x, y, z = np.meshgrid(*grids, indexing='ij')
         sin_vals = np.sin(x) + np.sin(y) + np.cos(z)
-        reg_interp = RegularGridInterpolator(grids, sin_vals, order=(3, 2, 4))
+        reg_interp = ProductGridInterpolator(grids, sin_vals, order=(3, 2, 4))
 
         test_points = np.reshape(np.moveaxis(np.array([x, y, z]), 0, 3), (-1, 3))
         vals = reg_interp(test_points)
@@ -883,13 +880,102 @@ class ZacharyTests(TestCase):
         grids = [sin_grid, sin_grid1, cos_grid]
 
         sin_vals = np.sin(x) * np.sin(y) * np.cos(z)
-        reg_interp = RegularGridInterpolator(grids, sin_vals)
+        reg_interp = ProductGridInterpolator(grids, sin_vals)
         deriv = reg_interp.derivative((1, 1, 0))
         test_deriv_vals = np.cos(test_points[:, 0]) * np.cos(test_points[:, 1]) * np.cos(test_points[:, 2])
         interp_vals = deriv(test_points)
         self.assertTrue(np.allclose(interp_vals, test_deriv_vals, atol=5e-4))
 
+    @debugTest
+    def test_Interpolator1D(self):
 
+        def test_fn(grid):
+            return np.sin(grid)
+        sin_grid = np.linspace(0, 1, 12)
+        grid = sin_grid
+
+        sin_vals = test_fn(sin_grid)
+        interp = Interpolator(grid, sin_vals)
+
+        test_points = np.random.uniform(0, 1, size=(100,))
+        test_vals = test_fn(test_points)
+        interp_vals = interp(test_points)
+        self.assertTrue(np.allclose(interp_vals, test_vals, atol=5e-5))
+
+    @debugTest
+    def test_InterpolatorExtrapolator1D(self):
+
+        sin_grid = np.linspace(0, np.pi, 5)
+        sin_vals = np.sin(sin_grid)
+        interp = Interpolator(sin_grid, sin_vals,
+                              extrapolator=Interpolator.DefaultExtrapolator, extrapolation_order=1)
+        default_interp = Interpolator(sin_grid, sin_vals)
+
+        test_points = np.random.uniform(-np.pi, 2*np.pi, size=(20,))
+        test_vals = np.sin(test_points)
+        interp_vals = interp(test_points)
+
+        # g = GraphicsGrid(nrows=1, ncols=2)
+        #
+        # big_sin_grid = np.linspace(-np.pi, 2*np.pi, 200)
+        # Plot(big_sin_grid, np.sin(big_sin_grid), figure=g[0, 0])
+        # ScatterPlot(sin_grid, sin_vals, figure=g[0, 0],
+        #             plot_style=dict(color='red')
+        #             )
+        # ScatterPlot(test_points, interp_vals, figure=g[0, 0],
+        #             plot_style=dict(color='black')
+        #             )
+        #
+        # Plot(big_sin_grid, np.sin(big_sin_grid), figure=g[0, 1])
+        # ScatterPlot(sin_grid, sin_vals, figure=g[0, 1],
+        #             plot_style=dict(color='red')
+        #             )
+        # ScatterPlot(test_points, default_interp(test_points), figure=g[0, 1],
+        #             plot_style=dict(color='black')
+        #             )
+        # g.show()
+
+        self.assertTrue(np.allclose(interp_vals, test_vals, atol=5e-5))
+
+    @validationTest
+    def test_RegularInterpolator3D(self):
+
+        def test_fn(grid):
+            return np.sin(grid[..., 0])*np.cos(grid[..., 1]) - np.sin(grid[..., 2])
+
+        cos_grid = np.linspace(0, 1, 8)
+        sin_grid1 = np.linspace(0, 1, 11)
+        sin_grid = np.linspace(0, 1, 12)
+        grids = [sin_grid, sin_grid1, cos_grid]
+
+        grid = np.moveaxis(np.array(np.meshgrid(*grids, indexing='ij')), 0, 3)
+        vals = test_fn(grid)
+
+        interp = Interpolator(grid, vals)
+
+        test_points = np.random.uniform(0, 1, size=(100000, 3))
+        test_vals = test_fn(test_points)
+        interp_vals = interp(test_points)
+        self.assertTrue(np.allclose(interp_vals, test_vals, atol=5e-5))
+
+    @validationTest
+    def test_IrregularInterpolator3D(self):
+
+        def test_fn(grid):
+            return np.sin(grid[..., 0])*np.cos(grid[..., 1]) - np.sin(grid[..., 2])
+
+        np.random.seed(3)
+        grid = np.random.uniform(0, 1, size=(10000, 3))
+        vals = test_fn(grid)
+        interp = Interpolator(grid, vals)
+
+        test_points = np.random.uniform(0, 1, size=(1000, 3))
+        test_vals = test_fn(test_points)
+        interp_vals = interp(test_points)
+
+        self.assertTrue(np.allclose(interp_vals, test_vals, atol=5e-3), msg='max diff: {}'.format(
+            np.max(np.abs(interp_vals - test_vals))
+        ))
 
 
 
