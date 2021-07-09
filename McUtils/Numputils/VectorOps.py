@@ -84,7 +84,7 @@ def vec_norms(vecs, axis=-1):
 #
 #       vec_normalize
 #
-def vec_apply_zero_threshold(vecs, zero_thresh=None):
+def vec_apply_zero_threshold(vecs, zero_thresh=None, return_zeros=False):
     """
     Applies a threshold to cast nearly-zero vectors to proper zero
 
@@ -100,7 +100,10 @@ def vec_apply_zero_threshold(vecs, zero_thresh=None):
     norms = norms[..., np.newaxis]
     norms[zeros] = Options.zero_placeholder
 
-    return vecs, norms
+    if return_zeros:
+        return vecs, norms, zeros
+    else:
+        return vecs, norms
 
 def vec_handle_zero_norms(vecs, norms, zero_thresh=None):
     """

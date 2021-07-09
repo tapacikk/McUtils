@@ -27,7 +27,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
     def convert_many(self,
                      coordlist,
                      ordering=None, origins=None, axes=None, use_rad=True,
-                     return_derivs = False,
+                     return_derivs=False,
                      **kw
                      ):
         """Expects to get a list of configurations
