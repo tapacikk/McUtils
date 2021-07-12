@@ -190,7 +190,6 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype: sp.coo_matrix
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'ascoo'))
-        ...
 
     @abc.abstractmethod
     def ascsr(self):
@@ -200,7 +199,6 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype: sp.csr_matrix
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'ascsr'))
-        ...
     @abc.abstractmethod
     def asarray(self):
         """
@@ -209,7 +207,6 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype: np.ndarray
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'asarray'))
-        ...
     @abc.abstractmethod
     def reshape(self, newshape):
         """
@@ -220,7 +217,6 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'reshape'))
-        ...
     @abc.abstractmethod
     def resize(self, newsize):
         """
@@ -231,25 +227,161 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'resize'))
-        ...
-    def __truediv__(self, other):
-        return self.multiply(1/other)
-    def __rtruediv__(self, other):
-        return self.multiply(1/other)
-    def __rmul__(self, other):
-        return self.multiply(other)
-    def __mul__(self, other):
-        return self.multiply(other)
+
+    def expand_dims(self, axis):
+        """
+        adapted from np.expand_dims
+
+        :param axis:
+        :type axis:
+        :return:
+        :rtype:
+        """
+
+        if isinstance(axis, (int, np.integer)):
+            axis = [axis]
+
+        out_ndim = len(axis) + self.ndim
+        axis = [out_ndim + a if a < 0 else a for a in axis]
+
+        shape_it = iter(self.shape)
+        shape = [1 if ax in axis else next(shape_it) for ax in range(out_ndim)]
+
+        return self.reshape(shape)
+
+    def moveaxis(self, start, end):
+        """
+        Adapted from np.moveaxis
+
+        :param start:
+        :type start:
+        :param end:
+        :type end:
+        :return:
+        :rtype:
+        """
+
+        if isinstance(start, (int, np.integer)):
+            start = [start]
+        if isinstance(end, (int, np.integer)):
+            end = [end]
+
+        start = [self.ndim + a if a < 0 else a for a in start]
+        end = [self.ndim + a if a < 0 else a for a in end]
+
+        order = [n for n in range(self.ndim) if n not in start]
+
+        for dest, src in sorted(zip(end, start)):
+            order.insert(dest, src)
+
+        # raise Exception(order)
+
+        return self.transpose(order)
+
     @abc.abstractmethod
-    def multiply(self, other):
+    def concatenate(self, *others, axis=0):
+        """
+        Concatenates multiple SparseArrays along the specified axis
+        :return:
+        :rtype: SparseArray
+        """
+        ...
+
+    def broadcast_to(self, shape):
+        """
+        Broadcasts self to the given shape.
+        Incredibly inefficient implementation but useful in smaller cases.
+        Might need to optimize later.
+
+        :param shape:
+        :type shape:
+        :return:
+        :rtype:
+        """
+
+        # precheck b.c. concatenate is expensive
+        compat = all(a%b == 0 for a,b in zip(shape, self.shape))
+        if not compat:
+            raise ValueError("{} with shape {} can't be broadcast to shape {}".format(
+                type(self).__name__,
+                self.shape,
+                shape
+            ))
+
+        new = self
+        for i, (shs, sho) in enumerate(zip(self.shape, shape)):
+            if shs != sho:
+                reps = sho // shs
+                for _ in range(reps):
+                    new = new.concatenate(self, axis=i)
+
+        return new
+
+    def __truediv__(self, other):
+        return self.true_multiply(1 / other)
+    def __rtruediv__(self, other):
+        return self.true_multiply(1 / other)
+    def __rmul__(self, other):
+        return self.true_multiply(other)
+    def __mul__(self, other):
+        return self.true_multiply(other)
+
+    def _bcast_shapes(self, other):
+        if other.ndim != self.ndim:
+            raise NotImplementedError("{} object only supports broadcasting when `ndims` align".format(
+                type(self).__name__
+            ))
+
+        total_shape = []
+        for shs, sho in zip(self.shape, other.shape):
+            if shs == 1:
+                total_shape.append(sho)
+            elif sho == 1:
+                total_shape.append(shs)
+            elif shs == sho:
+                total_shape.append(shs)
+            else:
+                raise ValueError("shape mismatch for multiply of objects with shapes {} and {}".format(
+                    self.shape,
+                    other.shape
+                ))
+
+        if total_shape != self.shape:
+            self = self.broadcast_to(total_shape)
+
+        if total_shape != other.shape:
+            if isinstance(other, np.ndarray):
+                other = np.broadcast_to(other, total_shape)
+            else:
+                other = other.broadcast_to(total_shape)
+
+        return self,other
+
+    @abc.abstractmethod
+    def true_multiply(self, other):
         """
         Multiplies self and other
         :param other:
         :type other:
         :return:
-        :rtype:
+        :rtype: SparseArray
         """
         ...
+    def multiply(self, other):
+        """
+        Multiplies self and other but allows for broadcasting
+        :param other:
+        :type other: SparseArray | np.ndarray | int | float
+        :return:
+        :rtype:
+        """
+        if isinstance(other, (int, float)):
+            return self.true_multiply(other)
+
+        self, other = self._bcast_shapes(other)
+
+        return self.true_multiply(other)
+
     @abc.abstractmethod
     def dot(self, other):
         """
@@ -307,6 +439,14 @@ class SparseArray(metaclass=abc.ABCMeta):
             equal = True
             if na != nb:
                 equal = False
+            elif max(axes_a) >= nda:
+                raise ValueError("tensor with shape {} doesn't have {} axes".format(
+                    as_, axes_a
+                ))
+            elif max(axes_b) >= ndb:
+                raise ValueError("tensor with shape {} doesn't have {} axes".format(
+                    bs, axes_b
+                ))
             else:
                 for k in range(na):
                     if as_[axes_a[k]] != bs[axes_b[k]]:
@@ -406,14 +546,6 @@ class SparseArray(metaclass=abc.ABCMeta):
         provide a way for them to clear this out.
         :return:
         :rtype:
-        """
-
-    @abc.abstractmethod
-    def concatenate(self, other, axis=0):
-        """
-        Concatenates two SparseArrays along the specified axis
-        :return:
-        :rtype: SparseArray
         """
 
     # TODO: need to figure out if I want to support item assignment or not
@@ -968,8 +1100,23 @@ class ScipySparseArray(SparseArray):
 
     # import memory_profiler
     # @memory_profiler.profile
-    def profiled_transpose(self, transp):
+    def transpose(self, transp):
+        """
+        Transposes the array and returns a new one.
+        Not necessarily a cheap operation.
+
+        :param transp: the transposition to do
+        :type transp: Iterable[int]
+        :return:
+        :rtype:
+        """
+
         shp = self.shape
+
+        if len(transp) != self.ndim or np.any(np.sort(transp) != np.arange(self.ndim)):
+            raise ValueError("transposition {} can't apply to shape {}".format(
+                transp, self.shape
+            ))
 
         track_data = self.get_caching_status()
         if self._block_vals is None:
@@ -978,7 +1125,8 @@ class ScipySparseArray(SparseArray):
             flat = self._ravel_indices((row_inds, col_inds), self.data.shape)
             inds = self._unravel_indices(flat, self.shape)
         else:
-            data, inds = self.block_data
+            data = self.block_vals
+            (flat, inds) = self.block_inds
 
         new_inds = [inds[i] for i in transp]
         new_shape = tuple(shp[i] for i in transp)
@@ -1019,53 +1167,58 @@ class ScipySparseArray(SparseArray):
 
         return new
 
-    def transpose(self, transp):
-        """
-        Transposes the array and returns a new one.
-        Not necessarily a cheap operation.
-
-        :param transp: the transposition to do
-        :type transp: Iterable[int]
-        :return:
-        :rtype:
-        """
-
-        if len(self.shape) > 4:
-            return self.profiled_transpose(transp)
-
-        shp = self.shape
-
-        data, inds = self.block_data
-
-        new_inds = [inds[i] for i in transp]
-        new_shape = tuple(shp[i] for i in transp)
-        if len(data) == 0:
-            return type(self).empty(new_shape, layout=self.fmt, dtype=data.dtype)
-
-        if len(new_shape) > 2:
-            total_shape = self._get_balanced_shape(new_shape)
-            flat = self._ravel_indices(new_inds, new_shape)
-            unflat = self._unravel_indices(flat, total_shape)
-        else:
-            flat = None
-            unflat = new_inds
-            total_shape = new_shape
-
-        data = self._build_data(data, unflat, total_shape)
-        new = type(self)(data, shape = new_shape, layout = self.fmt)
-
-        arr = np.lexsort(unflat)
-
-        new_inds = [inds[arr] for inds in new_inds]
-        if self._block_vals is not None:
-            new_v = self._block_vals[arr]
-            new._block_vals = new_v
-        if flat is None:
-            new.block_inds = new_inds
-        else:
-            new.block_inds = (flat, new_inds)
-
-        return new
+    # def transpose(self, transp):
+    #     """
+    #     Transposes the array and returns a new one.
+    #     Not necessarily a cheap operation.
+    #
+    #     :param transp: the transposition to do
+    #     :type transp: Iterable[int]
+    #     :return:
+    #     :rtype:
+    #     """
+    #
+    #     if len(self.shape) > 4:
+    #         return self.profiled_transpose(transp)
+    #
+    #     shp = self.shape
+    #
+    #     if len(transp) != self.ndim or np.any(np.sort(transp) != np.arange(self.ndim)):
+    #         raise ValueError("transposition {} can't apply to shape {}".format(
+    #             transp, self.shape
+    #         ))
+    #
+    #     data, inds = self.block_data
+    #
+    #     new_inds = [inds[i] for i in transp]
+    #     new_shape = tuple(shp[i] for i in transp)
+    #     if len(data) == 0:
+    #         return type(self).empty(new_shape, layout=self.fmt, dtype=data.dtype)
+    #
+    #     if len(new_shape) > 2:
+    #         total_shape = self._get_balanced_shape(new_shape)
+    #         flat = self._ravel_indices(new_inds, new_shape)
+    #         unflat = self._unravel_indices(flat, total_shape)
+    #     else:
+    #         flat = None
+    #         unflat = new_inds
+    #         total_shape = new_shape
+    #
+    #     data = self._build_data(data, unflat, total_shape)
+    #     new = type(self)(data, shape = new_shape, layout = self.fmt)
+    #
+    #     arr = np.lexsort(unflat)
+    #
+    #     new_inds = [inds[arr] for inds in new_inds]
+    #     if self._block_vals is not None:
+    #         new_v = self._block_vals[arr]
+    #         new._block_vals = new_v
+    #     if flat is None:
+    #         new.block_inds = new_inds
+    #     else:
+    #         new.block_inds = (flat, new_inds)
+    #
+    #     return new
 
     def reshape(self, shp):
         """
@@ -1123,11 +1276,39 @@ class ScipySparseArray(SparseArray):
 
         return type(self)((vals, inds), shape=newsize)
 
-    def concatenate(self, other, axis=0):
+    @staticmethod
+    def _concat_coo(all_inds, all_vals, all_shapes, axis):
+
+        full_vals = np.concatenate(all_vals)
+
+        # pull all the shapes along the concatenation axis
+
+        # add the offset to each block along the concatenation axis
+        # to create new vector of inds
+        full_inds = None
+        prev = 0
+        for offset, ind_block in zip(all_shapes, all_inds):
+            if full_inds is None:
+                full_inds = ind_block
+            else:
+                ind_block = ind_block[:axis] + (ind_block[axis] + prev,) + ind_block[axis + 1:]
+                prev += offset[axis]
+                full_inds = tuple(
+                    np.concatenate([a, b])
+                    for a, b in zip(full_inds, ind_block)
+                )
+
+        tot_shape = list(all_shapes[0])
+        tot_shape[axis] = sum(a[axis] for a in all_shapes)
+
+        return full_vals, full_inds, tot_shape
+
+    def concatenate(self, *others, axis=0):
         """
-        Concatenates two arrays along the specified axis
+        Concatenates multiple arrays along the specified axis
         This is relatively inefficient in terms of not tracking indices
         throughout
+
         :param other:
         :type other:
         :param axis:
@@ -1136,34 +1317,70 @@ class ScipySparseArray(SparseArray):
         :rtype:
         """
 
-        if not isinstance(other, ScipySparseArray):
-            other = ScipySparseArray(other)
+        others = [ScipySparseArray(o) if not isinstance(o, ScipySparseArray) else o for o in others]
 
-        other_remainder = other.shape[:axis] + other.shape[axis+1:]
-        self_remainder = self.shape[:axis] + self.shape[axis+1:]
-        if other_remainder != self_remainder:
-            raise ValueError("can't concatenate arrays with shapes {} and {} along axis {}".format(
+        all_inds = [self.block_inds[1]] + [other.block_inds[1] for other in others]
+        all_vals = [self.block_vals] + [other.block_vals for other in others]
+        all_shapes = self.shape[axis] + [other.shape[axis] for other in others]
+
+        full_vals, full_inds, tot_shape = self._concat_coo(all_inds, all_vals, all_shapes, axis)
+
+        return type(self)(
+            (
+                full_vals,
+                full_inds
+            ),
+            shape=tot_shape
+        )
+
+    def broadcast_to(self, shape):
+        """
+        Implements broadcast_to using COO-style operations
+        to be a little bit more efficient
+
+        :param shape:
+        :type shape:
+        :return:
+        :rtype:
+        """
+
+        if shape == self.shape:
+            return self
+
+        # precheck b.c. concatenate is expensive
+        compat = all(a % b == 0 for a, b in zip(shape, self.shape))
+        if not compat:
+            raise ValueError("{} with shape {} can't be broadcast to shape {}".format(
+                type(self).__name__,
                 self.shape,
-                other.shape,
-                axis
+                shape
             ))
 
-        if axis != 0:
-            raise NotImplementedError("gotta get concatenation along later axes working...")
-        # do necessary reshaping to make the row-or-columns stackable
-        if self.data.shape[0] != self.shape[0]:
-            self_stacky = self.data.reshape((self.shape[0], -1))
-        else:
-            self_stacky = self.data
+        full_vals = None
+        full_inds = None
+        tot_shape = self.shape
 
-        if other.data.shape[0] != other.shape[0]:
-            other_stacky = other.data.reshape((other.shape[0], -1))
-        else:
-            other_stacky = other.data
+        for i, (shs, sho) in enumerate(zip(self.shape, shape)):
+            if shs != sho:
+                if full_vals is None:
+                    full_vals = self.block_vals
+                if full_inds is None:
+                    full_inds = self.block_inds[1]
+                reps = sho // shs
 
-        new_shit = sp.vstack([self_stacky, other_stacky])
-        new_shape = self.shape[:axis] + (self.shape[axis] + other.shape[axis],) + self.shape[axis+1:]
-        return type(self)(new_shit, shape=new_shape)
+                all_vals = [full_vals] * reps
+                all_inds = [full_inds] * reps
+                all_shapes = [tot_shape] * reps
+
+                full_vals, full_inds, tot_shape = self._concat_coo(all_inds, all_vals, all_shapes, i)
+
+        return type(self)(
+            (
+                full_vals,
+                full_inds
+            ),
+            shape=tot_shape
+        )
 
     @property
     def T(self):
@@ -1238,16 +1455,16 @@ class ScipySparseArray(SparseArray):
         return type(self)(1/self.data, shape = self.shape, layout=self.fmt)
 
     def __truediv__(self, other):
-        return self.multiply(1/other)
+        return self.multiply(1 / other)
     def __rtruediv__(self, other):
         if other == 1:
             return self.floopy_flop()
-        return self.multiply(1/other)
+        return self.multiply(1 / other)
     def __rmul__(self, other):
         return self.multiply(other)
     def __mul__(self, other):
         return self.multiply(other)
-    def multiply(self, other):
+    def true_multiply(self, other):
         d = self.data
         if isinstance(other, (int, float, np.integer, np.floating)):
             if other == 0.:
@@ -1810,18 +2027,18 @@ class TensorFlowSparseArray(SparseArray):
         return type(self)(new)
 
     def __truediv__(self, other):
-        return self.multiply(1 / other)
+        return self.true_multiply(1 / other)
 
     def __rtruediv__(self, other):
-        return self.multiply(1 / other)
+        return self.true_multiply(1 / other)
 
     def __rmul__(self, other):
-        return self.multiply(other)
+        return self.true_multiply(other)
 
     def __mul__(self, other):
-        return self.multiply(other)
+        return self.true_multiply(other)
 
-    def multiply(self, other):
+    def true_multiply(self, other):
         """
         Multiplies self and other
         :param other:
