@@ -4,6 +4,7 @@ from .Serializers import *
 
 __all__ = [
     "Checkpointer",
+    "CheckpointerKeyError",
     "DumpCheckpointer",
     "JSONCheckpointer",
     "NumPyCheckpointer",
@@ -11,13 +12,21 @@ __all__ = [
     "NullCheckpointer"
 ]
 
+class CheckpointerKeyError(KeyError):
+    ...
+
 class Checkpointer(metaclass=abc.ABCMeta):
     """
     General purpose base class that allows checkpointing to be done easily and cleanly.
     Intended to be a passable object that allows code to checkpoint easily.
     """
-    def __init__(self, checkpoint_file):
+    def __init__(self, checkpoint_file,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
         self.checkpoint_file = checkpoint_file
+        self.allowed_keys = allowed_keys
+        self.omitted_keys = omitted_keys
         self._came_open = not isinstance(checkpoint_file, str)
         self._open_depth = 0
         self._stream = None
@@ -127,9 +136,25 @@ class Checkpointer(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError("CheckpointerBase is an abstract base class...")
 
+    def check_allowed_key(self, item):
+        if self.allowed_keys is not None:
+            if item not in self.allowed_keys:
+                raise CheckpointerKeyError("key {} not allowed by {}".format(
+                    item,
+                    self
+                ))
+        if self.omitted_keys is not None:
+            if item in self.omitted_keys:
+                raise CheckpointerKeyError("key {} not allowed by {}".format(
+                    item,
+                    self
+                ))
+
     def __getitem__(self, item):
+        self.check_allowed_key(item)
         return self.load_parameter(item)
     def __setitem__(self, key, value):
+        self.check_allowed_key(key)
         self.save_parameter(key, value)
 
     @abc.abstractmethod
@@ -148,9 +173,12 @@ class DumpCheckpointer(Checkpointer):
     A subclass of `CheckpointerBase` that writes an entire dump to file at once & maintains
     a backend cache to update it cleanly
     """
-    def __init__(self, file, cache=None, open_kwargs=None):
+    def __init__(self, file, cache=None, open_kwargs=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
         self.backend = cache # cache values
-        super().__init__(file)
+        super().__init__(file, allowed_keys=allowed_keys, omitted_keys=omitted_keys)
         if open_kwargs is None:
             open_kwargs = {'mode':"w+"}
         self.open_kwargs = open_kwargs
@@ -230,11 +258,14 @@ class JSONCheckpointer(DumpCheckpointer):
     A checkpointer that uses JSON as a backend
     """
 
-    def __init__(self, file, cache=None, serializer=None, open_kwargs=None):
+    def __init__(self, file, cache=None, serializer=None, open_kwargs=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
         if serializer is None:
             serializer = JSONSerializer()
         self.serializer = serializer
-        super().__init__(file, cache=cache, open_kwargs=open_kwargs)
+        super().__init__(file, cache=cache, open_kwargs=open_kwargs, allowed_keys=allowed_keys, omitted_keys=omitted_keys)
 
     def load_cache(self):
         cache = self.backend
@@ -263,7 +294,10 @@ class NumPyCheckpointer(DumpCheckpointer):
     A checkpointer that uses NumPy as a backend
     """
 
-    def __init__(self, file, cache=None, serializer=None, open_kwargs=None):
+    def __init__(self, file, cache=None, serializer=None, open_kwargs=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
         if isinstance(file, str):
             if not os.path.exists(file):
                 if os.path.exists(file + '.npz'):
@@ -276,7 +310,10 @@ class NumPyCheckpointer(DumpCheckpointer):
         self.serializer = serializer
         if open_kwargs is None:
             open_kwargs = {'mode':'bw'}
-        super().__init__(file, cache=cache, open_kwargs=open_kwargs)
+        super().__init__(file, cache=cache, open_kwargs=open_kwargs,
+                         allowed_keys=allowed_keys,
+                         omitted_keys=omitted_keys
+                         )
 
     def load_cache(self):
         cache = self.backend
@@ -306,8 +343,11 @@ class HDF5Checkpointer(Checkpointer):
     Doesn't maintain a secondary `dict`, because HDF5 is an updatable format.
     """
 
-    def __init__(self, checkpoint_file, serializer=None):
-        super().__init__(checkpoint_file)
+    def __init__(self, checkpoint_file, serializer=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
+        super().__init__(checkpoint_file, allowed_keys=allowed_keys, omitted_keys=omitted_keys)
         if serializer is None:
             serializer = HDF5Serializer()
         self.serializer = serializer
@@ -381,8 +421,11 @@ class NullCheckpointer(Checkpointer):
     A checkpointer that doesn't actually do anything, but which is provided
     so that programs can turn off checkpointing without changing their layout
     """
-    def __init__(self, checkpoint_file=None):
-        super().__init__(checkpoint_file)
+    def __init__(self, checkpoint_file=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
+        super().__init__(checkpoint_file, allowed_keys=allowed_keys, omitted_keys=omitted_keys)
         self.backend = {}
 
     def open_checkpoint_file(self, chk):
