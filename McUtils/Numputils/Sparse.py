@@ -1321,7 +1321,7 @@ class ScipySparseArray(SparseArray):
 
         all_inds = [self.block_inds[1]] + [other.block_inds[1] for other in others]
         all_vals = [self.block_vals] + [other.block_vals for other in others]
-        all_shapes = self.shape[axis] + [other.shape[axis] for other in others]
+        all_shapes = [self.shape[axis]] + [other.shape[axis] for other in others]
 
         full_vals, full_inds, tot_shape = self._concat_coo(all_inds, all_vals, all_shapes, axis)
 
