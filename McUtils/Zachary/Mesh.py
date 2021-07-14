@@ -171,6 +171,9 @@ class Mesh(np.ndarray):
     @classmethod
     def get_mesh_spacings(cls, grid, tol=8):
         subgrids = cls.get_mesh_subgrids(grid, tol=tol)
+        if subgrids is None:
+            return None
+
         mesh_spacings = [np.unique(np.diff(g)) for g in subgrids]
         if len(subgrids) == 1:
             mesh_spacings = mesh_spacings[0]
@@ -223,7 +226,7 @@ class Mesh(np.ndarray):
 
         if ndim == 1:
             mesh_spacings = cls.get_mesh_spacings(grid, tol=tol)
-            if mesh_spacings[0] is not None:
+            if len(mesh_spacings) == 1:
                 return MeshType.Regular
             else:
                 return MeshType.Structured # all grids are structured in 1D

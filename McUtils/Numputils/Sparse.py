@@ -671,6 +671,7 @@ class ScipySparseArray(SparseArray):
         # an array based on its non-zero positions
         elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1][0]):
             block_vals, block_inds = a
+            block_vals = np.asarray(block_vals)
             block_inds = tuple(np.array(i, dtype=int) for i in block_inds)
             if self._shape is None:
                 self._shape = tuple(np.max(x) for x in block_inds)
@@ -701,7 +702,6 @@ class ScipySparseArray(SparseArray):
             try:
                 data = fmt((block_vals, init_inds), shape=total_shape)
             except TypeError:
-                print(fmt)
                 data = fmt(sp.coo_matrix((block_vals, init_inds)), shape=total_shape)
             except MemoryError:
                 if total_shape[0] > total_shape[1]:
@@ -938,19 +938,23 @@ class ScipySparseArray(SparseArray):
     # but won't help as much when the shape changes
     _unravel_cache = MaxSizeCache(default_cache_size)  # hopefully faster than bunches of unravel_index calls...
     @classmethod
+    def _infer_inds_dtype(cls, max_size):
+        return 'uint64' # short-circuit for now b.c. this isn't really relevant
+        if max_size < 256:
+            minimal_dtype = 'uint8'
+        elif max_size < 65535:
+            minimal_dtype = 'uint16'
+        elif max_size < 4294967295:
+            minimal_dtype = 'uint32'
+        else:
+            minimal_dtype = 'uint64'
+        return minimal_dtype
+    @classmethod
     def _unravel_indices(cls, n, dims):
 
         # we're hoping that we call with `n` often enough that we get a performance benefit
         if not cls.caching_enabled:
-            big_dim = np.max(dims)
-            if big_dim < 256:
-                minimal_dtype = 'uint8'
-            elif big_dim < 65535:
-                minimal_dtype = 'uint16'
-            elif big_dim < 4294967295:
-                minimal_dtype = 'uint32'
-            else:
-                minimal_dtype = 'uint64'
+            minimal_dtype = cls._infer_inds_dtype(np.max(dims))
             res = tuple(x.astype(minimal_dtype) for x in np.unravel_index(n, dims))
             return res
         if dims not in cls._unravel_cache:
@@ -965,15 +969,7 @@ class ScipySparseArray(SparseArray):
         if n_hash in cache:
             res = cache[n_hash]
         else:
-            big_dim = np.max(dims)
-            if big_dim < 256:
-                minimal_dtype = 'uint8'
-            elif big_dim < 65535:
-                minimal_dtype = 'uint16'
-            elif big_dim < 4294967295:
-                minimal_dtype = 'uint32'
-            else:
-                minimal_dtype = 'uint64'
+            minimal_dtype = cls._infer_inds_dtype(np.max(dims))
             res = tuple(x.astype(minimal_dtype) for x in np.unravel_index(n, dims))
             cache[n_hash] = res
         return res
@@ -1055,6 +1051,15 @@ class ScipySparseArray(SparseArray):
         self._block_inds = (flat, unflat)
         self._block_vals = data
 
+    def _load_full_block_inds(self):
+        if self._block_inds.ndim == 1:
+            flat = self._block_inds
+            unflat = self._unravel_indices(flat, self.shape)
+        else:
+            unflat = self._block_inds
+            flat = self._ravel_indices(unflat, self.shape)
+        self._block_inds = (flat, unflat)
+
     @property
     def block_vals(self):
         if self._block_vals is None:
@@ -1065,6 +1070,11 @@ class ScipySparseArray(SparseArray):
     def block_inds(self):
         if self._block_inds is None:
             self._load_block_data()
+        elif not (
+                    isinstance(self._block_inds[0], np.ndarray)
+                    and self._block_inds[0].ndim == 1
+        ):
+            self._load_full_block_inds()
         return self._block_inds
     @block_inds.setter
     def block_inds(self, bi):
@@ -1236,8 +1246,11 @@ class ScipySparseArray(SparseArray):
 
         bi = new._block_inds
         if bi is not None:
-            flat, unflat = bi
-            new._block_inds = flat
+            if isinstance(bi, np.ndarray) and bi.ndim == 1:
+                new._block_inds = bi
+            else:
+                flat, unflat = bi
+                new._block_inds = flat
         if len(shp) == 2:
             new.data = new.data.reshape(shp)
         return new
@@ -1281,6 +1294,9 @@ class ScipySparseArray(SparseArray):
 
         full_vals = np.concatenate(all_vals)
 
+        tot_shape = list(all_shapes[0])
+        tot_shape[axis] = sum(a[axis] for a in all_shapes)
+
         # pull all the shapes along the concatenation axis
 
         # add the offset to each block along the concatenation axis
@@ -1290,6 +1306,7 @@ class ScipySparseArray(SparseArray):
         for offset, ind_block in zip(all_shapes, all_inds):
             if full_inds is None:
                 full_inds = ind_block
+                prev += offset[axis]
             else:
                 ind_block = ind_block[:axis] + (ind_block[axis] + prev,) + ind_block[axis + 1:]
                 prev += offset[axis]
@@ -1297,9 +1314,6 @@ class ScipySparseArray(SparseArray):
                     np.concatenate([a, b])
                     for a, b in zip(full_inds, ind_block)
                 )
-
-        tot_shape = list(all_shapes[0])
-        tot_shape[axis] = sum(a[axis] for a in all_shapes)
 
         return full_vals, full_inds, tot_shape
 
@@ -1321,7 +1335,7 @@ class ScipySparseArray(SparseArray):
 
         all_inds = [self.block_inds[1]] + [other.block_inds[1] for other in others]
         all_vals = [self.block_vals] + [other.block_vals for other in others]
-        all_shapes = [self.shape[axis]] + [other.shape[axis] for other in others]
+        all_shapes = [self.shape] + [other.shape for other in others]
 
         full_vals, full_inds, tot_shape = self._concat_coo(all_inds, all_vals, all_shapes, axis)
 

@@ -743,7 +743,7 @@ class Graphics3D(Graphics):
             ('view_settings', view_settings),
         )
         for oname, oval in opts:
-            oval = self._get_def_opt(oname, oval)
+            oval = self._get_def_opt(oname, oval, {})
             if oval is not None:
                 setattr(self, oname, oval)
 
