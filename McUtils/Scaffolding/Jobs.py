@@ -6,7 +6,7 @@ job
 import time, datetime, os, shutil
 from .Persistence import PersistenceManager
 from .Checkpointing import JSONCheckpointer
-from .Logging import Logger
+from .Logging import Logger, NullLogger
 
 from ..Parallelizers import Parallelizer
 
@@ -82,7 +82,11 @@ class Job:
         """
         if log_spec is None:
             log_spec = self.default_log_file
-        if isinstance(log_spec, str):
+        if log_spec is True:
+            return Logger()
+        elif log_spec is False:
+            return NullLogger()
+        elif isinstance(log_spec, str):
             if os.path.abspath(log_spec) != log_spec:
                 log_spec = os.path.join(self.dir, log_spec)
             return Logger(log_spec)
