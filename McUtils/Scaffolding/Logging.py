@@ -66,7 +66,8 @@ class LoggingBlock:
                  tag=None,
                  opener=None,
                  prompt=None,
-                 closer=None
+                 closer=None,
+                 printoptions=None
                  ):
         self.logger = logger
         if block_level_padding is None:
@@ -85,6 +86,9 @@ class LoggingBlock:
         self.closer = settings['closer'] if closer is None else closer
         self._in_block = False
 
+        self._print_manager=None
+        self.printopts = printoptions
+
     def __enter__(self):
         if self.log_level <= self.logger.verbosity:
             self._in_block = True
@@ -95,6 +99,11 @@ class LoggingBlock:
             self.logger.default_verbosity = self.log_level
             self.logger.block_level += 1
 
+            if self.printopts is not None and self._print_manager is None:
+                from numpy import printoptions
+                self._print_manager = printoptions(**self.printopts)
+                self._print_manager.__enter__()
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self._in_block:
             self._in_block = False
@@ -104,6 +113,10 @@ class LoggingBlock:
             self.logger.default_verbosity = self._old_loglev
             self._old_loglev = None
             self.logger.block_level -= 1
+
+            if self._print_manager is not None:
+                self._print_manager.__exit__(exc_type, exc_val, exc_tb)
+                self._print_manager = None
 
 class Logger:
     """
