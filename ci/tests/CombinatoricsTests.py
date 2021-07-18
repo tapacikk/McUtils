@@ -9,7 +9,7 @@ import sys, os, numpy as np, itertools
 
 class CombinatoricsTests(TestCase):
 
-    @debugTest
+    @validationTest
     def test_IntegerPartitions(self):
         """
         Tests integer partitioning algs
@@ -247,7 +247,7 @@ class CombinatoricsTests(TestCase):
         og_perms = part_perms.get_partition_permutations_from_indices(perm_inds)
         self.assertEquals(subperms.tolist(), og_perms.tolist())
 
-    @debugTest
+    @validationTest
     def test_SymmetricGroupGenerator(self):
         """
         Tests the features of the symmetric group generator
@@ -792,3 +792,34 @@ class CombinatoricsTests(TestCase):
         self.assertEquals(full_basis._basis.shape[0], 5200300)
         self.assertEquals(full_basis.find([10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), 293930)
 
+    @debugTest
+    def test_SelRules(self):
+
+        base_paths = LatticePathGenerator.generate_tree([
+                [-1, 1],
+                [-1, 1]
+            ],
+                track_positions=False
+            )
+
+        self.assertEquals(base_paths, [(), (-2,), (2,), (-1, -1), (1, -1), (1, 1)])
+
+        gen = LatticePathGenerator([-1, 1], [-1, 1])
+
+        self.assertEquals(gen.tree[0][0], (0, 0))
+        self.assertEquals(gen.tree[0][1], [(-2,), (-1, -1)])
+
+        self.assertEquals(gen.tree[1][0], (0, 1))
+        self.assertEquals(gen.tree[1][1], [(), (1, -1)])
+
+        gen = LatticePathGenerator([-1, 1], [-1, 1, 2])
+        self.assertEquals(gen.tree[0][0], (0, 0))
+        self.assertEquals(gen.tree[0][1], [(-2,), (-1, -1)])
+
+        self.assertEquals(gen.tree[1][0], (0, 1))
+        self.assertEquals(gen.tree[1][1], [(), (1, -1)])
+
+        self.assertEquals(gen.tree[2][0], (0, 2))
+        self.assertEquals(gen.tree[2][1], [(1,), (2, -1)])
+
+        self.assertEquals(gen.find_paths(()), [(0, 1), (1, 0)])

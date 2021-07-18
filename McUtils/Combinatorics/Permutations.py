@@ -13,7 +13,8 @@ __all__ = [
     "UniquePermutations",
     "IntegerPartitionPermutations",
     "SymmetricGroupGenerator",
-    "CompleteSymmetricGroupSpace"
+    "CompleteSymmetricGroupSpace",
+    "LatticePathGenerator"
 ]
 
 def _infer_dtype(max_dim):
@@ -3055,3 +3056,134 @@ class CompleteSymmetricGroupSpace:
                                              )
 
         return inds
+
+class LatticePathGenerator:
+    """
+    An object to take direct products of lattice paths and
+    filter them
+    """
+
+    def __init__(self, *steps, max_len=None):
+        """
+        :param steps: the steps to take a direct product of
+        :type steps: Iterable[Iterable[int]]
+        """
+        if len(steps) == 1 and not isinstance(steps[0], (int, np.integer)):
+            steps = steps[0]
+
+        for x in steps:
+            if not isinstance(x[0], (int, np.integer)):
+                raise TypeError("lattice path steps, {}, much be lists of ints".format(steps))
+        self.steps = [tuple(x) for x in steps]
+        self.max_len = max_len
+        self._tree = None
+        self._rules = None
+
+    @property
+    def tree(self):
+        if self._tree is None:
+            self._tree = self.generate_tree(self.steps, max_len=self.max_len)
+        return self._tree
+
+    @property
+    def rules(self):
+        if self._rules is None:
+            self._rules = self.generate_tree(self.steps, track_positions=False, max_len=self.max_len)
+        return self._rules
+
+    @classmethod
+    def generate_tree(self, rules,
+                      max_len=None,
+                      track_positions=True
+                      ):
+        """
+        We take the combo of the specified rules, where we take successive products of 1D rules with the
+        current set of rules following the pattern that
+            1. a 1D change can apply to any index in an existing rule
+            2. a 1D change can be appended to an existing rule
+
+        We ensure at each step that the rules remain sorted & duplicates are removed so as to keep the rule sets compact.
+        This is done in simple python loops, because doing it with arrayops seemed harder & not worth it for a relatively cheap operation.
+
+        :param rules:
+        :type rules:
+        :return:
+        :rtype:
+        """
+
+        rules = [np.sort(x) for x in rules]
+        ndim = len(rules)
+        if max_len is None:
+            max_len = ndim
+
+        if track_positions:
+            cur_rules = {((), (0,) * max_len)}
+        else:
+            cur_rules = {(0,) * max_len}
+        for r in rules:
+            new_rules = set()
+            for e in cur_rules:
+                if track_positions:
+                    x, e = e
+                for j,s in enumerate(r):
+                    for i in range(max_len):
+                        shift = e[i] + s
+                        new = e[:i] + (shift,) + e[i + 1:]
+                        new = tuple(sorted(new, key=lambda l: -abs(l) * 10 - (1 if l > 0 else 0)))
+                        if track_positions:
+                            new_x = x + (j,)
+                            new = (new_x, new)
+                        new_rules.add(new)
+
+            # print(cur_rules)
+            cur_rules = new_rules
+
+        cur_rules = list(cur_rules)
+        new_rules = []
+        for r in cur_rules:
+            if track_positions:
+                x, r = r
+            if len(r) > 0:
+                for i,v in enumerate(r):
+                    if v == 0: break
+                else:
+                    i+=1
+                r = tuple(r[:i])
+                if track_positions:
+                    r = (x, r)
+            new_rules.append(r)
+
+        if not track_positions:
+            new_rules = list(sorted(new_rules, key=lambda l: len(l) * 100 + sum(l)))
+        else:
+            idx = np.arange(len(new_rules))
+            idx_chunks, _ = group_by(idx, [k for k,v in new_rules])
+            new_rules = [
+                (tuple(k), list(sorted([new_rules[i][1] for i in b], key=lambda l: len(l) * 100 + sum(l))) )
+                for k, b in zip(*idx_chunks)
+            ]
+
+        return new_rules
+
+    def find_paths(self, end_spots):
+        # to start we just populate the entire tree and find the steps that took us
+        # to `end_spot`
+        if len(end_spots) == 0 or isinstance(end_spots[0], (int, np.integer)):
+            end_spots = [end_spots]
+        res = set()
+        for x,t in self.tree:
+            if any(e in t for e in end_spots):
+                res.add(x)
+        return list(res)
+
+    def find_intersections(self, other):
+        """
+        Finds the paths that will make self intersect with other
+
+        :param other:
+        :type other: LatticePathGenerator
+        :return:
+        :rtype:
+        """
+
+        return self.find_paths(other.rules)
