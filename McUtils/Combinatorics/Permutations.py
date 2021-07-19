@@ -2,7 +2,7 @@
 Utilities for working with permutations and permutation indexing
 """
 
-import numpy as np, time, typing, gc
+import numpy as np, time, typing, gc, itertools
 # import collections, functools as ft
 from ..Misc import jit, objmode, prange
 from ..Numputils import coerce_dtype, uncoerce_dtype, unique, contained, group_by, split_by_regions, find
@@ -2710,7 +2710,7 @@ class SymmetricGroupGenerator:
         if sums is None:
             sums = np.sum(perms, axis=1)
         max_rule = max(max(r) if len(r) > 0 else 0 for r in rules) if len(rules) > 0 else 0
-        max_term = int(1 + max_rule + np.max(sums)) # numpy dtype shit sometimes goes weird
+        max_term = max(int(1 + max_rule + np.max(sums)), 0) # numpy dtype shit sometimes goes weird
         # raise Exception(max_rule, max_term, np.max(sums))
         logger.log_print('populating bases up to {nq} quanta...', nq=max_term)
         IntegerPartitioner.fill_counts(max_term, max_term, self.dim)
@@ -2768,6 +2768,7 @@ class SymmetricGroupGenerator:
                     perm_block = []
                     if return_indices:
                         ind_block = []
+
                     for counts, classes in zip(rule_counts, rule_classes):
                         res = self._build_direct_sums(input_classes, counts, classes,
                                                       return_indices=return_indices,
@@ -3072,24 +3073,40 @@ class LatticePathGenerator:
             steps = steps[0]
 
         for x in steps:
-            if not isinstance(x[0], (int, np.integer)):
-                raise TypeError("lattice path steps, {}, much be lists of ints".format(steps))
+            if len(x) > 0 and not (
+                    isinstance(x[0], (int, np.integer))
+                    or len(x[0]) == 0
+                    or isinstance(x[0][0], (int, np.integer))
+            ):
+                raise TypeError("lattice path steps, {}, much be lists of ints or lists of lists of ints".format(steps))
         self.steps = [tuple(x) for x in steps]
         self.max_len = max_len
-        self._tree = None
-        self._rules = None
+        self._subtrees = None
+        self._rule_trees = None
+
+    @property
+    def subtrees(self):
+        if self._subtrees is None:
+            self._subtrees = self.generate_tree(self.steps, max_len=self.max_len)
+        return self._subtrees
 
     @property
     def tree(self):
-        if self._tree is None:
-            self._tree = self.generate_tree(self.steps, max_len=self.max_len)
-        return self._tree
+        if self._subtrees is None:
+            self._subtrees = self.generate_tree(self.steps, max_len=self.max_len)
+        return self._subtrees[-1]
+
+    @property
+    def subrules(self):
+        if self._rule_trees is None:
+            self._rule_trees = self.generate_tree(self.steps, track_positions=False, max_len=self.max_len)
+        return self._rule_trees
 
     @property
     def rules(self):
-        if self._rules is None:
-            self._rules = self.generate_tree(self.steps, track_positions=False, max_len=self.max_len)
-        return self._rules
+        if self._rule_trees is None:
+            self._rule_trees = self.generate_tree(self.steps, track_positions=False, max_len=self.max_len)
+        return self._rule_trees[-1]
 
     @classmethod
     def generate_tree(self, rules,
@@ -3111,8 +3128,16 @@ class LatticePathGenerator:
         :rtype:
         """
 
-        rules = [np.sort(x) for x in rules]
-        ndim = len(rules)
+        rules = [
+            np.sort(x)if len(x) > 0 and isinstance(x[0], (int, np.integer)) else
+            tuple(np.sort(y) for y in x)
+            for x in rules
+        ]
+        ndim = sum(
+            0 if len(r) == 0 else
+            1 if isinstance(r[0], (int, np.integer)) else
+            max(len(x) for x in r) for r in rules
+        )
         if max_len is None:
             max_len = ndim
 
@@ -3120,50 +3145,84 @@ class LatticePathGenerator:
             cur_rules = {((), (0,) * max_len)}
         else:
             cur_rules = {(0,) * max_len}
+        subtrees = []
         for r in rules:
-            new_rules = set()
-            for e in cur_rules:
-                if track_positions:
-                    x, e = e
-                for j,s in enumerate(r):
-                    for i in range(max_len):
-                        shift = e[i] + s
-                        new = e[:i] + (shift,) + e[i + 1:]
-                        new = tuple(sorted(new, key=lambda l: -abs(l) * 10 - (1 if l > 0 else 0)))
-                        if track_positions:
-                            new_x = x + (j,)
-                            new = (new_x, new)
-                        new_rules.add(new)
+            if len(r) == 0:
+                new_rules = cur_rules
+            else:
+                new_rules = set()
+                for e in cur_rules:
+                    if track_positions:
+                        x, e = e
+                    for j,s in enumerate(r):
+                        if isinstance(s, (int, np.integer)):
+                            for i in range(max_len):
+                                shift = e[i] + s
+                                new = e[:i] + (shift,) + e[i + 1:]
+                                new = tuple(sorted(new, key=lambda l: -abs(l) * 10 - (1 if l > 0 else 0)))
+                                if track_positions:
+                                    new_x = x + (j,)
+                                    new = (new_x, new)
+                                new_rules.add(new)
+                        else:
+                            # means we were handed full-on selection rules
+                            # and so we need to add the appropriate number of ints
+                            # to the appropriate number of places
+                            if len(s) == 0:
+                                new = e
+                                if track_positions:
+                                    new_x = x + (j,)
+                                    new = (new_x, new)
+                                new_rules.add(new)
+                            else:
+                                for p in itertools.product(*(range(max_len) for _ in range(len(s)))):
+                                    if len(np.unique(p)) == len(p): # filter out anything with dupe axes
+                                        new = e
+                                        for i,z in zip(p, s):
+                                            shift = new[i] + z
+                                            new = new[:i] + (shift,) + new[i + 1:]
+                                        new = tuple(sorted(new, key=lambda l: -abs(l) * 10 - (1 if l > 0 else 0)))
+                                        if track_positions:
+                                            new_x = x + (j,)
+                                            new = (new_x, new)
+                                        new_rules.add(new)
 
             # print(cur_rules)
+            subtrees.append(cur_rules)
             cur_rules = new_rules
+        subtrees.append(new_rules)
 
-        cur_rules = list(cur_rules)
-        new_rules = []
-        for r in cur_rules:
-            if track_positions:
-                x, r = r
-            if len(r) > 0:
-                for i,v in enumerate(r):
-                    if v == 0: break
-                else:
-                    i+=1
-                r = tuple(r[:i])
+        new_trees = []
+        for cur_rules in subtrees:
+            cur_rules = list(cur_rules)
+            new_rules = []
+            for r in cur_rules:
                 if track_positions:
-                    r = (x, r)
-            new_rules.append(r)
+                    x, r = r
+                if len(r) > 0:
+                    for i,v in enumerate(r):
+                        if v == 0: break
+                    else:
+                        i+=1
+                    r = tuple(r[:i])
+                    if track_positions:
+                        r = (x, r)
+                new_rules.append(r)
 
-        if not track_positions:
-            new_rules = list(sorted(new_rules, key=lambda l: len(l) * 100 + sum(l)))
-        else:
-            idx = np.arange(len(new_rules))
-            idx_chunks, _ = group_by(idx, [k for k,v in new_rules])
-            new_rules = [
-                (tuple(k), list(sorted([new_rules[i][1] for i in b], key=lambda l: len(l) * 100 + sum(l))) )
-                for k, b in zip(*idx_chunks)
-            ]
 
-        return new_rules
+            if not track_positions:
+                new_rules = list(sorted(new_rules, key=lambda l: len(l) * 100 + sum(l)))
+            else:
+                idx = np.arange(len(new_rules))
+                idx_chunks, _ = group_by(idx, [k for k,v in new_rules])
+                new_rules = [
+                    (tuple(k), list(sorted([new_rules[i][1] for i in b], key=lambda l: len(l) * 100 + sum(l))) )
+                    for k, b in zip(*idx_chunks)
+                ]
+
+            new_trees.append(new_rules)
+
+        return new_trees
 
     def find_paths(self, end_spots):
         # to start we just populate the entire tree and find the steps that took us
@@ -3175,6 +3234,22 @@ class LatticePathGenerator:
             if any(e in t for e in end_spots):
                 res.add(x)
         return list(res)
+
+    def get_path(self, path):
+        """
+        Pulls the places one can end up after applying the path
+
+        :param other:
+        :type other:
+        :return:
+        :rtype:
+        """
+
+        for t in self.tree:
+            if t[0] == path:
+                return t[1]
+        else:
+            raise ValueError("path {} not in tree".format(path))
 
     def find_intersections(self, other):
         """

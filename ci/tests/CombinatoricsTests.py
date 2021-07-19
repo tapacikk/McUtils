@@ -9,6 +9,11 @@ import sys, os, numpy as np, itertools
 
 class CombinatoricsTests(TestCase):
 
+    def setUp(self):
+        import warnings
+        np.seterr(all='raise')
+        warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
+
     @validationTest
     def test_IntegerPartitions(self):
         """
@@ -800,10 +805,11 @@ class CombinatoricsTests(TestCase):
                 [-1, 1]
             ],
                 track_positions=False
-            )
+            )[-1]
 
         self.assertEquals(base_paths, [(), (-2,), (2,), (-1, -1), (1, -1), (1, 1)])
 
+        # Simple lattice paths
         gen = LatticePathGenerator([-1, 1], [-1, 1])
 
         self.assertEquals(gen.tree[0][0], (0, 0))
@@ -811,6 +817,10 @@ class CombinatoricsTests(TestCase):
 
         self.assertEquals(gen.tree[1][0], (0, 1))
         self.assertEquals(gen.tree[1][1], [(), (1, -1)])
+
+        gen = LatticePathGenerator([-1, 1], [])
+        self.assertEquals(gen.tree[0][0], (0,))
+        self.assertEquals(gen.tree[0][1], [(-1,)])
 
         gen = LatticePathGenerator([-1, 1], [-1, 1, 2])
         self.assertEquals(gen.tree[0][0], (0, 0))
@@ -823,3 +833,22 @@ class CombinatoricsTests(TestCase):
         self.assertEquals(gen.tree[2][1], [(1,), (2, -1)])
 
         self.assertEquals(gen.find_paths(()), [(0, 1), (1, 0)])
+
+        self.assertEquals(gen.find_paths(()), [(0, 1), (1, 0)])
+
+        self.assertEquals(gen.get_path((0, 1)), [(), (1, -1)])
+        del gen
+
+        subgen = LatticePathGenerator([-1, 1], [-1, 1])
+        # Selection rule products
+        gen2 = LatticePathGenerator(subgen.subrules[2], subgen.subrules[1])
+        self.assertEquals(gen2.tree[0][0], (0, 0))
+        self.assertEquals(gen2.tree[0][1], [(-1,)])
+
+        self.assertEquals(gen2.tree[4][0], (2, 0))
+        self.assertEquals(gen2.tree[4][1], [(1,), (2, -1)])
+
+        self.assertEquals(gen2.tree [6][0], (3, 0))
+        self.assertEquals(gen2.tree [6][1], [(-2, -1), (-1, -1, -1)])
+        self.assertEquals(gen2.steps[0][3], (-1, -1))
+        self.assertEquals(gen2.steps[1][0], (-1,))
