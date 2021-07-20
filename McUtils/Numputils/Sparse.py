@@ -939,7 +939,7 @@ class ScipySparseArray(SparseArray):
     _unravel_cache = MaxSizeCache(default_cache_size)  # hopefully faster than bunches of unravel_index calls...
     @classmethod
     def _infer_inds_dtype(cls, max_size):
-        return 'uint64' # short-circuit for now b.c. this isn't really relevant
+        return 'int64' # short-circuit for now b.c. this isn't really relevant
         if max_size < 256:
             minimal_dtype = 'uint8'
         elif max_size < 65535:
