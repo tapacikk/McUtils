@@ -522,11 +522,12 @@ class CoordinateSystem:
             #             other_shape
             #         ))
 
+            # set default options
             for k, v in zip(
                     ('mesh_spacing', 'prep', 'stencil'),
                     (.001, system.jacobian_prep, 7)
             ):
-                if k not in finite_difference_options:
+                if k not in finite_difference_options or finite_difference_options[k] is None:
                     finite_difference_options[k] = v
 
             # print("??", other_shape, coords.shape)
