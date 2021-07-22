@@ -214,7 +214,7 @@ class FchkDipoleHigherDerivatives:
     @property
     def third_deriv_array(self):
         nels = int(np.prod(self.shape))
-        base_array = np.reshape(self.derivs[:nels], self.shape)
+        base_array = np.reshape(self.derivs[nels:], self.shape)
         full_array = np.zeros((3*self.n - 6, 3*self.n - 6, 3*self.n, 3))
         for i in range(3*self.n - 6):
             full_array[i, i] = base_array[i]
