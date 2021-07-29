@@ -96,6 +96,13 @@ class GraphicsBase(metaclass=ABCMeta):
         :type opts:
         """
 
+        # we try to only load pyplot once and use it
+        # as an API rather than a global import
+        # this is to potentially support non-MPL interfaces
+        # in the future
+        self.pyplot = None
+        self._mpl_loaded = False
+
         if subplot_kw is None:
             subplot_kw = {}
 
@@ -167,14 +174,19 @@ class GraphicsBase(metaclass=ABCMeta):
         self.animator = None
         self.tighten = tighten
 
-    @staticmethod
-    def _subplot_init(*args, mpl_backend=None, **kw):
-        if mpl_backend is not None:
-            import matplotlib as mpl
-            mpl.use(mpl_backend)
-        import matplotlib.pyplot as plt
+    def load_mpl(self):
+        if not self._mpl_loaded:
+            import matplotlib.pyplot as plt
+            self.pyplot = plt
+            if self.mpl_backend is not None:
+                import matplotlib as mpl
+                mpl.use(self.mpl_backend)
+            self._mpl_loaded = True
 
-        return plt.subplots(*args, **kw)
+    @staticmethod
+    def _subplot_init(*args, mpl_backend=None, figure=None, **kw):
+        figure.load_mpl()
+        return figure.pyplot.subplots(*args, **kw)
 
     def _init_suplots(self, figure, axes, *args, **kw):
         """Initializes the subplots for the Graphics object
@@ -192,7 +204,7 @@ class GraphicsBase(metaclass=ABCMeta):
         """
 
         if figure is None:
-            figure, axes = self._subplot_init(*args, mpl_backend=self.mpl_backend, **kw)
+            figure, axes = self._subplot_init(*args, mpl_backend=self.mpl_backend, figure=self, **kw)
             # yes axes is overwritten intentionally for now -- not sure how to "reparent" an Axes object
         elif isinstance(figure, GraphicsBase):
             axes = figure.axes # type: matplotlib.axes.Axes
@@ -367,26 +379,29 @@ class GraphicsBase(metaclass=ABCMeta):
         if isinstance(self.figure, VTKWindow):
             self.figure.show()
         else:
-            import matplotlib.pyplot as plt
+            self.load_mpl()
 
             if not self.managed:
                 if self.non_interactive:
-                    plt.ioff()
+                    self.pyplot.ioff()
                 elif self.non_interactive is False:
-                    plt.ion()
+                    self.pyplot.ion()
 
             if reshow or not self._shown:
                 self.prep_show()
                 if not self.managed:
-                    plt.show()
+                    self.pyplot.show()
             else:
                 self._shown = False
                 self.refresh().show()
                 # raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
 
-    def close(self):
-        import matplotlib.pyplot as plt
-        return plt.close(self.figure)
+    def close(self, force=False):
+        if force or self.parent is None: # parent manages cleanup
+            return self.pyplot.close(self.figure)
+
+    def __del__(self):
+        self.close()
 
     def clear(self):
         ax = self.axes  # type: matplotlib.axes.Axes
@@ -747,24 +762,24 @@ class Graphics3D(Graphics):
             if oval is not None:
                 setattr(self, oname, oval)
 
+    def load_mpl(self):
+        if not self._mpl_loaded:
+            from mpl_toolkits.mplot3d import Axes3D
+            super().load_mpl()
+
     @staticmethod
-    def _subplot_init(*args, backend = Backends.MPL, mpl_backend=None, **kw):
+    def _subplot_init(*args, backend = Backends.MPL, mpl_backend=None, graphics=None, **kw):
         if backend == Backends.VTK:
             from .VTKInterface import VTKWindow
             window = VTKWindow()
             return window, window
         else:
-            from mpl_toolkits.mplot3d import Axes3D
-            if mpl_backend is not None:
-                import matplotlib as mpl
-                mpl.use(mpl_backend)
-            import matplotlib.pyplot as plt
-
+            graphics.load_mpl()
             subplot_kw = {"projection": '3d'}
             if 'subplot_kw' in kw:
                 subplot_kw = dict(subplot_kw, **kw['subplot_kw'])
                 del kw['subplot_kw']
-            return plt.subplots(*args, subplot_kw=subplot_kw, **kw)
+            return graphics.pyplot.subplots(*args, subplot_kw=subplot_kw, **kw)
 
     def _init_suplots(self, figure, axes, *args, **kw):
         """matplotlib subplot instantiation
@@ -1048,7 +1063,7 @@ class GraphicsGrid(GraphicsBase):
                     h += (nrows-1) * sh
                 fig_kw['figsize'] = (w/72., h/72.)
 
-            figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, **fig_kw)
+            figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, graphics=self, **fig_kw)
 
             if isinstance(axes, matplotlib.axes.Axes):
                 axes = [[axes]]
@@ -1244,9 +1259,6 @@ class GraphicsGrid(GraphicsBase):
         if self.tighten:
             self.figure.tight_layout()
 
-    # def close(self):
-    #     import matplotlib.pyplot as plt
-    #     return plt.close(self.figure)
     def show(self, **kwargs):
         for f in self:
             if isinstance(f, GraphicsBase):
