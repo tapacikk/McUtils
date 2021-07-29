@@ -20,6 +20,8 @@ __all__ = [
     "CoordinateTransform"
 ]
 
+__reload_hook__ = ['.TransformationFunction', ".AffineTransform", ".RotationTransform", ".ScalingTransform", ".TranslationTransform"]
+
 class CoordinateTransform:
     """
     The CoordinateTransform class provides a simple, general way to represent a

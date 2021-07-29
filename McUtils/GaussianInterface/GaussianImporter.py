@@ -7,7 +7,7 @@ from .GaussianLogComponents import GaussianLogComponents, GaussianLogDefaults, G
 from .GaussianFChkComponents import FormattedCheckpointComponents, FormattedCheckpointCommonNames
 from ..Parsers import FileStreamReader, FileStreamCheckPoint, FileStreamReaderException
 
-__all__ = ["GaussianFChkReader", "GaussianLogReader"]
+__all__ = ["GaussianFChkReader", "GaussianLogReader", "GaussianLogReaderException", "GaussianFChkReaderException"]
 __reload_hook__ = [ '.GaussianFChkComponents', ".GaussianLogComponents" ]
 
 ########################################################################################################################

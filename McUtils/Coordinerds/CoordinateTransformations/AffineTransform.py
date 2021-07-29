@@ -12,6 +12,8 @@ __all__ = [
     "AffineTransform"
 ]
 
+__reload_hook__ = ['.TransformationFunction', "...Numputils"]
+
 class AffineTransform(TransformationFunction):
     """A simple AffineTranform implementation of the TransformationFunction abstract base class
 
