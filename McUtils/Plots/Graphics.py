@@ -1063,7 +1063,7 @@ class GraphicsGrid(GraphicsBase):
                     h += (nrows-1) * sh
                 fig_kw['figsize'] = (w/72., h/72.)
 
-            figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, graphics=self, **fig_kw)
+            figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, figure=self, **fig_kw)
 
             if isinstance(axes, matplotlib.axes.Axes):
                 axes = [[axes]]

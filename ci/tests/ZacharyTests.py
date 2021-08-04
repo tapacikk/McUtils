@@ -1,9 +1,20 @@
 
-from Peeves.TestUtils import *
+# because of the way multiprocessing works we need this to avoid crashes
+try:
+    from Peeves.TestUtils import *
+    from Peeves import BlockProfiler
+except:
+    pass
+from unittest import TestCase
+
 from McUtils.Zachary import *
 from McUtils.Zachary.Taylor.ZachLib import *
 from McUtils.Plots import *
-from unittest import TestCase
+from McUtils.Data import *
+import McUtils.Numputils as nput
+from McUtils.Parallelizers import *
+from McUtils.Scaffolding import Logger
+
 import sys, h5py, math, numpy as np, itertools
 
 class ZacharyTests(TestCase):
@@ -12,6 +23,11 @@ class ZacharyTests(TestCase):
 
     def setUp(self):
         self.save_data = TestManager.data_gen_tests
+
+    def __getstate__(self):
+        return {}
+    def __setstate__(self, state):
+        pass
 
     # @validationTest
     # def test_finite_difference_2d(self):
@@ -401,6 +417,95 @@ class ZacharyTests(TestCase):
         #             figure=gg[i, 2+j]
         #         )
         # gg.show()
+
+    class harmonically_coupled_morse:
+        # mass_weights = masses[:2] / np.sum(masses[:2])
+        def __init__(self,
+                     De_1, a_1, re_1,
+                     De_2, a_2, re_2,
+                     kb, b_e
+                     ):
+            self.De_1 = De_1
+            self.a_1 = a_1
+            self.re_1 = re_1
+            self.De_2 = De_2
+            self.a_2 = a_2
+            self.re_2 = re_2
+            self.kb = kb
+            self.b_e = b_e
+
+        def __call__(self, carts):
+            v1 = carts[..., 1, :] - carts[..., 0, :]
+            v2 = carts[..., 2, :] - carts[..., 0, :]
+            r1 = nput.vec_norms(v1) - self.re_1
+            r2 = nput.vec_norms(v2) - self.re_2
+            bend, _ = nput.vec_angles(v1, v2)
+            bend = bend - self.b_e
+
+            return (
+                    self.De_1 * (1 - np.exp(-self.a_1 * r1)) ** 2
+                    + self.De_2 * (1 - np.exp(-self.a_2 * r2)) ** 2
+                    + self.kb * bend**2
+            )
+
+    @debugTest
+    def test_FiniteDifferenceParallelism(self):
+
+        re_1 = 0.9575
+        re_2 = 0.9575
+        b_e = np.deg2rad(104.5)
+        internals = [
+            [0, -1, -1, -1],
+            [1, 0, -1, -1],
+            [2, 0, 1, -1]
+        ]
+        # internals = None
+        coords = np.array([
+                [0.000000, 0.000000, 0.000000],
+                [re_1, 0.000000, 0.000000],
+                np.dot(
+                    nput.rotation_matrix([0, 0, 1], b_e),
+                    [re_2, 0.000000, 0.000000]
+                )
+            ])
+
+        erg2h = UnitsData.convert("Ergs", "Hartrees")
+        cm2borh = UnitsData.convert("InverseAngstroms", "InverseBohrRadius")
+        De_1 = 8.84e-12 * erg2h
+        a_1 = 2.175 * cm2borh
+
+        De_2 = 8.84e-12 * erg2h
+        a_2 = 2.175 * cm2borh
+
+        hz2h = UnitsData.convert("Hertz", "Hartrees")
+        kb = 7.2916e14 / (2 * np.pi) * hz2h
+
+        morse = self.harmonically_coupled_morse(
+            De_1, a_1, re_1,
+            De_2, a_2, re_2,
+            kb, b_e
+        )
+
+        deriv_gen = FiniteDifferenceDerivative(morse,
+                                               function_shape=((None, None), 0),
+                                               mesh_spacing=1e-3,
+                                               stencil=9,
+                                               logger=Logger(),
+                                               parallelizer=MultiprocessingParallelizer()#, verbose=True)
+                                               ).derivatives(coords)
+
+        with BlockProfiler("With parallelizer"):
+            pot_derivs = deriv_gen.derivative_tensor([1, 2, 3, 4, 5, 6, 7])
+
+        deriv_gen = FiniteDifferenceDerivative(morse,
+                                               function_shape=((None, None), 0),
+                                               mesh_spacing=1e-3,
+                                               logger=Logger(),
+                                               stencil=9,
+                                               ).derivatives(coords)
+
+        with BlockProfiler("Without parallelizer"):
+            pot_derivs = deriv_gen.derivative_tensor([1, 2, 3, 4, 5, 6])
 
     #endregion
 
