@@ -557,7 +557,7 @@ class ScipySparseArray(SparseArray):
     We always use a combo of an underlying CSR or CSC matrix & COO-like shape operations.
     """
 
-    def __init__(self, a, shape=None, layout=None, dtype=None, initialize = True):
+    def __init__(self, a, shape=None, layout=None, dtype=None, initialize=True):
         self._shape = tuple(shape) if shape is not None else shape
         self._a = a
         self._fmt = layout
@@ -635,6 +635,8 @@ class ScipySparseArray(SparseArray):
 
         return (vl, vr)
 
+    # from memory_profiler import profile
+    # @profile
     def _init_matrix(self):
         a = self._a
         if isinstance(a, ScipySparseArray):
@@ -671,8 +673,8 @@ class ScipySparseArray(SparseArray):
         # an array based on its non-zero positions
         elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1][0]):
             block_vals, block_inds = a
-            block_vals = np.asarray(block_vals)
-            block_inds = tuple(np.array(i, dtype=int) for i in block_inds)
+            block_vals = np.asanyarray(block_vals)
+            block_inds = tuple(np.asanyarray(i, dtype=int) for i in block_inds)
             if self._shape is None:
                 self._shape = tuple(np.max(x) for x in block_inds)
             if len(block_inds) != len(self._shape):
@@ -682,16 +684,17 @@ class ScipySparseArray(SparseArray):
                     len(block_inds)
                 ))
             # gotta make sure our inds are sorted so we don't run into sorting issues later...
-            flat = self._ravel_indices(a[1], self._shape)
+            flat = np.ravel_multi_index(a[1], self._shape) # no reason to cache this since we're going to sort it...
             # nels = int(np.prod(self._shape))
             sort = np.argsort(flat)
             flat = flat[sort]
             block_vals = block_vals[sort]
             block_inds = tuple(i[sort] for i in block_inds)
+            del sort # clean up for memory reasons
 
             total_shape = self._get_balanced_shape(self._shape)
             # print(">>>>> ", total_shape)
-            init_inds = self._unravel_indices(flat, total_shape)
+            init_inds = np.unravel_index(flat, total_shape) # no reason to cache this since we're not going to use it
             if self._fmt is None:
                 if total_shape[0] > total_shape[1]:
                     fmt = sp.csc_matrix
