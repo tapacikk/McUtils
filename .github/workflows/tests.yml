@@ -1,11 +1,11 @@
-name: McUtilsCI
+name: McUtilsTests
 on:
   push:
     branches:
       - edit
 
 jobs:
-  ci:
+  test:
     runs-on: ubuntu-latest
     steps:
       # To use this repository's private action,
@@ -14,8 +14,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: edit
-      - name: Document
-        uses: ./ci/tests.yml # Uses an action in the root directory
+      - name: Test
+        uses: ./.github/actions/tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
