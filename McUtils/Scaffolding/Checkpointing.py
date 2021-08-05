@@ -9,6 +9,7 @@ __all__ = [
     "JSONCheckpointer",
     "NumPyCheckpointer",
     "HDF5Checkpointer",
+    "DictCheckpointer",
     "NullCheckpointer"
 ]
 
@@ -416,7 +417,7 @@ class HDF5Checkpointer(Checkpointer):
             file = self.serializer.api.File(file, "a")
         return file.keys()
 
-class NullCheckpointer(Checkpointer):
+class DictCheckpointer(Checkpointer):
     """
     A checkpointer that doesn't actually do anything, but which is provided
     so that programs can turn off checkpointing without changing their layout
@@ -469,6 +470,62 @@ class NullCheckpointer(Checkpointer):
         :rtype:
         """
         return self.backend[key]
+
+    def keys(self):
+        return list(self.backend.keys())
+
+class NullCheckpointer(Checkpointer):
+    """
+    A checkpointer that saves absolutely nothing
+    """
+    def __init__(self, checkpoint_file=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
+        super().__init__(checkpoint_file, allowed_keys=allowed_keys, omitted_keys=omitted_keys)
+        self.backend = None
+
+    def open_checkpoint_file(self, chk):
+        """
+        Opens the passed `checkpoint_file` (if not already open)
+        :param chk:
+        :type chk: str | file-like
+        :return:
+        :rtype:
+        """
+        return "NotAFile"
+
+    def close_checkpoint_file(self, stream):
+        """
+        Opens the passed `checkpoint_file` (if not already open)
+        :param chk:
+        :type chk:
+        :return:
+        :rtype:
+        """
+        pass
+
+    def save_parameter(self, key, value):
+        """
+        Saves a parameter to the checkpoint file
+        :param key:
+        :type key:
+        :param value:
+        :type value:
+        :return:
+        :rtype:
+        """
+        pass
+
+    def load_parameter(self, key):
+        """
+        Loads a parameter from the checkpoint file
+        :param key:
+        :type key:
+        :return:
+        :rtype:
+        """
+        raise CheckpointerKeyError("NullCheckpointer doesn't support _any_ keys")
 
     def keys(self):
         return []
