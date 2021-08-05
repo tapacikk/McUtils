@@ -34,11 +34,12 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
         if cls.backends is None:
-            return (ScipySparseArray,)
+            return (('scipy', ScipySparseArray),)
         else:
             return cls.backends
+
     @classmethod
-    def from_data(cls, data, **kwargs):
+    def from_data(cls, data, shape=None, dtype=None, target_backend=None, constructor=None, **kwargs):
         """
         A wrapper so that we can dispatch to the best
         sparse backend we've got defined.
@@ -51,13 +52,35 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype: SparseArray
         """
-        for backend in cls.get_backends():
-            try:
+
+        if shape is not None:
+            kwargs['shape'] = shape
+        if dtype is not None:
+            kwargs['dtype'] = dtype
+        backend_errors = []
+        backends = cls.get_backends()
+        for name,backend in backends:
+            if target_backend is not None and name == target_backend:
+                if constructor is not None:
+                    backend = getattr(backend, constructor)
                 return backend(data, **kwargs)
-            except ImportError:
-                pass
+            else:
+                try:
+                    if constructor is not None:
+                        backend = getattr(backend, constructor)
+                    return backend(data, **kwargs)
+                except Exception as e:
+                    backend_errors.append(e)
+        else:
+            if target_backend is None:
+                raise backend_errors[0]
+            else:
+                raise ValueError("`target_backend` {} not in available sparse backends {}".format(
+                    target_backend,
+                    backends
+                ))
     @classmethod
-    def from_diag(cls, data, **kwargs):
+    def from_diag(cls, data, shape=None, dtype=None, **kwargs):
         """
         A wrapper so that we can dispatch to the best
         sparse backend we've got defined.
@@ -69,11 +92,11 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
-        for backend in cls.get_backends():
-            try:
-                return backend.from_diagonal_data(data, **kwargs)
-            except ImportError:
-                pass
+        return cls.from_data(data,
+                             constructor='from_diagonal_data',
+                             shape=shape, dtype=dtype,
+                             **kwargs
+                             )
     @classmethod
     @abc.abstractmethod
     def from_diagonal_data(cls, diags, **kw):
@@ -130,15 +153,15 @@ class SparseArray(metaclass=abc.ABCMeta):
         raise NotImplementedError("{}.{} is an abstract method".format(cls.__name__, 'from_state'))
         ...
     @classmethod
-    def empty(cls, shape, **kw):
-        for backend in cls.get_backends():
-            try:
-                return backend.initialize_empty(shape, **kw)
-            except ImportError:
-                pass
+    def empty(cls, shape, dtype=None, **kw):
+        return cls.from_data(shape,
+                             constructor='initialize_empty',
+                             dtype=dtype,
+                             **kw
+                             )
     @classmethod
     @abc.abstractmethod
-    def initialize_empty(cls, shape, **kw):
+    def initialize_empty(cls, shp, shape=None, **kw):
         """
         Returns an empty SparseArray with the appropriate shape and dtype
         :param shape:
@@ -558,17 +581,39 @@ class ScipySparseArray(SparseArray):
     We always use a combo of an underlying CSR or CSC matrix & COO-like shape operations.
     """
 
-    def __init__(self, a, shape=None, layout=None, dtype=None, initialize=True):
+    def __init__(self, a,
+                 shape=None,
+                 layout=None,
+                 dtype=None,
+                 initialize=True,
+                 cache_block_data=True
+                 ):
+        """
+
+        :param a:
+        :type a:
+        :param shape:
+        :type shape:
+        :param layout:
+        :type layout:
+        :param dtype:
+        :type dtype:
+        :param initialize:
+        :type initialize:
+        :param cache_block_data: whether or not
+        :type cache_block_data:
+        """
         self._shape = tuple(shape) if shape is not None else shape
         self._a = a
         self._fmt = layout
         self._dtype = dtype
         self._validated = False
-        if initialize:
-            self._init_matrix()
-            self._validate()
+        self._block_data_sorted = False
         self._block_inds = None # cached to speed things up
         self._block_vals = None # cached to speed things up
+        if initialize:
+            self._init_matrix(cache_block_data=cache_block_data)
+            self._validate()
 
     def to_state(self, serializer=None):
         """
@@ -638,7 +683,7 @@ class ScipySparseArray(SparseArray):
 
     # from memory_profiler import profile
     # @profile
-    def _init_matrix(self):
+    def _init_matrix(self, cache_block_data=True):
         a = self._a
         if isinstance(a, ScipySparseArray):
             if self.fmt is not a.fmt:
@@ -675,11 +720,12 @@ class ScipySparseArray(SparseArray):
         elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1][0]):
             data, block_vals, block_inds, self._shape = self.construct_sparse_from_val_inds(
                 a[0], a[1], self._shape, self._fmt
-
             )
             self._a = data
-            self._block_vals = block_vals
-            self._block_inds = block_inds
+            if cache_block_data and block_inds is not None: # corner case to avoid a sort in low-mem situation
+                self._block_vals = block_vals
+                self._block_inds = block_inds
+                self._block_data_sorted = True
         else:
             non_sparse, sparse = self._get_shape()
             if non_sparse is None:
@@ -690,37 +736,49 @@ class ScipySparseArray(SparseArray):
                 data, other = self._get_data(non_sparse, sparse)
                 block_data, inds, total_shape = other
                 self._a = data
-                flat = np.ravel_multi_index(inds, data.shape)
-                self._block_inds = flat, inds
+                if cache_block_data:
+                    flat = np.ravel_multi_index(inds, data.shape)
+                    self._block_inds = flat, inds
+                    self._block_data_sorted = False
 
     @classmethod
-    def construct_sparse_from_val_inds(cls, block_vals, block_inds, shape, fmt):
+    def construct_sparse_from_val_inds(cls, block_vals, block_inds, shape, fmt, cache_block_data=True):
         block_vals = np.asanyarray(block_vals)
         if shape is None:
             shape = tuple(np.max(x) for x in block_inds)
-        # inds_type = infer_inds_dtype(max(shape))
-        # block_inds = tuple(np.asanyarray(i, dtype=inds_type) for i in block_inds)
-        block_inds = tuple(np.asanyarray(i) for i in block_inds)
-        if len(block_inds) != len(shape):
-            raise ValueError("{}: can't initialize array of shape {} from non-zero indices of dimension {}".format(
-                cls.__name__,
-                shape,
-                len(block_inds)
-            ))
 
-        # gotta make sure our inds are sorted so we don't run into sorting issues later...
-        flat = np.ravel_multi_index(block_inds, shape)  # no reason to cache this since we're going to sort it...
-        # nels = int(np.prod(self._shape))
-        sort = np.argsort(flat)
-        flat = flat[sort]
-        block_vals = block_vals[sort]
-        block_inds = tuple(i[sort] for i in block_inds)
-        del sort  # clean up for memory reasons
+        # special case esp. for square matrices
+        shape_rat = max(shape) / min(shape)
+        if len(shape) == 2 and shape_rat < 5:
+            init_inds = block_inds
+            total_shape = shape
+            block_inds = None
+        else:
+            block_inds = tuple(np.asanyarray(i) for i in block_inds)
+            if len(block_inds) != len(shape):
+                raise ValueError("{}: can't initialize array of shape {} from non-zero indices of dimension {}".format(
+                    cls.__name__,
+                    shape,
+                    len(block_inds)
+                ))
 
-        # this can help significantly with memory usage...so we do it even
-        # though we incur one ravel call as cost
-        total_shape = cls._get_balanced_shape(shape)
-        init_inds = np.unravel_index(flat, total_shape)  # no reason to cache this since we're not going to use it
+            flat = np.ravel_multi_index(block_inds, shape)  # no reason to cache this since we're going to sort it...
+
+            if cache_block_data:
+                # gotta make sure our inds are sorted so we don't run into sorting issues later...
+                sort = np.argsort(flat)
+                flat = flat[sort]
+                block_vals = block_vals[sort]
+                block_inds = (flat, tuple(i[sort] for i in block_inds))
+                del sort  # clean up for memory reasons
+
+            # this can help significantly with memory usage...
+            total_shape = cls._get_balanced_shape(shape)
+            init_inds = np.unravel_index(flat, total_shape)  # no reason to cache this since we're not going to use it
+
+            if not cache_block_data:
+                block_inds = None
+
         if fmt is None:
             if total_shape[0] > total_shape[1]:
                 fmt = sp.csc_matrix
@@ -737,6 +795,9 @@ class ScipySparseArray(SparseArray):
             else:
                 fmt = sp.csr_matrix
             data = fmt((block_vals, init_inds), shape=total_shape)
+
+        if not cache_block_data:
+            block_vals = None
 
         return data, block_vals, block_inds, shape
 
@@ -837,18 +898,20 @@ class ScipySparseArray(SparseArray):
         return diag.flatten()
 
     @classmethod
-    def from_diagonal_data(cls, diags, **kw):
+    def from_diagonal_data(cls, diags, shape=None, **kw):
         if isinstance(diags[0], (int, np.integer, float, np.floating)):
             # just a plain old diagonal matrix
             N = len(diags)
             # print(len(diags))
-            return cls(sp.csr_matrix(sp.diags([diags], [0])), shape=(N, N), **kw)
+            if shape is None:
+                shape = (N, N)
+            return cls(sp.csr_matrix(sp.diags([diags], [0])), shape=shape, **kw)
         else:
             data = sp.block_diag(diags, format='csr')
             block_size = diags[0].shape
-            if 'shape' not in kw:
-                kw['shape'] = (len(diags), block_size[0], len(diags), block_size[1])
-            wat = cls(data, **kw).transpose((0, 2, 1, 3))
+            if shape is None:
+                shape = (len(diags), block_size[0], len(diags), block_size[1])
+            wat = cls(data, shape=shape, **kw).transpose((0, 2, 1, 3))
             return wat
     def asarray(self):
         return np.reshape(self.data.toarray(), self.shape)
@@ -1054,6 +1117,7 @@ class ScipySparseArray(SparseArray):
         unflat = self._unravel_indices(flat, self.shape)
         self._block_inds = (flat, unflat)
         self._block_vals = data
+        self._block_data_sorted = True
 
     def _load_full_block_inds(self):
         if self._block_inds.ndim == 1:
@@ -1064,10 +1128,21 @@ class ScipySparseArray(SparseArray):
             flat = self._ravel_indices(unflat, self.shape)
         self._block_inds = (flat, unflat)
 
+    def _sort_block_data(self):
+        flat, unflat = self._block_inds
+        sort = np.argsort(flat)
+        flat = flat[sort]
+        unflat = tuple(x[sort] for x in unflat)
+        self._block_inds = (flat, unflat)
+        self._block_vals = self._block_vals[sort]
+        self._block_data_sorted = True
+
     @property
     def block_vals(self):
         if self._block_vals is None:
             self._load_block_data()
+        if not self._block_data_sorted:
+            self._sort_block_data()
         return self._block_vals
 
     @property
@@ -1075,10 +1150,12 @@ class ScipySparseArray(SparseArray):
         if self._block_inds is None:
             self._load_block_data()
         elif not (
-                    isinstance(self._block_inds[0], np.ndarray)
-                    and self._block_inds[0].ndim == 1
+                isinstance(self._block_inds[0], np.ndarray)
+                and self._block_inds[0].ndim == 1
         ):
             self._load_full_block_inds()
+        if not self._block_data_sorted:
+            self._sort_block_data()
         return self._block_inds
     @block_inds.setter
     def block_inds(self, bi):
@@ -1135,7 +1212,6 @@ class ScipySparseArray(SparseArray):
         track_data = self.get_caching_status()
         if self._block_vals is None:
             row_inds, col_inds, data = self.find()
-
             flat = self._ravel_indices((row_inds, col_inds), self.data.shape)
             inds = self._unravel_indices(flat, self.shape)
         else:
@@ -1149,7 +1225,6 @@ class ScipySparseArray(SparseArray):
 
         if len(new_shape) > 2:
             total_shape = self._get_balanced_shape(new_shape)
-            # print(">>>>>  woof ", total_shape)
             flat = self._ravel_indices(new_inds, new_shape)
             unflat = self._unravel_indices(flat, total_shape)
         else:
@@ -1165,7 +1240,10 @@ class ScipySparseArray(SparseArray):
 
         if track_data:
 
-            arr = np.lexsort(unflat)
+            if flat is not None:
+                arr = np.argsort(flat)
+            else:
+                arr = np.lexsort(unflat)
 
             new_inds = [inds[arr] for inds in new_inds]
             if self._block_vals is not None:
@@ -1175,7 +1253,8 @@ class ScipySparseArray(SparseArray):
                 new.block_inds = new_inds
             else:
                 # try:
-                new.block_inds = (flat, new_inds)
+                new.block_inds = (flat[arr], new_inds)
+            new._block_data_sorted = True
                 # except:
                 #     raise Exception(new_shape, len(total_shape))
 
@@ -1455,6 +1534,7 @@ class ScipySparseArray(SparseArray):
                     bi = self._block_inds
                     new._block_vals = other + bvs
                     new._block_inds = bi
+                    new._block_data_sorted = self._block_data_sorted
                 return new
 
         if isinstance(other, ScipySparseArray):
@@ -1498,6 +1578,7 @@ class ScipySparseArray(SparseArray):
                     bi = self._block_inds
                     new._block_vals = other * bvs
                     new._block_inds = bi
+                    new._block_data_sorted = self._block_data_sorted
                 return new
 
         if isinstance(other, ScipySparseArray):
@@ -1691,6 +1772,7 @@ class ScipySparseArray(SparseArray):
                 new.block_inds = inds
             else:
                 new.block_inds = flat, inds
+            new._block_data_sorted = True
             return new
 
     def _set_data(self, unflat, val):
