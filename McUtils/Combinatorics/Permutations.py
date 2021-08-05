@@ -5,7 +5,7 @@ Utilities for working with permutations and permutation indexing
 import numpy as np, time, typing, gc, itertools
 # import collections, functools as ft
 from ..Misc import jit, objmode, prange
-from ..Numputils import coerce_dtype, uncoerce_dtype, unique, contained, group_by, split_by_regions, find
+from ..Numputils import flatten_dtype, unflatten_dtype, unique, contained, group_by, split_by_regions, find, infer_int_dtype
 from ..Scaffolding import NullLogger
 
 __all__ = [
@@ -17,29 +17,7 @@ __all__ = [
     "LatticePathGenerator"
 ]
 
-def _infer_dtype(max_dim):
-    if max_dim < 256:
-        minimal_dtype = 'uint8'
-    elif max_dim < 65536:
-        minimal_dtype = 'uint16'
-    elif max_dim < 4294967296:
-        minimal_dtype = 'uint32'
-    else:
-        minimal_dtype = 'uint64'
-    return minimal_dtype
-
-def _infer_pos_neg_dtype(max_dim):
-    # max_dim = abs(max_dim)
-    if max_dim < 128:
-        minimal_dtype = 'int8'
-    elif max_dim < 32768:
-        minimal_dtype = 'int16'
-    elif max_dim < 2147483648:
-        minimal_dtype = 'int32'
-    else:
-        minimal_dtype = 'int64'
-    return minimal_dtype
-_infer_dtype = _infer_pos_neg_dtype
+_infer_dtype = infer_int_dtype
 
 def _infer_nearest_pos_neg_dtype(og_dtype):
     if og_dtype == np.uint8:
@@ -1152,7 +1130,7 @@ class UniquePermutations:
 
         if np.any(classes < 0):
             max_term = np.max(np.abs(classes))
-            perms = np.zeros((len(indices), dim), dtype=_infer_pos_neg_dtype(max_term))
+            perms = np.zeros((len(indices), dim), dtype=infer_int_dtype(max_term))
         else:
             max_term = np.max(np.abs(classes))
             perms = np.zeros((len(indices), dim), dtype=_infer_dtype(max_term))
@@ -1321,7 +1299,7 @@ class UniquePermutations:
         counts = np.copy(counts)  # we're going to modify this in-place
         nterms = len(counts)
 
-        perm = np.zeros(dim, dtype=_infer_pos_neg_dtype(dim))
+        perm = np.zeros(dim, dtype=infer_int_dtype(dim))
 
         if indices is None:
             indices = range(num_permutations)
@@ -2669,7 +2647,7 @@ class SymmetricGroupGenerator:
         if isinstance(perms.dtype, np.unsignedinteger):
             perms = perms.astype(_infer_nearest_pos_neg_dtype(perms.dtype))
         if perms.dtype.names is not None:
-            perms = uncoerce_dtype(perms, (len(perms), self.dim), perms.dtype[0])
+            perms = unflatten_dtype(perms, (len(perms), self.dim), perms.dtype[0])
 
         if perms.ndim == 1:
             perms = perms[np.newaxis]
@@ -2683,7 +2661,7 @@ class SymmetricGroupGenerator:
                 axis=1
             )
         elif perms.shape[1] > dim:
-            raise ValueError("with dimension {} can't handle states of dimension {}".format(dim, perms.shape[-1]))
+            raise ValueError("with dimension {} can't handle states of shape {}".format(dim, perms.shape))
 
         rules = [[0] if len(r) == 0 else r for r in rules]
         if self.dim == 1:
@@ -2951,7 +2929,7 @@ class CompleteSymmetricGroupSpace:
         self.generator = SymmetricGroupGenerator(dim)
         self._basis = None
         self._basis_sorting = None
-        _, self._contracted_dtype, _, self._og_dtype = coerce_dtype(np.zeros((1, dim), dtype=self.permutation_dtype))
+        _, self._contracted_dtype, _, self._og_dtype = flatten_dtype(np.zeros((1, dim), dtype=self.permutation_dtype))
         self.memory_constrained = memory_constrained
 
     @property
@@ -2967,9 +2945,9 @@ class CompleteSymmetricGroupSpace:
             return perms
         else:
             if self._contracted_dtype is not None:
-                return coerce_dtype(perms.astype(self.permutation_dtype), dtype=self._contracted_dtype)[0]
+                return flatten_dtype(perms.astype(self.permutation_dtype), dtype=self._contracted_dtype)[0]
             else:
-                new, self._contracted_dtype, _, _ = coerce_dtype(perms.astype(self.permutation_dtype))
+                new, self._contracted_dtype, _, _ = flatten_dtype(perms.astype(self.permutation_dtype))
                 return new
 
     def load_to_size(self, size):
@@ -3019,9 +2997,9 @@ class CompleteSymmetricGroupSpace:
             if len(res) == 0:
                 res = np.empty((0, self.dim), dtype=self.permutation_dtype)
             elif isinstance(item, (int, np.integer)):
-                res = uncoerce_dtype(res, (1, self.dim), self._og_dtype)
+                res = unflatten_dtype(res, (1, self.dim), self._og_dtype)
             else:
-                res = uncoerce_dtype(res, (len(res), self.dim), self._og_dtype)
+                res = unflatten_dtype(res, (len(res), self.dim), self._og_dtype)
 
         return res
 

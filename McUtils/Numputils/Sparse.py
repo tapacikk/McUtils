@@ -1,6 +1,7 @@
 import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc
 from ..Scaffolding import MaxSizeCache
 from .SetOps import contained
+from .Misc import infer_inds_dtype
 
 __all__ = [
     "SparseArray",
@@ -672,47 +673,10 @@ class ScipySparseArray(SparseArray):
         # we're gonna support the (vals, (i_1, i_2, i_3, ...)) syntax for constructing
         # an array based on its non-zero positions
         elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1][0]):
-            block_vals, block_inds = a
-            block_vals = np.asanyarray(block_vals)
-            block_inds = tuple(np.asanyarray(i, dtype=int) for i in block_inds)
-            if self._shape is None:
-                self._shape = tuple(np.max(x) for x in block_inds)
-            if len(block_inds) != len(self._shape):
-                raise ValueError("{}: can't initialize array of shape {} from non-zero indices of dimension {}".format(
-                    type(self).__name__,
-                    self._shape,
-                    len(block_inds)
-                ))
-            # gotta make sure our inds are sorted so we don't run into sorting issues later...
-            flat = np.ravel_multi_index(a[1], self._shape) # no reason to cache this since we're going to sort it...
-            # nels = int(np.prod(self._shape))
-            sort = np.argsort(flat)
-            flat = flat[sort]
-            block_vals = block_vals[sort]
-            block_inds = tuple(i[sort] for i in block_inds)
-            del sort # clean up for memory reasons
+            data, block_vals, block_inds, self._shape = self.construct_sparse_from_val_inds(
+                a[0], a[1], self._shape, self._fmt
 
-            total_shape = self._get_balanced_shape(self._shape)
-            # print(">>>>> ", total_shape)
-            init_inds = np.unravel_index(flat, total_shape) # no reason to cache this since we're not going to use it
-            if self._fmt is None:
-                if total_shape[0] > total_shape[1]:
-                    fmt = sp.csc_matrix
-                else:
-                    fmt = sp.csr_matrix
-            else:
-                fmt = self._fmt
-            try:
-                data = fmt((block_vals, init_inds), shape=total_shape)
-            except TypeError:
-                data = fmt(sp.coo_matrix((block_vals, init_inds)), shape=total_shape)
-            except MemoryError:
-                if total_shape[0] > total_shape[1]:
-                    fmt = sp.csc_matrix
-                else:
-                    fmt = sp.csr_matrix
-                data = fmt((block_vals, init_inds), shape=total_shape)
-                self._fmt = None
+            )
             self._a = data
             self._block_vals = block_vals
             self._block_inds = block_inds
@@ -728,6 +692,54 @@ class ScipySparseArray(SparseArray):
                 self._a = data
                 flat = np.ravel_multi_index(inds, data.shape)
                 self._block_inds = flat, inds
+
+    @classmethod
+    def construct_sparse_from_val_inds(cls, block_vals, block_inds, shape, fmt):
+        block_vals = np.asanyarray(block_vals)
+        if shape is None:
+            shape = tuple(np.max(x) for x in block_inds)
+        # inds_type = infer_inds_dtype(max(shape))
+        # block_inds = tuple(np.asanyarray(i, dtype=inds_type) for i in block_inds)
+        block_inds = tuple(np.asanyarray(i) for i in block_inds)
+        if len(block_inds) != len(shape):
+            raise ValueError("{}: can't initialize array of shape {} from non-zero indices of dimension {}".format(
+                cls.__name__,
+                shape,
+                len(block_inds)
+            ))
+
+        # gotta make sure our inds are sorted so we don't run into sorting issues later...
+        flat = np.ravel_multi_index(block_inds, shape)  # no reason to cache this since we're going to sort it...
+        # nels = int(np.prod(self._shape))
+        sort = np.argsort(flat)
+        flat = flat[sort]
+        block_vals = block_vals[sort]
+        block_inds = tuple(i[sort] for i in block_inds)
+        del sort  # clean up for memory reasons
+
+        # this can help significantly with memory usage...so we do it even
+        # though we incur one ravel call as cost
+        total_shape = cls._get_balanced_shape(shape)
+        init_inds = np.unravel_index(flat, total_shape)  # no reason to cache this since we're not going to use it
+        if fmt is None:
+            if total_shape[0] > total_shape[1]:
+                fmt = sp.csc_matrix
+            else:
+                fmt = sp.csr_matrix
+
+        try:
+            data = fmt((block_vals, init_inds), shape=total_shape)
+        except TypeError:
+            data = fmt(sp.coo_matrix((block_vals, init_inds)), shape=total_shape)
+        except MemoryError:
+            if total_shape[0] > total_shape[1]:
+                fmt = sp.csc_matrix
+            else:
+                fmt = sp.csr_matrix
+            data = fmt((block_vals, init_inds), shape=total_shape)
+
+        return data, block_vals, block_inds, shape
+
     def _validate(self):
         shp1 = self._a.shape
         shp2 = self._shape
@@ -940,24 +952,13 @@ class ScipySparseArray(SparseArray):
     # this saves time when we have to do a bunch of reshaping into similarly sized arrays,
     # but won't help as much when the shape changes
     _unravel_cache = MaxSizeCache(default_cache_size)  # hopefully faster than bunches of unravel_index calls...
-    @classmethod
-    def _infer_inds_dtype(cls, max_size):
-        return 'int64' # short-circuit for now b.c. this isn't really relevant
-        if max_size < 256:
-            minimal_dtype = 'uint8'
-        elif max_size < 65535:
-            minimal_dtype = 'uint16'
-        elif max_size < 4294967295:
-            minimal_dtype = 'uint32'
-        else:
-            minimal_dtype = 'uint64'
-        return minimal_dtype
+
     @classmethod
     def _unravel_indices(cls, n, dims):
 
         # we're hoping that we call with `n` often enough that we get a performance benefit
         if not cls.caching_enabled:
-            minimal_dtype = cls._infer_inds_dtype(np.max(dims))
+            minimal_dtype = infer_inds_dtype(np.max(dims))
             res = tuple(x.astype(minimal_dtype) for x in np.unravel_index(n, dims))
             return res
         if dims not in cls._unravel_cache:
@@ -972,7 +973,7 @@ class ScipySparseArray(SparseArray):
         if n_hash in cache:
             res = cache[n_hash]
         else:
-            minimal_dtype = cls._infer_inds_dtype(np.max(dims))
+            minimal_dtype = infer_inds_dtype(np.max(dims))
             res = tuple(x.astype(minimal_dtype) for x in np.unravel_index(n, dims))
             cache[n_hash] = res
         return res

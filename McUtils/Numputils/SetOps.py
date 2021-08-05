@@ -4,6 +4,7 @@ to minimize things like excess sorts
 """
 
 import numpy as np
+from .Misc import flatten_dtype, unflatten_dtype
 
 __all__ = [
     'unique',
@@ -12,76 +13,18 @@ __all__ = [
     'difference',
     'find',
     'argsort',
-    'coerce_dtype',
-    'uncoerce_dtype',
     'group_by',
     'split_by_regions'
 ]
+
+coerce_dtype = flatten_dtype
+uncoerce_dtype = unflatten_dtype
 
 def argsort(ar):
     ar = np.asanyarray(ar)
     if ar.ndim > 1:
         ar, _, _, _ = coerce_dtype(ar)
     return np.argsort(ar, kind='mergesort')
-
-def coerce_dtype(ar, dtype=None):
-    """
-    Extracted from the way NumPy treats unique
-    Coerces ar into a compound dtype so that it can be treated
-    like a 1D array for set operations
-    """
-
-    # Must reshape to a contiguous 2D array for this to work...
-    orig_shape, orig_dtype = ar.shape, ar.dtype
-    ar = ar.reshape(orig_shape[0], np.prod(orig_shape[1:], dtype=np.intp))
-    ar = np.ascontiguousarray(ar)
-    if dtype is None:
-        dtype = [('f{i}'.format(i=i), ar.dtype) for i in range(ar.shape[1])]
-    # At this point, `ar` has shape `(n, m)`, and `dtype` is a structured
-    # data type with `m` fields where each field has the data type of `ar`.
-    # In the following, we create the array `consolidated`, which has
-    # shape `(n,)` with data type `dtype`.
-    try:
-        if ar.shape[1] > 0:
-            consolidated = ar.view(dtype)
-            if len(consolidated.shape) > 1:
-                consolidated = consolidated.squeeze()
-                if consolidated.shape == ():
-                    consolidated = np.expand_dims(consolidated, 0)
-        else:
-            # If ar.shape[1] == 0, then dtype will be `np.dtype([])`, which is
-            # a data type with itemsize 0, and the call `ar.view(dtype)` will
-            # fail.  Instead, we'll use `np.empty` to explicitly create the
-            # array with shape `(len(ar),)`.  Because `dtype` in this case has
-            # itemsize 0, the total size of the result is still 0 bytes.
-            consolidated = np.empty(len(ar), dtype=dtype)
-    except TypeError:
-        # There's no good way to do this for object arrays, etc...
-        msg = 'The axis argument to `coerce_dtype` is not supported for dtype {dt}'
-        raise TypeError(msg.format(dt=ar.dtype))
-
-    return consolidated, dtype, orig_shape, orig_dtype
-
-def uncoerce_dtype(consolidated, orig_shape, orig_dtype, axis=None):
-    """
-    Converts a coerced array back to a full array
-    :param consolidated:
-    :type consolidated:
-    :param orig_shape:
-    :type orig_shape:
-    :param orig_dtype:
-    :type orig_dtype:
-    :param axis: where to shift the main axis
-    :type axis:
-    :return:
-    :rtype:
-    """
-    n = len(consolidated)
-    uniq = consolidated.view(orig_dtype)
-    uniq = uniq.reshape(n, *orig_shape[1:])
-    if axis is not None:
-        uniq = np.moveaxis(uniq, 0, axis)
-    return uniq
 
 def unique(ar, return_index=False, return_inverse=False,
            return_counts=False, axis=0, sorting=None):
