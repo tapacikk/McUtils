@@ -4,3 +4,4 @@ description: 'Runs CI'
 runs:
   using: 'docker'
   image: 'Dockerfile'
+  args: ['tests', 'docs']
