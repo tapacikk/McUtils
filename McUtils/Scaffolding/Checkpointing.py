@@ -21,6 +21,8 @@ class Checkpointer(metaclass=abc.ABCMeta):
     General purpose base class that allows checkpointing to be done easily and cleanly.
     Intended to be a passable object that allows code to checkpoint easily.
     """
+
+    default_extension=""
     def __init__(self, checkpoint_file,
                  allowed_keys=None,
                  omitted_keys=None
@@ -40,12 +42,7 @@ class Checkpointer(metaclass=abc.ABCMeta):
         if cls._ext_map is not None:
             return cls._ext_map
         else:
-            return {
-                '.json':JSONCheckpointer,
-                '.hdf5':HDF5Checkpointer,
-                '.npz':NumPyCheckpointer
-                # ('.yaml','.yml'):YA
-            }
+            return {c.default_extension:c for c in [JSONCheckpointer, HDF5Checkpointer, NumPyCheckpointer]}
 
     @classmethod
     def from_file(cls, file, **opts):
@@ -259,6 +256,7 @@ class JSONCheckpointer(DumpCheckpointer):
     A checkpointer that uses JSON as a backend
     """
 
+    default_extension=JSONSerializer.default_extension
     def __init__(self, file, cache=None, serializer=None, open_kwargs=None,
                  allowed_keys=None,
                  omitted_keys=None
@@ -295,6 +293,7 @@ class NumPyCheckpointer(DumpCheckpointer):
     A checkpointer that uses NumPy as a backend
     """
 
+    default_extension = NumPySerializer.default_extension
     def __init__(self, file, cache=None, serializer=None, open_kwargs=None,
                  allowed_keys=None,
                  omitted_keys=None
@@ -344,6 +343,7 @@ class HDF5Checkpointer(Checkpointer):
     Doesn't maintain a secondary `dict`, because HDF5 is an updatable format.
     """
 
+    default_extension = HDF5Serializer.default_extension
     def __init__(self, checkpoint_file, serializer=None,
                  allowed_keys=None,
                  omitted_keys=None

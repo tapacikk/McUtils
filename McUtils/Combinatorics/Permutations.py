@@ -2690,7 +2690,7 @@ class SymmetricGroupGenerator:
         max_rule = max(max(r) if len(r) > 0 else 0 for r in rules) if len(rules) > 0 else 0
         max_term = max(int(1 + max_rule + np.max(sums)), 0) # numpy dtype shit sometimes goes weird
         # raise Exception(max_rule, max_term, np.max(sums))
-        logger.log_print('populating bases up to {nq} quanta...', nq=max_term)
+        logger.log_print('populating bases up to {nq} quanta...', nq=max_term, log_level=logger.LogLevel.Debug)
         IntegerPartitioner.fill_counts(max_term, max_term, self.dim)
         if full_basis is not None:
             full_basis.load_to_sum(max_term)
@@ -2731,18 +2731,18 @@ class SymmetricGroupGenerator:
         else:
             input_classes_fmt=[]
             rule_class_fmt=[]
-        with logger.block(tag="taking direct product"):
-            with logger.block(tag="selection rules:"):
-                logger.log_print(rule_class_fmt)
+        with logger.block(tag="taking direct product", log_level=logger.LogLevel.Debug):
+            with logger.block(tag="selection rules:", log_level=logger.LogLevel.Debug):
+                logger.log_print(rule_class_fmt, log_level=logger.LogLevel.Debug)
             start = time.time()
             for input_classes, nq, sorts in zip(perm_classes, usums, perm_subsortings):
                 substart = time.time()
-                with logger.block(tag='sum: {}'.format(nq)):
+                with logger.block(tag='sum: {}'.format(nq), log_level=logger.LogLevel.Debug):
                     if not isinstance(logger, NullLogger):  # can be slow to log prettily
                         input_classes_fmt = ["Class/Counts/Permutations"]+ [
                              "{}/{}/{}".format(y[0], y[1], len(y[2])) for y in input_classes
                         ]
-                        logger.log_print(input_classes_fmt)
+                        logger.log_print(input_classes_fmt, log_level=logger.LogLevel.Debug)
                     perm_block = []
                     if return_indices:
                         ind_block = []
@@ -2819,7 +2819,8 @@ class SymmetricGroupGenerator:
                         ],
                             nt=len(new_perms) if not (split_results or preserve_ordering) else sum(len(x) for x in new_perms),
                             and_inds=' and indices' if return_indices else '',
-                            e=subend - substart
+                            e=subend - substart,
+                            log_level=logger.LogLevel.Debug
                         )
                     else:
                         subend = time.time()
@@ -2828,7 +2829,8 @@ class SymmetricGroupGenerator:
                             'took {e:.3f}s...'
                         ],
                             nt=len(new_inds) if not (split_results or preserve_ordering) else sum(len(x) for x in new_inds),
-                            e=subend - substart
+                            e=subend - substart,
+                            log_level=logger.LogLevel.Debug
                         )
 
             # now we need to also reshuffle the states so
@@ -2885,7 +2887,8 @@ class SymmetricGroupGenerator:
                     ],
                     nt=len(perms) if not (split_results or preserve_ordering) else sum(len(x) for x in perms),
                     and_inds=' and indices' if return_indices else '',
-                    e=end-start
+                    e=end-start,
+                    log_level=logger.LogLevel.Debug
                 )
             else:
                 logger.log_print([
@@ -2893,7 +2896,8 @@ class SymmetricGroupGenerator:
                     'took {e:.3f}s...'
                     ],
                     nt=len(indices) if not (split_results or preserve_ordering) else sum(len(x) for x in indices),
-                    e=end-start
+                    e=end-start,
+                    log_level=logger.LogLevel.Debug
                 )
 
             if not return_excitations:

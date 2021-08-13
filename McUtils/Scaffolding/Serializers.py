@@ -228,6 +228,9 @@ class BaseSerializer(metaclass=abc.ABCMeta):
     """
     Serializer base class to define the interface
     """
+
+    default_extension="" # mostly useful later
+
     @abc.abstractmethod
     def convert(self, data):
         """
@@ -275,6 +278,7 @@ class JSONSerializer(BaseSerializer):
     """
     A serializer that makes dumping data to JSON simpler
     """
+    default_extension = ".json"
     class BaseEncoder(json.JSONEncoder):
         def __init__(self, *args, pseudopickler=None, allow_pickle=True, **kwargs):
             super().__init__(*args, **kwargs)
@@ -338,6 +342,7 @@ class YAMLSerializer(BaseSerializer):
     Doesn't support arbitrary python objects since that hasn't seemed like
     a huge need yet...
     """
+    default_extension = ".yml"
     def __init__(self):
         # just checks that we do really have YAML support...
         import yaml as api
@@ -371,6 +376,7 @@ class HDF5Serializer(BaseSerializer):
     To minimize complexity, we always use NumPy & Pseudopickle as an interface layer.
     This restricts what we can serialize, but generally in insignificant ways.
     """
+    default_extension = ".hdf5"
     def __init__(self, allow_pickle=True, psuedopickler=None):
         import h5py as api
         self.api = api
@@ -714,8 +720,10 @@ class HDF5Serializer(BaseSerializer):
 
 class NumPySerializer(BaseSerializer):
     """
-    A serializer that makes implements NPZ dumps
+    A serializer that implements NPZ dumps
     """
+
+    default_extension = ".npz"
 
     # we define a converter layer that will coerce everything to NumPy arrays
     atomic_types = (str, int, float)
@@ -880,6 +888,9 @@ class ModuleSerializer(BaseSerializer):
     Serialization doesn't support loading arbitrary python code, but deserialization does.
     Use at your own risk.
     """
+
+    default_extension = ".py"
+
     default_loader = None
     default_attr = "config"
     def __init__(self, attr=None, loader=None):
