@@ -232,7 +232,7 @@ class ParameterManager:
             raise AttributeError("{}.{}: object {} needs an attribute {} to filter against")
         return props
 
-    def bind(self, obj, props = None):
+    def bind(self, obj, props=None):
         if props is None:
             props = self.get_props(obj)
         for k in props:

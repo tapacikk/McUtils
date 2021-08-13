@@ -189,6 +189,27 @@ class Logger:
             logger = NullLogger()
         return logger
 
+    @staticmethod
+    def preformat_keys(key_functions):
+        """
+        Generates a closure that will take the supplied
+        keys/function pairs and update them appropriately
+
+        :param key_functions:
+        :type key_functions:
+        :return:
+        :rtype:
+        """
+
+        def preformat(*args, **kwargs):
+
+            for k,v in kwargs.items():
+                if k in key_functions:
+                    kwargs[k] = key_functions[k](v)
+
+            return args, kwargs
+        return preformat
+
     def format_message(self, message, *params, preformatter=None, **kwargs):
         if preformatter is not None:
             args = preformatter(*params, **kwargs)
