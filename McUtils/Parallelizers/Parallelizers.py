@@ -62,6 +62,15 @@ class Parallelizer(metaclass=abc.ABCMeta):
         return self.load_registry()
 
     @classmethod
+    def get_default(cls):
+        """
+        For compat.
+        
+        :return:
+        :rtype:
+        """
+        return cls.lookup(None)
+    @classmethod
     def lookup(cls, key):
         """
         Checks in the registry to see if a given parallelizer is there
