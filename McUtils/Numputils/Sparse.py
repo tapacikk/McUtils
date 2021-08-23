@@ -1,5 +1,5 @@
 import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc
-from ..Scaffolding import MaxSizeCache
+from ..Scaffolding import MaxSizeCache, Logger
 from .SetOps import contained
 from .Misc import infer_inds_dtype
 
@@ -586,7 +586,8 @@ class ScipySparseArray(SparseArray):
                  layout=None,
                  dtype=None,
                  initialize=True,
-                 cache_block_data=True
+                 cache_block_data=True,
+                 logger=None
                  ):
         """
 
@@ -602,6 +603,8 @@ class ScipySparseArray(SparseArray):
         :type initialize:
         :param cache_block_data: whether or not
         :type cache_block_data:
+        :param logger: the logger to use for debug purposes
+        :type logger: Logger
         """
         self._shape = tuple(shape) if shape is not None else shape
         self._a = a
@@ -611,6 +614,7 @@ class ScipySparseArray(SparseArray):
         self._block_data_sorted = False
         self._block_inds = None # cached to speed things up
         self._block_vals = None # cached to speed things up
+        self.logger = logger
         if initialize:
             self._init_matrix(cache_block_data=cache_block_data)
             self._validate()
@@ -686,6 +690,8 @@ class ScipySparseArray(SparseArray):
     def _init_matrix(self, cache_block_data=True):
         a = self._a
         if isinstance(a, ScipySparseArray):
+            if self.logger is not None:
+                self.logger.log_print("initializing from existing `SparseArray`", log_level=self.logger.LogLevel.Debug)
             if self.fmt is not a.fmt:
                 self._a = self.fmt(a._a, shape=a.shape)
             else:
@@ -696,6 +702,8 @@ class ScipySparseArray(SparseArray):
             else:
                 self._shape = a.shape
         elif isinstance(a, sp.spmatrix):
+            if self.logger is not None:
+                self.logger.log_print("initializing from existing `spmatrix`", log_level=self.logger.LogLevel.Debug)
             if self._shape is None:
                 self._shape = a.shape
         elif isinstance(a, np.ndarray):
@@ -713,11 +721,15 @@ class ScipySparseArray(SparseArray):
                     fmt = sp.csr_matrix
             else:
                 fmt = self._fmt
+            if self.logger is not None:
+                self.logger.log_print("initializing from `ndarray`", log_level=self.logger.LogLevel.Debug)
             self._a = fmt(a, shape=a.shape)
 
         # we're gonna support the (vals, (i_1, i_2, i_3, ...)) syntax for constructing
         # an array based on its non-zero positions
         elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1][0]):
+            if self.logger is not None:
+                self.logger.log_print("initializing from vals and indices", log_level=self.logger.LogLevel.Debug)
             data, block_vals, block_inds, self._shape = self.construct_sparse_from_val_inds(
                 a[0], a[1], self._shape, self._fmt
             )
@@ -742,7 +754,7 @@ class ScipySparseArray(SparseArray):
                     self._block_data_sorted = False
 
     @classmethod
-    def construct_sparse_from_val_inds(cls, block_vals, block_inds, shape, fmt, cache_block_data=True):
+    def construct_sparse_from_val_inds(cls, block_vals, block_inds, shape, fmt, cache_block_data=True, logger=None):
         block_vals = np.asanyarray(block_vals)
         if shape is None:
             shape = tuple(np.max(x) for x in block_inds)
@@ -762,9 +774,16 @@ class ScipySparseArray(SparseArray):
                     len(block_inds)
                 ))
 
+
+            if logger is not None:
+                logger.log_print("calculating flat indices", log_level=logger.LogLevel.Debug)
+
             flat = np.ravel_multi_index(block_inds, shape)  # no reason to cache this since we're going to sort it...
 
             if cache_block_data:
+
+                if logger is not None:
+                    logger.log_print("sorting cached data", log_level=logger.LogLevel.Debug)
                 # gotta make sure our inds are sorted so we don't run into sorting issues later...
                 sort = np.argsort(flat)
                 flat = flat[sort]
@@ -772,6 +791,8 @@ class ScipySparseArray(SparseArray):
                 block_inds = (flat, tuple(i[sort] for i in block_inds))
                 del sort  # clean up for memory reasons
 
+            if logger is not None:
+                logger.log_print("constructing 2D indices", log_level=logger.LogLevel.Debug)
             # this can help significantly with memory usage...
             total_shape = cls._get_balanced_shape(shape)
             init_inds = np.unravel_index(flat, total_shape)  # no reason to cache this since we're not going to use it
@@ -784,6 +805,9 @@ class ScipySparseArray(SparseArray):
                 fmt = sp.csc_matrix
             else:
                 fmt = sp.csr_matrix
+
+        if logger is not None:
+            logger.log_print("initializing {fmt} from indices and values", fmt=fmt, log_level=logger.LogLevel.Debug)
 
         try:
             data = fmt((block_vals, init_inds), shape=total_shape)

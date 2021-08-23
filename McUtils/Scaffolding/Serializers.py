@@ -11,6 +11,7 @@ __all__= [
     "BaseSerializer",
     "JSONSerializer",
     "NumPySerializer",
+    "NDarrayMarshaller",
     "HDF5Serializer",
     "YAMLSerializer",
     "ModuleSerializer"
@@ -370,24 +371,33 @@ class YAMLSerializer(BaseSerializer):
         else:
             return dat
 
-class HDF5Serializer(BaseSerializer):
+class NDarrayMarshaller:
     """
-    Defines a serializer that can prep/dump python data to HDF5.
-    To minimize complexity, we always use NumPy & Pseudopickle as an interface layer.
-    This restricts what we can serialize, but generally in insignificant ways.
+    Support class for `HDF5Serializer` and other
+    NumPy-friendly interfaces that marshalls data
+    to/from NumPy arrays
     """
-    default_extension = ".hdf5"
-    def __init__(self, allow_pickle=True, psuedopickler=None):
-        import h5py as api
-        self.api = api
+
+    def __init__(self,
+                 allow_pickle=True,
+                 psuedopickler=None,
+                 allow_records=False,
+                 all_dicts=False,
+                 converters=None
+                 ):
         self.allow_pickle = allow_pickle
         if allow_pickle and psuedopickler is None:
             psuedopickler = PseudoPickler(b64encode=True)
         self.psuedopickler = psuedopickler
+        self.all_dicts = all_dicts
+        self.allow_records = allow_records
+        if converters is None:
+            converters = self.default_converter_dispatch
+        self.converter_dispatch = converters
 
     # we define a converter layer that will coerce everything to NumPy arrays
     atomic_types = (str, int, float, bool, np.floating, np.integer, np.bool)
-    converter_dispatch = OrderedDict((
+    default_converter_dispatch = OrderedDict((
         ((np.ndarray,), lambda data, cls: cls._iterable_to_numpy(data)),
         ('to_state', lambda x, s: s._psuedo_pickle_to_numpy(x)),
         ('asarray', lambda data, cls: cls._iterable_to_numpy(data.asarray())),
@@ -402,16 +412,12 @@ class HDF5Serializer(BaseSerializer):
         return np.array([data]).reshape(())
 
     def _dict_to_numpy(self, data):
-        return {k:self._convert(v) for k,v in data.items()}
+        return {k: self.convert(v) for k, v in data.items()}
 
     def _none_to_none(self, data):
         return None
 
-    allow_records = False
-    def _iterable_to_numpy(self, data):
-        # we do an initial pass to check if data is a numpy array
-        # or if it needs to be/can conceivably be converted
-
+    def _prep_iterable(self, data):
         if isinstance(data, np.ndarray):
             arr = data
         else:
@@ -447,38 +453,48 @@ class HDF5Serializer(BaseSerializer):
                     for i, v in enumerate(data):
                         arr[i] = v
 
+        return arr
+
+    def _iterable_to_numpy(self, data):
+        # we do an initial pass to check if data is a numpy array
+        # or if it needs to be/can conceivably be converted
+
+        arr = self._prep_iterable(data)
+
         if arr.dtype == np.dtype(object):
             # map iterable into a stack of datasets :|
-            records = [self._convert(v) for i,v in enumerate(data)]
+            records = [self.convert(v) for i, v in enumerate(data)]
             if self.allow_records and all(isinstance(v, np.ndarray) for v in records):
                 # create record dtype...
                 ds_dtype = [
                     ('item_{}'.format(i), v.dtype, v.shape if v.shape != (0,) else ())
-                    for i,v in enumerate(records)
+                    for i, v in enumerate(records)
                 ]
                 ds_arr = np.recarray((1,), dtype=ds_dtype)
-                for i,v in enumerate(records):
+                for i, v in enumerate(records):
                     key = 'item_{}'.format(i)
                     if v.shape != (0,):
                         ds_arr[key] = v
                 return ds_arr
-            else:
+            elif self.all_dicts:
                 return dict(
                     {
-                        '_list_item_'+str(i): v
+                        '_list_item_' + str(i): v
                         for i, v in enumerate(records)
                     },
-                    _list_numitems=self._convert(len(records))
+                    _list_numitems=self.convert(len(records))
                 )
+            else:
+                return records
         else:
             return arr
 
     def _psuedo_pickle_to_numpy(self, data):
         data = self.psuedopickler.serialize(data)
         # return self._convert(data, allow_pickle=False)
-        return self._convert(data)
+        return self.convert(data)
 
-    def _convert(self, data, allow_pickle=None):
+    def convert(self, data, allow_pickle=None):
         """
         Recursively loop through, test data, make sure HDF5 compatible
         :param data:
@@ -518,6 +534,76 @@ class HDF5Serializer(BaseSerializer):
         finally:
             self.allow_pickle = cur_pickle
 
+    def deconvert(self, data):
+        """
+        Reverses the conversion process
+        used to marshall the data
+
+        :param data:
+        :type data:
+        :return:
+        :rtype:
+        """
+
+        # we loop through the keys and recursively build up a dict
+        if hasattr(data, 'items'):
+            res = {}
+            for k, v in data.items():
+                res[k] = self.deconvert(v)
+            if '_list_numitems' in res:
+                # actually an iterable but with inconsistent shape
+                n_items = res['_list_numitems']
+                res = [res['_list_item_' + str(i)] for i in range(n_items)]
+            elif list(res.keys()) == ['_data']:  # special case for if we just saved a single array to file
+                res = res['_data']
+        elif not isinstance(data, np.ndarray):
+            res = [self.deconvert(v) for v in data]
+        else:
+            res = data
+
+        # for primitive data...
+        if isinstance(res, np.ndarray) and res.shape == ():
+            dtype_name = str(res.dtype)
+            if '|S' in dtype_name:
+                # convert back from bytes to unicode...
+                try:
+                    res = res.astype(dtype=dtype_name.replace('|S', '<U'))
+                except:
+                    pass
+            res = res.tolist()
+
+        if self.allow_pickle:
+            res = self.psuedopickler.deserialize(res)
+
+        return res
+
+    def __call__(self, data, allow_pickle=None):
+        if allow_pickle is None:
+            allow_pickle = self.allow_pickle
+        return self.convert(data, allow_pickle=allow_pickle)
+
+class HDF5Serializer(BaseSerializer):
+    """
+    Defines a serializer that can prep/dump python data to HDF5.
+    To minimize complexity, we always use NumPy & Pseudopickle as an interface layer.
+    This restricts what we can serialize, but generally in insignificant ways.
+    """
+    default_extension = ".hdf5"
+    converter_dispatch = NDarrayMarshaller.default_converter_dispatch
+    def __init__(self, allow_pickle=True, psuedopickler=None):
+        import h5py as api
+        self.api = api
+        self.allow_pickle = allow_pickle
+        if allow_pickle and psuedopickler is None:
+            psuedopickler = PseudoPickler(b64encode=True)
+        self.psuedopickler = psuedopickler
+        self.marshaller = NDarrayMarshaller(
+            allow_pickle=allow_pickle,
+            psuedopickler=psuedopickler,
+            all_dicts=True,
+            converters=self.converter_dispatch
+        )
+
     def convert(self, data):
         """
         Converts data into format that can be serialized easily
@@ -527,7 +613,7 @@ class HDF5Serializer(BaseSerializer):
         :return:
         :rtype:
         """
-        return ConvertedData(self._convert(data), self)
+        return ConvertedData(self.marshaller(data), self)
 
     def _create_dataset(self, h5_obj, key, data):
         """
@@ -683,31 +769,10 @@ class HDF5Serializer(BaseSerializer):
                     names = res.dtype.names
                     if names is not None and 'item_0' in names:
                         res = [ res['item_'+str(i)][0] for i in range(len(names))]
+
+            res = self.marshaller.deconvert(res)
         else:
-            # we loop through the keys and recursively build up a dict
-            res = {}
-            for k, v in data.items():
-                res[k] = self.deconvert(v)
-            if '_list_numitems' in res:
-                # actually an iterable but with inconsistent shape
-                n_items = res['_list_numitems']
-                res = [ res['_list_item_'+str(i)] for i in range(n_items) ]
-            elif list(res.keys()) == ['_data']: # special case for if we just saved a single array to file
-                res = res['_data']
-
-        # for primitive data...
-        if isinstance(res, np.ndarray) and res.shape == ():
-            dtype_name = str(res.dtype)
-            if '|S' in dtype_name:
-                # convert back from bytes to unicode...
-                try:
-                    res = res.astype(dtype=dtype_name.replace('|S', '<U'))
-                except:
-                    pass
-            res = res.tolist()
-
-        if self.allow_pickle:
-            res = self.psuedopickler.deserialize(res)
+            res = self.marshaller.deconvert(data)
 
         return res
 

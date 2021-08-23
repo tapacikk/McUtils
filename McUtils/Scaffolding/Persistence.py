@@ -14,9 +14,7 @@ from .Configurations import Config
 
 __all__ = [
     "PersistenceLocation",
-    "PersistenceManager",
-    "FileBackedObjectManager",
-    "FileBackedAttribute"
+    "PersistenceManager"
 ]
 
 class PersistenceLocation:
@@ -228,67 +226,3 @@ class PersistenceManager:
         key = data['name']
         cfg = self.load_config(key, make_new=True)
         cfg.update(**data)
-
-class FileBackedObjectManager:
-    """
-    Provides an interface to back an object with
-    a serializer
-    """
-
-    default_directory=PersistenceLocation("file_backed_objects")
-    def __init__(self, obj,
-                 chk=None,
-                 loc=None,
-                 checkpoint_class=NumPyCheckpointer
-                 ):
-        """
-        :param obj: the object to back
-        :type obj: object
-        :param chk: a checkpointer to manage storing attributes
-        :type chk: Checkpointer
-        :param loc: the location where attributes should be stored
-        :type loc: str
-        :param checkpoint_class: a subclass of Checkpointer that implements the actual writing to disk
-        :type checkpoint_class: Type[Checkpointer]
-        """
-        self.obj = obj
-        if chk is None:
-            if loc is None:
-                loc = self.default_directory.loc
-            obj_file = os.path.join(loc, self.basename+checkpoint_class.default_extension)
-            chk = checkpoint_class(obj_file)
-
-        self.chk = chk
-        self._id = None
-        self._cache = {}
-
-    @property
-    def basename(self):
-        if self._tag is None:
-            self._tag = self.get_basename()
-        return self.basename
-    @basename.setter
-    def basename(self, v):
-        self._tag = v
-
-    def get_basename(self):
-        return "{}_{}".format(type(self.obj).__name__, id(self.obj))
-
-    def save_attr(self, attr):
-        with self.chk:
-            self.chk[attr] = getattr(self.obj, attr)
-        return FileBackedAttribute(self, attr)
-
-    def load_attr(self, attr):
-        with self.chk:
-            return self.chk[attr]
-
-class FileBackedAttribute:
-    """
-    A helper class to make it very clear that
-    an attribute is backed by a file on disk
-    """
-
-    def __init__(self, manager, attr):
-        self.manager = manager
-        self.attr = attr

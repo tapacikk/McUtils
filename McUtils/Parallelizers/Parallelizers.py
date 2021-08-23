@@ -4,10 +4,10 @@ Currently primarily targets multiprocessing and mpi4py, but also should work
 with Ray. Dask will require more work unfortunately...
 """
 
-import abc, weakref, functools, multiprocessing as mp, typing
+import abc, functools, multiprocessing as mp, typing
 import numpy as np, pickle
 
-from ..Scaffolding import Logger, NullLogger
+from ..Scaffolding import Logger, NullLogger, ObjectRegistry
 
 __all__ = [
     "Parallelizer",
@@ -37,9 +37,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
     #   details for initialization/registration/getting and setting
     #   up a parallelizer
     #
-    parallelizer_registry = weakref.WeakValueDictionary()
-    default_key="default"
-    _default_par_stack = [] #stack to use when setting the default parallelizer
+    _par_registry = None
     default_printer = print
     def __init__(self, logger=None):
         self._active_sentinel=0
@@ -47,6 +45,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
         if logger is None:
             logger = NullLogger()
         self.logger=logger
+        self._default_stack = None
         # if printer is None:
         #     self._logger = Logger()
         #     self._default_printer = self._logger.log_print
@@ -54,8 +53,13 @@ class Parallelizer(metaclass=abc.ABCMeta):
         #
 
     @classmethod
-    def get_fallback_parallelizer(cls):
-        return SerialNonParallelizer()
+    def load_registry(cls):
+        if cls._par_registry is None:
+            cls._par_registry = ObjectRegistry(default=SerialNonParallelizer())
+        return cls._par_registry
+    @property
+    def parallelizer_registry(self):
+        return self.load_registry()
 
     @classmethod
     def lookup(cls, key):
@@ -67,25 +71,8 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
-        if isinstance(key, Parallelizer):
-            return key
-        if key is None:
-            return cls.get_fallback_parallelizer()
-        if key not in cls.parallelizer_registry:
-            if key != cls.default_key:
-                return cls.get_default()
-            else:
-                return cls.get_fallback_parallelizer()
-        else:
-            return cls.parallelizer_registry[key]
-    @classmethod
-    def get_default(cls):
-        """
-        Returns the 'default' parallelizer
-        :return:
-        :rtype:
-        """
-        return cls.lookup(cls.default_key)
+        return cls.load_registry().lookup(key)
+
     def register(self, key):
         """
         Checks in the registry to see if a given parallelizer is there
@@ -96,23 +83,6 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :rtype:
         """
         self.parallelizer_registry[key] = self
-    def set_default(self):
-        """
-        Sets the parallelizer as the default one
-        :return:
-        :rtype:
-        """
-        if self.default_key in self.parallelizer_registry:
-            self._default_par_stack.append(self.parallelizer_registry[self.default_key])
-        self.register(self.default_key)
-    def reset_default(self):
-        """
-        Resets the default parallelizer
-        :return:
-        :rtype:
-        """
-        if len(self._default_par_stack) > 0:
-            self._default_par_stack.pop()
 
     @property
     def active(self):
@@ -145,7 +115,8 @@ class Parallelizer(metaclass=abc.ABCMeta):
         :rtype:
         """
         if not self.active:
-            self.set_default()
+            self._default_stack = self.load_registry().temp_default(self)
+            self._default_stack.__enter__()
             self.initialize()
             self._pickle_prot = pickle.DEFAULT_PROTOCOL
             pickle.DEFAULT_PROTOCOL = pickle.HIGHEST_PROTOCOL
@@ -166,7 +137,8 @@ class Parallelizer(metaclass=abc.ABCMeta):
         """
         self._active_sentinel -= 1
         if not self.active:
-            self.reset_default()
+            self._default_stack.__exit__(exc_type, exc_val, exc_tb)
+            self._default_stack = None
             self.finalize(exc_type, exc_val, exc_tb)
             # self._pickle_prot = pickle.DEFAULT_PROTOCOL
             pickle.DEFAULT_PROTOCOL = self._pickle_prot
@@ -208,7 +180,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
 
         def main_process_func(*args, parallelizer=None, **kwargs):
             if parallelizer is None:
-                parallelizer = Parallelizer.get_default()
+                parallelizer = Parallelizer.lookup(None)
             if parallelizer.on_main:
                 kwargs['parallelizer'] = parallelizer
                 return func(*args, **kwargs)
@@ -231,7 +203,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
         @functools.wraps(func)
         def worker_process_func(*args, parallelizer=None, **kwargs):
             if parallelizer is None:
-                parallelizer = Parallelizer.get_default()
+                parallelizer = Parallelizer.lookup(None)
             if not parallelizer.on_main:
                 kwargs['parallelizer'] = parallelizer
                 return func(*args, **kwargs)
