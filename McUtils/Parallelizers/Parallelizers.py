@@ -65,7 +65,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
     def get_default(cls):
         """
         For compat.
-        
+
         :return:
         :rtype:
         """
@@ -146,8 +146,9 @@ class Parallelizer(metaclass=abc.ABCMeta):
         """
         self._active_sentinel -= 1
         if not self.active:
-            self._default_stack.__exit__(exc_type, exc_val, exc_tb)
-            self._default_stack = None
+            if self._default_stack is not None:
+                self._default_stack.__exit__(exc_type, exc_val, exc_tb)
+                self._default_stack = None
             self.finalize(exc_type, exc_val, exc_tb)
             # self._pickle_prot = pickle.DEFAULT_PROTOCOL
             pickle.DEFAULT_PROTOCOL = self._pickle_prot
