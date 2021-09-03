@@ -18,6 +18,7 @@ class LogLevel(enum.Enum):
     Normal = 10
     Debug = 50
     All = 100
+    Never = 1000 # for debug statements that should really be deleted but I'm too lazy to
 
     def __eq__(self, other):
         if isinstance(other, LogLevel):
@@ -282,6 +283,7 @@ class Logger:
 
             if message_prepper is not None:
                 message = message_prepper(message, *messrest)
+                messrest = ()
 
             if len(messrest) > 0:
                 message = [message, *messrest]
