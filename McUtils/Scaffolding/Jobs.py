@@ -192,10 +192,10 @@ class JobManager(PersistenceManager):
         :param kw:
         :type kw:
         :return:
-        :rtype:
+        :rtype: Job
         """
         if os.path.isdir(name):
-            kw['initialization_directory'] = name
+            # kw['initialization_directory'] = name
             name = os.path.basename(name)
         if timestamp:
             name += "_" + datetime.datetime.now().isoformat()
@@ -208,7 +208,7 @@ class JobManager(PersistenceManager):
         directly to starting a job from a folder
 
         :return:
-        :rtype:
+        :rtype: Job
         """
 
         if make_config:
@@ -229,7 +229,7 @@ class JobManager(PersistenceManager):
         current working directory
 
         :return:
-        :rtype:
+        :rtype: Job
         """
 
         return cls.job_from_folder(os.getcwd(), job_type=job_type, make_config=make_config, **opts)

@@ -7,7 +7,7 @@ import numpy as np, io, os, sys, tempfile as tmpf
 class ScaffoldingTests(TestCase):
 
     #region Checkpointing
-    @debugTest
+    @validationTest
     def test_Pseudopickle(self):
 
         from McUtils.Numputils import SparseArray
@@ -51,7 +51,7 @@ class ScaffoldingTests(TestCase):
             loaded[1].tolist().decode('utf-8'),
             {k:v.tolist() for k,v in loaded[2].items()}
         ])
-    @debugTest
+    @validationTest
     def test_JSONSerialization(self):
         tmp = io.StringIO()
         serializer = JSONSerializer()
@@ -85,7 +85,7 @@ class ScaffoldingTests(TestCase):
         loaded = serializer.deserialize(tmp, key='mixed_data')
         self.assertEquals(mixed_data, loaded)
 
-    @debugTest
+    @validationTest
     def test_JSONPseudoPickleSerialization(self):
 
         from McUtils.Numputils import SparseArray
@@ -272,7 +272,7 @@ class ScaffoldingTests(TestCase):
         finally:
             os.remove(my_file)
 
-    @debugTest
+    @validationTest
     def test_HDF5Problems(self):
 
         test = os.path.expanduser('~/Desktop/woof.hdf5')
@@ -518,5 +518,29 @@ class ScaffoldingTests(TestCase):
             with open(job.logger.log_file) as doopy:
                 doop_str = doopy.read()
                 self.assertNotEqual("", doop_str)
+
+    @debugTest
+    def test_CurrentJobDiffFile(self):
+
+        import time
+
+        curdir = os.getcwd()
+        try:
+            with tmpf.TemporaryDirectory() as temp_dir:
+                os.chdir(temp_dir)
+                with JobManager.current_job(job_file='woof.json') as job:
+                    self.assertEquals(os.path.basename(job.checkpoint.checkpoint_file), 'woof.json')
+                    logger = job.logger
+
+                    with logger.block(tag="Sleeping"):
+                        logger.log_print("Goodnight!")
+                        time.sleep(.2)
+                        logger.log_print("Okee I'm back up")
+
+                with open(job.logger.log_file) as doopy:
+                    doop_str = doopy.read()
+                    self.assertNotEqual("", doop_str)
+        finally:
+            os.chdir(curdir)
 
     #endregion
