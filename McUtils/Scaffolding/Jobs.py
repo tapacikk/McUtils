@@ -202,7 +202,7 @@ class JobManager(PersistenceManager):
         return self.load(name, make_new=True, init=kw)
 
     @classmethod
-    def job_from_folder(cls, folder, job_type=None, make_config=True):
+    def job_from_folder(cls, folder, job_type=None, make_config=True, **opts):
         """
         A special case convenience function that goes
         directly to starting a job from a folder
@@ -221,7 +221,7 @@ class JobManager(PersistenceManager):
         return jm.job(folder)
 
     @classmethod
-    def current_job(cls, job_type=None, make_config=True):
+    def current_job(cls, job_type=None, make_config=True, **opts):
         """
         A special case convenience function that starts a
         JobManager one directory up from the current
@@ -232,7 +232,7 @@ class JobManager(PersistenceManager):
         :rtype:
         """
 
-        return cls.job_from_folder(os.getcwd(), job_type=job_type, make_config=make_config)
+        return cls.job_from_folder(os.getcwd(), job_type=job_type, make_config=make_config, **opts)
 
 
 
