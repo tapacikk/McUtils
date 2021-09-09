@@ -422,13 +422,16 @@ class TensorExpansionTerms:
             return self.left.ndim + self.right.ndim - 2
         def deriv(self):
             return (
-                type(self)(self.left.dQ(), self.i+1, self.j, self.right)
-                + type(self)(
+                type(self)(self.left.dQ(),
+                           self.i+1 if isinstance(self.i, (int, np.integer)) else [x+1 for x in self.i], # not sure if this is right...
+                           self.j,
+                           self.right
+                ) + type(self)(
                         self.left,
                         self.i,
-                        self.j+1,
+                        self.j+1 if isinstance(self.j, (int, np.integer)) else [x+1 for x in self.j],
                         self.right.dQ()
-                    ).shift(self.left.ndim, 1)
+                    ).shift(self.left.ndim - (0 if isinstance(self.j, (int, np.integer)) else len(self.j) - 1), 1)
             )
         def to_string(self):
             return '<{}:{},{}:{}>'.format(self.left, self.i, self.j, self.right)
@@ -705,6 +708,9 @@ class TensorDerivativeConverter:
     A class that makes it possible to convert expressions
     involving derivatives in one coordinate system in another
     """
+
+    TensorExpansionError=TensorExpansionError
+
     #TODO: add way to not recompute terms over and over
     def __init__(self, jacobians, derivatives=None,
                  mixed_terms=None,
