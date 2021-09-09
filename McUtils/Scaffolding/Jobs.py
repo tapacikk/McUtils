@@ -218,7 +218,7 @@ class JobManager(PersistenceManager):
                 with open(test_file, "w+") as dump:
                     json.dump({}, dump)
         jm = cls(os.path.dirname(folder), job_type=job_type)
-        return jm.job(folder)
+        return jm.job(folder, **opts)
 
     @classmethod
     def current_job(cls, job_type=None, make_config=True, **opts):
