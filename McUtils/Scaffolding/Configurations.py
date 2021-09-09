@@ -16,7 +16,7 @@ class Config:
     filter itself so that it only provides the keywords supported
     by a `from_config` method.
     """
-    def __init__(self, config, serializer=None):
+    def __init__(self, config, serializer=None, extra_params=None):
         """Loads the config from a file
         :param config:
         :type config: str
@@ -27,6 +27,9 @@ class Config:
         self._serializer = serializer
         self._conf = None
         self._loaded = False
+        if extra_params is None:
+            extra_params = {}
+        self.extra = extra_params
 
     config_file_name = "config"
     config_file_extensions = [".json", ".yml", ".yaml", ".py"]
@@ -108,7 +111,7 @@ class Config:
     @property
     def opt_dict(self):
         self.load_opts()
-        return self._conf
+        return dict(self._conf, **self.extra)
 
     def filter(self, keys, strict=True):
         """

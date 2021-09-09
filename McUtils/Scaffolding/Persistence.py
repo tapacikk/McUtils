@@ -107,7 +107,7 @@ class PersistenceManager:
         :rtype:
         """
         if self.contains(key):
-            return Config(self.obj_loc(key))
+            return Config(self.obj_loc(key), extra_params=init)
         elif make_new:
             return self.new_config(key, init=init)
         else:
