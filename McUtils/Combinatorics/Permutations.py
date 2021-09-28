@@ -5,7 +5,7 @@ Utilities for working with permutations and permutation indexing
 import numpy as np, time, typing, gc, itertools
 # import collections, functools as ft
 from ..Misc import jit, objmode, prange
-from ..Numputils import flatten_dtype, unflatten_dtype, unique, contained, group_by, split_by_regions, find, infer_int_dtype
+from ..Numputils import flatten_dtype, unflatten_dtype, difference as set_difference, unique, contained, group_by, split_by_regions, find, infer_int_dtype
 from ..Scaffolding import NullLogger
 
 __all__ = [
@@ -14,7 +14,8 @@ __all__ = [
     "IntegerPartitionPermutations",
     "SymmetricGroupGenerator",
     "CompleteSymmetricGroupSpace",
-    "LatticePathGenerator"
+    "LatticePathGenerator",
+    "PermutationRelationGraph"
 ]
 
 _infer_dtype = infer_int_dtype
@@ -3244,3 +3245,178 @@ class LatticePathGenerator:
         """
 
         return self.find_paths(other.rules)
+
+class PermutationRelationGraph:
+    """
+    Takes permutations and a set of relations and builds a graph from
+    them
+    """
+
+    def __init__(self, relations):
+        """
+        :param relations: sets of rules connecting permutations
+        :type relations:
+        """
+        self.rels, self.indexer = self.make_relation_graph(relations)
+
+    @classmethod
+    def make_relation_graph(cls, relations):
+        """
+
+        :param relations:
+        :type relations: Iterable[Iterable[Iterable[int]]]
+        :return:
+        :rtype:
+        """
+
+        ndim = len(relations[0][0])
+        indexer = SymmetricGroupGenerator(ndim)
+
+        relations = [np.asanyarray(r) for r in relations]
+        rel_inds = [indexer.to_indices(r) for r in relations]
+
+        rel_groups = []
+        for ind,grp in zip(rel_inds, relations):
+            ind, pos = np.unique(ind, return_index=True)
+            grp = grp[pos,]
+            for n, (ix,g) in enumerate(rel_groups):
+                if np.any(np.isin(ind, ix)):
+                    ix, pos = np.unique(np.concatenate([ix, ind], axis=0), return_index=True)
+                    g = np.concatenate([g, grp], axis=0)[pos,]
+                    rel_groups[n] = (ix, g)
+                    break
+            else:
+                rel_groups.append([ind, grp])
+
+        return rel_groups, indexer
+
+    def apply_rels(self, states, max_sum=None):
+        """
+        For each state checks if it is divisible by one of the group rules and if so applies the
+        relevant transformations to it
+
+        :param states:
+        :type states:
+        :return:
+        :rtype:
+        """
+
+        new_states = states
+        changed = False
+        for i,g in self.rels:
+            for n,r in enumerate(g):
+                # nzp = np.nonzero(r)
+                # if len(nzp) > 0:
+                #     nzp = nzp[0]
+                # if len(nzp) > 0:
+                #     test_states = states[:, nzp]
+                #     print(">>>>", nzp)
+                #     print("> ", test_states)
+                #     print("> ", r[np.newaxis, nzp])
+                #     divis_pos = np.where(np.all(test_states >= r[np.newaxis, nzp], axis=0))
+                #     if len(divis_pos) > 0:
+                #         divis_pos = divis_pos[0]
+                # else:
+                #     divis_pos = np.arange(len(states))
+
+                # if len(divis_pos) > 0:
+                #     substates = states[divis_pos,]
+
+                rule_changes = np.delete(g - r[np.newaxis, :], n, axis=0)
+                gen_states = states[:, np.newaxis, :] + rule_changes[np.newaxis, :, :]
+                gen_states = gen_states.reshape(-1, gen_states.shape[-1])
+                gen_states = gen_states[np.all(gen_states >= 0, axis=1),]
+                if max_sum is not None:
+                    gen_states = gen_states[np.sum(gen_states, axis=1) <= max_sum]
+                changed = True
+                new_states = np.concatenate([new_states, gen_states], axis=0)
+
+        if changed:
+            new_states = np.unique(new_states, axis=0)
+
+        return new_states
+
+    def build_state_graph(self, states, max_sum=None, extra_groups=None, max_iterations=10, raise_iteration_error=True):
+        """
+
+        :param states:
+        :type states:
+        :param max_iterations:
+        :type max_iterations:
+        :param raise_iteration_error:
+        :type raise_iteration_error:
+        :return:
+        :rtype: Iterable[np.ndarray]
+        """
+
+        states = np.asanyarray(states)
+
+        ix = self.indexer.to_indices(states)
+        groups = [(np.array([i]), np.array([s])) for i,s in zip(ix, states)]
+        for m in range(max_iterations):
+            # at each pass we take the existing state groups (initally singletons) propagate rules
+            # then check for intersections with the remaining groups and merge where possible/necessary
+            changed_flag = False
+            for n, (i,g) in enumerate(groups):
+                g_new = self.apply_rels(g, max_sum=max_sum)
+                # print(g)
+                # print(g_new)
+                if len(g_new) > len(g):
+                    changed_flag = True
+                    i_new = self.indexer.to_indices(g_new)
+                    groups[n] = (i_new, g_new)
+
+            if not changed_flag:
+                break
+
+            groups_new = []
+            for ind,grp in groups:
+                for n, (ix, g) in enumerate(groups_new):
+                    if np.any(np.isin(ind, ix)):
+                        ix, pos = np.unique(np.concatenate([ix, ind], axis=0), return_index=True)
+                        g = np.concatenate([g, grp], axis=0)[pos,]
+                        groups_new[n] = (ix, g)
+                        break
+                else:
+                    groups_new.append((ind, grp))
+
+            groups = groups_new
+
+        else:
+            if raise_iteration_error:
+                raise ValueError("relation graph from {} did not converge after {} iterations".format(self.rels, max_iterations))
+
+        if extra_groups is not None:
+            extra_groups = [np.asanyarray(g) for g in extra_groups]
+            extra_groups = [(self.indexer.to_indices(g), g) for g in extra_groups]
+
+            # first merge extra groups into existing ones
+            for ind, grp in extra_groups:
+                for n, (ix, g) in enumerate(groups):
+                    if np.any(np.isin(ind, ix)):
+                        ix, pos = np.unique(np.concatenate([ix, ind], axis=0), return_index=True)
+                        g = np.concatenate([g, grp], axis=0)[pos,]
+                        groups[n] = (ix, g)
+                        break
+                else:
+                    groups.append((ind, grp))
+
+            # now merge all groups into themselves b.c. we might have hit dupes
+            groups_new = []
+            for ind, grp in groups:
+                for n, (ix, g) in enumerate(groups_new):
+                    if np.any(np.isin(ind, ix)):
+                        ix, pos = np.unique(np.concatenate([ix, ind], axis=0), return_index=True)
+                        g = np.concatenate([g, grp], axis=0)[pos,]
+                        groups_new[n] = (ix, g)
+                        break
+                else:
+                    groups_new.append((ind, grp))
+
+            groups = groups_new
+
+
+        return [g[1] for g in groups]
+
+
+

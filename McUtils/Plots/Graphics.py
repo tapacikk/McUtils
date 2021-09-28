@@ -398,7 +398,8 @@ class GraphicsBase(metaclass=ABCMeta):
 
     def close(self, force=False):
         if force or self.parent is None: # parent manages cleanup
-            return self.pyplot.close(self.figure)
+            if self.pyplot is not None:
+                return self.pyplot.close(self.figure)
 
     def __del__(self):
         self.close()
