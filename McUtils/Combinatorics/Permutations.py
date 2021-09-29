@@ -3260,6 +3260,30 @@ class PermutationRelationGraph:
         self.rels, self.indexer = self.make_relation_graph(relations)
 
     @classmethod
+    def merge_groups(cls, groups):
+
+        num_groups = np.inf
+        while len(groups) < num_groups:
+            num_groups = len(groups)
+            new_groups = []
+            for ind, grp in groups:
+                ind, pos = np.unique(ind, return_index=True)
+                grp = grp[pos,]
+                for n, (ix, g) in enumerate(new_groups):
+                    if np.any(np.isin(ind, ix)):
+                        ix, pos = np.unique(np.concatenate([ix, ind], axis=0), return_index=True)
+                        g = np.concatenate([g, grp], axis=0)[pos,]
+                        new_groups[n] = (ix, g)
+                        break
+                else:
+                    new_groups.append([ind, grp])
+
+            groups = new_groups
+
+        return groups
+
+
+    @classmethod
     def make_relation_graph(cls, relations):
         """
 
@@ -3275,18 +3299,7 @@ class PermutationRelationGraph:
         relations = [np.asanyarray(r) for r in relations]
         rel_inds = [indexer.to_indices(r) for r in relations]
 
-        rel_groups = []
-        for ind,grp in zip(rel_inds, relations):
-            ind, pos = np.unique(ind, return_index=True)
-            grp = grp[pos,]
-            for n, (ix,g) in enumerate(rel_groups):
-                if np.any(np.isin(ind, ix)):
-                    ix, pos = np.unique(np.concatenate([ix, ind], axis=0), return_index=True)
-                    g = np.concatenate([g, grp], axis=0)[pos,]
-                    rel_groups[n] = (ix, g)
-                    break
-            else:
-                rel_groups.append([ind, grp])
+        rel_groups = cls.merge_groups(list(zip(rel_inds, relations)))
 
         return rel_groups, indexer
 
@@ -3323,8 +3336,10 @@ class PermutationRelationGraph:
                 #     substates = states[divis_pos,]
 
                 rule_changes = np.delete(g - r[np.newaxis, :], n, axis=0)
+                # print(">>>", rule_changes)
                 gen_states = states[:, np.newaxis, :] + rule_changes[np.newaxis, :, :]
                 gen_states = gen_states.reshape(-1, gen_states.shape[-1])
+                # print("> ", gen_states)
                 gen_states = gen_states[np.all(gen_states >= 0, axis=1),]
                 if max_sum is not None:
                     gen_states = gen_states[np.sum(gen_states, axis=1) <= max_sum]
@@ -3369,18 +3384,7 @@ class PermutationRelationGraph:
             if not changed_flag:
                 break
 
-            groups_new = []
-            for ind,grp in groups:
-                for n, (ix, g) in enumerate(groups_new):
-                    if np.any(np.isin(ind, ix)):
-                        ix, pos = np.unique(np.concatenate([ix, ind], axis=0), return_index=True)
-                        g = np.concatenate([g, grp], axis=0)[pos,]
-                        groups_new[n] = (ix, g)
-                        break
-                else:
-                    groups_new.append((ind, grp))
-
-            groups = groups_new
+            groups = self.merge_groups(groups)
 
         else:
             if raise_iteration_error:
@@ -3390,31 +3394,7 @@ class PermutationRelationGraph:
             extra_groups = [np.asanyarray(g) for g in extra_groups]
             extra_groups = [(self.indexer.to_indices(g), g) for g in extra_groups]
 
-            # first merge extra groups into existing ones
-            for ind, grp in extra_groups:
-                for n, (ix, g) in enumerate(groups):
-                    if np.any(np.isin(ind, ix)):
-                        ix, pos = np.unique(np.concatenate([ix, ind], axis=0), return_index=True)
-                        g = np.concatenate([g, grp], axis=0)[pos,]
-                        groups[n] = (ix, g)
-                        break
-                else:
-                    groups.append((ind, grp))
-
-            # now merge all groups into themselves b.c. we might have hit dupes
-            groups_new = []
-            for ind, grp in groups:
-                for n, (ix, g) in enumerate(groups_new):
-                    if np.any(np.isin(ind, ix)):
-                        ix, pos = np.unique(np.concatenate([ix, ind], axis=0), return_index=True)
-                        g = np.concatenate([g, grp], axis=0)[pos,]
-                        groups_new[n] = (ix, g)
-                        break
-                else:
-                    groups_new.append((ind, grp))
-
-            groups = groups_new
-
+            groups = self.merge_groups(groups + extra_groups)
 
         return [g[1] for g in groups]
 
