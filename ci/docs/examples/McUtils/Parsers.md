@@ -22,7 +22,6 @@ The simplest one is `Capturing`.
 This just specifies that we would like to capture a piece of text.
 There is a slightly more sophisticated instance called `Named` which allows us to attach a _name_ to a group.
 
-
 <div class="card in-out-block" markdown="1" id="Markdown_code">
 
 ```python
@@ -37,6 +36,33 @@ print(key_value_matcher)
 
 ```lang-none
 (?P<key>\w+)(?:=)(?P<value>\w+)
+```
+
+</div>
+</div>
+
+This can be used directly to pull info out of files
+
+<div class="card in-out-block" markdown="1" id="Markdown_code">
+
+```python
+test_data = os.path.join(os.path.dirname(McUtils.__file__), 'ci', 'tests', 'TestData')
+with open(os.path.join(test_data, 'water_OH_scan.log')) as log_dat:
+    sample_data = log_dat.read()
+
+matches = list(key_value_matcher.finditer(sample_data))
+for match in matches[:5]:
+    print(match.groupdict())
+```
+
+<div class="card-body out-block" markdown="1">
+
+```python
+{'key': '0', 'value': 'g09'}
+{'key': 'Input', 'value': 'water_OH_scan'}
+{'key': 'Output', 'value': 'water_OH_scan'}
+{'key': 'Chk', 'value': 'water_OH_scan'}
+{'key': 'NProc', 'value': '8'}
 ```
 
 </div>
