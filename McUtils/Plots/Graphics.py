@@ -46,7 +46,7 @@ class GraphicsBase(metaclass=ABCMeta):
         'epilog'
         'prolog'
     }
-    def _get_def_opt(self, key, val):
+    def _get_def_opt(self, key, val, theme):
         if val is None:
             try:
                 v = object.__getattribute__(self, '_'+key) # we overloaded getattr
@@ -57,6 +57,8 @@ class GraphicsBase(metaclass=ABCMeta):
                     v = None
             if v is None and key in self.default_style:
                 v = self.default_style[key]
+            if v is None and theme is not None and key in theme:
+                v = theme[key]
             return v
         else:
             return val
@@ -94,6 +96,13 @@ class GraphicsBase(metaclass=ABCMeta):
         :type opts:
         """
 
+        # we try to only load pyplot once and use it
+        # as an API rather than a global import
+        # this is to potentially support non-MPL interfaces
+        # in the future
+        self.pyplot = None
+        self._mpl_loaded = False
+
         if subplot_kw is None:
             subplot_kw = {}
 
@@ -108,9 +117,18 @@ class GraphicsBase(metaclass=ABCMeta):
             image_size = self.parent.image_size
         if aspect_ratio is None and parent is not None:
             aspect_ratio = self.parent.aspect_ratio
-        aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio)
-        image_size = self._get_def_opt('image_size', image_size)
-        padding = self._get_def_opt('padding', padding)
+
+
+        theme = self._get_def_opt('theme', theme, {})
+        self.theme=theme
+        self.theme_manager=theme_manager
+        if theme is not None:
+            theme_dict = theme_manager.resolve_theme(theme)[1]
+        else:
+            theme_dict = {}
+        aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio, theme)
+        image_size = self._get_def_opt('image_size', image_size, theme)
+        padding = self._get_def_opt('padding', padding, theme)
         if figure is None and image_size is not None and 'figsize' not in subplot_kw:
             try:
                 w, h = image_size
@@ -135,9 +153,6 @@ class GraphicsBase(metaclass=ABCMeta):
                 image_size = (w, h)
             subplot_kw['figsize'] = (w/72., h/72.)
 
-        theme = self._get_def_opt('theme', theme)
-        self.theme = theme
-        self.theme_manager =theme_manager
         if theme is not None:
             with theme_manager.from_spec(theme):
                 self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
@@ -159,14 +174,19 @@ class GraphicsBase(metaclass=ABCMeta):
         self.animator = None
         self.tighten = tighten
 
-    @staticmethod
-    def _subplot_init(*args, mpl_backend=None, **kw):
-        if mpl_backend is not None:
-            import matplotlib as mpl
-            mpl.use(mpl_backend)
-        import matplotlib.pyplot as plt
+    def load_mpl(self):
+        if not self._mpl_loaded:
+            import matplotlib.pyplot as plt
+            self.pyplot = plt
+            if self.mpl_backend is not None:
+                import matplotlib as mpl
+                mpl.use(self.mpl_backend)
+            self._mpl_loaded = True
 
-        return plt.subplots(*args, **kw)
+    @staticmethod
+    def _subplot_init(*args, mpl_backend=None, figure=None, **kw):
+        figure.load_mpl()
+        return figure.pyplot.subplots(*args, **kw)
 
     def _init_suplots(self, figure, axes, *args, **kw):
         """Initializes the subplots for the Graphics object
@@ -184,7 +204,7 @@ class GraphicsBase(metaclass=ABCMeta):
         """
 
         if figure is None:
-            figure, axes = self._subplot_init(*args, mpl_backend=self.mpl_backend, **kw)
+            figure, axes = self._subplot_init(*args, mpl_backend=self.mpl_backend, figure=self, **kw)
             # yes axes is overwritten intentionally for now -- not sure how to "reparent" an Axes object
         elif isinstance(figure, GraphicsBase):
             axes = figure.axes # type: matplotlib.axes.Axes
@@ -359,26 +379,30 @@ class GraphicsBase(metaclass=ABCMeta):
         if isinstance(self.figure, VTKWindow):
             self.figure.show()
         else:
-            import matplotlib.pyplot as plt
+            self.load_mpl()
 
             if not self.managed:
                 if self.non_interactive:
-                    plt.ioff()
+                    self.pyplot.ioff()
                 elif self.non_interactive is False:
-                    plt.ion()
+                    self.pyplot.ion()
 
             if reshow or not self._shown:
                 self.prep_show()
                 if not self.managed:
-                    plt.show()
+                    self.pyplot.show()
             else:
                 self._shown = False
                 self.refresh().show()
                 # raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
 
-    def close(self):
-        import matplotlib.pyplot as plt
-        return plt.close(self.figure)
+    def close(self, force=False):
+        if force or self.parent is None: # parent manages cleanup
+            if self.pyplot is not None:
+                return self.pyplot.close(self.figure)
+
+    def __del__(self):
+        self.close()
 
     def clear(self):
         ax = self.axes  # type: matplotlib.axes.Axes
@@ -497,7 +521,7 @@ class Graphics(GraphicsBase):
         frame=((True, False), (True, False)),
         aspect_ratio=1,
         image_size=300,
-        padding = ((30, 10), (30, 10))
+        padding=((60, 10), (35, 10))
     )
 
     def set_options(self,
@@ -541,7 +565,7 @@ class Graphics(GraphicsBase):
             ('colorbar', colorbar)
         )
         for oname, oval in opts:
-            oval = self._get_def_opt(oname, oval)
+            oval = self._get_def_opt(oname, oval, {})
             if oval is not None:
                 setattr(self, oname, oval)
     # attaching custom property setters
@@ -576,7 +600,7 @@ class Graphics(GraphicsBase):
     @property
     def frame_style(self):
         return self._prop_manager.frame_style
-    @frame.setter
+    @frame_style.setter
     def frame_style(self, value):
         self._prop_manager.frame_style = value
 
@@ -735,28 +759,28 @@ class Graphics3D(Graphics):
             ('view_settings', view_settings),
         )
         for oname, oval in opts:
-            oval = self._get_def_opt(oname, oval)
+            oval = self._get_def_opt(oname, oval, {})
             if oval is not None:
                 setattr(self, oname, oval)
 
+    def load_mpl(self):
+        if not self._mpl_loaded:
+            from mpl_toolkits.mplot3d import Axes3D
+            super().load_mpl()
+
     @staticmethod
-    def _subplot_init(*args, backend = Backends.MPL, mpl_backend=None, **kw):
+    def _subplot_init(*args, backend = Backends.MPL, mpl_backend=None, graphics=None, **kw):
         if backend == Backends.VTK:
             from .VTKInterface import VTKWindow
             window = VTKWindow()
             return window, window
         else:
-            from mpl_toolkits.mplot3d import Axes3D
-            if mpl_backend is not None:
-                import matplotlib as mpl
-                mpl.use(mpl_backend)
-            import matplotlib.pyplot as plt
-
+            graphics.load_mpl()
             subplot_kw = {"projection": '3d'}
             if 'subplot_kw' in kw:
                 subplot_kw = dict(subplot_kw, **kw['subplot_kw'])
                 del kw['subplot_kw']
-            return plt.subplots(*args, subplot_kw=subplot_kw, **kw)
+            return graphics.pyplot.subplots(*args, subplot_kw=subplot_kw, **kw)
 
     def _init_suplots(self, figure, axes, *args, **kw):
         """matplotlib subplot instantiation
@@ -930,7 +954,7 @@ class GraphicsGrid(GraphicsBase):
     default_style = dict(
         theme='mccoy',
         spacings=(50, 0),
-        padding=((30, 10), (40, 10))
+        padding=((50, 10), (50, 10))
     )
     def __init__(self,
                  *args,
@@ -1007,9 +1031,9 @@ class GraphicsGrid(GraphicsBase):
         else:
             subimage_size = kw['image_size']
         if figure is None:
-            padding = self._get_def_opt('padding', padding)
-            subimage_aspect_ratio = self._get_def_opt('padding', subimage_aspect_ratio)
-            spacings = self._get_def_opt('spacings', spacings)
+            padding = self._get_def_opt('padding', padding, {})
+            subimage_aspect_ratio = self._get_def_opt('padding', subimage_aspect_ratio, {})
+            spacings = self._get_def_opt('spacings', spacings, {})
             if subplot_kw is None:
                 subplot_kw = {}
             if fig_kw is None:
@@ -1040,7 +1064,7 @@ class GraphicsGrid(GraphicsBase):
                     h += (nrows-1) * sh
                 fig_kw['figsize'] = (w/72., h/72.)
 
-            figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, **fig_kw)
+            figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, figure=self, **fig_kw)
 
             if isinstance(axes, matplotlib.axes.Axes):
                 axes = [[axes]]
@@ -1089,7 +1113,7 @@ class GraphicsGrid(GraphicsBase):
             ('colorbar', colorbar)
         )
         for oname, oval in opts:
-            oval = self._get_def_opt(oname, oval)
+            oval = self._get_def_opt(oname, oval, {})
             if oval is not None:
                 setattr(self, oname, oval)
 
@@ -1236,9 +1260,6 @@ class GraphicsGrid(GraphicsBase):
         if self.tighten:
             self.figure.tight_layout()
 
-    # def close(self):
-    #     import matplotlib.pyplot as plt
-    #     return plt.close(self.figure)
     def show(self, **kwargs):
         for f in self:
             if isinstance(f, GraphicsBase):

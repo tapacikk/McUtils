@@ -1,21 +1,20 @@
 """
-Handles all of the "numerical math" stuff inside Mcutils which has made it balloon a little bit
+Handles much of the "numerical math" stuff inside Mcutils which has made it balloon a little bit
+Deals with anything tensor, Taylor expansion, or interpolation related
 """
 
-from .Taylor import *
-from .Mesh import __all__ as Mesh__all__
-from .Mesh import *
-from .Surfaces import *
-from .FittableModels import *
-from .Interpolator import *
-from .Interpolator import __all__ as Interpolator__all__
-from .LazyTensors import *
-
-__all__ = (
-    Taylor.__all__ +
-    Mesh__all__ +
-    LazyTensors.__all__ +
-    Surfaces.__all__ +
-    FittableModels.__all__ +
-    Interpolator__all__
-)
+__all__ = []
+from .Taylor import *; from .Taylor import __all__ as exposed
+__all__ += exposed
+from .Mesh import *; from .Mesh import __all__ as exposed
+__all__ += exposed
+from .Surfaces import *; from .Surfaces import __all__ as exposed
+__all__ += exposed
+from .FittableModels import *; from .FittableModels import __all__ as exposed
+__all__ += exposed
+from .Interpolator import *; from .Interpolator import __all__ as exposed
+__all__ += exposed
+from .LazyTensors import *; from .LazyTensors import __all__ as exposed
+__all__ += exposed
+from .TensorDerivativeConverter import *; from .TensorDerivativeConverter import __all__ as exposed
+__all__ += exposed

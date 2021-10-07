@@ -27,7 +27,7 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
     def convert_many(self,
                      coordlist,
                      ordering=None, origins=None, axes=None, use_rad=True,
-                     return_derivs = False,
+                     return_derivs=False,
                      **kw
                      ):
         """Expects to get a list of configurations
@@ -186,8 +186,8 @@ class ZMatrixToCartesianConverter(CoordinateSystemConverter):
                 total_points[:, i+1] = ref_points_1
 
         if atom_ordering is not None:
-            rev_ord = np.argsort(atom_ordering, axis=1)
-            total_points = total_points[np.arange(len(atom_ordering))[:, np.newaxis], rev_ord]
+            rev_ord = atom_ordering#np.argsort(atom_ordering, axis=1)
+            total_points = total_points[np.arange(len(atom_ordering))[:, np.newaxis], rev_ord] #wat?
 
         converter_opts = dict(use_rad=use_rad, ordering=ordering)
         if return_derivs:

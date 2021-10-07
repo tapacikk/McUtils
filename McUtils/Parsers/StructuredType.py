@@ -630,7 +630,6 @@ class StructuredTypeArray:
         :rtype:
         """
         if self.is_simple:
-
             # this means that self._array is a plain numpy array
 
             append_chops = 1 if isinstance(key, int) else len(key) # how many dimensions in we dove for the append
@@ -643,7 +642,6 @@ class StructuredTypeArray:
                         self.extend_array(axis=i)
 
             if value is not None: # we use None as a placeholder for the default value because we need it for Optional patterns
-
                 if isinstance(value, StructuredTypeArray):
                     value = value.array
                 residual_dims = len(self._array.shape) - append_chops
@@ -652,6 +650,7 @@ class StructuredTypeArray:
                         # nothing to do here
                         pass
                     elif residual_dims == 1:
+
                         value = value.flatten()
                         # we can actually manage to do some padding, so why not do so?
                         if self.axis_shape_indeterminate(append_chops):
@@ -662,11 +661,11 @@ class StructuredTypeArray:
                         else:
                             # we only allow 1D padding for now...
                             num_els = len(value)
-                            try:
-                                num_needed = len(self._array[key])
-                            except:
-                                print("Oh foook", key, self._array.shape)
-                                raise
+                            # try:
+                            num_needed = len(self._array[key])
+                            # except:
+                            #     print("Oh foook", key, self._array.shape)
+                            #     raise
                             if num_els < num_needed:
                                 if self.padding_mode == 'repeat':
                                     repeats = int(np.ceil(num_needed/num_els))
@@ -679,7 +678,6 @@ class StructuredTypeArray:
                                     raise StructuredTypeArrayException("unknown padding_mode '{}'".format(
                                         self.padding_mode
                                     ))
-
 
                     else:
                         # we can now determine our shape and so we will force the shape
@@ -897,7 +895,7 @@ class StructuredTypeArray:
 
         return castable
 
-    def append(self, val, axis = 0):
+    def append(self, val, axis=0):
         """Puts val in the first empty slot in the array
 
         :param val:

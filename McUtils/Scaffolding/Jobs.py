@@ -6,7 +6,7 @@ job
 import time, datetime, os, shutil
 from .Persistence import PersistenceManager
 from .Checkpointing import JSONCheckpointer
-from .Logging import Logger
+from .Logging import Logger, NullLogger
 
 from ..Parallelizers import Parallelizer
 
@@ -82,7 +82,11 @@ class Job:
         """
         if log_spec is None:
             log_spec = self.default_log_file
-        if isinstance(log_spec, str):
+        if log_spec is True:
+            return Logger()
+        elif log_spec is False:
+            return NullLogger()
+        elif isinstance(log_spec, str):
             if os.path.abspath(log_spec) != log_spec:
                 log_spec = os.path.join(self.dir, log_spec)
             return Logger(log_spec)
@@ -188,23 +192,23 @@ class JobManager(PersistenceManager):
         :param kw:
         :type kw:
         :return:
-        :rtype:
+        :rtype: Job
         """
         if os.path.isdir(name):
-            kw['initialization_directory'] = name
+            # kw['initialization_directory'] = name
             name = os.path.basename(name)
         if timestamp:
             name += "_" + datetime.datetime.now().isoformat()
         return self.load(name, make_new=True, init=kw)
 
     @classmethod
-    def job_from_folder(cls, folder, job_type=None, make_config=True):
+    def job_from_folder(cls, folder, job_type=None, make_config=True, **opts):
         """
         A special case convenience function that goes
         directly to starting a job from a folder
 
         :return:
-        :rtype:
+        :rtype: Job
         """
 
         if make_config:
@@ -214,10 +218,10 @@ class JobManager(PersistenceManager):
                 with open(test_file, "w+") as dump:
                     json.dump({}, dump)
         jm = cls(os.path.dirname(folder), job_type=job_type)
-        return jm.job(folder)
+        return jm.job(folder, **opts)
 
     @classmethod
-    def current_job(cls, job_type=None, make_config=True):
+    def current_job(cls, job_type=None, make_config=True, **opts):
         """
         A special case convenience function that starts a
         JobManager one directory up from the current
@@ -225,10 +229,10 @@ class JobManager(PersistenceManager):
         current working directory
 
         :return:
-        :rtype:
+        :rtype: Job
         """
 
-        return cls.job_from_folder(os.getcwd(), job_type=job_type, make_config=make_config)
+        return cls.job_from_folder(os.getcwd(), job_type=job_type, make_config=make_config, **opts)
 
 
 

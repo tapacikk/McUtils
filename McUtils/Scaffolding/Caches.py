@@ -1,9 +1,10 @@
-import abc
+import abc, weakref
 from collections import OrderedDict
 
 __all__ = [
     "Cache",
-    "MaxSizeCache"
+    "MaxSizeCache",
+    "ObjectRegistry"
 ]
 
 class Cache(metaclass=abc.ABCMeta):
@@ -40,3 +41,44 @@ class MaxSizeCache:
         self.od.move_to_end(key)
         if len(self.od) > self.max_items:
             self.od.popitem(last=False)
+
+class ObjectRegistryDefaults:
+    Raise="raise"
+    NotFound="NotFound"
+
+class RegistryDefaultContext:
+    def __init__(self, registry:'ObjectRegistry', value):
+        self.reg = registry
+        self.old = None
+        self.val = value
+    def __enter__(self):
+        self.old = self.reg.default
+        self.reg.default = self.val
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.reg.default = self.old
+
+class ObjectRegistry:
+    """
+    Provides a simple interface to global object registries
+    so that pieces of code don't need to pass things like loggers
+    or parallelizers through every step of the code
+    """
+
+    def __init__(self, default=ObjectRegistryDefaults.Raise):
+        self.cache = weakref.WeakValueDictionary() # allow unused vals to get gc'd
+        self.default = default
+
+    def temp_default(self, val):
+        return RegistryDefaultContext(self, val)
+
+    def lookup(self, key):
+        if self.default is ObjectRegistryDefaults.Raise:
+            return self.cache[key]
+        else:
+            try:
+                return self.cache[key]
+            except KeyError:
+                return self.default
+
+    def register(self, key, val):
+        self.cache[key] = val

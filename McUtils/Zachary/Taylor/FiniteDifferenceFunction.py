@@ -224,6 +224,8 @@ class FiniteDifferenceFunction:
 
             gp = Mesh(new_grid)
             subgrids = gp.subgrids#[sg[a] if a is not None else a for a in sel_ax]
+            if subgrids is None:
+                raise ValueError("can't apply finite difference to mesh of type {}".format(gp.mesh_type))
         else:
             subgrids = [grid]
 
@@ -233,9 +235,12 @@ class FiniteDifferenceFunction:
             if o is None or o == 0:
                 diffs[i] = None
             else:
+                if len(g) == 0:
+                    raise ValueError("finite difference can't be applied to subgrid {} of {}".format(g, grid))
+
                 m = Mesh(g)
                 # print(g[1]-g[0])
-                if m.mesh_type is MeshType.Structured:
+                if m.mesh_type == MeshType.Regular:
                     diffs[i] = RegularGridFiniteDifference(
                         o,
                         stencil=s,
@@ -244,7 +249,7 @@ class FiniteDifferenceFunction:
                         mesh_spacing=g[1]-g[0],
                         **kwargs
                     )
-                elif m.mesh_type is MeshType.Unstructured:
+                elif m.mesh_type is MeshType.Structured:
                     diffs[i] = IrregularGridFiniteDifference(
                         g,
                         o,

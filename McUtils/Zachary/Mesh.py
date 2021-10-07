@@ -10,10 +10,11 @@ __all__ = [ "Mesh", "MeshType" ]
 # we define a bunch of MeshType attributes so that the string names can change up or whatever but the interface
 # can remain consistent
 class MeshType(enum.Enum):
-    Structured = "structured"
-    Unstructured = "unstructured"
-    SemiStructured = "semistructured"
-    Indeterminate = "indeterminate"
+    Regular = "regular" # direct product with consistent mesh spacings
+    Structured = "structured" # direct product grids
+    Unstructured = "unstructured" # totally unstructured data points
+    SemiStructured = "semistructured" # almost full direct products
+    Indeterminate = "indeterminate" # couldn't assess
 
 class MeshError(Exception):
     ...
@@ -28,7 +29,6 @@ class Mesh(np.ndarray):
     # just to make it accessible through Mesh
     MeshError = MeshError
     MeshType = MeshType
-
 
     _allow_indeterminate = False
     # subclassing np.ndarray is weird... maybe I don't even want to do it... but I _think_ I do
@@ -48,9 +48,7 @@ class Mesh(np.ndarray):
         data = np.asarray(data)
         if cls._is_meshgrid(data):
             # we turn mesh grids into grid point grids...
-            roll = np.roll(np.arange(data.ndim), -1)
-            data = data.transpose(roll)
-        # data.mesh_type = mesh_type
+            data = np.moveaxis(data, 0, data.ndim-1)
         aid = cls._allow_indeterminate
         try:
             cls._allow_indeterminate = allow_indeterminate # gotta temp disable this...
@@ -89,7 +87,11 @@ class Mesh(np.ndarray):
         return self._spacings
     @property
     def subgrids(self):
-        if self.mesh_type == MeshType.Structured:
+        if (
+                self.mesh_type == MeshType.Regular
+                or self.mesh_type == MeshType.Structured
+                # or self.mesh_type == MeshType.SemiStructured
+        ):
             return self.get_mesh_subgrids(self)
         else:
             return None
@@ -119,42 +121,6 @@ class Mesh(np.ndarray):
         """
         return self.get_gridpoints(self)
 
-    def get_slice_iter(self, axis=-1):
-        """Returns an iterator over the slices of the mesh along the specified axis
-
-        :param axis:
-        :type axis:
-        :return:
-        :rtype:
-        """
-        import itertools as ip
-
-        if isinstance(axis, (int, np.integer)):
-            axis = [axis]
-
-        raise NotImplementedError("Need to finish this up")
-
-        ndim = self.dimension
-        sdim = len(axis)
-        axis = [ ndim+a if a < 0 else a for a in axis ]
-        if self.mesh_type == MeshType.Structured:
-            grid = np.asarray(self)
-            t_spec = [ i for i in range(ndim) if i not in axis ] + axis
-            grid = grid.transpose(t_spec)
-            for ind in ip.product(grid.shape[-sdim:]):
-                yield grid[(...,) + ind]
-        elif self.mesh_type == MeshType.SemiStructured:
-            # means ndim == 2
-            grid = np.asarray(self)
-            meshes = grid.T
-
-        else:
-            raise MeshError("{}.{}: can't get slices for mesh type {}".format(
-                type(self).__name__,
-                "get_slice_iter",
-                self.mesh_type
-            ))
-
     @classmethod
     def get_npoints(cls, g):
         """Returns the number of gridpoints in the grid
@@ -178,29 +144,39 @@ class Mesh(np.ndarray):
 
     @classmethod
     def get_mesh_subgrids(cls, grid, tol=8):
+        """
+        Returns the subgrids for a mesh
+        :param grid:
+        :type grid:
+        :param tol:
+        :type tol:
+        :return:
+        :rtype:
+        """
+
+        if isinstance(grid, Mesh):
+            grid = grid.view(np.ndarray)
+
         if grid.ndim == 1:
-            return [ grid ]
-        elif grid.ndim ==2:
-            if isinstance(grid, Mesh):
-                grid = np.array(grid)
-            meshes = grid.T
-            mesh_points = [np.unique(np.round(x, tol)) for x in meshes]
-            return mesh_points
+            _, idx = np.unique(grid, return_index=True)
+            return [grid[np.sort(idx),]]
         else:
-            unroll = np.roll(np.arange(len(grid.shape)), 1)
-            meshes = np.asarray(grid).transpose(unroll)
-            return [np.unique(np.round(m, tol)) for m in meshes]
+            meshes = np.moveaxis(grid, len(grid.shape)-1, 0)
+            def _pull_u(g):
+                flat = g.flatten()
+                _, idx = np.unique(g.flatten(), return_index=True)
+                return flat[np.sort(idx),]
+            return [_pull_u(np.round(m, tol)) for m in meshes]
 
     @classmethod
     def get_mesh_spacings(cls, grid, tol=8):
-        ndim = grid.ndim
-        if ndim == 1:
-            grid = np.asarray(grid)
-            mesh_spacings = np.round(np.diff(np.sort(grid)), tol)
-        else:
-            subgrids = cls.get_mesh_subgrids(grid, tol=tol)
-            mesh_spacings = [np.unique(np.diff(np.sort(g))) for g in subgrids]
+        subgrids = cls.get_mesh_subgrids(grid, tol=tol)
+        if subgrids is None:
+            return None
 
+        mesh_spacings = [np.unique(np.diff(g)) for g in subgrids]
+        if len(subgrids) == 1:
+            mesh_spacings = mesh_spacings[0]
         return mesh_spacings
 
     @staticmethod
@@ -222,8 +198,9 @@ class Mesh(np.ndarray):
         ) # might introduce edge-case...? Hard to know
 
     @classmethod
-    def get_mesh_type(cls, grid, tol=8):
-        """Determines what kind of grid we're working with
+    def get_mesh_type(cls, grid, check_product_grid=True, check_regular_grid=True, tol=8):
+        """
+        Determines what kind of grid we're working with
 
         :param grid:
         :type grid: np.ndarray
@@ -231,43 +208,86 @@ class Mesh(np.ndarray):
         :rtype: MeshType
         """
 
-        grid = np.asarray(grid)
+        grid = np.asanyarray(grid).view(np.ndarray)
 
         if grid.dtype == np.dtype(object):
             return MeshType.Indeterminate
 
         ndim = grid.ndim
         shape = grid.shape
+        cdim = ndim-1
 
-        mesh_spacings = cls.get_mesh_spacings(grid, tol=tol)
+        # we either need grid points or a full mesh
+        if ndim > 2 and shape[-1] != cdim and shape[0] != cdim:
+            raise ValueError("don't know how to interpret mesh with shape {}".format(shape))
+
+        if ndim > 1 and shape[-1] != cdim and shape[0] == cdim:
+            grid = np.moveaxis(grid, 0, ndim-1) # make full mesh
+
         if ndim == 1:
-            if mesh_spacings[0] is not None:
-                return MeshType.Structured
+            mesh_spacings = cls.get_mesh_spacings(grid, tol=tol)
+            if len(mesh_spacings) == 1:
+                return MeshType.Regular
             else:
+                return MeshType.Structured # all grids are structured in 1D
+        elif ndim == 2 and shape[-1] != 1: # this means we got gridpoints
+            subgrids = cls.get_mesh_subgrids(grid)  # check if can be read as a structured grid
+            if grid.shape[0] == np.prod([len(x) for x in subgrids]):
+
+                # check if it really is a product grid
+                if check_product_grid:
+                    true_mesh = np.moveaxis(np.array(np.meshgrid(*subgrids, indexing='ij')), 0, ndim-1)
+                    test_grid = np.reshape(grid, true_mesh.shape)
+                    product_grid = np.allclose(true_mesh, test_grid, atol=10 ** (-tol))
+                else:
+                    product_grid = True
+
+                if product_grid and check_regular_grid:
+                    spacings = np.unique([np.diff(x) for x in subgrids])
+                    regular_grid = all(len(x) == 1 for x in spacings)
+                else:
+                    regular_grid = product_grid
+
+                if regular_grid:
+                    return MeshType.Regular
+                elif product_grid:
+                    return MeshType.Structured
+                else:
+                    return MeshType.Unstructured
+
+            else:
+                # should try to check for semistructured grids...
                 return MeshType.Unstructured
-        elif ndim == 2: # this likely means we were fed grid points
+        else:
+            # means we _probably_ have a structured grid
             subgrids = cls.get_mesh_subgrids(grid, tol=tol)
-            mesh_lens = [len(x) for x in subgrids]
-            points = np.product(mesh_lens)
-            consistent_spacing = all(x is not None for x in mesh_spacings)
-            if len(grid) == points and consistent_spacing:
-                # should also check mesh-spacing consistency, but for now we won't
-                return MeshType.Structured
-            elif len(grid) < points:
-                # either semistructured or unstructured
-                if consistent_spacing:
-                    return MeshType.SemiStructured
+            # raise Exception(
+            #     np.prod(grid.shape[:-1]), grid.shape,
+            #     np.prod([len(x) for x in subgrids]), subgrids
+            # )
+            if np.prod(grid.shape[:-1]) == np.prod([len(x) for x in subgrids]): # check if it could be a product grid
+                # check if it really is a product grid
+                if check_product_grid:
+                    true_mesh = np.moveaxis(np.array(np.meshgrid(*subgrids, indexing='ij')), 0, ndim-1)
+                    product_grid = np.allclose(true_mesh, grid, atol=10**(-tol))
+                else:
+                    product_grid = True
+
+                if product_grid and check_regular_grid:
+                    spacings = [np.unique(np.diff(x)) for x in subgrids]
+                    regular_grid = all(len(x) == 1 for x in spacings)
+                else:
+                    regular_grid = product_grid
+
+                if regular_grid:
+                    return MeshType.Regular
+                elif product_grid:
+                    return MeshType.Structured
                 else:
                     return MeshType.Unstructured
             else:
-                # maybe throw an error to complain about duplicate abcissae?
-                return MeshType.Indeterminate
-        else: # means we _probably_ have a structured grid
-            consistent_spacing = all(x is not None for x in mesh_spacings)
-            if shape[-1] == ndim - 1 and consistent_spacing:
-                return MeshType.Structured
-            else:
-                return MeshType.Indeterminate
+                # should try to check for semistructured grids...
+                return MeshType.Unstructured
 
     @classmethod
     def RegularMesh(cls, *mesh_specs):
@@ -283,8 +303,7 @@ class Mesh(np.ndarray):
         coords = [ np.linspace(*m) for m in mesh_specs ]
 
         if any(len(x) == 0 for x in coords):
-            raise ValueError()
-        cg = np.meshgrid(*coords)
-        roll = np.roll(np.arange(len(coords) + 1), -1)
-        wat = np.transpose(cg, roll)
-        return cls(wat, mesh_type=MeshType.Structured)
+            raise ValueError("can't handle empty linspaces")
+        cg = np.array(np.meshgrid(*coords, indexing='ij'))
+        wat = np.moveaxis(cg, 0, len(mesh_specs))
+        return cls(wat, mesh_type=MeshType.Regular)

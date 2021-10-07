@@ -204,6 +204,16 @@ class CoordinateSystem:
 
         return coords
 
+    class _convert_caller:# for multiprocessing
+        def __init__(self, converter, kw, do_many):
+            self.converter = converter
+            self.kwargs = kw
+            self.do_many = do_many
+        def __call__(self, coords, *args, **kwargs):
+            if self.do_many:
+                return self.converter.convert_many(coords, **self.kwargs)
+            else:
+                return self.converter.convert(coords, **self.kwargs)
     def convert_coords(self, coords, system, **kw):
         """
         Converts coordiantes from the current coordinate system to _system_
@@ -261,10 +271,7 @@ class CoordinateSystem:
         else:
             # print("> okkkay", kw['return_derivs'] if 'return_derivs' in kw else 'nooooooo')
             converter = self.converter(system)
-            if is_multiconfig(coords):
-                fun = lambda coords, kw=kw.copy(): converter.convert_many(coords, **kw)
-            else:
-                fun = lambda coords, kw=kw.copy(): converter.convert(coords, **kw)
+            fun = self._convert_caller(converter, kw.copy(), is_multiconfig(coords))
             new_coords = mc_safe_apply(fun, coords=coords)
             # print("...wtf", kw['return_derivs'] if 'return_derivs' in kw else 'nooooooo')
             return new_coords
@@ -358,13 +365,59 @@ class CoordinateSystem:
 
         return deriv_tensor
 
+    class _converter: # for multiprocessing
+        def __init__(self, system, deriv_key, parent, num_derivs, convert_kwargs):
+            self.system = system
+            self.deriv_key = deriv_key
+            self.parent = parent
+            self.num_derivs = num_derivs
+            self.convert_kwargs = convert_kwargs
+
+        def __call__(self, c, *args, **kwargs):
+            if self.num_derivs is None:
+                return self.parent.convert_coords(c, self.system, **self.convert_kwargs)[0]
+            else:
+                parent = self.parent
+                s = self.system
+                num_derivs = self.num_derivs
+                dk = self.deriv_key
+                convert_kwargs = self.convert_kwargs
+                crds, opts = parent.convert_coords(c, s, return_derivs=num_derivs, **convert_kwargs)
+                # we now have to reshape the derivatives because mc_safe_apply is only applied to the coords -_-
+                # should really make that function manage deriv shapes too, but don't know how to _tell_ it that I
+                # want it to
+                derivs = opts[dk]
+                # we also want to only do the derivatives on the highest-order analytical
+                # derivative that we have
+                if isinstance(derivs, np.ndarray):  # just protection for the next step, basically if we only get firsts out
+                    derivs = [derivs]
+                derivs = derivs[
+                    num_derivs - 1]  # so that we can set the derivative order below the total possible returned...
+
+                # now we figure out how much shape is in 'c'
+                c_dims = np.prod(c.shape)
+                # and we figure out how much of the derivs to toss out to account for it
+                d_dims = np.cumprod(derivs.shape)
+                pos = np.where(d_dims == c_dims)[0]
+                if len(pos) == 0:
+                    raise ValueError(
+                        "Shape mismatch in Jacobian (coordinates with shape {} returned derivatives with shape {})".format(
+                            c.shape,
+                            derivs.shape
+                        ))
+
+                new_deriv_shape = c.shape + derivs.shape[pos[0] + 1:]
+                derivs = derivs.reshape(new_deriv_shape)
+
+                return derivs
+
     return_derivs_key = 'return_derivs'
     def jacobian(self,
                  coords,
                  system,
                  order=1,
-                 coordinates = None,
-                 converter_options = None,
+                 coordinates=None,
+                 converter_options=None,
                  all_numerical=False,
                  analytic_deriv_order=None,
                  **finite_difference_options
@@ -399,8 +452,6 @@ class CoordinateSystem:
 
         deriv_tensors = None # default return value
 
-        # print(">>>>>", order, self)
-
         self_shape = self.coordinate_shape
         if self_shape is None:
             self_shape = coords.shape[1:]
@@ -419,7 +470,6 @@ class CoordinateSystem:
             ret_d_key = self.return_derivs_key
             rd = converter_options[ret_d_key] if ret_d_key in converter_options else None
             converter_options[ret_d_key] = True if analytic_deriv_order is None else analytic_deriv_order
-            # print(">>>>", converter_options[ret_d_key])
             test_crd, test_opts = self.convert_coords(coords, system, **converter_options)
             if rd is None:
                 del converter_options[ret_d_key]
@@ -453,40 +503,16 @@ class CoordinateSystem:
                 if ret_d_key in kw:
                     del kw[ret_d_key]
 
-                def convert(c, s=system, dk=deriv_key, self=self, num_derivs=num_derivs, convert_kwargs=kw):
-                    crds, opts = self.convert_coords(c, s, return_derivs=num_derivs, **convert_kwargs)
-                    # we now have to reshape the derivatives because mc_safe_apply is only applied to the coords -_-
-                    # should really make that function manage deriv shapes too, but don't know how to _tell_ it that I
-                    # want it to
-                    derivs = opts[dk]
-                    # we also want to only do the derivatives on the highest-order analytical
-                    # derivative that we have
-                    if isinstance(derivs, np.ndarray): # just protection for the next step, basically if we only get firsts out
-                        derivs = [derivs]
-                    derivs = derivs[num_derivs - 1] # so that we can set the derivative order below the total possible returned...
-
-                    # now we figure out how much shape is in 'c'
-                    c_dims = np.prod(c.shape)
-                    # and we figure out how much of the derivs to toss out to account for it
-                    d_dims = np.cumprod(derivs.shape)
-                    pos = np.where(d_dims == c_dims)[0]
-                    if len(pos) == 0:
-                        raise ValueError("Shape mismatch in Jacobian (coordinates with shape {} returned derivatives with shape {})".format(
-                            c.shape,
-                            derivs.shape
-                        ))
-
-                    new_deriv_shape = c.shape + derivs.shape[pos[0] + 1:]
-                    derivs = derivs.reshape(new_deriv_shape)
-
-                    return derivs
+                convert = self._converter(system, deriv_key, self, num_derivs, kw)
             else:
-                convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
+                print(">>>", converter_options)
+                convert = self._converter(system, deriv_key, self, None, converter_options)
+                # convert = lambda c, s=system, kw=converter_options:
         else:
-            convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
+            convert = self._converter(system, None, self, None, converter_options)
+            # convert = lambda c, s=system, kw=converter_options: self.convert_coords(c, s, **kw)[0]
         need_derivs = (len(order) > 0 and max(order) > 0) if not isinstance(order, int) else order > 0
         if need_derivs:
-
             other_shape = system.coordinate_shape
             # if other_shape is None:
             #     raise CoordinateSystemException(
@@ -496,11 +522,12 @@ class CoordinateSystem:
             #             other_shape
             #         ))
 
+            # set default options
             for k, v in zip(
                     ('mesh_spacing', 'prep', 'stencil'),
                     (.001, system.jacobian_prep, 7)
             ):
-                if k not in finite_difference_options:
+                if k not in finite_difference_options or finite_difference_options[k] is None:
                     finite_difference_options[k] = v
 
             # print("??", other_shape, coords.shape)

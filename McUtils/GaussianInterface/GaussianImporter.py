@@ -7,7 +7,7 @@ from .GaussianLogComponents import GaussianLogComponents, GaussianLogDefaults, G
 from .GaussianFChkComponents import FormattedCheckpointComponents, FormattedCheckpointCommonNames
 from ..Parsers import FileStreamReader, FileStreamCheckPoint, FileStreamReaderException
 
-__all__ = ["GaussianFChkReader", "GaussianLogReader"]
+__all__ = ["GaussianFChkReader", "GaussianLogReader", "GaussianLogReaderException", "GaussianFChkReaderException"]
 __reload_hook__ = [ '.GaussianFChkComponents', ".GaussianLogComponents" ]
 
 ########################################################################################################################
@@ -87,7 +87,10 @@ class GaussianLogReader(FileStreamReader):
         else:
             for k in keys:
                 comp = self.registered_components[k]
-                res[k] = self.parse_key_block(**comp, num=num)
+                try:
+                    res[k] = self.parse_key_block(**comp, num=num)
+                except:
+                    raise GaussianLogReaderException("failed to parse block for key '{}'".format(k))
         return res
 
     job_default_keys = {
@@ -261,7 +264,7 @@ class GaussianFChkReader(FileStreamReader):
         if byte_count is not None:
             self.seek(self.tell() + byte_count)
 
-    def parse(self, keys = None):
+    def parse(self, keys = None, default='raise'):
         if keys is None:
             keys_to_go = None
         else:
@@ -304,12 +307,19 @@ class GaussianFChkReader(FileStreamReader):
                                 self.seek(fp + 1)
 
                 if next_block is None:
-                    raise GaussianFChkReaderException("{}.{}: couldn't find keys {}".format(
-                        type(self).__name__,
-                        "parse",
-                        keys_to_go
+                    if isinstance(default, str) and default=='raise':
+                        raise GaussianFChkReaderException("{}.{}: couldn't find keys {}".format(
+                            type(self).__name__,
+                            "parse",
+                            keys_to_go
+                            )
                         )
-                    )
+                    else:
+                        for tag in keys_to_go:
+                            if tag not in keys_original:
+                                tag = self.to_common_name[tag]
+                            parse_results[tag] = default
+                        break
                 tag = next_block["name"]
                 if tag in keys_to_go:
                     keys_to_go.remove(tag)

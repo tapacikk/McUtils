@@ -4,22 +4,37 @@ from .Serializers import *
 
 __all__ = [
     "Checkpointer",
+    "CheckpointerKeyError",
     "DumpCheckpointer",
     "JSONCheckpointer",
     "NumPyCheckpointer",
     "HDF5Checkpointer",
+    "DictCheckpointer",
     "NullCheckpointer"
 ]
+
+class CheckpointerKeyError(KeyError):
+    ...
 
 class Checkpointer(metaclass=abc.ABCMeta):
     """
     General purpose base class that allows checkpointing to be done easily and cleanly.
     Intended to be a passable object that allows code to checkpoint easily.
     """
-    def __init__(self, checkpoint_file):
+
+    default_extension=""
+    def __init__(self, checkpoint_file,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
         self.checkpoint_file = checkpoint_file
+        self.allowed_keys = allowed_keys
+        self.omitted_keys = omitted_keys
         self._came_open = not isinstance(checkpoint_file, str)
+        self._open_depth = 0
         self._stream = None
+    def __repr__(self):
+        return "{}({!r})".format(type(self).__name__, self.checkpoint_file)
 
     _ext_map = None
     @classmethod
@@ -27,12 +42,7 @@ class Checkpointer(metaclass=abc.ABCMeta):
         if cls._ext_map is not None:
             return cls._ext_map
         else:
-            return {
-                '.json':JSONCheckpointer,
-                '.hdf5':HDF5Checkpointer,
-                '.npz':NumPyCheckpointer
-                # ('.yaml','.yml'):YA
-            }
+            return {c.default_extension:c for c in [JSONCheckpointer, HDF5Checkpointer, NumPyCheckpointer]}
 
     @classmethod
     def from_file(cls, file, **opts):
@@ -62,13 +72,16 @@ class Checkpointer(metaclass=abc.ABCMeta):
         return ext_map[ext](file, **opts)
 
     def __enter__(self):
+        self._open_depth+=1
         if self._stream is None:
             self._stream = self.open_checkpoint_file(self.checkpoint_file)
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self._open_depth-=1
         if self._stream is not None:
-            self.close_checkpoint_file(self._stream)
-            self._stream = None
+            if self._open_depth == 0:
+                self.close_checkpoint_file(self._stream)
+                self._stream = None
 
     @property
     def is_open(self):
@@ -121,9 +134,25 @@ class Checkpointer(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError("CheckpointerBase is an abstract base class...")
 
+    def check_allowed_key(self, item):
+        if self.allowed_keys is not None:
+            if item not in self.allowed_keys:
+                raise CheckpointerKeyError("key {} not allowed by {}".format(
+                    item,
+                    self
+                ))
+        if self.omitted_keys is not None:
+            if item in self.omitted_keys:
+                raise CheckpointerKeyError("key {} not allowed by {}".format(
+                    item,
+                    self
+                ))
+
     def __getitem__(self, item):
+        self.check_allowed_key(item)
         return self.load_parameter(item)
     def __setitem__(self, key, value):
+        self.check_allowed_key(key)
         self.save_parameter(key, value)
 
     @abc.abstractmethod
@@ -137,15 +166,17 @@ class Checkpointer(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError("Checkpointer is an abstract base class...")
 
-
 class DumpCheckpointer(Checkpointer):
     """
     A subclass of `CheckpointerBase` that writes an entire dump to file at once & maintains
     a backend cache to update it cleanly
     """
-    def __init__(self, file, cache=None, open_kwargs=None):
+    def __init__(self, file, cache=None, open_kwargs=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
         self.backend = cache # cache values
-        super().__init__(file)
+        super().__init__(file, allowed_keys=allowed_keys, omitted_keys=omitted_keys)
         if open_kwargs is None:
             open_kwargs = {'mode':"w+"}
         self.open_kwargs = open_kwargs
@@ -225,11 +256,15 @@ class JSONCheckpointer(DumpCheckpointer):
     A checkpointer that uses JSON as a backend
     """
 
-    def __init__(self, file, cache=None, serializer=None, open_kwargs=None):
+    default_extension=JSONSerializer.default_extension
+    def __init__(self, file, cache=None, serializer=None, open_kwargs=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
         if serializer is None:
             serializer = JSONSerializer()
         self.serializer = serializer
-        super().__init__(file, cache=cache, open_kwargs=open_kwargs)
+        super().__init__(file, cache=cache, open_kwargs=open_kwargs, allowed_keys=allowed_keys, omitted_keys=omitted_keys)
 
     def load_cache(self):
         cache = self.backend
@@ -258,7 +293,11 @@ class NumPyCheckpointer(DumpCheckpointer):
     A checkpointer that uses NumPy as a backend
     """
 
-    def __init__(self, file, cache=None, serializer=None, open_kwargs=None):
+    default_extension = NumPySerializer.default_extension
+    def __init__(self, file, cache=None, serializer=None, open_kwargs=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
         if isinstance(file, str):
             if not os.path.exists(file):
                 if os.path.exists(file + '.npz'):
@@ -271,7 +310,10 @@ class NumPyCheckpointer(DumpCheckpointer):
         self.serializer = serializer
         if open_kwargs is None:
             open_kwargs = {'mode':'bw'}
-        super().__init__(file, cache=cache, open_kwargs=open_kwargs)
+        super().__init__(file, cache=cache, open_kwargs=open_kwargs,
+                         allowed_keys=allowed_keys,
+                         omitted_keys=omitted_keys
+                         )
 
     def load_cache(self):
         cache = self.backend
@@ -301,8 +343,12 @@ class HDF5Checkpointer(Checkpointer):
     Doesn't maintain a secondary `dict`, because HDF5 is an updatable format.
     """
 
-    def __init__(self, checkpoint_file, serializer=None):
-        super().__init__(checkpoint_file)
+    default_extension = HDF5Serializer.default_extension
+    def __init__(self, checkpoint_file, serializer=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
+        super().__init__(checkpoint_file, allowed_keys=allowed_keys, omitted_keys=omitted_keys)
         if serializer is None:
             serializer = HDF5Serializer()
         self.serializer = serializer
@@ -316,10 +362,16 @@ class HDF5Checkpointer(Checkpointer):
         :rtype:
         """
         if not self._came_open:
-            if os.path.exists(chk):
-                return open(chk, 'a+b')
-            else:
-                return open(chk, "w+b")
+            try:
+                if os.path.exists(chk):
+                    return open(chk, 'r+b')
+                else:
+                    return open(chk, "w+b")
+            except ValueError as e:
+                if e.args[0] == 'seek of closed file':
+                    raise IOError("existing HDF5 file {} is corrupted and can't be opened".format(chk))
+                else:
+                    raise
         elif 'b' not in chk.mode:
             raise IOError("{} isn't opened in binary mode (HDF5 needs that)".format(chk))
 
@@ -345,6 +397,8 @@ class HDF5Checkpointer(Checkpointer):
         :rtype:
         """
         # HDF5 serialization is an updateable process
+        if self.stream is None:
+            raise IOError("stream for {} got closed and won't reopen".format(self.checkpoint_file))
         self.serializer.serialize(self.stream, {key:value})
 
     def load_parameter(self, key):
@@ -358,16 +412,21 @@ class HDF5Checkpointer(Checkpointer):
         return self.serializer.deserialize(self.stream, key=key)
 
     def keys(self):
-        fff = self.serializer.api.File(self.stream)
-        return fff.keys()
+        file = self.stream
+        if not isinstance(file, (self.serializer.api.File, self.serializer.api.Group)):
+            file = self.serializer.api.File(file, "a")
+        return file.keys()
 
-class NullCheckpointer(Checkpointer):
+class DictCheckpointer(Checkpointer):
     """
     A checkpointer that doesn't actually do anything, but which is provided
     so that programs can turn off checkpointing without changing their layout
     """
-    def __init__(self, checkpoint_file=None):
-        super().__init__(checkpoint_file)
+    def __init__(self, checkpoint_file=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
+        super().__init__(checkpoint_file, allowed_keys=allowed_keys, omitted_keys=omitted_keys)
         self.backend = {}
 
     def open_checkpoint_file(self, chk):
@@ -411,6 +470,62 @@ class NullCheckpointer(Checkpointer):
         :rtype:
         """
         return self.backend[key]
+
+    def keys(self):
+        return list(self.backend.keys())
+
+class NullCheckpointer(Checkpointer):
+    """
+    A checkpointer that saves absolutely nothing
+    """
+    def __init__(self, checkpoint_file=None,
+                 allowed_keys=None,
+                 omitted_keys=None
+                 ):
+        super().__init__(checkpoint_file, allowed_keys=allowed_keys, omitted_keys=omitted_keys)
+        self.backend = None
+
+    def open_checkpoint_file(self, chk):
+        """
+        Opens the passed `checkpoint_file` (if not already open)
+        :param chk:
+        :type chk: str | file-like
+        :return:
+        :rtype:
+        """
+        return "NotAFile"
+
+    def close_checkpoint_file(self, stream):
+        """
+        Opens the passed `checkpoint_file` (if not already open)
+        :param chk:
+        :type chk:
+        :return:
+        :rtype:
+        """
+        pass
+
+    def save_parameter(self, key, value):
+        """
+        Saves a parameter to the checkpoint file
+        :param key:
+        :type key:
+        :param value:
+        :type value:
+        :return:
+        :rtype:
+        """
+        pass
+
+    def load_parameter(self, key):
+        """
+        Loads a parameter from the checkpoint file
+        :param key:
+        :type key:
+        :return:
+        :rtype:
+        """
+        raise CheckpointerKeyError("NullCheckpointer doesn't support _any_ keys")
 
     def keys(self):
         return []

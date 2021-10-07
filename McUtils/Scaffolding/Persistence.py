@@ -1,18 +1,75 @@
 """
 Provides utilities for managing object persistence.
-Doesn't focus particularly heavily on serialization/deserialization, since
-the Serializers package does that just fine.
-More interested in managing objects that provide the ability to load from a configuration
-and which can be stored in a directory or ZIP file.
+Two classes of persistence are provided.
+ 1. Config persistence: stores objects by turning them into a
+    set of config variables & provides reloading
+ 2. File-backed objects: stores objects by making serializing core
+    pieces of the data
 """
 
-import os, shutil
+import os, shutil, tempfile as tf, weakref
 
+from .Checkpointing import Checkpointer, NumPyCheckpointer
 from .Configurations import Config
 
 __all__ = [
+    "PersistenceLocation",
     "PersistenceManager"
 ]
+
+class PersistenceLocation:
+    """
+    An object that tracks a location to persist data
+    and whether or not that data should be cleaned up on
+    exit
+    """
+    _cache = weakref.WeakValueDictionary()
+    def __init__(self, loc, name=None, delete=None):
+        if name is None:
+            name = os.path.basename(loc)
+        self.name = name
+
+        if delete is None:
+            delete = not os.path.isdir(loc)
+
+        absloc = os.path.abspath(loc)
+        if not os.path.isdir(absloc):
+            if absloc != loc:
+                loc = os.path.join(tf.TemporaryDirectory().name, loc)
+        else:
+            loc = absloc
+
+        # all it takes is a single location
+        # saying "don't delete" for us to not
+        # delete...note that if the location
+        # dies and then is reborn as a deletable
+        # then it will be deleted
+        for k,v in self._cache.items():
+            if v.loc == loc:
+                if not delete:
+                    v.delete = False
+                elif not v.delete:
+                    delete = False
+
+        self.loc = loc
+        self.delete = delete
+
+        self._cache[loc] = self
+
+    def __repr__(self):
+        return "{}({}, {}, delete={})".format(
+            type(self).__name__,
+            self.name,
+            self.loc,
+            self.delete
+        )
+
+    def __del__(self):
+        if self.delete:
+            try:
+                shutil.rmtree(self.loc)
+            except OSError:
+                pass
 
 class PersistenceManager:
     """
@@ -50,7 +107,7 @@ class PersistenceManager:
         :rtype:
         """
         if self.contains(key):
-            return Config(self.obj_loc(key))
+            return Config(self.obj_loc(key), extra_params=init)
         elif make_new:
             return self.new_config(key, init=init)
         else:
@@ -169,4 +226,3 @@ class PersistenceManager:
         key = data['name']
         cfg = self.load_config(key, make_new=True)
         cfg.update(**data)
-

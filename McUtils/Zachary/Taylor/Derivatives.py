@@ -3,12 +3,13 @@ Module that provides a FiniteDifferenceDerivative class that does finite-differe
 """
 
 from .FiniteDifferenceFunction import FiniteDifferenceFunction
+from ...Parallelizers import Parallelizer, SerialNonParallelizer
+from ...Scaffolding import Logger, NullLogger
 import numpy as np, itertools as it, scipy.sparse as sparse
 
 __all__ = [
     'FiniteDifferenceDerivative'
 ]
-
 
 class FiniteDifferenceDerivative:
     """
@@ -21,7 +22,9 @@ class FiniteDifferenceDerivative:
                  f,
                  function_shape=(0, 0),
                  parallelizer=None,
-                 **fd_opts):
+                 logger=None,
+                 **fd_opts
+                 ):
         """
         :param f: the function we would like to take derivatives of
         :type f: FunctionSpec | callable
@@ -34,8 +37,9 @@ class FiniteDifferenceDerivative:
             f = FunctionSpec(f, *function_shape)
         self.f = f
         self.parallelizer=parallelizer
-        if parallelizer is not None:
-            raise NotImplementedError("need to figure out how I want to work parallelism in")
+        self.logger=logger
+        # if parallelizer is not None:
+        #     raise NotImplementedError("need to figure out how I want to work parallelism in")
         self._fd_opts = fd_opts
 
     def __call__(self, *args, **opts):
@@ -80,6 +84,8 @@ class FiniteDifferenceDerivative:
         return DerivativeGenerator(
             f,
             center,
+            parallelizer=self.parallelizer,
+            logger=self.logger,
             **fd_opts
         )
 
@@ -119,6 +125,7 @@ class DerivativeGenerator:
                  mesh_spacing=.001,
                  cache_evaluations=True,
                  parallelizer=None,
+                 logger=None,
                  **fd_opts
                  ):
         """
@@ -174,11 +181,11 @@ class DerivativeGenerator:
 
         # configure the function for handling displacements
         if displacement_function is None:
-            displacement_function = lambda c,a:a
+            displacement_function = self._default_displace
 
         # define a function to prep the system
         if prep is None:
-            prep = lambda c, a, b: (a, b)
+            prep = self._default_prep
 
         self.f = f_spec
         self.config_shape = configs_dims
@@ -200,6 +207,28 @@ class DerivativeGenerator:
         self._cache = {}
 
         self.parallelizer = parallelizer
+        self.logger = NullLogger() if logger is None else logger
+
+    def __getstate__(self):
+        state = {}
+        for k in self.__dict__:
+            if k != '_cache':
+                state[k] = self.__dict__[k]
+        state['_cache'] = None
+        return state
+
+    def __setstate__(self, state):
+        for k in state:
+            self.__dict__[k] = state[k]
+        self._cache = {}
+
+    @staticmethod
+    def _default_displace(c, a):
+        return a
+
+    @staticmethod
+    def _default_prep(c, a, b):
+        return (a, b)
 
     def _get_fdf(self, ci, mesh_spacing):
         # create the different types of finite differences we'll compute for the different coordinates of interest
@@ -281,6 +310,53 @@ class DerivativeGenerator:
 
         return displacement
 
+    def _build_displacement_array(self, coord, stencil_shapes, stencil_widths, displacement, use_sparse=False):
+
+        # not too worried about looping over coordinates since the number of loops will be like max in the small hundreds
+        num_displacements = np.product(stencil_widths)
+        displacement_shape = (num_displacements,) + displacement.shape
+
+        if use_sparse:
+            displacements = sparse.lil_matrix(displacement_shape)
+        else:
+            displacements = np.zeros(displacement_shape)  # fuck ton of zeros
+        base_roll = tuple(np.arange(len(stencil_widths)))
+
+        coord = np.unique(coord, axis=0)
+
+        mesh_spacings = []
+        for i, sc in enumerate(zip(stencil_shapes, coord)):
+            stencil_shape, c = sc
+            # coord can be like ((1, 1), (1, 2)) or ((0,), (1,)) in which case we have a 2D derivative
+            # creates single displacement matrix
+            # it can also just be like ((0,)) in which case we're working in 1D
+            ctup = tuple(c)
+
+            # pulls the appropriate displacement for this coordinate specifically
+            disp = displacement[ctup]
+            mesh_spacings.append(disp)
+
+            # generate a full tensor of displacements by scaling the
+            # initial displacement by each of the number of steps to be taken
+            steps = np.arange(-(stencil_shape[0] - 1), stencil_shape[1] + 1)
+            disp = disp * steps
+
+            # pad this full displacement so it has enough 1s in it to be broadcasted to the stencil
+            # shape
+            full_disp = np.reshape(disp, disp.shape + (1,) * (len(stencil_widths) - disp.ndim))
+            # keep moving the axis for the displacement
+            roll = np.roll(base_roll, i)
+            full_disp = full_disp.transpose(roll)
+            # print(i, base_roll, full_disp.shape, stencil_widths)
+            to_set = np.broadcast_to(full_disp, stencil_widths).flatten()
+
+            # in dimension 1 we want to have this repeat over the slowest moving indices, then the ones after those
+            # then after those, etc.
+            idx = (...,) + ctup
+            displacements[idx] = to_set
+
+        return displacements, displacement_shape, mesh_spacings
+
     def _get_displaced_coords(self, coord, stencil_widths, stencil_shapes, use_sparse = False):
         """
         Provides enough displacements of along `coord` to satisfy `stencil_widths` and `stencil_shapes`
@@ -299,49 +375,11 @@ class DerivativeGenerator:
         coords = self.center
         displacement = self.get_displacement(coord)
 
-        # not too worried about looping over coordinates since the number of loops will be like max in the small hundreds
-        num_displacements = np.product(stencil_widths)
-        displacement_shape = (num_displacements, ) + displacement.shape
+        displacements, displacement_shape, mesh_spacings = self._build_displacement_array(
+            coord, stencil_shapes, stencil_widths, displacement, use_sparse=use_sparse
+        )
 
-        if use_sparse:
-            displacements = sparse.lil_matrix(displacement_shape)
-        else:
-            displacements = np.zeros(displacement_shape) # fuck ton of zeros
-        base_roll = tuple(np.arange(len(stencil_widths)))
-
-        coord = np.unique(coord, axis=0)
-
-        for i, sc in enumerate(zip(stencil_shapes, coord)):
-            stencil_shape, c = sc
-            # coord can be like ((1, 1), (1, 2)) or ((0,), (1,)) in which case we have a 2D derivative
-            # creates single displacement matrix
-            # it can also just be like ((0,)) in which case we're working in 1D
-            ctup = tuple(c)
-
-            # pulls the appropriate displacement for this coordinate specifically
-            disp = displacement[ctup]
-
-            # generate a full tensor of displacements by scaling the
-            # initial displacement by each of the number of steps to be taken
-            steps = np.arange(-(stencil_shape[0]-1), stencil_shape[1]+1)
-            disp = disp * steps
-
-            # pad this full displacement so it has enough 1s in it to be broadcasted to the stencil
-            # shape
-            full_disp = np.reshape(disp, disp.shape + (1,) * (len(stencil_widths) - disp.ndim))
-            # print(full_disp.shape, stencil_widths)
-            # I don't know what this does
-            roll = np.roll(base_roll, i) # why the -2???
-            full_disp = full_disp.transpose(roll)
-            # print(i, base_roll, full_disp.shape, stencil_widths)
-            to_set = np.broadcast_to(full_disp, stencil_widths).flatten()
-
-            # in dimension 1 we want to have this repeat over the slowest moving indices, then the ones after those
-            # then after those, etc.
-            idx = (...,) + ctup
-            displacements[idx] = to_set
-
-        # then we broadcast *this* up to the total number of walkers we have
+        # then we broadcast this up to the total number of structures we have
         full_target_shape = self.config_shape + displacement_shape
         coords_expanded = coords.reshape(
             self.config_shape
@@ -363,7 +401,7 @@ class DerivativeGenerator:
             displacement_shape
         )
 
-        return disp_spec, displacements, displaced_coords
+        return disp_spec, displacements, displaced_coords, mesh_spacings
 
     def _get_fd_data(self, specs):
         """
@@ -392,7 +430,9 @@ class DerivativeGenerator:
 
     @staticmethod
     def _get_diff(c, disp):
-        """Gets the mesh spacing along coordinate c from the displaced coordinates
+        """
+        Gets the mesh spacing along coordinate c from the displaced coordinates...except there's basically no
+        reason for this when I could instead _just save the number_
 
         :param c:
         :type c:
@@ -404,7 +444,7 @@ class DerivativeGenerator:
 
         # diffs = np.abs(np.diff()) # why do it like this...?????
         # return np.sort(diffs)[-1]  # get the only diff > 0 (assumes we have a regular grid)
-        subgrid = sorted(np.unique(disp[(...,) + tuple(c)]))
+        subgrid = np.unique(disp[(...,) + tuple(c)])
         return abs(subgrid[1] - subgrid[0])
 
     def _get_single_deriv(self, spec, disp_data, fd_data, return_coords):
@@ -434,7 +474,7 @@ class DerivativeGenerator:
         # Disp spec is a key
         # displacements tell us the flattend shape of the displacements
         # displaced coords are the proper coords to eval
-        disp_spec, displacements, displaced_coords = disp_data
+        disp_spec, displacements, displaced_coords, mesh_spacings = disp_data
         stencil_widths, stencil_shapes, finite_difference, dorder = fd_data
 
         # TODO: sit down and add comments to this compact implementation...
@@ -473,7 +513,7 @@ class DerivativeGenerator:
                 fvals_shape = fvals_shape + fvals.shape[-out_dim:]
             fvals = fvals.reshape(fvals_shape)
 
-        h = [self._get_diff(c, disp) for c in spec]
+        h = [self._get_diff(c, disp) for c in spec] if mesh_spacings is None else mesh_spacings
 
         derivs = finite_difference(fvals, axes=len(self.config_shape), mesh_spacing=h)
 
@@ -547,7 +587,20 @@ class DerivativeGenerator:
 
         return [self._idx(s) for s in specs], specs
 
-    def compute_derivatives(self, order, pos=(), coordinates=None, lazy=None):
+    def _parallel_derivs(self, specs=None, parallelizer=None):
+        # if main_kwargs is not None:
+        #     specs = main_kwargs['specs']
+        # else:
+        #     specs = None
+        specs = parallelizer.scatter(specs)
+        derivs = np.array([x for x in self._spec_derivs(specs)])
+        # parallelizer.print(derivs)
+        derivs = parallelizer.gather(derivs)
+        if parallelizer.on_main:
+            if not isinstance(derivs, np.ndarray):
+                derivs = np.concatenate(derivs, axis=0)
+        return derivs
+    def compute_derivatives(self, order, pos=(), coordinates=None, lazy=None, parallelizer=None):
         """
         Computes the derivatives up to `order` filtered by `pos` over the `coordinates`
 
@@ -573,19 +626,36 @@ class DerivativeGenerator:
         def lazy_derivs(ders):
             for d in ders:
                 yield d
-        for which, o in enumerate(order):
-            specs, raw = self._get_specs(o, pos, coordinates)
-            lazy = self.lazy if lazy is None else lazy
-            derivs = self._spec_derivs(specs)
-            if lazy:
+
+        lazy = self.lazy if lazy is None else lazy
+        if lazy:
+            for which, o in enumerate(order):
+                specs, raw = self._get_specs(o, pos, coordinates)
+                derivs = self._spec_derivs(specs)
                 res[which] = lazy_derivs(derivs)
+        else:
+            if parallelizer is None:
+                parallelizer = self.parallelizer
+            par = Parallelizer.lookup(parallelizer)
+            if isinstance(par, SerialNonParallelizer):
+                for which, o in enumerate(order):
+                    specs, raw = self._get_specs(o, pos, coordinates)
+                    derivs = np.array([s for s in self._spec_derivs(specs)])
+                    res[which] = derivs
             else:
-                res[which] = list(derivs)
+                with par:
+                    for which, o in enumerate(order):
+                        specs, raw = self._get_specs(o, pos, coordinates)
+                        comm = None if len(specs)>=par.nprocs else list(range(len(specs)))
+                        derivs = par.run(self._parallel_derivs, main_kwargs={'specs':specs},
+                                         comm=comm
+                                         )
+                        res[which] = derivs
         if single:
             res = res[0]
         return res
 
-    def derivative_tensor(self, order, pos=(), coordinates=None):
+    def derivative_tensor(self, order, pos=(), coordinates=None, parallelizer=None, logger=None):
         """
         Computes a given derivative tensor
 
@@ -599,6 +669,12 @@ class DerivativeGenerator:
         :rtype:
         """
 
+        if parallelizer is None:
+            parallelizer = self.parallelizer
+
+        if logger is None:
+            logger = self.logger
+
         if isinstance(order, (int, np.integer)):
             single = True
             order = [order]
@@ -606,30 +682,48 @@ class DerivativeGenerator:
             single = False
 
         res = [None]*len(order)
-        for which, o in enumerate(order):
-            pos = [slice(None, None, None) if a is None else a for a in pos]
-            if coordinates is None:
-                coordinates = np.arange(np.product(self.coord_shape))
-            elif not isinstance(coordinates[0], (int, np.integer)):
-                coordinates = self._fidx(coordinates)
-            sub_specs = [coordinates[a] if not isinstance(a, (int, np.integer)) else (coordinates[a],) for a in pos]
-            sub_specs = sub_specs + [coordinates for i in range(o - len(pos))]
-            specs, raw = self._get_specs(o, pos, coordinates)
-            derivs = self._spec_derivs(specs)
 
-            d_tensor = None
-            # apply symmetry
-            for s, d in zip(raw, derivs):
-                if d_tensor is None:
-                    d_tensor = np.ones(tuple(len(s) for s in sub_specs) + d.shape)
+        with logger.block(tag="getting derivative tensors at order {}".format(order)):
 
-                for p in it.permutations(s, len(s)):
-                    try:
-                        d_tensor[p] = d
-                    except IndexError:
-                        pass
+            if parallelizer is None:
+                parallelizer = self.parallelizer
+            par = Parallelizer.lookup(parallelizer)
+            with par:
+                for which, o in enumerate(order):
+                    pos = [slice(None, None, None) if a is None else a for a in pos]
+                    if coordinates is None:
+                        coordinates = np.arange(np.product(self.coord_shape))
+                    elif not isinstance(coordinates[0], (int, np.integer)):
+                        coordinates = self._fidx(coordinates)
 
-            res[which] = d_tensor
+                    sub_specs = [coordinates[a] if not isinstance(a, (int, np.integer)) else (coordinates[a],) for a in pos]
+                    sub_specs = sub_specs + [coordinates for i in range(o - len(pos))]
+                    specs, raw = self._get_specs(o, pos, coordinates)
+
+                    if isinstance(par, SerialNonParallelizer):
+                        logger.log_print("evaluating {nspec} derivatives", nspec=len(specs))
+                        derivs = np.array([s for s in self._spec_derivs(specs)])
+                    else:
+                        comm = None if len(specs) >= par.nprocs else list(range(len(specs)))
+                        logger.log_print("evaluating {nspec} derivatives over {nproc} processors", nspec=len(specs), nproc=par.nprocs)
+                        derivs = par.run(self._parallel_derivs, main_kwargs={'specs':specs},
+                                         comm=comm
+                                         )
+                    # derivs = self._spec_derivs(specs)
+
+                    d_tensor = None
+                    # apply symmetry
+                    for s, d in zip(raw, derivs):
+                        if d_tensor is None:
+                            d_tensor = np.ones(tuple(len(s) for s in sub_specs) + d.shape)
+
+                        for p in it.permutations(s, len(s)):
+                            try:
+                                d_tensor[p] = d
+                            except IndexError:
+                                pass
+
+                    res[which] = d_tensor
 
         if single:
             res = res[0]

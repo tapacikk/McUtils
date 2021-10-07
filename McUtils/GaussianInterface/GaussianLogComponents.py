@@ -1,5 +1,5 @@
-"""This lists the types of readers and things available to the GaussianLogReader
-
+"""
+This lists the types of readers and things available to the GaussianLogReader
 """
 
 from ..Parsers import *
@@ -363,7 +363,7 @@ dips_parser = StringParser(
             "Z=", Capturing(Number)
         ),
         joiner=Whitespace,
-        dtype = (float, (3,))
+        dtype=(float, (3,))
     )
 )
 def parser(moms):
@@ -476,7 +476,7 @@ ScanEnergiesParser = StringParser(
                 ),
                 "Coords",
                 prefix=Newline,
-                handler=StringParser.array_handler()
+                handler=StringParser.array_handler(dtype=float)
             ),
         ),
         joiner=NonCapturing(Repeating([Whitespace, Repeating(["-"])]))

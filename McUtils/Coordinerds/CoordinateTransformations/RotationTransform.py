@@ -11,6 +11,8 @@ __all__ = [
     "RotationTransform"
 ]
 
+__reload_hook__ = [".AffineTransform"]
+
 class RotationTransform(AffineTransform):
     """A simple AffineTransform implementation of the TransformationFunction abstract base class
 

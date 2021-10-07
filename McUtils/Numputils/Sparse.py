@@ -1,5 +1,7 @@
 import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc
-from McUtils.Scaffolding import MaxSizeCache
+from ..Scaffolding import MaxSizeCache, Logger
+from .SetOps import contained
+from .Misc import infer_inds_dtype
 
 __all__ = [
     "SparseArray",
@@ -32,29 +34,53 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
         if cls.backends is None:
-            return (ScipySparseArray,)
+            return (('scipy', ScipySparseArray),)
         else:
             return cls.backends
+
     @classmethod
-    def from_data(cls, data, **kwargs):
+    def from_data(cls, data, shape=None, dtype=None, target_backend=None, constructor=None, **kwargs):
         """
         A wrapper so that we can dispatch to the best
         sparse backend we've got defined.
         Can be monkey patched.
+
         :param data:
         :type data:
         :param kwargs:
         :type kwargs:
         :return:
-        :rtype:
+        :rtype: SparseArray
         """
-        for backend in cls.get_backends():
-            try:
+
+        if shape is not None:
+            kwargs['shape'] = shape
+        if dtype is not None:
+            kwargs['dtype'] = dtype
+        backend_errors = []
+        backends = cls.get_backends()
+        for name,backend in backends:
+            if target_backend is not None and name == target_backend:
+                if constructor is not None:
+                    backend = getattr(backend, constructor)
                 return backend(data, **kwargs)
-            except ImportError:
-                pass
+            else:
+                try:
+                    if constructor is not None:
+                        backend = getattr(backend, constructor)
+                    return backend(data, **kwargs)
+                except Exception as e:
+                    backend_errors.append(e)
+        else:
+            if target_backend is None:
+                raise backend_errors[0]
+            else:
+                raise ValueError("`target_backend` {} not in available sparse backends {}".format(
+                    target_backend,
+                    backends
+                ))
     @classmethod
-    def from_diag(cls, data, **kwargs):
+    def from_diag(cls, data, shape=None, dtype=None, **kwargs):
         """
         A wrapper so that we can dispatch to the best
         sparse backend we've got defined.
@@ -66,11 +92,11 @@ class SparseArray(metaclass=abc.ABCMeta):
         :return:
         :rtype:
         """
-        for backend in cls.get_backends():
-            try:
-                return backend.from_diagonal_data(data, **kwargs)
-            except ImportError:
-                pass
+        return cls.from_data(data,
+                             constructor='from_diagonal_data',
+                             shape=shape, dtype=dtype,
+                             **kwargs
+                             )
     @classmethod
     @abc.abstractmethod
     def from_diagonal_data(cls, diags, **kw):
@@ -127,15 +153,15 @@ class SparseArray(metaclass=abc.ABCMeta):
         raise NotImplementedError("{}.{} is an abstract method".format(cls.__name__, 'from_state'))
         ...
     @classmethod
-    def empty(cls, shape, **kw):
-        for backend in cls.get_backends():
-            try:
-                return backend.initialize_empty(shape, **kw)
-            except ImportError:
-                pass
+    def empty(cls, shape, dtype=None, **kw):
+        return cls.from_data(shape,
+                             constructor='initialize_empty',
+                             dtype=dtype,
+                             **kw
+                             )
     @classmethod
     @abc.abstractmethod
-    def initialize_empty(cls, shape, **kw):
+    def initialize_empty(cls, shp, shape=None, **kw):
         """
         Returns an empty SparseArray with the appropriate shape and dtype
         :param shape:
@@ -188,7 +214,6 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype: sp.coo_matrix
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'ascoo'))
-        ...
 
     @abc.abstractmethod
     def ascsr(self):
@@ -198,7 +223,6 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype: sp.csr_matrix
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'ascsr'))
-        ...
     @abc.abstractmethod
     def asarray(self):
         """
@@ -207,7 +231,6 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype: np.ndarray
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'asarray'))
-        ...
     @abc.abstractmethod
     def reshape(self, newshape):
         """
@@ -218,7 +241,6 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'reshape'))
-        ...
     @abc.abstractmethod
     def resize(self, newsize):
         """
@@ -229,25 +251,161 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'resize'))
-        ...
-    def __truediv__(self, other):
-        return self.multiply(1/other)
-    def __rtruediv__(self, other):
-        return self.multiply(1/other)
-    def __rmul__(self, other):
-        return self.multiply(other)
-    def __mul__(self, other):
-        return self.multiply(other)
+
+    def expand_dims(self, axis):
+        """
+        adapted from np.expand_dims
+
+        :param axis:
+        :type axis:
+        :return:
+        :rtype:
+        """
+
+        if isinstance(axis, (int, np.integer)):
+            axis = [axis]
+
+        out_ndim = len(axis) + self.ndim
+        axis = [out_ndim + a if a < 0 else a for a in axis]
+
+        shape_it = iter(self.shape)
+        shape = [1 if ax in axis else next(shape_it) for ax in range(out_ndim)]
+
+        return self.reshape(shape)
+
+    def moveaxis(self, start, end):
+        """
+        Adapted from np.moveaxis
+
+        :param start:
+        :type start:
+        :param end:
+        :type end:
+        :return:
+        :rtype:
+        """
+
+        if isinstance(start, (int, np.integer)):
+            start = [start]
+        if isinstance(end, (int, np.integer)):
+            end = [end]
+
+        start = [self.ndim + a if a < 0 else a for a in start]
+        end = [self.ndim + a if a < 0 else a for a in end]
+
+        order = [n for n in range(self.ndim) if n not in start]
+
+        for dest, src in sorted(zip(end, start)):
+            order.insert(dest, src)
+
+        # raise Exception(order)
+
+        return self.transpose(order)
+
     @abc.abstractmethod
-    def multiply(self, other):
+    def concatenate(self, *others, axis=0):
+        """
+        Concatenates multiple SparseArrays along the specified axis
+        :return:
+        :rtype: SparseArray
+        """
+        ...
+
+    def broadcast_to(self, shape):
+        """
+        Broadcasts self to the given shape.
+        Incredibly inefficient implementation but useful in smaller cases.
+        Might need to optimize later.
+
+        :param shape:
+        :type shape:
+        :return:
+        :rtype:
+        """
+
+        # precheck b.c. concatenate is expensive
+        compat = all(a%b == 0 for a,b in zip(shape, self.shape))
+        if not compat:
+            raise ValueError("{} with shape {} can't be broadcast to shape {}".format(
+                type(self).__name__,
+                self.shape,
+                shape
+            ))
+
+        new = self
+        for i, (shs, sho) in enumerate(zip(self.shape, shape)):
+            if shs != sho:
+                reps = sho // shs
+                for _ in range(reps):
+                    new = new.concatenate(self, axis=i)
+
+        return new
+
+    def __truediv__(self, other):
+        return self.true_multiply(1 / other)
+    def __rtruediv__(self, other):
+        return self.true_multiply(1 / other)
+    def __rmul__(self, other):
+        return self.true_multiply(other)
+    def __mul__(self, other):
+        return self.true_multiply(other)
+
+    def _bcast_shapes(self, other):
+        if other.ndim != self.ndim:
+            raise NotImplementedError("{} object only supports broadcasting when `ndims` align".format(
+                type(self).__name__
+            ))
+
+        total_shape = []
+        for shs, sho in zip(self.shape, other.shape):
+            if shs == 1:
+                total_shape.append(sho)
+            elif sho == 1:
+                total_shape.append(shs)
+            elif shs == sho:
+                total_shape.append(shs)
+            else:
+                raise ValueError("shape mismatch for multiply of objects with shapes {} and {}".format(
+                    self.shape,
+                    other.shape
+                ))
+
+        if total_shape != self.shape:
+            self = self.broadcast_to(total_shape)
+
+        if total_shape != other.shape:
+            if isinstance(other, np.ndarray):
+                other = np.broadcast_to(other, total_shape)
+            else:
+                other = other.broadcast_to(total_shape)
+
+        return self,other
+
+    @abc.abstractmethod
+    def true_multiply(self, other):
         """
         Multiplies self and other
         :param other:
         :type other:
         :return:
-        :rtype:
+        :rtype: SparseArray
         """
         ...
+    def multiply(self, other):
+        """
+        Multiplies self and other but allows for broadcasting
+        :param other:
+        :type other: SparseArray | np.ndarray | int | float
+        :return:
+        :rtype:
+        """
+        if isinstance(other, (int, float)):
+            return self.true_multiply(other)
+
+        self, other = self._bcast_shapes(other)
+
+        return self.true_multiply(other)
+
     @abc.abstractmethod
     def dot(self, other):
         """
@@ -305,6 +463,14 @@ class SparseArray(metaclass=abc.ABCMeta):
             equal = True
             if na != nb:
                 equal = False
+            elif max(axes_a) >= nda:
+                raise ValueError("tensor with shape {} doesn't have {} axes".format(
+                    as_, axes_a
+                ))
+            elif max(axes_b) >= ndb:
+                raise ValueError("tensor with shape {} doesn't have {} axes".format(
+                    bs, axes_b
+                ))
             else:
                 for k in range(na):
                     if as_[axes_a[k]] != bs[axes_b[k]]:
@@ -406,13 +572,7 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
 
-    @abc.abstractmethod
-    def concatenate(self, other, axis=0):
-        """
-        Concatenates two SparseArrays along the specified axis
-        :return:
-        :rtype: SparseArray
-        """
+    # TODO: need to figure out if I want to support item assignment or not
 
 class ScipySparseArray(SparseArray):
     """
@@ -420,21 +580,44 @@ class ScipySparseArray(SparseArray):
     Basically acts like a high-dimensional wrapper that manages the _shape_ of a standard `scipy.sparse_matrix`, since that is rigidly 2D.
     We always use a combo of an underlying CSR or CSC matrix & COO-like shape operations.
     """
-    #TODO: Make this all de-factor COO-based with an option to
-    #       convert to for operations like repeated tensordot applications where
-    #       converting to CSR over and over would be wasteful
 
-    def __init__(self, a, shape=None, layout=sp.csr_matrix, dtype=None, initialize = True):
+    def __init__(self, a,
+                 shape=None,
+                 layout=None,
+                 dtype=None,
+                 initialize=True,
+                 cache_block_data=True,
+                 logger=None
+                 ):
+        """
+
+        :param a:
+        :type a:
+        :param shape:
+        :type shape:
+        :param layout:
+        :type layout:
+        :param dtype:
+        :type dtype:
+        :param initialize:
+        :type initialize:
+        :param cache_block_data: whether or not
+        :type cache_block_data:
+        :param logger: the logger to use for debug purposes
+        :type logger: Logger
+        """
         self._shape = tuple(shape) if shape is not None else shape
         self._a = a
         self._fmt = layout
         self._dtype = dtype
         self._validated = False
-        if initialize:
-            self._init_matrix()
-            self._validate()
+        self._block_data_sorted = False
         self._block_inds = None # cached to speed things up
         self._block_vals = None # cached to speed things up
+        self.logger = logger
+        if initialize:
+            self._init_matrix(cache_block_data=cache_block_data)
+            self._validate()
 
     def to_state(self, serializer=None):
         """
@@ -463,11 +646,16 @@ class ScipySparseArray(SparseArray):
             shape=state['shape']
         )
     @classmethod
-    def initialize_empty(cls, shape, dtype=None, **kw):
-        matshape = (int(np.prod(shape[:-1])), shape[-1])
+    def initialize_empty(cls, shape, dtype=None, layout=None, **kw):
+        matshape = cls._get_balanced_shape(shape)
         if dtype is None:
             dtype=np.float64
-        new = cls(sp.csr_matrix(matshape, dtype=dtype), shape=shape, **kw)
+        if layout is None:
+            if matshape[0] > matshape[1]:
+                layout = sp.csc_matrix
+            else:
+                layout = sp.csr_matrix
+        new = cls(layout(matshape, dtype=dtype), shape=shape, **kw)
         return new
     @staticmethod
     def _get_balanced_shape(shp):
@@ -497,9 +685,13 @@ class ScipySparseArray(SparseArray):
 
         return (vl, vr)
 
-    def _init_matrix(self):
+    # from memory_profiler import profile
+    # @profile
+    def _init_matrix(self, cache_block_data=True):
         a = self._a
         if isinstance(a, ScipySparseArray):
+            if self.logger is not None:
+                self.logger.log_print("initializing from existing `SparseArray`", log_level=self.logger.LogLevel.Debug)
             if self.fmt is not a.fmt:
                 self._a = self.fmt(a._a, shape=a.shape)
             else:
@@ -510,6 +702,8 @@ class ScipySparseArray(SparseArray):
             else:
                 self._shape = a.shape
         elif isinstance(a, sp.spmatrix):
+            if self.logger is not None:
+                self.logger.log_print("initializing from existing `spmatrix`", log_level=self.logger.LogLevel.Debug)
             if self._shape is None:
                 self._shape = a.shape
         elif isinstance(a, np.ndarray):
@@ -520,41 +714,30 @@ class ScipySparseArray(SparseArray):
                 a = a.reshape(total_shape)
             elif len(a.shape) == 1:
                 a = a.reshape(a.shape + (1,))
-            self._a = self.fmt(a, shape=a.shape)
+            if self._fmt is None:
+                if a.shape[0] > a.shape[1]:
+                    fmt = sp.csc_matrix
+                else:
+                    fmt = sp.csr_matrix
+            else:
+                fmt = self._fmt
+            if self.logger is not None:
+                self.logger.log_print("initializing from `ndarray`", log_level=self.logger.LogLevel.Debug)
+            self._a = fmt(a, shape=a.shape)
+
         # we're gonna support the (vals, (i_1, i_2, i_3, ...)) syntax for constructing
         # an array based on its non-zero positions
         elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1][0]):
-            block_vals, block_inds = a
-            block_inds = tuple(np.array(i, dtype=int) for i in block_inds)
-            if self._shape is None:
-                self._shape = tuple(np.max(x) for x in block_inds)
-            if len(block_inds) != len(self._shape):
-                raise ValueError("{}: can't initialize array of shape {} from non-zero indices of dimension {}".format(
-                    type(self).__name__,
-                    self._shape,
-                    len(block_inds)
-                ))
-            # gotta make sure our inds are sorted so we don't run into sorting issues later...
-            flat = self._ravel_indices(a[1], self._shape)
-            # nels = int(np.prod(self._shape))
-            sort = np.argsort(flat)
-            flat = flat[sort]
-            block_vals = block_vals[sort]
-            block_inds = tuple(i[sort] for i in block_inds)
-
-            total_shape = self._get_balanced_shape(self._shape)
-            # print(">>>>> ", total_shape)
-            init_inds = self._unravel_indices(flat, total_shape)
-            try:
-                data = self.fmt((block_vals, init_inds), shape=total_shape)
-            except TypeError:
-                data = self.fmt(sp.csr_matrix((block_vals, init_inds)), shape=total_shape)
-            except MemoryError:
-                data = sp.csr_matrix((block_vals, init_inds), shape=total_shape)
-                self._fmt = sp.csr_matrix
+            if self.logger is not None:
+                self.logger.log_print("initializing from vals and indices", log_level=self.logger.LogLevel.Debug)
+            data, block_vals, block_inds, self._shape = self.construct_sparse_from_val_inds(
+                a[0], a[1], self._shape, self._fmt
+            )
             self._a = data
-            self._block_vals = block_vals
-            self._block_inds = block_inds
+            if cache_block_data and block_inds is not None: # corner case to avoid a sort in low-mem situation
+                self._block_vals = block_vals
+                self._block_inds = block_inds
+                self._block_data_sorted = True
         else:
             non_sparse, sparse = self._get_shape()
             if non_sparse is None:
@@ -565,8 +748,83 @@ class ScipySparseArray(SparseArray):
                 data, other = self._get_data(non_sparse, sparse)
                 block_data, inds, total_shape = other
                 self._a = data
-                flat = np.ravel_multi_index(inds, data.shape)
-                self._block_inds = flat, inds
+                if cache_block_data:
+                    flat = np.ravel_multi_index(inds, data.shape)
+                    self._block_inds = flat, inds
+                    self._block_data_sorted = False
+
+    @classmethod
+    def construct_sparse_from_val_inds(cls, block_vals, block_inds, shape, fmt, cache_block_data=True, logger=None):
+        block_vals = np.asanyarray(block_vals)
+        if shape is None:
+            shape = tuple(np.max(x) for x in block_inds)
+
+        # special case esp. for square matrices
+        shape_rat = max(shape) / min(shape)
+        if len(shape) == 2 and shape_rat < 5:
+            init_inds = block_inds
+            total_shape = shape
+            block_inds = None
+        else:
+            block_inds = tuple(np.asanyarray(i) for i in block_inds)
+            if len(block_inds) != len(shape):
+                raise ValueError("{}: can't initialize array of shape {} from non-zero indices of dimension {}".format(
+                    cls.__name__,
+                    shape,
+                    len(block_inds)
+                ))
+
+
+            if logger is not None:
+                logger.log_print("calculating flat indices", log_level=logger.LogLevel.Debug)
+
+            flat = np.ravel_multi_index(block_inds, shape)  # no reason to cache this since we're going to sort it...
+
+            if cache_block_data:
+
+                if logger is not None:
+                    logger.log_print("sorting cached data", log_level=logger.LogLevel.Debug)
+                # gotta make sure our inds are sorted so we don't run into sorting issues later...
+                sort = np.argsort(flat)
+                flat = flat[sort]
+                block_vals = block_vals[sort]
+                block_inds = (flat, tuple(i[sort] for i in block_inds))
+                del sort  # clean up for memory reasons
+
+            if logger is not None:
+                logger.log_print("constructing 2D indices", log_level=logger.LogLevel.Debug)
+            # this can help significantly with memory usage...
+            total_shape = cls._get_balanced_shape(shape)
+            init_inds = np.unravel_index(flat, total_shape)  # no reason to cache this since we're not going to use it
+
+            if not cache_block_data:
+                block_inds = None
+
+        if fmt is None:
+            if total_shape[0] > total_shape[1]:
+                fmt = sp.csc_matrix
+            else:
+                fmt = sp.csr_matrix
+
+        if logger is not None:
+            logger.log_print("initializing {fmt} from indices and values", fmt=fmt, log_level=logger.LogLevel.Debug)
+
+        try:
+            data = fmt((block_vals, init_inds), shape=total_shape)
+        except TypeError:
+            data = fmt(sp.coo_matrix((block_vals, init_inds)), shape=total_shape)
+        except MemoryError:
+            if total_shape[0] > total_shape[1]:
+                fmt = sp.csc_matrix
+            else:
+                fmt = sp.csr_matrix
+            data = fmt((block_vals, init_inds), shape=total_shape)
+
+        if not cache_block_data:
+            block_vals = None
+
+        return data, block_vals, block_inds, shape
+
     def _validate(self):
         shp1 = self._a.shape
         shp2 = self._shape
@@ -624,9 +882,9 @@ class ScipySparseArray(SparseArray):
     def _build_data(self, block_data, inds, total_shape):
         if len(block_data) == 0 or np.prod(block_data.shape) == 0.: # empty array
             if total_shape[0] > total_shape[1]:
-                base_sparse = sp.csc_matrix(total_shape, dtype=self.dtype)
+                base_sparse = sp.coo_matrix(total_shape, dtype=self.dtype)
             else:
-                base_sparse = sp.csr_matrix(total_shape, dtype=self.dtype)
+                base_sparse = sp.coo_matrix(total_shape, dtype=self.dtype)
             try:
                 return self.fmt(base_sparse)
             except MemoryError:
@@ -664,19 +922,20 @@ class ScipySparseArray(SparseArray):
         return diag.flatten()
 
     @classmethod
-    def from_diagonal_data(cls, diags, **kw):
+    def from_diagonal_data(cls, diags, shape=None, **kw):
         if isinstance(diags[0], (int, np.integer, float, np.floating)):
             # just a plain old diagonal matrix
             N = len(diags)
             # print(len(diags))
-            return cls(sp.csr_matrix(sp.diags([diags], [0])), shape=(N, N), **kw)
+            if shape is None:
+                shape = (N, N)
+            return cls(sp.csr_matrix(sp.diags([diags], [0])), shape=shape, **kw)
         else:
-
             data = sp.block_diag(diags, format='csr')
             block_size = diags[0].shape
-            if 'shape' not in kw:
-                kw['shape'] = (len(diags), block_size[0], len(diags), block_size[1])
-            wat = cls(data, **kw).transpose((0, 2, 1, 3))
+            if shape is None:
+                shape = (len(diags), block_size[0], len(diags), block_size[1])
+            wat = cls(data, shape=shape, **kw).transpose((0, 2, 1, 3))
             return wat
     def asarray(self):
         return np.reshape(self.data.toarray(), self.shape)
@@ -686,6 +945,8 @@ class ScipySparseArray(SparseArray):
         return sp.coo_matrix(self.data)
     def ascsr(self):
         return sp.csr_matrix(self.data)
+    def ascsc(self):
+        return sp.csc_matrix(self.data)
     @property
     def data(self):
         if not isinstance(self._a, sp.spmatrix):
@@ -708,9 +969,25 @@ class ScipySparseArray(SparseArray):
             if new.format != self.data.format:
                 new = self.fmt(new)
             self._a = new
+    formats_map = {
+        'csr': sp.csr_matrix,
+        'csc': sp.csc_matrix,
+        'coo': sp.coo_matrix
+    }
+    @classmethod
+    def format_from_string(cls, fmt):
+        if isinstance(fmt, str):
+            return cls.formats_map[fmt]
+        elif isinstance(fmt, type):
+            return fmt
+        else:
+            raise TypeError("not sure how to get a valid sparse format class from {}".format(fmt))
     @property
     def fmt(self):
-        return self._fmt
+        if self._fmt is None:
+            return self.format_from_string(self.data.format)
+        else:
+            return self._fmt
     @property
     def shape(self):
         if self._shape is None:
@@ -762,20 +1039,13 @@ class ScipySparseArray(SparseArray):
     # this saves time when we have to do a bunch of reshaping into similarly sized arrays,
     # but won't help as much when the shape changes
     _unravel_cache = MaxSizeCache(default_cache_size)  # hopefully faster than bunches of unravel_index calls...
+
     @classmethod
     def _unravel_indices(cls, n, dims):
 
         # we're hoping that we call with `n` often enough that we get a performance benefit
         if not cls.caching_enabled:
-            big_dim = np.max(dims)
-            if big_dim < 256:
-                minimal_dtype = 'uint8'
-            elif big_dim < 65535:
-                minimal_dtype = 'uint16'
-            elif big_dim < 4294967295:
-                minimal_dtype = 'uint32'
-            else:
-                minimal_dtype = 'uint64'
+            minimal_dtype = infer_inds_dtype(np.max(dims))
             res = tuple(x.astype(minimal_dtype) for x in np.unravel_index(n, dims))
             return res
         if dims not in cls._unravel_cache:
@@ -790,15 +1060,7 @@ class ScipySparseArray(SparseArray):
         if n_hash in cache:
             res = cache[n_hash]
         else:
-            big_dim = np.max(dims)
-            if big_dim < 256:
-                minimal_dtype = 'uint8'
-            elif big_dim < 65535:
-                minimal_dtype = 'uint16'
-            elif big_dim < 4294967295:
-                minimal_dtype = 'uint32'
-            else:
-                minimal_dtype = 'uint64'
+            minimal_dtype = infer_inds_dtype(np.max(dims))
             res = tuple(x.astype(minimal_dtype) for x in np.unravel_index(n, dims))
             cache[n_hash] = res
         return res
@@ -879,17 +1141,45 @@ class ScipySparseArray(SparseArray):
         unflat = self._unravel_indices(flat, self.shape)
         self._block_inds = (flat, unflat)
         self._block_vals = data
+        self._block_data_sorted = True
+
+    def _load_full_block_inds(self):
+        if self._block_inds.ndim == 1:
+            flat = self._block_inds
+            unflat = self._unravel_indices(flat, self.shape)
+        else:
+            unflat = self._block_inds
+            flat = self._ravel_indices(unflat, self.shape)
+        self._block_inds = (flat, unflat)
+
+    def _sort_block_data(self):
+        flat, unflat = self._block_inds
+        sort = np.argsort(flat)
+        flat = flat[sort]
+        unflat = tuple(x[sort] for x in unflat)
+        self._block_inds = (flat, unflat)
+        self._block_vals = self._block_vals[sort]
+        self._block_data_sorted = True
 
     @property
     def block_vals(self):
         if self._block_vals is None:
             self._load_block_data()
+        if not self._block_data_sorted:
+            self._sort_block_data()
         return self._block_vals
 
     @property
     def block_inds(self):
         if self._block_inds is None:
             self._load_block_data()
+        elif not (
+                isinstance(self._block_inds[0], np.ndarray)
+                and self._block_inds[0].ndim == 1
+        ):
+            self._load_full_block_inds()
+        if not self._block_data_sorted:
+            self._sort_block_data()
         return self._block_inds
     @block_inds.setter
     def block_inds(self, bi):
@@ -925,17 +1215,32 @@ class ScipySparseArray(SparseArray):
 
     # import memory_profiler
     # @memory_profiler.profile
-    def profiled_transpose(self, transp):
+    def transpose(self, transp):
+        """
+        Transposes the array and returns a new one.
+        Not necessarily a cheap operation.
+
+        :param transp: the transposition to do
+        :type transp: Iterable[int]
+        :return:
+        :rtype:
+        """
+
         shp = self.shape
+
+        if len(transp) != self.ndim or np.any(np.sort(transp) != np.arange(self.ndim)):
+            raise ValueError("transposition {} can't apply to shape {}".format(
+                transp, self.shape
+            ))
 
         track_data = self.get_caching_status()
         if self._block_vals is None:
             row_inds, col_inds, data = self.find()
-
             flat = self._ravel_indices((row_inds, col_inds), self.data.shape)
             inds = self._unravel_indices(flat, self.shape)
         else:
-            data, inds = self.block_data
+            data = self.block_vals
+            (flat, inds) = self.block_inds
 
         new_inds = [inds[i] for i in transp]
         new_shape = tuple(shp[i] for i in transp)
@@ -944,7 +1249,6 @@ class ScipySparseArray(SparseArray):
 
         if len(new_shape) > 2:
             total_shape = self._get_balanced_shape(new_shape)
-            # print(">>>>>  woof ", total_shape)
             flat = self._ravel_indices(new_inds, new_shape)
             unflat = self._unravel_indices(flat, total_shape)
         else:
@@ -960,7 +1264,10 @@ class ScipySparseArray(SparseArray):
 
         if track_data:
 
-            arr = np.lexsort(unflat)
+            if flat is not None:
+                arr = np.argsort(flat)
+            else:
+                arr = np.lexsort(unflat)
 
             new_inds = [inds[arr] for inds in new_inds]
             if self._block_vals is not None:
@@ -970,59 +1277,65 @@ class ScipySparseArray(SparseArray):
                 new.block_inds = new_inds
             else:
                 # try:
-                new.block_inds = (flat, new_inds)
+                new.block_inds = (flat[arr], new_inds)
+            new._block_data_sorted = True
                 # except:
                 #     raise Exception(new_shape, len(total_shape))
 
         return new
 
-    def transpose(self, transp):
-        """
-        Transposes the array and returns a new one.
-        Not necessarily a cheap operation.
-
-        :param transp: the transposition to do
-        :type transp: Iterable[int]
-        :return:
-        :rtype:
-        """
-
-        if len(self.shape) > 4:
-            return self.profiled_transpose(transp)
-
-        shp = self.shape
-
-        data, inds = self.block_data
-
-        new_inds = [inds[i] for i in transp]
-        new_shape = tuple(shp[i] for i in transp)
-        if len(data) == 0:
-            return type(self).empty(new_shape, layout=self.fmt, dtype=data.dtype)
-
-        if len(new_shape) > 2:
-            total_shape = self._get_balanced_shape(new_shape)
-            flat = self._ravel_indices(new_inds, new_shape)
-            unflat = self._unravel_indices(flat, total_shape)
-        else:
-            flat = None
-            unflat = new_inds
-            total_shape = new_shape
-
-        data = self._build_data(data, unflat, total_shape)
-        new = type(self)(data, shape = new_shape, layout = self.fmt)
-
-        arr = np.lexsort(unflat)
-
-        new_inds = [inds[arr] for inds in new_inds]
-        if self._block_vals is not None:
-            new_v = self._block_vals[arr]
-            new._block_vals = new_v
-        if flat is None:
-            new.block_inds = new_inds
-        else:
-            new.block_inds = (flat, new_inds)
-
-        return new
+    # def transpose(self, transp):
+    #     """
+    #     Transposes the array and returns a new one.
+    #     Not necessarily a cheap operation.
+    #
+    #     :param transp: the transposition to do
+    #     :type transp: Iterable[int]
+    #     :return:
+    #     :rtype:
+    #     """
+    #
+    #     if len(self.shape) > 4:
+    #         return self.profiled_transpose(transp)
+    #
+    #     shp = self.shape
+    #
+    #     if len(transp) != self.ndim or np.any(np.sort(transp) != np.arange(self.ndim)):
+    #         raise ValueError("transposition {} can't apply to shape {}".format(
+    #             transp, self.shape
+    #         ))
+    #
+    #     data, inds = self.block_data
+    #
+    #     new_inds = [inds[i] for i in transp]
+    #     new_shape = tuple(shp[i] for i in transp)
+    #     if len(data) == 0:
+    #         return type(self).empty(new_shape, layout=self.fmt, dtype=data.dtype)
+    #
+    #     if len(new_shape) > 2:
+    #         total_shape = self._get_balanced_shape(new_shape)
+    #         flat = self._ravel_indices(new_inds, new_shape)
+    #         unflat = self._unravel_indices(flat, total_shape)
+    #     else:
+    #         flat = None
+    #         unflat = new_inds
+    #         total_shape = new_shape
+    #
+    #     data = self._build_data(data, unflat, total_shape)
+    #     new = type(self)(data, shape = new_shape, layout = self.fmt)
+    #
+    #     arr = np.lexsort(unflat)
+    #
+    #     new_inds = [inds[arr] for inds in new_inds]
+    #     if self._block_vals is not None:
+    #         new_v = self._block_vals[arr]
+    #         new._block_vals = new_v
+    #     if flat is None:
+    #         new.block_inds = new_inds
+    #     else:
+    #         new.block_inds = (flat, new_inds)
+    #
+    #     return new
 
     def reshape(self, shp):
         """
@@ -1040,8 +1353,11 @@ class ScipySparseArray(SparseArray):
 
         bi = new._block_inds
         if bi is not None:
-            flat, unflat = bi
-            new._block_inds = flat
+            if isinstance(bi, np.ndarray) and bi.ndim == 1:
+                new._block_inds = bi
+            else:
+                flat, unflat = bi
+                new._block_inds = flat
         if len(shp) == 2:
             new.data = new.data.reshape(shp)
         return new
@@ -1080,9 +1396,40 @@ class ScipySparseArray(SparseArray):
 
         return type(self)((vals, inds), shape=newsize)
 
-    def concatenate(self, other, axis=0):
+    @staticmethod
+    def _concat_coo(all_inds, all_vals, all_shapes, axis):
+
+        full_vals = np.concatenate(all_vals)
+
+        tot_shape = list(all_shapes[0])
+        tot_shape[axis] = sum(a[axis] for a in all_shapes)
+
+        # pull all the shapes along the concatenation axis
+
+        # add the offset to each block along the concatenation axis
+        # to create new vector of inds
+        full_inds = None
+        prev = 0
+        for offset, ind_block in zip(all_shapes, all_inds):
+            if full_inds is None:
+                full_inds = ind_block
+                prev += offset[axis]
+            else:
+                ind_block = ind_block[:axis] + (ind_block[axis] + prev,) + ind_block[axis + 1:]
+                prev += offset[axis]
+                full_inds = tuple(
+                    np.concatenate([a, b])
+                    for a, b in zip(full_inds, ind_block)
+                )
+
+        return full_vals, full_inds, tot_shape
+
+    def concatenate(self, *others, axis=0):
         """
-        Concatenates two arrays along the specified axis
+        Concatenates multiple arrays along the specified axis
+        This is relatively inefficient in terms of not tracking indices
+        throughout
+
         :param other:
         :type other:
         :param axis:
@@ -1091,34 +1438,70 @@ class ScipySparseArray(SparseArray):
         :rtype:
         """
 
-        if not isinstance(other, ScipySparseArray):
-            other = ScipySparseArray(other)
+        others = [ScipySparseArray(o) if not isinstance(o, ScipySparseArray) else o for o in others]
 
-        other_remainder = other.shape[:axis] + other.shape[axis+1:]
-        self_remainder = self.shape[:axis] + self.shape[axis+1:]
-        if other_remainder != self_remainder:
-            raise ValueError("can't concatenate arrays with shapes {} and {} along axis {}".format(
+        all_inds = [self.block_inds[1]] + [other.block_inds[1] for other in others]
+        all_vals = [self.block_vals] + [other.block_vals for other in others]
+        all_shapes = [self.shape] + [other.shape for other in others]
+
+        full_vals, full_inds, tot_shape = self._concat_coo(all_inds, all_vals, all_shapes, axis)
+
+        return type(self)(
+            (
+                full_vals,
+                full_inds
+            ),
+            shape=tot_shape
+        )
+
+    def broadcast_to(self, shape):
+        """
+        Implements broadcast_to using COO-style operations
+        to be a little bit more efficient
+
+        :param shape:
+        :type shape:
+        :return:
+        :rtype:
+        """
+
+        if shape == self.shape:
+            return self
+
+        # precheck b.c. concatenate is expensive
+        compat = all(a % b == 0 for a, b in zip(shape, self.shape))
+        if not compat:
+            raise ValueError("{} with shape {} can't be broadcast to shape {}".format(
+                type(self).__name__,
                 self.shape,
-                other.shape,
-                axis
+                shape
             ))
 
-        if axis != 0:
-            raise NotImplementedError("gotta get concatenation along later axes working...")
-        # do necessary reshaping to make the row-or-columns stackable
-        if self.data.shape[0] != self.shape[0]:
-            self_stacky = self.data.reshape((self.shape[0], -1))
-        else:
-            self_stacky = self.data
+        full_vals = None
+        full_inds = None
+        tot_shape = self.shape
 
-        if other.data.shape[0] != other.shape[0]:
-            other_stacky = other.data.reshape((other.shape[0], -1))
-        else:
-            other_stacky = other.data
+        for i, (shs, sho) in enumerate(zip(self.shape, shape)):
+            if shs != sho:
+                if full_vals is None:
+                    full_vals = self.block_vals
+                if full_inds is None:
+                    full_inds = self.block_inds[1]
+                reps = sho // shs
 
-        new_shit = sp.vstack([self_stacky, other_stacky])
-        new_shape = self.shape[:axis] + (self.shape[axis] + other.shape[axis],) + self.shape[axis+1:]
-        return type(self)(new_shit, shape=new_shape)
+                all_vals = [full_vals] * reps
+                all_inds = [full_inds] * reps
+                all_shapes = [tot_shape] * reps
+
+                full_vals, full_inds, tot_shape = self._concat_coo(all_inds, all_vals, all_shapes, i)
+
+        return type(self)(
+            (
+                full_vals,
+                full_inds
+            ),
+            shape=tot_shape
+        )
 
     @property
     def T(self):
@@ -1175,6 +1558,7 @@ class ScipySparseArray(SparseArray):
                     bi = self._block_inds
                     new._block_vals = other + bvs
                     new._block_inds = bi
+                    new._block_data_sorted = self._block_data_sorted
                 return new
 
         if isinstance(other, ScipySparseArray):
@@ -1193,16 +1577,16 @@ class ScipySparseArray(SparseArray):
         return type(self)(1/self.data, shape = self.shape, layout=self.fmt)
 
     def __truediv__(self, other):
-        return self.multiply(1/other)
+        return self.multiply(1 / other)
     def __rtruediv__(self, other):
         if other == 1:
             return self.floopy_flop()
-        return self.multiply(1/other)
+        return self.multiply(1 / other)
     def __rmul__(self, other):
         return self.multiply(other)
     def __mul__(self, other):
         return self.multiply(other)
-    def multiply(self, other):
+    def true_multiply(self, other):
         d = self.data
         if isinstance(other, (int, float, np.integer, np.floating)):
             if other == 0.:
@@ -1218,6 +1602,7 @@ class ScipySparseArray(SparseArray):
                     bi = self._block_inds
                     new._block_vals = other * bvs
                     new._block_inds = bi
+                    new._block_data_sorted = self._block_data_sorted
                 return new
 
         if isinstance(other, ScipySparseArray):
@@ -1234,7 +1619,80 @@ class ScipySparseArray(SparseArray):
 
     def copy(self):
         import copy
-        return copy.copy(self)
+
+        base = copy.copy(self)
+        if base.data is self.data:
+            base.data = base.data.copy()
+        # I'm not sure I mutate anything else?
+
+        # if base._block_inds is not None:
+        #
+        # if self.data is n
+        # base.
+        return base
+
+    @classmethod
+    def _find_block_alignment(cls, inds, block, shape):
+        """
+        finds the positions where the block & index align
+        """
+
+        # duh...
+        filter, _, _ = contained(inds, block,
+                                 assume_unique=(False, True),
+                                 sortings=(np.arange(len(inds)), np.arange(len(block)))
+                                 )
+        # if method == 'sorted':
+        #
+        #     find_spots = np.empty(2*len(block), dtype=inds.dtype)
+        #     find_spots[0::2] = block
+        #     find_spots[1::2] = block+1
+        #     # find where the blocks start and end (doable like this b.c. we ensure sorting)
+        #     # whenever things are modded
+        #     filter = np.full(len(inds), False)
+        #     # print(filter, find_spots)
+        #     block_ends = np.searchsorted(inds, find_spots)
+        #     print(find_spots[:10], block_ends[:10], inds[:10])
+        #     for i in range(0, len(find_spots), 2):
+        #         start = block_ends[i]
+        #         end = block_ends[i+1]
+        #         j = block[i//2]
+        #         if start < len(inds) and inds[start] == j and inds[end-1] == j:
+        #             filter[start:end] = True
+        # else:
+        #     # OLD METHOD HERE SO I CAN SHIT ON IT AS AN EXAMPLE
+        #     # we do an iterated "and" over the not equals
+        #     # and apply a "not" at the end
+        #     filter = np.full(len(inds), True)
+        #     for j in block:
+        #         # hastag meta
+        #         filter[filter] = inds[filter] != j
+        #     filter = np.logical_not(filter)
+        # print(len(inds), np.count_nonzero(filter))
+
+        # I was hoping I could make use of that filter stuff to
+        # build the mapping but it honestly seems like the two are completely
+        # different?
+
+        # we find the first position where the positions occur (we assume they _do_ occur)
+        # using `searchsorted`
+        mapping = np.searchsorted(block, np.arange(shape))#, sorter=np.arange(len(block)))
+
+        return filter, mapping
+
+    def _get_filtered_elements(self, blocks, data, inds):
+
+        inds = list(inds)
+        for i, b, s in zip(range(len(blocks)), blocks, self.shape):
+            if b is not None:
+                ixs = inds[i]
+                filter, mapping = self._find_block_alignment(ixs, b, s)
+                # print(ixs, b, s, filter)
+                inds = [ix[filter] for ix in inds]
+                data = data[filter]
+                inds[i] = mapping[inds[i]]
+
+        return data, inds
 
     def _get_element(self, idx, pull_elements=None):
         """
@@ -1246,6 +1704,7 @@ class ScipySparseArray(SparseArray):
         :rtype:
         """
 
+        # TODO: take a look at the numpy "fancy indexing" code to speed this up...
         if pull_elements is None:
             # we check first to see if we were asked for just a single vector of elements
             # the detection heuristic is basically: is everything just a slice of ints or nah
@@ -1259,10 +1718,10 @@ class ScipySparseArray(SparseArray):
                     pull_elements = all(len(x) == e1 for x in idx)
 
         if pull_elements:
-            try:
-                flat = self._ravel_indices(idx, self.shape)
-            except:
-                raise Exception(idx)
+            # try:
+            flat = self._ravel_indices(idx, self.shape)
+            # except:
+            #     raise Exception(idx)
 
             unflat = self._unravel_indices(flat, self.data.shape)
             res = self.data[unflat]
@@ -1271,47 +1730,27 @@ class ScipySparseArray(SparseArray):
             return res
         else:
             # need to compute the shape of the resultant block
+            # we treat slice(None, None, None) as a special case because
+            # it's so common
             blocks = [
                 (
                     np.array([i]) if isinstance(i, (int, np.integer)) else (
                         np.arange(s)[i,].flatten()
+                            if not (isinstance(i, slice) and i == slice(None, None, None)) else
+                        None
                     )
                 )
                 for i, s in zip(idx, self.shape)
             ]
             # we filter out places where new_shape[i] == 1 at a later stage
             # for now we just build out the total shape it _would_ have with axes of len 1
-            new_shape = [len(x) for x in blocks] + list(self.shape[len(blocks):])
+            new_shape = [
+                            len(x) if x is not None else s for x,s in zip(blocks, self.shape[:len(blocks)])
+                         ] + list(self.shape[len(blocks):])
 
             # now we iterate over each block and use it as a successive filter on our non-zero positions
             data, inds = self.block_data
-            inds = list(inds)
-
-            def g(b, j):
-                """
-                finds the positions where the block & index align
-                """
-                w = np.argwhere(b == j)
-                if len(w) > 0:
-                    w = w[0][0]
-                else:
-                    w = -1
-                return w
-            for i, b, s in zip(range(len(blocks)), blocks, self.shape):
-                k = 0
-                ixs = inds[i]
-                # we add up the indices to give a list of 0 & 1 to use as a mask
-                # we use sum because sum is boolean OR
-                # this will give us the elements of ixs where
-                filter = np.sum(ixs == j for j in b).astype(bool)
-                # we then apply this to the non-zero indices and values we're tracking
-                inds = [ix[filter] for ix in inds]
-                data = data[filter]
-                # finally, we remap the current set of indices so that indices that are
-                # disappearing get removed and the ones that are staying get shifted down
-                # to match that change
-                mapping = np.array([g(b, j) for j in range(s)])
-                inds[i] = mapping[inds[i]]
+            data, inds = self._get_filtered_elements(blocks, data, inds)
 
             # now that we've filtered our data, we filter out axes of size 1
             # print(inds, new_shape)
@@ -1337,7 +1776,7 @@ class ScipySparseArray(SparseArray):
                 total_shape = new_shape
 
             # raise Exception(blocks, new_shape, len(inds), len(unflat))
-            od = data
+            # od = data
             try:
                 data = self._build_data(data, unflat, total_shape)
             except Exception as e:
@@ -1357,7 +1796,36 @@ class ScipySparseArray(SparseArray):
                 new.block_inds = inds
             else:
                 new.block_inds = flat, inds
+            new._block_data_sorted = True
             return new
+
+    def _set_data(self, unflat, val):
+        """
+        Tries to explicitly assign but if that fails drops back to CSR and then reconverts
+
+        :param unflat:
+        :type unflat:
+        :param val:
+        :type val:
+        :return:
+        :rtype:
+        """
+        # Just here so I can be smart
+        try:
+            self.data[unflat] = val
+        except TypeError:
+            if self.data.shape[0] > self.data.shape[1]:
+                sub_sparse = sp.csc_matrix(self.data)
+            else:
+                sub_sparse = sp.csr_matrix(self.data)
+            sub_sparse[unflat] = val
+            self.data = self.fmt(sub_sparse)
+
+        # TODO: figure out how to resolve the collisions
+        #       more efficiently
+        self._block_vals = None
+        self._block_inds = None
+
     def _set_element(self, idx, val):
         """
         Convert idx into a 1D index or slice or whatever and then convert it back to the appropriate 2D shape.
@@ -1384,15 +1852,12 @@ class ScipySparseArray(SparseArray):
             flat = self._ravel_indices(idx, self.shape)
             unflat = self._unravel_indices(flat, self.data.shape)
             # try:
-            self.data[unflat] = val
+
+            self._set_data(unflat, val)
             # except TypeError:
             #     # need to construct a new data object in its entirety :weep:
             #     # or convert to an assignable format?
             #
-            # TODO: figure out how to resolve the collisions
-            #       more efficiently
-            self._block_vals = None
-            self._block_inds = None
         else:
             # need to compute the proper block indices, unfortunately
             # so that they can be down-converted to their 2D equivalents
@@ -1405,15 +1870,12 @@ class ScipySparseArray(SparseArray):
                 for i, s in zip(idx, self.shape)
             ]
 
-            block_inds = np.array(ip.product(blocks)).T
+            block_inds = np.array([p for p in ip.product(*blocks)]).T
 
             flat = self._ravel_indices(block_inds, self.shape)
             unflat = self._unravel_indices(flat, self.data.shape)
-            self.data[unflat] = val
-            # TODO: figure out how to resolve the collisions
-            #       more efficiently
-            self._block_vals = None
-            self._block_inds = None
+
+            self._set_data(unflat, val)
 
     def _del_element(self, idx):
         """
@@ -1457,7 +1919,7 @@ class ScipySparseArray(SparseArray):
                 for i, s in zip(idx, self.shape)
             ]
 
-            block_inds = np.array(ip.product(blocks)).T
+            block_inds = np.array([p for p in ip.product(*blocks)]).T
 
             flat = self._ravel_indices(block_inds, self.shape)
             unflat = self._unravel_indices(flat, self.data.shape)
@@ -1689,18 +2151,18 @@ class TensorFlowSparseArray(SparseArray):
         return type(self)(new)
 
     def __truediv__(self, other):
-        return self.multiply(1 / other)
+        return self.true_multiply(1 / other)
 
     def __rtruediv__(self, other):
-        return self.multiply(1 / other)
+        return self.true_multiply(1 / other)
 
     def __rmul__(self, other):
-        return self.multiply(other)
+        return self.true_multiply(other)
 
     def __mul__(self, other):
-        return self.multiply(other)
+        return self.true_multiply(other)
 
-    def multiply(self, other):
+    def true_multiply(self, other):
         """
         Multiplies self and other
         :param other:

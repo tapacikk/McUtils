@@ -331,10 +331,6 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
             y_axes  = coords[mc_ol[2::nol,  0]] - origins # the second displacement vector (just defines the x-y plane, not the real y-axis)
             axes = np.array([x_axes, y_axes]).transpose((1, 0, 2))
 
-            # raise Exception([x_axes, y_axes])
-            # print(origins.shape, axes.shape)
-            # print(axes)
-
         else:
             origins = coords[ol[0, 1]]
             axes = np.array([coords[ol[0, 0]] - origins, coords[ol[1, 0]] - origins])
@@ -343,10 +339,9 @@ class CartesianToZMatrixConverter(CoordinateSystemConverter):
         om = om - 1
         ordering = np.array(
                 [
-                    np.arange(len(ol)), om[ol[:, 1]], om[ol[:, 2]], om[ol[:, 3]]
+                    np.argsort(ol[:, 0]), om[ol[:, 1]], om[ol[:, 2]], om[ol[:, 3]]
                 ]
             ).T
-
         opts = dict(use_rad=use_rad, ordering=ordering, origins=origins, axes=axes)
 
         # if we're returning derivs, we also need to make sure that they're ordered the same way the other data is...

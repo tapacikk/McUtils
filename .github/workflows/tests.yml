@@ -1,0 +1,21 @@
+name: McUtilsTests
+on:
+  push:
+    branches:
+      - edit
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # To use this repository's private action,
+      # you must check out the repository
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: edit
+      - name: Test
+        uses: ./.github/actions/tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

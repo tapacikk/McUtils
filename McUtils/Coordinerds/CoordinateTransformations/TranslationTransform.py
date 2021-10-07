@@ -10,6 +10,7 @@ import numpy as np
 __all__ = [
     "TranslationTransform"
 ]
+__reload_hook__ = [".AffineTransform"]
 
 class TranslationTransform(AffineTransform):
     """A simple TranslationTransform from the basic AffineTransformation class

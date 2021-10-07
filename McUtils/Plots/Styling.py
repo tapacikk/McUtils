@@ -29,7 +29,8 @@ class ThemeManager:
             {
                 'axes.labelsize': 13,
                 'xtick.labelsize':13,
-                'ytick.labelsize':13
+                'ytick.labelsize':13,
+                'padding': 50
             }
         )
 
@@ -37,9 +38,10 @@ class ThemeManager:
     _resolved_theme_cache = {
 
     }
-    def __init__(self, *theme_names, backend=Backends.MPL, **extra_styles):
+    def __init__(self, *theme_names, backend=Backends.MPL, graphics_styles=None, **extra_styles):
         self.main_theme_names = theme_names
         self.extra_styles = extra_styles
+        self.graphics_styles = graphics_styles
         self.backend=backend
         self.context_manager = None
     @classmethod
@@ -61,12 +63,17 @@ class ThemeManager:
             theme_names = []
             theme_properties = {}
         return cls(*theme_names, **theme_properties)
+    def _test_rcparam(self, k):
+        return '.' in k
     def __enter__(self):
         if self.backend == Backends.MPL:
             import matplotlib.pyplot as plt
             theme = self.resolve_theme(None, *self.main_theme_names, **self.extra_styles)
             self.validate_theme(*theme)
-            self.context_manager = plt.style.context(list(theme[0])+[theme[1]])
+            name_list = list(theme[0])
+            opts = {k:v for k,v in theme[1].items() if self._test_rcparam(k)}
+
+            self.context_manager = plt.style.context(name_list+[opts])
             return self.context_manager.__enter__()
         # don't currently support any other backends...
     def __exit__(self, exc_type, exc_val, exc_tb):

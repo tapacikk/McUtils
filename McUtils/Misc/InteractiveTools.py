@@ -153,7 +153,7 @@ class ModuleReloader:
 
 try:
     import nglview
-except:
+except ImportError:
     class MoleculeGraphics:
         def __init__(self, *args, **kwargs):
             raise ImportError("{} requires `nglview`".format(type(self).__name__))
@@ -195,7 +195,7 @@ else:
                 base_scales = np.linspace(*displacement_range, displacement_steps)
                 self.scales = np.concatenate([
                     base_scales,
-                    base_scales[-2:1:-1]
+                    base_scales[-2:0:-1]
                 ])
 
         def convert_header(self, comment=None):

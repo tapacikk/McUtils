@@ -15,8 +15,10 @@ class LogLevel(enum.Enum):
     """
     Quiet = 0
     Warnings = 1
-    Debug = 10
+    Normal = 10
+    Debug = 50
     All = 100
+    Never = 1000 # for debug statements that should really be deleted but I'm too lazy to
 
     def __eq__(self, other):
         if isinstance(other, LogLevel):
@@ -47,12 +49,12 @@ class LoggingBlock:
     """
     block_settings = [
         {
-            'opener': ">>" + "-" * 25 + '{tag}' + "-" * 25,
+            'opener': ">>" + "-" * 25 + ' {tag} ' + "-" * 25,
             'prompt': "::{meta} ",
             'closer': '<<'
         },
         {
-            'opener': "::>{tag}",
+            'opener': "::> {tag}",
             'prompt': "  >{meta} ",
             'closer': '<::'
         }
@@ -66,7 +68,8 @@ class LoggingBlock:
                  tag=None,
                  opener=None,
                  prompt=None,
-                 closer=None
+                 closer=None,
+                 printoptions=None
                  ):
         self.logger = logger
         if block_level_padding is None:
@@ -76,14 +79,31 @@ class LoggingBlock:
             settings = {k: padding + v for k,v in self.block_settings[-1].items()}
         else:
             settings = self.block_settings[block_level]
-        self.tag = "" if tag is None else " {} ".format(tag)
+
+        self._tag = tag
+
         self._old_loglev = None
-        self.log_level = log_level if log_level is not None else logger.default_verbosity
+        self.log_level = log_level if log_level is not None else logger.verbosity
         self.opener = settings['opener'] if opener is None else opener
         self._old_prompt = None
         self.prompt = settings['prompt'] if prompt is None else prompt
         self.closer = settings['closer'] if closer is None else closer
         self._in_block = False
+
+        self._print_manager=None
+        self.printopts = printoptions
+
+    @property
+    def tag(self):
+        if self._tag is None:
+            self._tag = ""
+        elif not isinstance(self._tag, str):
+            if callable(self._tag):
+                self._tag = self._tag()
+            else:
+                self._tag = self._tag[0].format(**self._tag[1])
+
+        return self._tag
 
     def __enter__(self):
         if self.log_level <= self.logger.verbosity:
@@ -91,9 +111,14 @@ class LoggingBlock:
             self.logger.log_print(self.opener, tag=self.tag, padding="")
             self._old_prompt = self.logger.padding
             self.logger.padding = self.prompt
-            self._old_loglev = self.logger.default_verbosity
-            self.logger.default_verbosity = self.log_level
+            self._old_loglev = self.logger.verbosity
+            self.logger.verbosity = self.log_level
             self.logger.block_level += 1
+
+            if self.printopts is not None and self._print_manager is None:
+                from numpy import printoptions
+                self._print_manager = printoptions(**self.printopts)
+                self._print_manager.__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self._in_block:
@@ -101,28 +126,39 @@ class LoggingBlock:
             self.logger.log_print(self.closer, tag=self.tag, padding="")
             self.logger.padding = self._old_prompt
             self._old_prompt = None
-            self.logger.default_verbosity = self._old_loglev
+            self.logger.verbosity = self._old_loglev
             self._old_loglev = None
             self.logger.block_level -= 1
+
+            if self._print_manager is not None:
+                self._print_manager.__exit__(exc_type, exc_val, exc_tb)
+                self._print_manager = None
 
 class Logger:
     """
     Defines a simple logger object to write log data to a file based on log levels.
     """
 
+    LogLevel = LogLevel
+
     _loggers = weakref.WeakValueDictionary()
-    default_verbosity = 0
+    default_verbosity = LogLevel.Normal
     def __init__(self,
                  log_file = None,
-                 verbosity = LogLevel.All,
+                 log_level = None,
+                 print_function=None,
                  padding="",
                  newline="\n"
                  ):
         self.log_file = log_file
-        self.verbosity = verbosity
+        self.verbosity = log_level if log_level is not None else self.default_verbosity
         self.padding = padding
         self.newline = newline
         self.block_level = 0 # just an int to pass to `block(...)` so that it can
+        self.auto_flush = True
+        if print_function is None:
+            print_function = print
+        self.print_function = print_function
 
     def block(self, **kwargs):
         return LoggingBlock(self, block_level=self.block_level, **kwargs)
@@ -154,9 +190,44 @@ class Logger:
             logger = NullLogger()
         return logger
 
-    def format_message(self, message, *params, **kwargs):
+    @staticmethod
+    def preformat_keys(key_functions):
+        """
+        Generates a closure that will take the supplied
+        keys/function pairs and update them appropriately
+
+        :param key_functions:
+        :type key_functions:
+        :return:
+        :rtype:
+        """
+
+        def preformat(*args, **kwargs):
+
+            for k,v in kwargs.items():
+                if k in key_functions:
+                    kwargs[k] = key_functions[k](v)
+
+            return args, kwargs
+        return preformat
+
+    def format_message(self, message, *params, preformatter=None, **kwargs):
+        if preformatter is not None:
+            args = preformatter(*params, **kwargs)
+            if isinstance(args, dict):
+                kwargs = args
+                params = ()
+            elif (
+                    isinstance(args, tuple)
+                    and len(args) == 2
+                    and isinstance(args[1], dict)
+            ):
+                params, kwargs = args
+            else:
+                params = ()
+                kwargs = args
         if len(kwargs) > 0:
-            message = message.format(**kwargs)
+            message = message.format(*params, **kwargs)
         elif len(params) > 0:
             message = message.format(*params)
         return message
@@ -167,7 +238,23 @@ class Logger:
         else:
             import json
             return json.dumps(metainfo)
-    def log_print(self, message, *messrest, print_options=None, padding=None, newline=None, metainfo=None, **kwargs):
+
+    @staticmethod
+    def split_lines(obj):
+        return str(obj).splitlines()
+
+    def log_print(self,
+                  message,
+                  *messrest,
+                  message_prepper=None,
+                  padding=None, newline=None,
+                  log_level=None,
+                  metainfo=None, print_function=None,
+                  print_options=None,
+                  sep=None, end=None, file=None, flush=None,
+                  preformatter=None,
+                  **kwargs
+                  ):
         """
         :param message: message to print
         :type message: str | Iterable[str]
@@ -180,51 +267,74 @@ class Logger:
         :return:
         :rtype:
         """
-        if padding is None:
-            padding = self.padding
-        if newline is None:
-            newline = self.newline
 
-        if len(messrest) > 0:
-            message = [message, *messrest]
 
-        if not isinstance(message, str):
-            joiner = (newline + padding)
-            message = joiner.join(
-                [padding + message[0]]
-                + list(message[1:])
-            )
-        else:
-            message = padding + message
+        if log_level is None:
+            log_level = self.default_verbosity
 
-        # print(">>>>", repr(message), params)
+        if log_level <= self.verbosity:
 
-        if print_options is None:
-            print_options={}
-        if 'verbosity' in kwargs:
-            verbosity = kwargs['verbosity']
-            del kwargs['verbosity']
-        else:
-            verbosity = self.default_verbosity
+            if padding is None:
+                padding = self.padding
+            if newline is None:
+                newline = self.newline
+            if print_function is None:
+                print_function = self.print_function
 
-        if 'flush' not in print_options:
-            print_options['flush'] = True
+            if message_prepper is not None:
+                message = message_prepper(message, *messrest)
+                messrest = ()
 
-        if verbosity <= self.verbosity:
-            log = self.log_file
-            if isinstance(log, str):
-                if not os.path.isdir(os.path.dirname(log)):
-                    try:
-                        os.makedirs(os.path.dirname(log))
-                    except OSError:
-                        pass
-                #O_NONBLOCK is *nix only
-                with open(log, "a", os.O_NONBLOCK) as lf: # this is potentially quite slow but I am also quite lazy
-                    print(self.format_message(message, meta=self.format_metainfo(metainfo), **kwargs), file=lf, **print_options)
-            elif log is None:
-                print(self.format_message(message, meta=self.format_metainfo(metainfo), **kwargs), **print_options)
+            if len(messrest) > 0:
+                message = [message, *messrest]
+
+            if not isinstance(message, str):
+                joiner = (newline + padding)
+                message = joiner.join(
+                    [padding + message[0]]
+                    + list(message[1:])
+                )
             else:
-                print(self.format_message(message, meta=self.format_metainfo(metainfo), **kwargs), file=log, **print_options)
+                message = padding + message
+
+            # print(">>>>", repr(message), params)
+
+            if print_options is None:
+                print_options = {}
+            if sep is not None:
+                print_options['sep'] = sep
+            if end is not None:
+                print_options['end'] = end
+            if file is not None:
+                print_options['file'] = file
+            if flush is not None:
+                print_options['flush'] = flush
+
+            if 'flush' not in print_options:
+                print_options['flush'] = self.auto_flush
+
+            if log_level <= self.verbosity:
+                log = self.log_file
+                if isinstance(log, str):
+                    if not os.path.isdir(os.path.dirname(log)):
+                        try:
+                            os.makedirs(os.path.dirname(log))
+                        except OSError:
+                            pass
+                    #O_NONBLOCK is *nix only
+                    with open(log, mode="a", buffering=1 if print_options['flush'] else -1) as lf: # this is potentially quite slow but I am also quite lazy
+                        print_function(self.format_message(message, meta=self.format_metainfo(metainfo), **kwargs), file=lf, **print_options)
+                elif log is None:
+                    print_function(self.format_message(message, meta=self.format_metainfo(metainfo), preformatter=preformatter, **kwargs), **print_options)
+                else:
+                    print_function(self.format_message(message, meta=self.format_metainfo(metainfo), preformatter=preformatter, **kwargs), file=log, **print_options)
+
+    def __repr__(self):
+        return "{}({}, {})".format(
+            type(self).__name__,
+            self.log_file,
+            self.verbosity
+        )
 
 class NullLogger(Logger):
     """
@@ -233,6 +343,8 @@ class NullLogger(Logger):
     """
     def log_print(self, message, *params, print_options=None, padding=None, newline=None, **kwargs):
         pass
+    def __bool__(self):
+        return False
 
 class LogParser(FileStreamReader):
     """

@@ -646,14 +646,36 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
     derivs.append(sign*q)
 
     if order >= 1:
+        # d = sin_derivs[1]
+        # s_da = d[..., 0, :]; s_db = d[..., 1, :]
+        # d = cos_derivs[1]
+        # c_da = d[..., 0, :]; c_db = d[..., 1, :]
+        #
+        # q_da = c * s_da - s * c_da
+        # q_db = c * s_db - s * c_db
 
-        d = sin_derivs[1]
-        s_da = d[..., 0, :]; s_db = d[..., 1, :]
-        d = cos_derivs[1]
-        c_da = d[..., 0, :]; c_db = d[..., 1, :]
+        # we can do some serious simplification here
+        # if we use some of the analytic work I've done
+        # to write these in terms of the vector tangent
+        # to the rotation
 
-        q_da = c * s_da - s * c_da
-        q_db = c * s_db - s * c_db
+        a, na = vec_apply_zero_threshold(a, zero_thresh=zero_thresh)
+        b, nb = vec_apply_zero_threshold(b, zero_thresh=zero_thresh)
+
+        ha = a / na
+        hb = b / nb
+
+        ca = hb - (vec_dots(ha, hb)[..., np.newaxis]) * ha
+        cb = ha - (vec_dots(hb, ha)[..., np.newaxis]) * hb
+
+        ca, nca = vec_apply_zero_threshold(ca, zero_thresh=zero_thresh)
+        cb, ncb = vec_apply_zero_threshold(cb, zero_thresh=zero_thresh)
+
+        ca = ca / nca
+        cb = cb / ncb
+
+        q_da = -ca/na
+        q_db = -cb/nb
 
         extra_dims = a.ndim - 1
         extra_shape = a.shape[:-1]
@@ -666,13 +688,19 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
         derivs.append(d1.transpose(d1_reshape))
 
     if order >= 2:
+
+        d = sin_derivs[1]
+        s_da = d[..., 0, :]; s_db = d[..., 1, :]
+        d = cos_derivs[1]
+        c_da = d[..., 0, :]; c_db = d[..., 1, :]
+
         d = sin_derivs
-        s_daa = d[2][..., 0, 0, :, :]; s_dab = d[2][..., 0, 1, :, :];
-        s_dba = d[2][..., 1, 0, :, :]; s_dbb = d[2][..., 1, 1, :, :];
+        s_daa = d[2][..., 0, 0, :, :]; s_dab = d[2][..., 0, 1, :, :]
+        s_dba = d[2][..., 1, 0, :, :]; s_dbb = d[2][..., 1, 1, :, :]
 
         d = cos_derivs
-        c_daa = d[2][..., 0, 0, :, :]; c_dab = d[2][..., 0, 1, :, :];
-        c_dba = d[2][..., 1, 0, :, :]; c_dbb = d[2][..., 1, 1, :, :];
+        c_daa = d[2][..., 0, 0, :, :]; c_dab = d[2][..., 0, 1, :, :]
+        c_dba = d[2][..., 1, 0, :, :]; c_dbb = d[2][..., 1, 1, :, :]
 
         c = c[..., np.newaxis]
         s = s[..., np.newaxis]
@@ -781,11 +809,11 @@ def angle_deriv(coords, i, j, k, order=1, zero_thresh=None):
 
     return derivs
 
-def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
+def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_size=1.0e-4):
     """
     Gives the derivative of the dihedral between i, j, k, and l with respect to the Cartesians
     Currently gives what are sometimes called the `psi` angles.
-    Will be extended to also support more traditional `phi` angles
+    Can also support more traditional `phi` angles by using a different angle ordering
 
     :param coords:
     :type coords: np.ndarray
@@ -808,6 +836,7 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
     b = coords[..., k, :] - coords[..., j, :]
     c = coords[..., l, :] - coords[..., k, :]
 
+
     n1 = vec_crosses(a, b)
     n2 = vec_crosses(b, c)
 
@@ -822,7 +851,10 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
 
     # zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
 
-    orient = vec_dots(b, vec_crosses(n1, n2))
+    cnb = vec_crosses(n1, n2)
+
+    # cnb, n_cnb, bad_friends = vec_apply_zero_threshold(cnb, zero_thresh=zero_thresh, return_zeros=True)
+    orient = vec_dots(b, cnb)
     # orient[np.abs(orient) < 1.0] = 0.
     sign = np.sign(orient)
 
@@ -840,7 +872,53 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None):
         dk = vec_crosses(a, dn1) - vec_crosses(b+c, dn2)
         dl = vec_crosses(b, dn2)
 
-        derivs.append(sign[np.newaxis, ..., np.newaxis]*np.array([di, dj, dk, dl]))
+        deriv_tensors = sign[np.newaxis, ..., np.newaxis]*np.array([di, dj, dk, dl])
+
+        # if we have problem points we deal with them via averaging
+        # over tiny displacements since the dihedral derivative is
+        # continuous
+        # if np.any(bad_friends):
+        #     raise NotImplementedError("planar dihedral angles remain an issue for me...")
+        #     if coords.ndim > 2:
+        #         raise NotImplementedError("woof")
+        #     else:
+        #         bad_friends = bad_friends.flatten()
+        #         bad_i = i[bad_friends]
+        #         bad_j = j[bad_friends]
+        #         bad_k = k[bad_friends]
+        #         bad_l = l[bad_friends]
+        #         bad_coords = np.copy(coords)
+        #         if isinstance(i, (int, np.integer)):
+        #             raise NotImplementedError("woof")
+        #         else:
+        #             # for now we do this with finite difference...
+        #             for which,(bi,bj,bk,bl) in enumerate(zip(bad_i, bad_j, bad_k, bad_l)):
+        #                 for nat,at in enumerate([bi, bj, bk, bl]):
+        #                     for x in range(3):
+        #                         bad_coords[at, x] += zero_point_step_size
+        #                         d01, = dihed_deriv(bad_coords, bi, bj, bk, bl, order=0, zero_thresh=-1.0)
+        #                         bad_coords[at, x] -= 2*zero_point_step_size
+        #                         d02, = dihed_deriv(bad_coords, bi, bj, bk, bl, order=0, zero_thresh=-1.0)
+        #                         bad_coords[at, x] += zero_point_step_size
+        #                         deriv_tensors[nat, which, x] = (d01[0] + d02[0])/(2*zero_point_step_size)
+        #                         # print(
+        #                         #     "D1", d1[nat, x]
+        #                         #
+        #                         # )
+        #                         # print(
+        #                         #     "D2", d2[nat, x]
+        #                         #
+        #                         # )
+        #                         # print("avg", (d1[nat, x] + d2[nat, x])/2)
+        #                         # print("FD", (d01[0], d02[0]))#/(2*zero_point_step_size))
+        #                         # raise Exception(
+        #                         #  "wat",
+        #                         #     di,
+        #                         # d01.shape
+        #                         # )
+
+        derivs.append(deriv_tensors)
+
 
     if order >= 2:
 
