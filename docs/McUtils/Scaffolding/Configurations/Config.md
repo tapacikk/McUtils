@@ -8,19 +8,36 @@ by a `from_config` method.
 ```python
 config_file_name: str
 config_file_extensions: list
-find_config: method
-get_serializer: method
-new: method
 ```
 <a id="McUtils.Scaffolding.Configurations.Config.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, config, serializer=None): 
+__init__(self, config, serializer=None, extra_params=None): 
 ```
 Loads the config from a file
 - `config`: `str`
     >No description...
 - `serializer`: `None | BaseSerializer`
     >No description...
+
+<a id="McUtils.Scaffolding.Configurations.Config.find_config" class="docs-object-method">&nbsp;</a>
+```python
+find_config(config, name=None, extensions=None): 
+```
+Finds configuration file (if config isn't a file)
+- `config`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Scaffolding.Configurations.Config.get_serializer" class="docs-object-method">&nbsp;</a>
+```python
+get_serializer(file): 
+```
+
+<a id="McUtils.Scaffolding.Configurations.Config.new" class="docs-object-method">&nbsp;</a>
+```python
+new(loc, init=None): 
+```
 
 <a id="McUtils.Scaffolding.Configurations.Config.serialize" class="docs-object-method">&nbsp;</a>
 ```python

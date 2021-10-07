@@ -3,9 +3,6 @@ A one-dimensional finite difference derivative object.
 Higher-dimensional derivatives are built by chaining these.
 
 ### Properties and Methods
-```python
-get_stencil: method
-```
 <a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifference1D.__init__" class="docs-object-method">&nbsp;</a>
 ```python
 __init__(self, finite_difference_data, matrix): 
@@ -27,6 +24,11 @@ weights(self):
 ```python
 @property
 widths(self): 
+```
+
+<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifference1D.get_stencil" class="docs-object-method">&nbsp;</a>
+```python
+get_stencil(order, stencil, accuracy): 
 ```
 
 <a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifference1D.apply" class="docs-object-method">&nbsp;</a>

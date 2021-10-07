@@ -3,6 +3,7 @@ An enumeration.
 
 ### Properties and Methods
 ```python
+Regular: MeshType
 Structured: MeshType
 Unstructured: MeshType
 SemiStructured: MeshType

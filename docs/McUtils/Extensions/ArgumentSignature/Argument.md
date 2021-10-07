@@ -5,9 +5,6 @@ We use a two-pronged approach where we have a set of ArgumentType serializers/de
 ### Properties and Methods
 ```python
 arg_types: list
-infer_type: method
-infer_array_type: method
-inferred_type_string: method
 ```
 <a id="McUtils.Extensions.ArgumentSignature.Argument.__init__" class="docs-object-method">&nbsp;</a>
 ```python
@@ -20,6 +17,27 @@ __init__(self, name, dtype, default=None):
     >the type of the argument; at some point we'll support type inference...
 - `default`: `Any`
     >the default value for the argument
+
+<a id="McUtils.Extensions.ArgumentSignature.Argument.infer_type" class="docs-object-method">&nbsp;</a>
+```python
+infer_type(arg): 
+```
+Infers the type of an argument
+- `arg`: `ArgumentType | str | type | ctypes type`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Extensions.ArgumentSignature.Argument.infer_array_type" class="docs-object-method">&nbsp;</a>
+```python
+infer_array_type(argstr): 
+```
+
+<a id="McUtils.Extensions.ArgumentSignature.Argument.inferred_type_string" class="docs-object-method">&nbsp;</a>
+```python
+inferred_type_string(arg): 
+```
+returns a type string for the inferred type
 
 <a id="McUtils.Extensions.ArgumentSignature.Argument.cpp_signature" class="docs-object-method">&nbsp;</a>
 ```python

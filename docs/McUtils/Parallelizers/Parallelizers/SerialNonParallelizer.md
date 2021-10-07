@@ -133,7 +133,7 @@ Performs a serial map with unpacking of the function over
 
 <a id="McUtils.Parallelizers.Parallelizers.SerialNonParallelizer.apply" class="docs-object-method">&nbsp;</a>
 ```python
-apply(self, func, *args, **kwargs): 
+apply(self, func, *args, comm=None, main_kwargs=None, **kwargs): 
 ```
 
 <a id="McUtils.Parallelizers.Parallelizers.SerialNonParallelizer.wait" class="docs-object-method">&nbsp;</a>

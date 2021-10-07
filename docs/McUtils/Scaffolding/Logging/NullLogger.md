@@ -8,6 +8,11 @@ Allows code to avoid a bunch of "if logger is not None" blocks
 log_print(self, message, *params, print_options=None, padding=None, newline=None, **kwargs): 
 ```
 
+<a id="McUtils.Scaffolding.Logging.NullLogger.__bool__" class="docs-object-method">&nbsp;</a>
+```python
+__bool__(self): 
+```
+
 ### Examples
 
 

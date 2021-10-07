@@ -6,11 +6,10 @@ function that represents a "main loop".
 ```python
 SendRecvQueuePair: type
 PoolCommunicator: ABCMeta
-from_config: method
 ```
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, worker=False, pool: <bound method BaseContext.Pool of <multiprocessing.context.DefaultContext instance>> = None, context=None, manager=None, printer=None, verbose=False, initialization_timeout=0.5, **kwargs): 
+__init__(self, worker=False, pool: <bound method BaseContext.Pool of <multiprocessing.context.DefaultContext instance>> = None, context=None, manager=None, logger=None, comm=None, initialization_timeout=0.5, **kwargs): 
 ```
 
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.get_nprocs" class="docs-object-method">&nbsp;</a>
@@ -39,7 +38,7 @@ __getstate__(self):
 
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.apply" class="docs-object-method">&nbsp;</a>
 ```python
-apply(self, func, *args, **kwargs): 
+apply(self, func, *args, comm=None, main_kwargs=None, **kwargs): 
 ```
 Applies func to args in parallel on all of the processes
 - `func`: `Any`
@@ -75,6 +74,11 @@ finalize(self, exc_type, exc_val, exc_tb):
 ```python
 @property
 on_main(self): 
+```
+
+<a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.from_config" class="docs-object-method">&nbsp;</a>
+```python
+from_config(**kw): 
 ```
 
 ### Examples

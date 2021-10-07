@@ -4,11 +4,6 @@ A convenience class that makes it easy to pull blocks out of strings and whatnot
 ### Properties and Methods
 ```python
 MatchIterator: type
-get_regex_block_handlers: method
-get_regex_dtypes: method
-handler_method: method
-to_array: method
-array_handler: method
 ```
 <a id="McUtils.Parsers.StringParser.StringParser.__init__" class="docs-object-method">&nbsp;</a>
 ```python
@@ -43,10 +38,66 @@ parse_all(self, txt, regex=None, num_results=None, block_handlers=None, dtypes=N
 parse_iter(self, txt, regex=None, num_results=None, block_handlers=None, dtypes=None): 
 ```
 
+<a id="McUtils.Parsers.StringParser.StringParser.get_regex_block_handlers" class="docs-object-method">&nbsp;</a>
+```python
+get_regex_block_handlers(regex): 
+```
+Uses the uncompiled RegexPattern to determine what blocks exist and what handlers they should use
+- `regex`: `RegexPattern`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Parsers.StringParser.StringParser.get_regex_dtypes" class="docs-object-method">&nbsp;</a>
+```python
+get_regex_dtypes(regex): 
+```
+Uses the uncompiled RegexPattern to determine which StructuredTypes to return
+- `regex`: `RegexPattern`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Parsers.StringParser.StringParser.handler_method" class="docs-object-method">&nbsp;</a>
+```python
+handler_method(method): 
+```
+Turns a regular function into a handler method by adding in (and ignoring) the array argument
+- `method`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
 <a id="McUtils.Parsers.StringParser.StringParser.load_array" class="docs-object-method">&nbsp;</a>
 ```python
 load_array(data, dtype='float'): 
 ```
+
+<a id="McUtils.Parsers.StringParser.StringParser.to_array" class="docs-object-method">&nbsp;</a>
+```python
+to_array(data, array=None, append=False, dtype='float', shape=None, pre=None): 
+```
+A method to take a string or iterable of strings and quickly dump it to a NumPy array of the right dtype (if it can be cast as one)
+- `data`: `Any`
+    >No description...
+- `dtype`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Parsers.StringParser.StringParser.array_handler" class="docs-object-method">&nbsp;</a>
+```python
+array_handler(array=None, append=False, dtype='float', shape=None, pre=None): 
+```
+Returns a handler that uses to_array
+- `dtype`: `Any`
+    >No description...
+- `array`: `Any`
+    >No description...
+- `shape`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
 
 ### Examples
 

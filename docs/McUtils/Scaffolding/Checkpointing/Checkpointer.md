@@ -4,13 +4,34 @@ Intended to be a passable object that allows code to checkpoint easily.
 
 ### Properties and Methods
 ```python
-extension_map: method
-from_file: method
+default_extension: str
 ```
 <a id="McUtils.Scaffolding.Checkpointing.Checkpointer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, checkpoint_file): 
+__init__(self, checkpoint_file, allowed_keys=None, omitted_keys=None): 
 ```
+
+<a id="McUtils.Scaffolding.Checkpointing.Checkpointer.__repr__" class="docs-object-method">&nbsp;</a>
+```python
+__repr__(self): 
+```
+
+<a id="McUtils.Scaffolding.Checkpointing.Checkpointer.extension_map" class="docs-object-method">&nbsp;</a>
+```python
+extension_map(): 
+```
+
+<a id="McUtils.Scaffolding.Checkpointing.Checkpointer.from_file" class="docs-object-method">&nbsp;</a>
+```python
+from_file(file, **opts): 
+```
+Dispatch function to load from the appropriate file
+- `file`: `str | File`
+    >No description...
+- `opts`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
 
 <a id="McUtils.Scaffolding.Checkpointing.Checkpointer.__enter__" class="docs-object-method">&nbsp;</a>
 ```python
@@ -75,6 +96,11 @@ Loads a parameter from the checkpoint file
     >No description...
 - `:returns`: `_`
     >No description...
+
+<a id="McUtils.Scaffolding.Checkpointing.Checkpointer.check_allowed_key" class="docs-object-method">&nbsp;</a>
+```python
+check_allowed_key(self, item): 
+```
 
 <a id="McUtils.Scaffolding.Checkpointing.Checkpointer.__getitem__" class="docs-object-method">&nbsp;</a>
 ```python

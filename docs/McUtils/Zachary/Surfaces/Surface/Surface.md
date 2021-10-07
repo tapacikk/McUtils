@@ -3,9 +3,6 @@ This actually isn't a concrete implementation of BaseSurface.
 Instead it's a class that _dispatches_ to an implementation of BaseSurface to do its core evaluations (plus it does shape checking)
 
 ### Properties and Methods
-```python
-detect_base: method
-```
 <a id="McUtils.Zachary.Surfaces.Surface.Surface.__init__" class="docs-object-method">&nbsp;</a>
 ```python
 __init__(self, data, dimension=None, base=None, **metadata): 
@@ -20,6 +17,12 @@ __init__(self, data, dimension=None, base=None, **metadata):
 - `metadata`: `Any`
     >No description...
 
+<a id="McUtils.Zachary.Surfaces.Surface.Surface.data" class="docs-object-method">&nbsp;</a>
+```python
+@property
+data(self): 
+```
+
 <a id="McUtils.Zachary.Surfaces.Surface.Surface.minimize" class="docs-object-method">&nbsp;</a>
 ```python
 minimize(self, initial_guess=None, function_options=None, **opts): 
@@ -30,6 +33,27 @@ Provides a uniform interface for minimization, basically just dispatching to the
 - `function_options`: `None | dict`
     >No description...
 - `opts`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Zachary.Surfaces.Surface.Surface.detect_base" class="docs-object-method">&nbsp;</a>
+```python
+detect_base(data, opts): 
+```
+Infers what type of base surface works for the data that's passed in.
+        It's _super_ roughly done so...yeah generally better to pass the base class you want explicitly.
+        But in the absence of that we can do this ?_?
+
+        Basic strategy:
+            1. look for options that go with specific methods
+            2. look at data structures to guess
+                i.   gradient as the first data arg + all data args are ndarrays -> Taylor Series
+                ii.  callables as second arg -> Linear expansion or Linear fit
+                iii. just like...one big array -> Interpolatin
+- `data`: `tuple`
+    >No description...
+- `opts`: `dict`
     >No description...
 - `:returns`: `_`
     >No description...

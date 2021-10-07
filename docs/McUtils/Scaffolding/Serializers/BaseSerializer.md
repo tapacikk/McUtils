@@ -2,6 +2,9 @@
 Serializer base class to define the interface
 
 ### Properties and Methods
+```python
+default_extension: str
+```
 <a id="McUtils.Scaffolding.Serializers.BaseSerializer.convert" class="docs-object-method">&nbsp;</a>
 ```python
 convert(self, data): 

@@ -1,8 +1,9 @@
 ## <a id="McUtils.Scaffolding.Serializers.NumPySerializer">NumPySerializer</a>
-A serializer that makes implements NPZ dumps
+A serializer that implements NPZ dumps
 
 ### Properties and Methods
 ```python
+default_extension: str
 atomic_types: tuple
 converter_dispatch: OrderedDict
 dict_key_sep: str

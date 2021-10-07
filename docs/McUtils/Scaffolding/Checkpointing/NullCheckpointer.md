@@ -1,11 +1,10 @@
 ## <a id="McUtils.Scaffolding.Checkpointing.NullCheckpointer">NullCheckpointer</a>
-A checkpointer that doesn't actually do anything, but which is provided
-so that programs can turn off checkpointing without changing their layout
+A checkpointer that saves absolutely nothing
 
 ### Properties and Methods
 <a id="McUtils.Scaffolding.Checkpointing.NullCheckpointer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, checkpoint_file=None): 
+__init__(self, checkpoint_file=None, allowed_keys=None, omitted_keys=None): 
 ```
 
 <a id="McUtils.Scaffolding.Checkpointing.NullCheckpointer.open_checkpoint_file" class="docs-object-method">&nbsp;</a>

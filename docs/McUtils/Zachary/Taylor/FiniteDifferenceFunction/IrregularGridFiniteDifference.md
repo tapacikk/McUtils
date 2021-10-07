@@ -2,9 +2,6 @@
 Defines a finite difference over an irregular grid
 
 ### Properties and Methods
-```python
-finite_difference_data: method
-```
 <a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.IrregularGridFiniteDifference.__init__" class="docs-object-method">&nbsp;</a>
 ```python
 __init__(self, grid, order, stencil=None, accuracy=2, end_point_accuracy=2, **kw): 
@@ -47,6 +44,18 @@ Extracts the grid weights for an unevenly spaced grid based off of the algorithm
     >center of the derivatives
 - `X`: `Any`
     >grid of points
+
+<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.IrregularGridFiniteDifference.finite_difference_data" class="docs-object-method">&nbsp;</a>
+```python
+finite_difference_data(grid, order, stencil, end_point_precision): 
+```
+Constructs a finite-difference function that computes the nth derivative with a given width
+- `deriv`: `Any`
+    >No description...
+- `accuracy`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
 
 ### Examples
 

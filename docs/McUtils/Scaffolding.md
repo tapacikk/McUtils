@@ -7,10 +7,12 @@ data serializers, caches, check pointers, and configuration managers
 
   - [Cache](Scaffolding/Caches/Cache.md)
   - [MaxSizeCache](Scaffolding/Caches/MaxSizeCache.md)
+  - [ObjectRegistry](Scaffolding/Caches/ObjectRegistry.md)
   - [PseudoPickler](Scaffolding/Serializers/PseudoPickler.md)
   - [BaseSerializer](Scaffolding/Serializers/BaseSerializer.md)
   - [JSONSerializer](Scaffolding/Serializers/JSONSerializer.md)
   - [NumPySerializer](Scaffolding/Serializers/NumPySerializer.md)
+  - [NDarrayMarshaller](Scaffolding/Serializers/NDarrayMarshaller.md)
   - [HDF5Serializer](Scaffolding/Serializers/HDF5Serializer.md)
   - [YAMLSerializer](Scaffolding/Serializers/YAMLSerializer.md)
   - [ModuleSerializer](Scaffolding/Serializers/ModuleSerializer.md)
@@ -19,13 +21,19 @@ data serializers, caches, check pointers, and configuration managers
   - [LogLevel](Scaffolding/Logging/LogLevel.md)
   - [LogParser](Scaffolding/Logging/LogParser.md)
   - [Checkpointer](Scaffolding/Checkpointing/Checkpointer.md)
+  - [CheckpointerKeyError](Scaffolding/Checkpointing/CheckpointerKeyError.md)
   - [DumpCheckpointer](Scaffolding/Checkpointing/DumpCheckpointer.md)
   - [JSONCheckpointer](Scaffolding/Checkpointing/JSONCheckpointer.md)
   - [NumPyCheckpointer](Scaffolding/Checkpointing/NumPyCheckpointer.md)
   - [HDF5Checkpointer](Scaffolding/Checkpointing/HDF5Checkpointer.md)
+  - [DictCheckpointer](Scaffolding/Checkpointing/DictCheckpointer.md)
   - [NullCheckpointer](Scaffolding/Checkpointing/NullCheckpointer.md)
+  - [PersistenceLocation](Scaffolding/Persistence/PersistenceLocation.md)
   - [PersistenceManager](Scaffolding/Persistence/PersistenceManager.md)
+  - [BaseObjectManager](Scaffolding/ObjectBackers/BaseObjectManager.md)
+  - [FileBackedObjectManager](Scaffolding/ObjectBackers/FileBackedObjectManager.md)
   - [Config](Scaffolding/Configurations/Config.md)
+  - [ParameterManager](Scaffolding/Configurations/ParameterManager.md)
   - [Job](Scaffolding/Jobs/Job.md)
   - [JobManager](Scaffolding/Jobs/JobManager.md)
   - [CLI](Scaffolding/CLIs/CLI.md)
@@ -45,7 +53,8 @@ import numpy as np, io, os, sys, tempfile as tmpf
 
 class ScaffoldingTests(TestCase):
 
-    @debugTest
+    #region Checkpointing
+    @validationTest
     def test_Pseudopickle(self):
 
         from McUtils.Numputils import SparseArray
@@ -54,7 +63,7 @@ class ScaffoldingTests(TestCase):
         spa = SparseArray.from_diag([1, 2, 3, 4])
         serial = pickler.serialize(spa)
         deserial = pickler.deserialize(serial)
-        self.assertTrue(np.allclose(spa.toarray(), deserial.toarray()))
+        self.assertTrue(np.allclose(spa.asarray(), deserial.asarray()))
 
     @validationTest
     def test_HDF5Serialization(self):
@@ -89,7 +98,7 @@ class ScaffoldingTests(TestCase):
             loaded[1].tolist().decode('utf-8'),
             {k:v.tolist() for k,v in loaded[2].items()}
         ])
-    @debugTest
+    @validationTest
     def test_JSONSerialization(self):
         tmp = io.StringIO()
         serializer = JSONSerializer()
@@ -123,7 +132,7 @@ class ScaffoldingTests(TestCase):
         loaded = serializer.deserialize(tmp, key='mixed_data')
         self.assertEquals(mixed_data, loaded)
 
-    @debugTest
+    @validationTest
     def test_JSONPseudoPickleSerialization(self):
 
         from McUtils.Numputils import SparseArray
@@ -137,9 +146,9 @@ class ScaffoldingTests(TestCase):
         tmp.seek(0)
         loaded = serializer.deserialize(tmp)
 
-        self.assertTrue(np.allclose(loaded.toarray(), data.toarray()))
+        self.assertTrue(np.allclose(loaded.asarray(), data.asarray()))
 
-    @debugTest
+    @validationTest
     def test_HDF5PseudoPickleSerialization(self):
 
         from McUtils.Numputils import SparseArray
@@ -153,8 +162,7 @@ class ScaffoldingTests(TestCase):
         tmp.seek(0)
         loaded = serializer.deserialize(tmp)
 
-        self.assertTrue(np.allclose(loaded.toarray(), data.toarray()))
-
+        self.assertTrue(np.allclose(loaded.asarray(), data.asarray()))
 
     @validationTest
     def test_NumPySerialization(self):
@@ -272,6 +280,7 @@ class ScaffoldingTests(TestCase):
         finally:
             os.remove(my_file)
 
+
     class DataHolderClass:
         def __init__(self, **keys):
             self.data = keys
@@ -280,7 +289,7 @@ class ScaffoldingTests(TestCase):
         @classmethod
         def from_state(cls, state, serializer=None):
             return cls(**state)
-    @debugTest
+    @validationTest
     def test_HDF5CheckpointingPsuedopickle(self):
 
         with tmpf.NamedTemporaryFile(mode="w+b") as chk_file:
@@ -310,6 +319,37 @@ class ScaffoldingTests(TestCase):
         finally:
             os.remove(my_file)
 
+    @validationTest
+    def test_HDF5Problems(self):
+
+        test = os.path.expanduser('~/Desktop/woof.hdf5')
+        os.remove(test)
+        checkpointer = Checkpointer.from_file(test)
+        with checkpointer:
+            checkpointer['why'] = [
+                np.random.rand(1000, 5, 5),
+                np.array(0),
+                np.array(0)
+            ]
+        with checkpointer:
+            checkpointer['why'] = [
+                np.random.rand(1001, 5, 5),
+                np.array(0),
+                np.array(0)
+            ]
+        with checkpointer:
+            checkpointer['why2'] = [
+                np.random.rand(1001, 5, 5),
+                np.array(0),
+                np.array(0)
+            ]
+
+        with checkpointer as chk:
+            self.assertEquals(list(chk.keys()), ['why', 'why2'])
+
+    #endregion
+
+    #region Logging
     @validationTest
     def test_BasicLogging(self):
         stdout = io.StringIO()
@@ -386,6 +426,9 @@ class ScaffoldingTests(TestCase):
         finally:
             os.remove(log_dump)
 
+    #endregion
+
+    #region Jobs
     @validationTest
     def test_Persistence(self):
         persist_dir = TestManager.test_data("persistence_tests")
@@ -523,6 +566,29 @@ class ScaffoldingTests(TestCase):
                 doop_str = doopy.read()
                 self.assertNotEqual("", doop_str)
 
+    @debugTest
+    def test_CurrentJobDiffFile(self):
 
+        import time
 
+        curdir = os.getcwd()
+        try:
+            with tmpf.TemporaryDirectory() as temp_dir:
+                os.chdir(temp_dir)
+                with JobManager.current_job(job_file='woof.json') as job:
+                    self.assertEquals(os.path.basename(job.checkpoint.checkpoint_file), 'woof.json')
+                    logger = job.logger
+
+                    with logger.block(tag="Sleeping"):
+                        logger.log_print("Goodnight!")
+                        time.sleep(.2)
+                        logger.log_print("Okee I'm back up")
+
+                with open(job.logger.log_file) as doopy:
+                    doop_str = doopy.read()
+                    self.assertNotEqual("", doop_str)
+        finally:
+            os.chdir(curdir)
+
+    #endregion
 ```

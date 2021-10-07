@@ -5,8 +5,10 @@ A simple log level object to standardize more pieces of the logger interface
 ```python
 Quiet: LogLevel
 Warnings: LogLevel
+Normal: LogLevel
 Debug: LogLevel
 All: LogLevel
+Never: LogLevel
 ```
 <a id="McUtils.Scaffolding.Logging.LogLevel.__eq__" class="docs-object-method">&nbsp;</a>
 ```python

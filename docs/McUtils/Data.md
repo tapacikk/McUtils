@@ -14,6 +14,7 @@ Provides a small data framework for wrapping up datasets into classes for access
   - [BondData](Data/BondData/BondData.md)
   - [BondDataHandler](Data/BondData/BondDataHandler.md)
   - [WavefunctionData](Data/WavefunctionData/WavefunctionData.md)
+  - [PotentialData](Data/PotentialData/PotentialData.md)
 
 ### Examples:
 

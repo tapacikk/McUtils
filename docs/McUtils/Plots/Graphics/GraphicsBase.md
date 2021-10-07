@@ -24,6 +24,11 @@ __init__(self, *args, figure=None, tighten=False, axes=None, subplot_kw=None, pa
 - `opts`: `Any`
     >No description...
 
+<a id="McUtils.Plots.Graphics.GraphicsBase.load_mpl" class="docs-object-method">&nbsp;</a>
+```python
+load_mpl(self): 
+```
+
 <a id="McUtils.Plots.Graphics.GraphicsBase.event_handlers" class="docs-object-method">&nbsp;</a>
 ```python
 @property
@@ -119,7 +124,12 @@ show(self, reshow=True):
 
 <a id="McUtils.Plots.Graphics.GraphicsBase.close" class="docs-object-method">&nbsp;</a>
 ```python
-close(self): 
+close(self, force=False): 
+```
+
+<a id="McUtils.Plots.Graphics.GraphicsBase.__del__" class="docs-object-method">&nbsp;</a>
+```python
+__del__(self): 
 ```
 
 <a id="McUtils.Plots.Graphics.GraphicsBase.clear" class="docs-object-method">&nbsp;</a>

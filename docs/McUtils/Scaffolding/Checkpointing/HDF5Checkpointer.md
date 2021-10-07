@@ -3,9 +3,12 @@ A checkpointer that uses an HDF5 file as a backend.
 Doesn't maintain a secondary `dict`, because HDF5 is an updatable format.
 
 ### Properties and Methods
+```python
+default_extension: str
+```
 <a id="McUtils.Scaffolding.Checkpointing.HDF5Checkpointer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, checkpoint_file, serializer=None): 
+__init__(self, checkpoint_file, serializer=None, allowed_keys=None, omitted_keys=None): 
 ```
 
 <a id="McUtils.Scaffolding.Checkpointing.HDF5Checkpointer.open_checkpoint_file" class="docs-object-method">&nbsp;</a>

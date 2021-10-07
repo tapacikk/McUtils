@@ -2,10 +2,6 @@
 Provides a SparseArray implementation that uses TensorFlow as the backend
 
 ### Properties and Methods
-```python
-from_state: method
-empty: method
-```
 <a id="McUtils.Numputils.Sparse.TensorFlowSparseArray.__init__" class="docs-object-method">&nbsp;</a>
 ```python
 __init__(self, data, dtype=None): 
@@ -27,6 +23,30 @@ to_state(self, serializer=None):
 Provides just the state that is needed to
         serialize the object
 - `serializer`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Numputils.Sparse.TensorFlowSparseArray.from_state" class="docs-object-method">&nbsp;</a>
+```python
+from_state(state, serializer=None): 
+```
+Loads from the stored state
+- `serializer`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Numputils.Sparse.TensorFlowSparseArray.empty" class="docs-object-method">&nbsp;</a>
+```python
+empty(shape, dtype=None, **kw): 
+```
+Returns an empty SparseArray with the appropriate shape and dtype
+- `shape`: `Any`
+    >No description...
+- `dtype`: `Any`
+    >No description...
+- `kw`: `Any`
     >No description...
 - `:returns`: `_`
     >No description...
@@ -97,9 +117,9 @@ __rmul__(self, other):
 __mul__(self, other): 
 ```
 
-<a id="McUtils.Numputils.Sparse.TensorFlowSparseArray.multiply" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Numputils.Sparse.TensorFlowSparseArray.true_multiply" class="docs-object-method">&nbsp;</a>
 ```python
-multiply(self, other): 
+true_multiply(self, other): 
 ```
 Multiplies self and other
 - `other`: `Any`

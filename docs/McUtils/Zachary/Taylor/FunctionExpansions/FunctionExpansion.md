@@ -4,7 +4,6 @@ Uses Cartesian derivative matrices and the Cartesian <-> Internal normal mode Ja
 
 ### Properties and Methods
 ```python
-expand_function: method
 CoordinateTransforms: type
 FunctionDerivatives: type
 ```
@@ -23,6 +22,24 @@ __init__(self, derivatives, transforms=None, center=None, ref=0, weight_coeffici
     >the reference point value for shifting the expansion
 - `weight_coefficients`: `bool`
     >whether the derivative terms need to be weighted or not
+
+<a id="McUtils.Zachary.Taylor.FunctionExpansions.FunctionExpansion.expand_function" class="docs-object-method">&nbsp;</a>
+```python
+expand_function(f, point, order=4, basis=None, function_shape=None, transforms=None, weight_coefficients=True, **fd_options): 
+```
+Expands a function about a point up to the given order
+- `f`: `function`
+    >No description...
+- `point`: `np.ndarray | CoordinateSet`
+    >No description...
+- `order`: `int`
+    >No description...
+- `basis`: `None | CoordinateSystem`
+    >No description...
+- `fd_options`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
 
 <a id="McUtils.Zachary.Taylor.FunctionExpansions.FunctionExpansion.tensors" class="docs-object-method">&nbsp;</a>
 ```python

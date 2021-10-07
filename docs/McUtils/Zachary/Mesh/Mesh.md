@@ -7,12 +7,6 @@ Exists mostly to provides a unified interface to difference FD and Surface metho
 ```python
 MeshError: type
 MeshType: EnumMeta
-get_npoints: method
-get_gridpoints: method
-get_mesh_subgrids: method
-get_mesh_spacings: method
-get_mesh_type: method
-RegularMesh: method
 ```
 <a id="McUtils.Zachary.Mesh.Mesh.__new__" class="docs-object-method">&nbsp;</a>
 ```python
@@ -75,12 +69,60 @@ Returns the flattened set of gridpoints for a structured tensor grid and otherwi
 - `:returns`: `_`
     >No description...
 
-<a id="McUtils.Zachary.Mesh.Mesh.get_slice_iter" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Zachary.Mesh.Mesh.get_npoints" class="docs-object-method">&nbsp;</a>
 ```python
-get_slice_iter(self, axis=-1): 
+get_npoints(g): 
 ```
-Returns an iterator over the slices of the mesh along the specified axis
-- `axis`: `Any`
+Returns the number of gridpoints in the grid
+- `g`: `np.ndarray`
+    >No description...
+- `:returns`: `int`
+    >No description...
+
+<a id="McUtils.Zachary.Mesh.Mesh.get_gridpoints" class="docs-object-method">&nbsp;</a>
+```python
+get_gridpoints(g): 
+```
+Returns the gridpoints in the grid
+- `g`: `np.ndarray`
+    >No description...
+- `:returns`: `int`
+    >No description...
+
+<a id="McUtils.Zachary.Mesh.Mesh.get_mesh_subgrids" class="docs-object-method">&nbsp;</a>
+```python
+get_mesh_subgrids(grid, tol=8): 
+```
+Returns the subgrids for a mesh
+- `grid`: `Any`
+    >No description...
+- `tol`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Zachary.Mesh.Mesh.get_mesh_spacings" class="docs-object-method">&nbsp;</a>
+```python
+get_mesh_spacings(grid, tol=8): 
+```
+
+<a id="McUtils.Zachary.Mesh.Mesh.get_mesh_type" class="docs-object-method">&nbsp;</a>
+```python
+get_mesh_type(grid, check_product_grid=True, check_regular_grid=True, tol=8): 
+```
+Determines what kind of grid we're working with
+- `grid`: `np.ndarray`
+    >No description...
+- `:returns`: `MeshType`
+    >mesh_type
+
+<a id="McUtils.Zachary.Mesh.Mesh.RegularMesh" class="docs-object-method">&nbsp;</a>
+```python
+RegularMesh(*mesh_specs): 
+```
+Builds a grid from multiple linspace arguments,
+        basically insuring it's structured (if non-Empty)
+- `mesh_specs`: `Any`
     >No description...
 - `:returns`: `_`
     >No description...

@@ -8,11 +8,15 @@ makes it easy to plug into a run time that supports logging
 ```python
 default_job_file: str
 default_log_file: str
-from_config: method
 ```
 <a id="McUtils.Scaffolding.Jobs.Job.__init__" class="docs-object-method">&nbsp;</a>
 ```python
 __init__(self, job_dir, job_file=None, logger=None, parallelizer=None, job_parameters=None): 
+```
+
+<a id="McUtils.Scaffolding.Jobs.Job.from_config" class="docs-object-method">&nbsp;</a>
+```python
+from_config(config_location=None, job_file=None, logger=None, parallelizer=None, job_parameters=None): 
 ```
 
 <a id="McUtils.Scaffolding.Jobs.Job.load_checkpoint" class="docs-object-method">&nbsp;</a>

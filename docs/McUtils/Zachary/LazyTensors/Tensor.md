@@ -2,12 +2,14 @@
 A semi-symbolic representation of a tensor. Allows for lazy processing of tensor operations.
 
 ### Properties and Methods
-```python
-from_array: method
-```
 <a id="McUtils.Zachary.LazyTensors.Tensor.__init__" class="docs-object-method">&nbsp;</a>
 ```python
 __init__(self, a, shape=None): 
+```
+
+<a id="McUtils.Zachary.LazyTensors.Tensor.from_array" class="docs-object-method">&nbsp;</a>
+```python
+from_array(a, shape=None): 
 ```
 
 <a id="McUtils.Zachary.LazyTensors.Tensor.array" class="docs-object-method">&nbsp;</a>

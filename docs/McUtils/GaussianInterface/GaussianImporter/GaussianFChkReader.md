@@ -46,7 +46,7 @@ Skips the next block
 
 <a id="McUtils.GaussianInterface.GaussianImporter.GaussianFChkReader.parse" class="docs-object-method">&nbsp;</a>
 ```python
-parse(self, keys=None): 
+parse(self, keys=None, default='raise'): 
 ```
 
 ### Examples

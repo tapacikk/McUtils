@@ -4,6 +4,9 @@ Doesn't support arbitrary python objects since that hasn't seemed like
 a huge need yet...
 
 ### Properties and Methods
+```python
+default_extension: str
+```
 <a id="McUtils.Scaffolding.Serializers.YAMLSerializer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
 __init__(self): 

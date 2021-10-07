@@ -6,6 +6,7 @@ Use at your own risk.
 
 ### Properties and Methods
 ```python
+default_extension: str
 default_loader: NoneType
 default_attr: str
 ```

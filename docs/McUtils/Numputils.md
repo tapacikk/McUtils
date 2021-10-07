@@ -23,6 +23,8 @@ Any lowish-level numerical operations that need to be shared go here.
   - [vec_sins](Numputils/VectorOps/vec_sins.md)
   - [vec_cos](Numputils/VectorOps/vec_cos.md)
   - [vec_outer](Numputils/VectorOps/vec_outer.md)
+  - [pts_norms](Numputils/VectorOps/pts_norms.md)
+  - [pts_angles](Numputils/VectorOps/pts_angles.md)
   - [pts_normals](Numputils/VectorOps/pts_normals.md)
   - [pts_dihedrals](Numputils/VectorOps/pts_dihedrals.md)
   - [mat_vec_muls](Numputils/VectorOps/mat_vec_muls.md)
@@ -42,18 +44,31 @@ Any lowish-level numerical operations that need to be shared go here.
   - [ScipySparseArray](Numputils/Sparse/ScipySparseArray.md)
   - [TensorFlowSparseArray](Numputils/Sparse/TensorFlowSparseArray.md)
   - [sparse_tensordot](Numputils/Sparse/sparse_tensordot.md)
+  - [unique](Numputils/SetOps/unique.md)
+  - [intersection](Numputils/SetOps/intersection.md)
+  - [contained](Numputils/SetOps/contained.md)
+  - [difference](Numputils/SetOps/difference.md)
+  - [find](Numputils/SetOps/find.md)
+  - [argsort](Numputils/SetOps/argsort.md)
+  - [group_by](Numputils/SetOps/group_by.md)
+  - [split_by_regions](Numputils/SetOps/split_by_regions.md)
+  - [infer_inds_dtype](Numputils/Misc/infer_inds_dtype.md)
+  - [infer_int_dtype](Numputils/Misc/infer_int_dtype.md)
+  - [flatten_dtype](Numputils/Misc/flatten_dtype.md)
+  - [unflatten_dtype](Numputils/Misc/unflatten_dtype.md)
 
 ### Examples:
 
 
 
-```python
+```````````````````````python
 
 from Peeves.TestUtils import *
+from Peeves import BlockProfiler
 from McUtils.Numputils import *
 from McUtils.Zachary import FiniteDifferenceDerivative
 from unittest import TestCase
-import numpy as np
+import numpy as np, functools as ft
 
 class NumputilsTests(TestCase):
 
@@ -65,39 +80,6 @@ class NumputilsTests(TestCase):
                                   [-1.97215226e-31,  1.43714410e+00, -9.00306410e-01],
                                   [-1.75999392e-16, -1.43714410e+00, -9.00306410e-01]
     ])
-    @validationTest
-    def test_SparseArray(self):
-        array = SparseArray([
-            [
-                [1, 0, 0],
-                [0, 0, 1],
-                [0, 1, 0]
-            ],
-            [
-                [0, 0, 1],
-                [0, 1, 0],
-                [1, 0, 0]
-            ],
-            [
-                [0, 1, 0],
-                [1, 0, 1],
-                [0, 0, 1]
-            ],
-            [
-                [1, 1, 0],
-                [1, 0, 1],
-                [0, 1, 1]
-            ]
-        ])
-
-        self.assertEquals(array.shape, (4, 3, 3))
-        tp = array.transpose((1, 0, 2))
-        self.assertEquals(tp.shape, (3, 4, 3))
-        self.assertLess(np.linalg.norm((tp.todense()-array.todense().transpose((1, 0, 2))).flatten()), 1e-8)
-        self.assertEquals(array[2, :, 2].shape, (3,))
-        td = array.tensordot(array, axes=[1, 1])
-        self.assertEquals(td.shape, (4, 3, 4, 3))
-        self.assertEquals(array.tensordot(array, axes=[[1, 2], [1, 2]]).shape, (4, 4))
 
     @validationTest
     def test_ProblemPtsAllDerivs(self):
@@ -151,7 +133,6 @@ class NumputilsTests(TestCase):
         #         [np.min(dihed_derivs_2), np.max(dihed_derivs_2)]
         #     ]
         # )
-
 
     @validationTest
     def test_PtsDihedralsDeriv(self):
@@ -413,7 +394,7 @@ class NumputilsTests(TestCase):
             c2_flat.flatten(), cos_fd22.flatten()
         ))
 
-    @debugTest
+    @validationTest
     def test_AngleDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -459,8 +440,7 @@ class NumputilsTests(TestCase):
     def test_AngleDerivScan(self):
         np.random.seed(0)
         # a = np.random.rand(3) * 2 # make it longer to avoid stability issues
-        # dump_file = "/Users/Mark/Desktop/wat2.json"
-        a = np.array([1, 0, 0]); dump_file = "/Users/Mark/Desktop/wat.json"
+        a = np.array([1, 0, 0])
 
         fd = FiniteDifferenceDerivative(
                 lambda vecs: vec_angle_derivs(vecs[..., 0, :], vecs[..., 1, :], up_vectors=up)[1],
@@ -482,7 +462,796 @@ class NumputilsTests(TestCase):
 
             data['derivs_num2'].append(fd(np.array([a, b])).derivative_tensor(1).tolist())
 
-        import json
-        with open(dump_file, 'w+') as f:
-            json.dump(data, f)
-```
+        # import json
+        # with open(dump_file, 'w+') as f:
+        #     json.dump(data, f)
+
+    @validationTest
+    def test_SetOps(self):
+
+        unums, sorting = unique([1, 2, 3, 4, 5])
+        self.assertEquals(unums.tolist(), [1, 2, 3, 4, 5])
+        self.assertEquals(sorting.tolist(), [0, 1, 2, 3, 4])
+
+        unums, sorting = unique([1, 1, 3, 4, 5])
+        self.assertEquals(unums.tolist(), [1, 3, 4, 5])
+        self.assertEquals(sorting.tolist(), [0, 1, 2, 3, 4])
+
+        unums, sorting = unique([1, 3, 1, 1, 1])
+        self.assertEquals(unums.tolist(), [1, 3])
+        self.assertEquals(sorting.tolist(), [0, 2, 3, 4, 1])
+
+        unums, sorting = unique([[1, 3], [1, 1], [1, 3]])
+        self.assertEquals(unums.tolist(), [[1, 1], [1, 3]])
+        self.assertEquals(sorting.tolist(), [1, 0, 2])
+
+        inters, sortings, merge = intersection(
+            [1, 1, 3, 2, 5],
+            [0, 0, 0, 5, 1]
+        )
+        self.assertEquals(inters.tolist(), [1, 5])
+        self.assertEquals(sortings[0].tolist(), [0, 1, 3, 2, 4])
+        self.assertEquals(sortings[1].tolist(), [0, 1, 2, 4, 3])
+
+        inters, sortings, merge = intersection(
+            [
+                [1, 3], [1, 1]
+            ],
+            [
+                [1, 3], [0, 0]
+            ]
+        )
+        self.assertEquals(inters.tolist(), [[1, 3]])
+        self.assertEquals(sortings[0].tolist(), [1, 0])
+        self.assertEquals(sortings[1].tolist(), [1, 0])
+
+        diffs, sortings, merge = difference(
+            [1, 1, 3, 2, 5],
+            [0, 0, 0, 5, 1]
+        )
+        self.assertEquals(diffs.tolist(), [2, 3])
+        self.assertEquals(sortings[0].tolist(), [0, 1, 3, 2, 4])
+        self.assertEquals(sortings[1].tolist(), [0, 1, 2, 4, 3])
+
+        diffs, sortings, merge = contained(
+            [1, 1, 3, 2, 5],
+            [0, 0, 0, 5, 1]
+        )
+        self.assertEquals(diffs.tolist(), [True, True, False, False, True])
+
+        ugh = np.arange(1000)
+        bleh = np.random.choice(1000, size=100)
+        diffs, sortings, merge = contained(
+            bleh,
+            ugh
+        )
+        self.assertEquals(diffs.tolist(), np.isin(bleh, ugh).tolist())
+
+        diffs2, sortings, merge = contained(
+            bleh,
+            ugh,
+            method='find'
+        )
+
+        self.assertEquals(diffs.tolist(), diffs2.tolist())
+
+    @validationTest
+    def test_SparseArray(self):
+        array = SparseArray([
+            [
+                [1, 0, 0],
+                [0, 0, 1],
+                [0, 1, 0]
+            ],
+            [
+                [0, 0, 1],
+                [0, 1, 0],
+                [1, 0, 0]
+            ],
+            [
+                [0, 1, 0],
+                [1, 0, 1],
+                [0, 0, 1]
+            ],
+            [
+                [1, 1, 0],
+                [1, 0, 1],
+                [0, 1, 1]
+            ]
+        ])
+
+        self.assertEquals(array.shape, (4, 3, 3))
+        tp = array.transpose((1, 0, 2))
+        self.assertEquals(tp.shape, (3, 4, 3))
+        self.assertLess(np.linalg.norm((tp.todense()-array.todense().transpose((1, 0, 2))).flatten()), 1e-8)
+        self.assertEquals(array[2, :, 2].shape, (3,))
+        td = array.tensordot(array, axes=[1, 1])
+        self.assertEquals(td.shape, (4, 3, 4, 3))
+        self.assertEquals(array.tensordot(array, axes=[[1, 2], [1, 2]]).shape, (4, 4))
+
+    @debugTest
+    def test_Sparse(self):
+
+        shape = (1000, 100, 50)
+
+        n_els = 100
+        np.random.seed(1)
+        inds = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals = np.random.rand(len(inds))
+        inds = inds.T
+
+        # `from_data` for backend flexibility
+        array = SparseArray.from_data(
+            (
+                vals,
+                inds
+            ),
+            shape=shape
+        )
+
+
+        self.assertEquals(array.shape, shape)
+        block_vals, block_inds = array.block_data
+        self.assertEquals(len(block_vals), len(vals))
+        self.assertEquals(np.sort(block_vals).tolist(), np.sort(vals).tolist())
+        for i in range(len(shape)):
+            self.assertEquals(np.sort(block_inds[i]).tolist(), np.sort(inds[i]).tolist())
+
+        woof = array[:, 1, 1] #type: SparseArray
+        self.assertIs(type(woof), type(array))
+        self.assertEquals(woof.shape, (shape[0],))
+        block_vals, block_inds = woof.block_data
+        filt_pos = np.where(np.logical_and(inds[1] == 1, inds[2] == 1))
+        if len(filt_pos) > 0:
+            self.assertEquals(
+                np.sort(block_vals).tolist(),
+                np.sort(vals[filt_pos]).tolist()
+            )
+
+        # with BlockProfiler('Sparse sampling', print_res=True):
+        #     new_woof = array[:, 1, 1]  # type: SparseArray
+
+        shape = (28, 3003)
+
+        n_els = 10000
+        np.random.seed(1)
+        inds = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals = np.random.rand(len(inds))
+        inds = inds.T
+
+        # `from_data` for backend flexibility
+        array = SparseArray.from_data(
+            (
+                vals,
+                inds
+            ),
+            shape=shape
+        )
+
+        woof = array[0, :]  # type: SparseArray
+        self.assertIs(type(woof), type(array))
+        self.assertEquals(woof.shape, (shape[1],))
+        block_vals, block_inds = woof.block_data
+        filt_pos = np.where(inds[0] == 0)
+        if len(filt_pos) > 0:
+            self.assertEquals(
+                np.sort(block_vals).tolist(),
+                np.sort(vals[filt_pos]).tolist()
+            )
+
+        woof = array[(0, 2), :]  # type: SparseArray
+        self.assertEquals(woof.shape, (2, shape[1]))
+        block_vals, block_inds = woof.block_data
+        filt_pos = np.where(np.logical_or(inds[0] == 0, inds[0] == 2))
+        if len(filt_pos) > 0:
+            self.assertEquals(
+                np.sort(block_vals).tolist(),
+                np.sort(vals[filt_pos]).tolist()
+            )
+
+            self.assertEquals(
+                block_vals[:10].tolist(),
+                [0.26762682146970584, 0.3742446513095977, 0.11369722324344822, 0.4860704109280778,
+                 0.09299008335958303, 0.11229999691948178, 0.0005348158154161453, 0.7711636892670307, 0.6573053253883241, 0.39084691369185387]
+
+            )
+
+        n_els = 1000
+        inds_2 = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals_2 = np.random.rand(len(inds_2))
+        inds_2 = inds_2.T
+
+        # `from_data` for backend flexibility
+        array_2 = SparseArray.from_data(
+            (
+                vals_2,
+                inds_2
+            ),
+            shape=shape
+        )
+
+        meh = array.dot(array_2.transpose((1, 0)))
+        self.assertTrue(
+            np.allclose(
+                meh.asarray(),
+                np.dot(
+                    array.asarray(),
+                    array_2.asarray().T
+                ),
+                3
+            )
+        )
+
+        n_els = 1000
+        inds_3 = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals_3 = np.random.rand(len(inds_3))
+        inds_3 = inds_3.T
+
+        # `from_data` for backend flexibility
+        array_3 = SparseArray.from_data(
+            (
+                vals_3,
+                inds_3
+            ),
+            shape=shape
+        )
+
+        new2 = array_2.concatenate(array_3)
+        meh = np.concatenate([array_2.asarray(), array_3.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+
+
+        new2 = array_2.concatenate(array_3, array_2)
+        meh = np.concatenate([array_2.asarray(), array_3.asarray(), array_2.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat many failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new3 = array_2.concatenate(array_2, array_3, axis=1)
+        meh = np.concatenate([array_2.asarray(), array_2.asarray(), array_3.asarray()], axis=1)
+        self.assertEquals(new3.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new3.asarray(),
+                meh
+            ),
+            msg="concat along 1 failed: (ref) {} vs {}".format(
+                meh,
+                new3.asarray()
+            )
+        )
+
+        new_shape = [1, shape[1]]
+
+        n_els = 1000
+        inds_3 = np.unique(np.array([np.random.choice(x, n_els) for x in new_shape]).T, axis=0)
+        vals_3 = np.random.rand(len(inds_3))
+        inds_3 = inds_3.T
+
+        # `from_data` for backend flexibility
+        array_3 = SparseArray.from_data(
+            (
+                vals_3,
+                inds_3
+            ),
+            shape=new_shape
+        )
+
+        new2 = array_3.concatenate(array_2)
+        meh = np.concatenate([array_3.asarray(), array_2.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new2 = array_2.concatenate(array_3)
+        meh = np.concatenate([array_2.asarray(), array_3.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new2 = array_2.concatenate(array_3, array_2)
+        meh = np.concatenate([array_2.asarray(), array_3.asarray(), array_2.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat many failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        # new3 = array_2.concatenate(array_2, array_3, axis=1)
+        # meh = np.concatenate([array_2.asarray(), array_2.asarray(), array_3.asarray()], axis=1)
+        # self.assertEquals(new3.shape, meh.shape)
+        # self.assertTrue(
+        #     np.allclose(
+        #         new3.asarray(),
+        #         meh
+        #     ),
+        #     msg="concat along 1 failed: (ref) {} vs {}".format(
+        #         meh,
+        #         new3.asarray()
+        #     )
+        # )
+
+        array_3 = array_3[:, :2500].reshape((1, 2500))
+
+        array_3 = array_3.reshape((
+                array_3.shape[1] // 2,
+                2
+        ))
+
+        new2 = array_3.concatenate(array_3)
+        meh = np.concatenate([array_3.asarray(), array_3.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new2 = array_3.concatenate(array_3, axis=1)
+        meh = np.concatenate([array_3.asarray(), array_3.asarray()], axis=1)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new_shape = [shape[1]]
+
+        n_els = 1000
+        inds_3 = np.unique(np.array([np.random.choice(x, n_els) for x in new_shape]).T, axis=0)
+        vals_3 = np.random.rand(len(inds_3))
+        inds_3 = inds_3.T
+
+        array_3 = SparseArray.from_data(
+            (
+                vals_3,
+                inds_3
+            ),
+            shape=new_shape
+        )
+
+        new2 = array_3.concatenate(array_3)
+        meh = np.concatenate([array_3.asarray(), array_3.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        wtf_array1 = SparseArray.from_data(
+            (
+                [-0.00045906, -0.00045906, -0.00045906, -0.00045906, -0.00045906,
+                 -0.00045906],
+                (
+                    (0, 24, 51, 78, 109, 140),
+                )
+            ),
+            shape = (155,)
+
+        )
+
+        wtf_array2 = SparseArray.from_data(
+            (
+                [-0.00045906, -0.00045906, -0.00045906, -0.00045906],
+                ([ 16,  53,  88, 123],)
+            ),
+            shape=(155,)
+        )
+
+        new2 = wtf_array1.concatenate(wtf_array2)
+        meh = np.concatenate([
+            wtf_array1.asarray(),
+            wtf_array2.asarray()
+        ])
+
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+    @debugTest
+    def test_SparseConstructor(self):
+
+        shape = (1000, 100, 50)
+
+        n_els = 100
+        np.random.seed(1)
+        inds = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals = np.random.rand(len(inds))
+        inds = inds.T
+
+        # `from_data` for backend flexibility
+        array = SparseArray.from_data(
+            (
+                vals,
+                inds
+            ),
+            shape=shape
+        )
+
+        self.assertEquals(array.shape, shape)
+        block_vals, block_inds = array.block_data
+        self.assertEquals(len(block_vals), len(vals))
+        self.assertEquals(np.sort(block_vals).tolist(), np.sort(vals).tolist())
+        for i in range(len(shape)):
+            self.assertEquals(np.sort(block_inds[i]).tolist(), np.sort(inds[i]).tolist())
+
+        woof = array[:, 1, 1]  # type: SparseArray
+        self.assertIs(type(woof), type(array))
+        self.assertEquals(woof.shape, (shape[0],))
+        block_vals, block_inds = woof.block_data
+        filt_pos = np.where(np.logical_and(inds[1] == 1, inds[2] == 1))
+        if len(filt_pos) > 0:
+            self.assertEquals(
+                np.sort(block_vals).tolist(),
+                np.sort(vals[filt_pos]).tolist()
+            )
+
+        # with BlockProfiler('Sparse sampling', print_res=True):
+        #     new_woof = array[:, 1, 1]  # type: SparseArray
+
+        shape = (28, 3003)
+
+        n_els = 10000
+        np.random.seed(1)
+        inds = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals = np.random.rand(len(inds))
+        inds = inds.T
+
+        # `from_data` for backend flexibility
+        array = SparseArray.from_data(
+            (
+                vals,
+                inds
+            ),
+            shape=shape
+        )
+
+        woof = array[0, :]  # type: SparseArray
+        self.assertIs(type(woof), type(array))
+        self.assertEquals(woof.shape, (shape[1],))
+        block_vals, block_inds = woof.block_data
+        filt_pos = np.where(inds[0] == 0)
+        if len(filt_pos) > 0:
+            self.assertEquals(
+                np.sort(block_vals).tolist(),
+                np.sort(vals[filt_pos]).tolist()
+            )
+
+        woof = array[(0, 2), :]  # type: SparseArray
+        self.assertEquals(woof.shape, (2, shape[1]))
+        block_vals, block_inds = woof.block_data
+        filt_pos = np.where(np.logical_or(inds[0] == 0, inds[0] == 2))
+        if len(filt_pos) > 0:
+            self.assertEquals(
+                np.sort(block_vals).tolist(),
+                np.sort(vals[filt_pos]).tolist()
+            )
+
+            self.assertEquals(
+                block_vals[:10].tolist(),
+                [0.26762682146970584, 0.3742446513095977, 0.11369722324344822, 0.4860704109280778,
+                 0.09299008335958303, 0.11229999691948178, 0.0005348158154161453, 0.7711636892670307,
+                 0.6573053253883241, 0.39084691369185387]
+
+            )
+
+        n_els = 1000
+        inds_2 = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals_2 = np.random.rand(len(inds_2))
+        inds_2 = inds_2.T
+
+        # `from_data` for backend flexibility
+        array_2 = SparseArray.from_data(
+            (
+                vals_2,
+                inds_2
+            ),
+            shape=shape
+        )
+
+        meh = array.dot(array_2.transpose((1, 0)))
+        self.assertTrue(
+            np.allclose(
+                meh.asarray(),
+                np.dot(
+                    array.asarray(),
+                    array_2.asarray().T
+                ),
+                3
+            )
+        )
+
+        n_els = 1000
+        inds_3 = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals_3 = np.random.rand(len(inds_3))
+        inds_3 = inds_3.T
+
+        # `from_data` for backend flexibility
+        array_3 = SparseArray.from_data(
+            (
+                vals_3,
+                inds_3
+            ),
+            shape=shape
+        )
+
+        new2 = array_2.concatenate(array_3)
+        meh = np.concatenate([array_2.asarray(), array_3.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new2 = array_2.concatenate(array_3, array_2)
+        meh = np.concatenate([array_2.asarray(), array_3.asarray(), array_2.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat many failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new3 = array_2.concatenate(array_2, array_3, axis=1)
+        meh = np.concatenate([array_2.asarray(), array_2.asarray(), array_3.asarray()], axis=1)
+        self.assertEquals(new3.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new3.asarray(),
+                meh
+            ),
+            msg="concat along 1 failed: (ref) {} vs {}".format(
+                meh,
+                new3.asarray()
+            )
+        )
+
+        new_shape = [1, shape[1]]
+
+        n_els = 1000
+        inds_3 = np.unique(np.array([np.random.choice(x, n_els) for x in new_shape]).T, axis=0)
+        vals_3 = np.random.rand(len(inds_3))
+        inds_3 = inds_3.T
+
+        # `from_data` for backend flexibility
+        array_3 = SparseArray.from_data(
+            (
+                vals_3,
+                inds_3
+            ),
+            shape=new_shape
+        )
+
+        new2 = array_3.concatenate(array_2)
+        meh = np.concatenate([array_3.asarray(), array_2.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new2 = array_2.concatenate(array_3)
+        meh = np.concatenate([array_2.asarray(), array_3.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new2 = array_2.concatenate(array_3, array_2)
+        meh = np.concatenate([array_2.asarray(), array_3.asarray(), array_2.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat many failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        # new3 = array_2.concatenate(array_2, array_3, axis=1)
+        # meh = np.concatenate([array_2.asarray(), array_2.asarray(), array_3.asarray()], axis=1)
+        # self.assertEquals(new3.shape, meh.shape)
+        # self.assertTrue(
+        #     np.allclose(
+        #         new3.asarray(),
+        #         meh
+        #     ),
+        #     msg="concat along 1 failed: (ref) {} vs {}".format(
+        #         meh,
+        #         new3.asarray()
+        #     )
+        # )
+
+        array_3 = array_3[:, :2500].reshape((1, 2500))
+
+        array_3 = array_3.reshape((
+            array_3.shape[1] // 2,
+            2
+        ))
+
+        new2 = array_3.concatenate(array_3)
+        meh = np.concatenate([array_3.asarray(), array_3.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new2 = array_3.concatenate(array_3, axis=1)
+        meh = np.concatenate([array_3.asarray(), array_3.asarray()], axis=1)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        new_shape = [shape[1]]
+
+        n_els = 1000
+        inds_3 = np.unique(np.array([np.random.choice(x, n_els) for x in new_shape]).T, axis=0)
+        vals_3 = np.random.rand(len(inds_3))
+        inds_3 = inds_3.T
+
+        array_3 = SparseArray.from_data(
+            (
+                vals_3,
+                inds_3
+            ),
+            shape=new_shape
+        )
+
+        new2 = array_3.concatenate(array_3)
+        meh = np.concatenate([array_3.asarray(), array_3.asarray()], axis=0)
+        self.assertEquals(new2.shape, meh.shape)
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+
+        wtf_array1 = SparseArray.from_data(
+            (
+                [-0.00045906, -0.00045906, -0.00045906, -0.00045906, -0.00045906,
+                 -0.00045906],
+                (
+                    (0, 24, 51, 78, 109, 140),
+                )
+            ),
+            shape=(155,)
+
+        )
+
+        wtf_array2 = SparseArray.from_data(
+            (
+                [-0.00045906, -0.00045906, -0.00045906, -0.00045906],
+                ([16, 53, 88, 123],)
+            ),
+            shape=(155,)
+        )
+
+        new2 = wtf_array1.concatenate(wtf_array2)
+        meh = np.concatenate([
+            wtf_array1.asarray(),
+            wtf_array2.asarray()
+        ])
+
+        self.assertTrue(
+            np.allclose(
+                new2.asarray(),
+                meh
+            ),
+            msg="concat failed: (ref) {} vs {}".format(
+                meh,
+                new2.asarray()
+            )
+        )
+```````````````````````

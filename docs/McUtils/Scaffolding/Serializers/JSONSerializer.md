@@ -3,6 +3,7 @@ A serializer that makes dumping data to JSON simpler
 
 ### Properties and Methods
 ```python
+default_extension: str
 BaseEncoder: type
 ```
 <a id="McUtils.Scaffolding.Serializers.JSONSerializer.__init__" class="docs-object-method">&nbsp;</a>

@@ -7,10 +7,6 @@ Used in a large number of other places, but relatively rarely on its own.
 A convenient application is the `FiniteDifferenceDerivative` class in the `Derivatives` module.
 
 ### Properties and Methods
-```python
-regular_difference: method
-from_grid: method
-```
 <a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceFunction.__init__" class="docs-object-method">&nbsp;</a>
 ```python
 __init__(self, *diffs, axes=0, contract=False): 
@@ -66,6 +62,45 @@ widths(self):
 
 - `:returns`: `tuple[(int, int)]`
     >the number of points in each dimension, left and right, for the specified stencil
+
+<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceFunction.regular_difference" class="docs-object-method">&nbsp;</a>
+```python
+regular_difference(order, mesh_spacing=None, accuracy=2, stencil=None, end_point_accuracy=2, axes=0, contract=True, **kwargs): 
+```
+Constructs a `FiniteDifferenceFunction` appropriate for a _regular grid_ with the given stencil
+- `order`: `tuple[int]`
+    >the order of the derivative
+- `mesh_spacing`: `None | float | tuple[float]`
+    >the spacing between grid points in the regular grid `h`
+- `accuracy`: `None | int | tuple[int]`
+    >the accuracy of the derivative that we'll try to achieve as a power on `h`
+- `stencil`: `None | int | tuple[int]`
+    >the stencil to use for the derivative (overrides `accuracy`)
+- `end_point_accuracy`: `None | int | tuple[int]`
+    >the amount of extra accuracy to use at the edges of the grid
+- `axes`: `None | int | tuple[int]`
+    >the axes of the passed array for the derivative to be applied along
+- `contract`: `bool`
+    >whether to eliminate any axes of size `1` from the results
+- `kwargs`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceFunction.from_grid" class="docs-object-method">&nbsp;</a>
+```python
+from_grid(grid, order, accuracy=2, stencil=None, end_point_accuracy=2, axes=0, contract=True, **kwargs): 
+```
+Constructs a `FiniteDifferenceFunction` from a grid and order.
+         Deconstructs the grid into its subgrids and builds a different differencer for each dimension
+- `grid`: `np.ndarray`
+    >The grid to use as input data when defining the derivative
+- `order`: `int or list of ints`
+    >order of the derivative to compute
+- `stencil`: `int or list of ints`
+    >number of points to use in the stencil
+- `:returns`: `FiniteDifferenceFunction`
+    >deriv func
 
 ### Examples
 

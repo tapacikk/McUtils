@@ -15,6 +15,11 @@ __init__(self, *args, figure=None, axes=None, subplot_kw=None, event_handlers=No
 set_options(self, view_settings=None, **parent_opts): 
 ```
 
+<a id="McUtils.Plots.Graphics.Graphics3D.load_mpl" class="docs-object-method">&nbsp;</a>
+```python
+load_mpl(self): 
+```
+
 <a id="McUtils.Plots.Graphics.Graphics3D.plot_label" class="docs-object-method">&nbsp;</a>
 ```python
 @property

@@ -9,6 +9,12 @@ In general, it's basically just a wrapper chaining together a number of Transfor
 __init__(self, *transforms): 
 ```
 
+<a id="McUtils.Coordinerds.CoordinateTransformations.CoordinateTransform.CoordinateTransform.is_affine" class="docs-object-method">&nbsp;</a>
+```python
+@property
+is_affine(self): 
+```
+
 <a id="McUtils.Coordinerds.CoordinateTransformations.CoordinateTransform.CoordinateTransform.transformation_function" class="docs-object-method">&nbsp;</a>
 ```python
 @property

@@ -3,20 +3,18 @@ A general purpose that takes your data and just interpolates it without whining 
 
 ### Properties and Methods
 ```python
-get_interpolator: method
-get_extrapolator: method
-morse_interpolator: method
+DefaultExtrapolator: ExtrapolatorType
 ```
 <a id="McUtils.Zachary.Interpolator.Interpolator.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, grid, vals, interpolation_function=None, interpolation_order=None, extrapolator=None, extrapolation_order=1, **interpolation_opts): 
+__init__(self, grid, vals, interpolation_function=None, interpolation_order=None, extrapolator=None, extrapolation_order=None, **interpolation_opts): 
 ```
 
 - `grid`: `np.ndarray`
     >an unstructured grid of points **or** a structured grid of points **or** a 1D array
 - `vals`: `np.ndarray`
     >the values at the grid points
-- `interpolation_function`: `None | function`
+- `interpolation_function`: `None | BasicInterpolator`
     >the basic function to be used to handle the raw interpolation
 - `interpolation_order`: `int | str | None`
     >the order of extrapolation to use (when applicable)
@@ -26,6 +24,34 @@ __init__(self, grid, vals, interpolation_function=None, interpolation_order=None
     >the order of extrapolation to use by default
 - `interpolation_opts`: `Any`
     >the options to be fed into the interpolating_function
+
+<a id="McUtils.Zachary.Interpolator.Interpolator.get_interpolator" class="docs-object-method">&nbsp;</a>
+```python
+get_interpolator(grid, vals, interpolation_order=None, allow_extrapolation=True, **opts): 
+```
+Returns a function that can be called on grid points to interpolate them
+- `grid`: `Mesh`
+    >No description...
+- `vals`: `np.ndarray`
+    >No description...
+- `interpolation_order`: `int | str | None`
+    >No description...
+- `opts`: `Any`
+    >No description...
+- `:returns`: `function`
+    >interpolator
+
+<a id="McUtils.Zachary.Interpolator.Interpolator.get_extrapolator" class="docs-object-method">&nbsp;</a>
+```python
+get_extrapolator(grid, vals, extrapolation_order=1, **opts): 
+```
+Returns an Extrapolator that can be called on grid points to extrapolate them
+- `grid`: `Mesh`
+    >No description...
+- `extrapolation_order`: `int`
+    >No description...
+- `:returns`: `Extrapolator`
+    >extrapolator
 
 <a id="McUtils.Zachary.Interpolator.Interpolator.apply" class="docs-object-method">&nbsp;</a>
 ```python
@@ -37,49 +63,21 @@ Interpolates then extrapolates the function at the grid_points
 - `:returns`: `_`
     >No description...
 
+<a id="McUtils.Zachary.Interpolator.Interpolator.derivative" class="docs-object-method">&nbsp;</a>
+```python
+derivative(self, order): 
+```
+Returns a new function representing the requested derivative
+        of the current interpolator
+- `order`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
 <a id="McUtils.Zachary.Interpolator.Interpolator.__call__" class="docs-object-method">&nbsp;</a>
 ```python
 __call__(self, *args, **kwargs): 
 ```
-
-<a id="McUtils.Zachary.Interpolator.Interpolator.regularize_mesh" class="docs-object-method">&nbsp;</a>
-```python
-regularize_mesh(self, interp_kind='cubic', interpolator=None, **kwargs): 
-```
-Interpolates along the different slices in the grid, building a RegularMesh overall
-- `grid`: `np.ndarray (x, y)`
-    >a semistructured grid of points.
-- `vals`: `np.ndarray (z)`
-    >the values at the grid points.
-- `interp_kind`: `str`
-    >type of interpolation to do ('cubic' | 'linear' | 'nearest' | ...)
-- `kwargs`: `Any`
-    >No description...
-- `:returns`: `_`
-    >square_grid: a structured grid of points (np.ndarray) (x, y)
-
-<a id="McUtils.Zachary.Interpolator.Interpolator.regular_grid" class="docs-object-method">&nbsp;</a>
-```python
-regular_grid(self, interp_kind='cubic', fillvalues=False, plot=False, **kwargs): 
-```
-TODO: extend to also check y coordinates... maybe add param to do x, y, or both?
-        creates a regular grid from a set of semistructured points. Only has 2D capabilities.
-        :param grid: a semistructured grid of points.
-        :type grid: np.ndarray (x, y)
-        :param vals: the values at the grid points.
-        :type vals: np.ndarray (z)
-        :param interp_kind: type of interpolation to do ('cubic' | 'linear' | 'nearest' | ...)
-        :type interp_kind: str
-        :param fillvalues: if true, outer edges are filled with last data point extending out.
-         Otherwise extrapolates according to interp_kind (default)
-- `fillvalues`: `bool`
-    >No description...
-- `plot`: `bool`
-    >if true, plots the extrapolated cuts for visualization purposes.
-- `kwargs`: `Any`
-    >No description...
-- `:returns`: `_`
-    >square_grid: a structured grid of points (np.ndarray) (x, y)
 
 ### Examples
 

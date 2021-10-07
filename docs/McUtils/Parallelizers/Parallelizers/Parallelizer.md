@@ -11,20 +11,45 @@ This falls back gracefully to the serial case.
 
 ### Properties and Methods
 ```python
-parallelizer_registry: WeakValueDictionary
-default_key: str
-get_fallback_parallelizer: method
-lookup: method
-get_default: method
+default_printer: builtin_function_or_method
 InMainProcess: type
 InWorkerProcess: type
 mode_map: dict
-from_config: method
 ```
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, printer=None, verbose=False): 
+__init__(self, logger=None): 
 ```
+
+<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.load_registry" class="docs-object-method">&nbsp;</a>
+```python
+load_registry(): 
+```
+
+<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.parallelizer_registry" class="docs-object-method">&nbsp;</a>
+```python
+@property
+parallelizer_registry(self): 
+```
+
+<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.get_default" class="docs-object-method">&nbsp;</a>
+```python
+get_default(): 
+```
+For compat.
+- `:returns`: `_`
+    >No description...
+
+<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.lookup" class="docs-object-method">&nbsp;</a>
+```python
+lookup(key): 
+```
+Checks in the registry to see if a given parallelizer is there
+        otherwise returns a `SerialNonParallelizer`.
+- `key`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.register" class="docs-object-method">&nbsp;</a>
 ```python
@@ -34,22 +59,6 @@ Checks in the registry to see if a given parallelizer is there
         otherwise returns a `SerialNonParallelizer`.
 - `key`: `Any`
     >No description...
-- `:returns`: `_`
-    >No description...
-
-<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.set_default" class="docs-object-method">&nbsp;</a>
-```python
-set_default(self): 
-```
-Sets the parallelizer as the default one
-- `:returns`: `_`
-    >No description...
-
-<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.reset_default" class="docs-object-method">&nbsp;</a>
-```python
-reset_default(self): 
-```
-Resets the default parallelizer
 - `:returns`: `_`
     >No description...
 
@@ -230,7 +239,7 @@ Performs a parallel map with unpacking of function over
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.apply" class="docs-object-method">&nbsp;</a>
 ```python
-apply(self, func, *args, **kwargs): 
+apply(self, func, *args, main_kwargs=None, **kwargs): 
 ```
 Runs the callable `func` in parallel
 - `func`: `Any`
@@ -244,7 +253,7 @@ Runs the callable `func` in parallel
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.run" class="docs-object-method">&nbsp;</a>
 ```python
-run(self, func, *args, **kwargs): 
+run(self, func, *args, comm=None, main_kwargs=None, **kwargs): 
 ```
 Calls `apply`, but makes sure state is handled cleanly
 - `func`: `Any`
@@ -255,6 +264,11 @@ Calls `apply`, but makes sure state is handled cleanly
     >No description...
 - `:returns`: `_`
     >No description...
+
+<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.from_config" class="docs-object-method">&nbsp;</a>
+```python
+from_config(mode=None, **kwargs): 
+```
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.nprocs" class="docs-object-method">&nbsp;</a>
 ```python
@@ -341,6 +355,11 @@ wait(self):
 Causes all processes to wait until they've met up at this point.
 - `:returns`: `_`
     >No description...
+
+<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.__repr__" class="docs-object-method">&nbsp;</a>
+```python
+__repr__(self): 
+```
 
 ### Examples
 

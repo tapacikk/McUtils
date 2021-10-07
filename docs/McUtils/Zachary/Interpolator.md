@@ -6,6 +6,7 @@ Sets up a general Interpolator class that looks like Mathematica's Interpolating
 
   - [Interpolator](Interpolator/Interpolator.md)
   - [Extrapolator](Interpolator/Extrapolator.md)
+  - [ProductGridInterpolator](Interpolator/ProductGridInterpolator.md)
 
 ### Examples:
 

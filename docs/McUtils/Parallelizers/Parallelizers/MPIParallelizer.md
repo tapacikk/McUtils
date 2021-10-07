@@ -4,7 +4,6 @@ Parallelizes using `mpi4py`
 ### Properties and Methods
 ```python
 MPICommunicator: ABCMeta
-from_config: method
 ```
 <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
@@ -117,6 +116,11 @@ Applies func to args in parallel on all of the processes.
     >No description...
 - `:returns`: `_`
     >No description...
+
+<a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.from_config" class="docs-object-method">&nbsp;</a>
+```python
+from_config(**kw): 
+```
 
 ### Examples
 

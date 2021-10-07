@@ -5,7 +5,7 @@ a backend cache to update it cleanly
 ### Properties and Methods
 <a id="McUtils.Scaffolding.Checkpointing.DumpCheckpointer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, file, cache=None, open_kwargs=None): 
+__init__(self, file, cache=None, open_kwargs=None, allowed_keys=None, omitted_keys=None): 
 ```
 
 <a id="McUtils.Scaffolding.Checkpointing.DumpCheckpointer.load_cache" class="docs-object-method">&nbsp;</a>

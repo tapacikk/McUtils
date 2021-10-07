@@ -3,7 +3,7 @@
 Applies a threshold to cast nearly-zero vectors to proper zero
 
 ```python
-vec_apply_zero_threshold(vecs, zero_thresh=None): 
+vec_apply_zero_threshold(vecs, zero_thresh=None, return_zeros=False): 
 ```
 
 - `vecs`: `Any`
