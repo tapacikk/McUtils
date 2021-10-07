@@ -1,7 +1,7 @@
 # Setup McCoy Group config
-title: Psience
-description: Documentation for the Psience python package
-url: "https://mccoygroup.github.io/Psience" # the base hostname & protocol for your site, e.g. http://example.com
+title: McUtils
+description: Documentation for the McUtils python package
+url: "https://mccoygroup.github.io/McUtils" # the base hostname & protocol for your site, e.g. http://example.com
 icon: favicon.png
 github_username:  McCoyGroup
 footer_text: >-
