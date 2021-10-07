@@ -10,6 +10,8 @@ doc_config = {
         "path": "McUtils",
         "url": "https://mccoygroup.github.io/McUtils/",
         "gh_username": "McCoyGroup",
+        "gh_repo": "McUtils",
+        "gh_branch": "edit",
         "footer": "Brought to you by the McCoy Group"
     },
     "packages": [
