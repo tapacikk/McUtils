@@ -33,7 +33,7 @@ if [[ "$1" == "docs" ]]; then
   fi
 fi
 
-if [["$run_test" == "true"]]; then
+if [[ "$run_test" == "true" ]]; then
   if [[ "$branch" == "master" ]]; then
     PYTHONPATH=/home python3 McUtils/ci/tests/run_tests.py -v -d
   else
@@ -41,7 +41,7 @@ if [["$run_test" == "true"]]; then
   fi
 fi
 
-if [["$build_docs" == "true"]]; then
+if [[ "$build_docs" == "true" ]]; then
   if [[ "$branch" == "edit" ]]; then
     # build docs and push
     PYTHONPATH=/home python3 McUtils/ci/build_docs.py
