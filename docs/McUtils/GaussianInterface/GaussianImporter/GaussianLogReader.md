@@ -57,3 +57,12 @@ Tries to get the default keys one might be expected to want depending on the typ
 ### Examples
 
 
+
+
+___
+
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/GaussianInterface/GaussianImporter.py?message=Update%20Docs)

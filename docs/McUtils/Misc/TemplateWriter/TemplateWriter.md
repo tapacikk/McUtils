@@ -52,3 +52,12 @@ Iterates through the files in the template_dir and writes them out to dir
 ### Examples
 
 
+
+
+___
+
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Misc/TemplateWriter/TemplateWriter.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Misc/TemplateWriter/TemplateWriter.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Misc/TemplateWriter/TemplateWriter.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Misc/TemplateWriter/TemplateWriter.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Misc/TemplateWriter.py?message=Update%20Docs)

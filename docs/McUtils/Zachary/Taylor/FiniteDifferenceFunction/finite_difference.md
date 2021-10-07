@@ -1,11 +1,9 @@
 # <a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.finite_difference">finite_difference</a>
 
-Computes a finite difference derivative for the values on the grid
-
 ```python
 finite_difference(grid, values, order, accuracy=2, stencil=None, end_point_accuracy=1, axes=None, only_core=False, only_center=False, dtype='float64', **kw): 
 ```
-
+Computes a finite difference derivative for the values on the grid
 - `grid`: `np.ndarray`
     >the grid of points for which the vlaues lie on
 - `values`: `np.ndarray`
@@ -25,7 +23,16 @@ finite_difference(grid, values, order, accuracy=2, stencil=None, end_point_accur
 - `only_core`: `bool`
     >whether or not to avoid edge values where a different stencil would be used
 - `:returns`: `_`
-    >No description...
+    >No description... 
+
+### Examples: 
 
 
 
+___
+
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Zachary/Taylor/FiniteDifferenceFunction/finite_difference.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Zachary/Taylor/FiniteDifferenceFunction/finite_difference.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Zachary/Taylor/FiniteDifferenceFunction/finite_difference.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Zachary/Taylor/FiniteDifferenceFunction/finite_difference.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Zachary/Taylor/FiniteDifferenceFunction.py?message=Update%20Docs)

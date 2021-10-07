@@ -1,11 +1,19 @@
-# Documentation theme
-title: McUtils Dev Branch Documentation
-url: "https://mccoygroup.github.io/McUtils/" # the base hostname & protocol for your site, e.g. http://example.com
-github_username: McCoyGroup
+# Setup McCoy Group config
+title: Psience
+description: Documentation for the Psience python package
+url: "https://mccoygroup.github.io/Psience" # the base hostname & protocol for your site, e.g. http://example.com
+icon: favicon.png
+github_username:  McCoyGroup
 footer_text: >-
-  Brought to you by the McCoy Group
-sitemap_depth: 2
-icon: assets/favicon.png
+  Brought to you by the McCoy Group at the University of Washington
+#sitemap_depth: 2
+links:
+  - url: https://sites.uw.edu/mccoygrp/
+    title: Group Website
+  - url: https://github.com/McCoyGroup
+    title: GitHub
+  - url: https://stackoverflow.com/c/mccoygroup/questions
+    title: Stack Overflow
 
 # Build settings
 markdown: kramdown
@@ -15,6 +23,9 @@ plugins:
   - jekyll-include-cache
   - jekyll-optional-front-matter
   - jekyll-seo-tag
+relative_links:
+  enabled: true
+
 
 collections:
   docs:
@@ -38,5 +49,15 @@ defaults:
       custom_styles: "docs"
       layout: "docs"
 
-relative_links:
-  enabled: true
+
+# Exclude from processing
+exclude:
+  - examples
+  - templates
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
