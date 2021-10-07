@@ -20,14 +20,14 @@ git push -u $repo gh-pages
 ## run the test script
 cd /home
 
-if [["$1" == "tests"]]; then
+if [[ "$1" == "tests" ]]; then
   shift;
   run_tests=true
 fi
-if [["$1" == "docs"]]; then
+if [[ "$1" == "docs" ]]; then
   shift;
   build_docs=true
-  if [["$1" == "tests"]]; then
+  if [[ "$1" == "tests" ]]; then
     shift;
     run_tests=true
   fi
@@ -51,3 +51,4 @@ if [["$build_docs" == "true"]]; then
     git push -u $repo gh-pages
   fi
 fi
+
