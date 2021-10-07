@@ -45,6 +45,9 @@ if [[ "$build_docs" == "true" ]]; then
   if [[ "$branch" == "edit" ]]; then
     # build docs and push
     PYTHONPATH=/home python3 McUtils/ci/build_docs.py
+    cp -r McUtils/ci/docs McUtils/
+    rm -rf McUtils/ci/docs/McUtils
+    rm McUtils/ci/docs/_config.yml
     cd McUtils
     git add -A
     git diff-index --quiet HEAD || git commit -m "Built out docs"
