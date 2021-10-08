@@ -96,7 +96,11 @@ The `mode` argument specifies whether all blocks should be matched first and sen
 This often provides a tradeoff between parsing efficiency and memory efficiency.
 
 The `parser` can be any function, but commonly is built off of a `[Parsers.StringParser]`(../Parsers/). 
-See the documentation for `StringParser` for more
+See the documentation for `StringParser` for more.
+
+You can add to `GaussianLogComponents` at runtime.
+Not all changes need to be integrated directly into the file.
+{: .alert .alert-info}
 
 ## GJF Setup
 
