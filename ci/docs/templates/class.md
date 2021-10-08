@@ -4,7 +4,6 @@
 ### Properties and Methods
 {props}{methods}
 
-### Examples
 {examples}
 
 {tests}
