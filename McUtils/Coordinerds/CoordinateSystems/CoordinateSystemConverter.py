@@ -4,12 +4,14 @@ Provides the conversion framework between coordinate systems
 
 from collections import OrderedDict as odict
 import os, abc, numpy as np
-from McUtils.Extensions import ModuleLoader
+from ...Extensions import ModuleLoader
 
 __all__ = [
     "CoordinateSystemConverters",
     "CoordinateSystemConverter"
 ]
+
+__reload_hook__ = ["...Extensions", '.CartesianToZMatrix', '.ZMatrixToCartesian']
 
 ######################################################################################################
 ##
@@ -116,6 +118,7 @@ class CoordinateSystemConverters:
             type_pair = tuple(conv.types)
             self.converters[type_pair] = conv
 
+    _converters_loaded = False
     @classmethod
     def _preload_converters(self):
         """
@@ -135,6 +138,7 @@ class CoordinateSystemConverters:
         if os.path.exists(self.converters_dir):
             for file in os.listdir(self.converters_dir):
                 self.load_converter(file)
+        self._converters_loaded = True
 
     @classmethod
     def get_converter(cls, system1, system2):
@@ -147,6 +151,9 @@ class CoordinateSystemConverters:
         :return:
         :rtype:
         """
+
+        if not cls._converters_loaded:
+            cls._preload_converters()
 
         try:
             converter = cls.converters[(system1, system2)]

@@ -10,6 +10,8 @@ __all__ = [
     "CoordinateSet"
 ]
 
+__reload_hook__ = ['.CoordinateSystem', '.CommonCoordinateSystems', '.CoordinateUtils']
+
 ######################################################################################################
 ##
 ##                                   CoordinateSet Class

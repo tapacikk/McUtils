@@ -8,6 +8,8 @@ __all__ = [
     "CoordinateSystemError"
 ]
 
+__reload_hook__ = ['.CoordinateSystemConverter', '.CoordinateUtils']
+
 ######################################################################################################
 ##
 ##                                   CoordinateSystem Class

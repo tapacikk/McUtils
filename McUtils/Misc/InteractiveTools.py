@@ -54,7 +54,8 @@ class ModuleReloader:
         stack=None,
         reloaded=None, blacklist=None, reload_parents=True, 
         verbose=False,
-        print_indent=""):
+        print_indent=""
+        ):
         """
         Recursively searches for modules to reload and then reloads them.
         Uses a cache to break cyclic dependencies of any sort.

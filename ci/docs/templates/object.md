@@ -1,7 +1,6 @@
 ### <a id="{id}">{name}</a>
 {description}
 
-### Examples:
 {examples}
 
 ___

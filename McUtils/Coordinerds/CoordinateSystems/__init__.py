@@ -12,5 +12,3 @@ from .CoordinateSystem import *; from .CoordinateSystem import __all__ as expose
 __all__ += exposed
 from .CoordinateSet import *; from .CoordinateSet import __all__ as exposed
 __all__ += exposed
-
-CoordinateSystemConverters._preload_converters()
