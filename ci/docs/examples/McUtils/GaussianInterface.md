@@ -29,7 +29,7 @@ my_coords = res["Current cartesian coordinates"]
 Gaussian `.log` files are totally unstructured (and a bit of a disaster). 
 This means we need to write custom parsing logic for every field we might want.
 The basic supported formats are defined in `GaussianLogComponents.py`. 
-The actual parser is a subclass of `[Parsers.FileStreamReader]`(../Parsers/) called `GaussianLogReader`.
+The actual parser is a subclass of [`Parsers.FileStreamReader`](../Parsers/) called `GaussianLogReader`.
 
 The syntax to parse is straightforward
 
@@ -63,7 +63,7 @@ GaussianLogComponents["Name"] = {
 The `mode` argument specifies whether all blocks should be matched first and send to the `parser` (`"List"`) or if they should be fed in one-by-one `"Single"`.
 This often provides a tradeoff between parsing efficiency and memory efficiency.
 
-The `parser` can be any function, but commonly is built off of a `[Parsers.StringParser]`(../Parsers/). 
+The `parser` can be any function, but commonly is built off of a [`Parsers.StringParser`](../Parsers/). 
 See the documentation for `StringParser` for more.
 
 You can add to `GaussianLogComponents` at runtime.
