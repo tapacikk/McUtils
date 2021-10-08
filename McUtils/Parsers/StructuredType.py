@@ -461,8 +461,14 @@ class StructuredTypeArray:
     @property
     def array(self):
         if self.is_simple:
-            slices = tuple(slice(0, x) for x in self.filled_to)
-            return self._array[slices]
+            slices = tuple(slice(0, x) for x in self.filled_to if x > 0) # treating 0 as "all"
+            try:
+                return self._array[slices]
+            except IndexError:
+                raise ValueError("can't slice array of shape {} to `filled_to` spec {}".format(
+                    self._array.shape,
+                    self.filled_to
+                ))
         else:
             return self._array
     @property
