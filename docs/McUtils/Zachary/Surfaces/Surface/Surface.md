@@ -63,7 +63,6 @@ Infers what type of base surface works for the data that's passed in.
 __call__(self, gridpoints, **kwargs): 
 ```
 
-### Examples
 
 
 

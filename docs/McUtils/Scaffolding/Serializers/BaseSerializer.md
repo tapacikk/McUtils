@@ -47,7 +47,6 @@ Loads data from a file
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

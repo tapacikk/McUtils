@@ -17,7 +17,6 @@ __init__(self, dimension=None, converter_options=None, **opts):
 - `opts`: `Any`
     >other options, if `converter_options` is None, these are used as the `converter_options`
 
-### Examples
 
 
 

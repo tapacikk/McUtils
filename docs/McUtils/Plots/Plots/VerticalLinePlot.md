@@ -7,7 +7,6 @@ Plots a bunch of vertical lines
 __init__(*args, **kwargs): 
 ```
 
-### Examples
 
 
 

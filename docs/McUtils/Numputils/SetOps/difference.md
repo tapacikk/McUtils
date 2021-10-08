@@ -5,7 +5,6 @@ difference(ar1, ar2, assume_unique=False, sortings=None, method=None, union_sort
 ```
 Calculates set differences over any shape of array 
 
-### Examples: 
 
 
 

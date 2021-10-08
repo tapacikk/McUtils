@@ -7,7 +7,6 @@ A Plot object that plots a triangulation bars
 __init__(self, *args, **opts): 
 ```
 
-### Examples
 
 
 

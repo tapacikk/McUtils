@@ -43,7 +43,6 @@ Converts an HDF5 Dataset into a NumPy array or Group into a dict
 deserialize(self, file, key=None, **kwargs): 
 ```
 
-### Examples
 
 
 

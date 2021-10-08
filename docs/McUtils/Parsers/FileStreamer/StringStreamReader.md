@@ -7,7 +7,6 @@ Represents a string from which we'll stream blocks of data by finding tags and p
 __init__(self, string): 
 ```
 
-### Examples
 
 
 

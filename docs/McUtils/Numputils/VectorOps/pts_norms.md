@@ -11,7 +11,6 @@ Provides the vector normal to the plane of the three points
 - `:returns`: `np.ndarray`
     >No description... 
 
-### Examples: 
 
 
 

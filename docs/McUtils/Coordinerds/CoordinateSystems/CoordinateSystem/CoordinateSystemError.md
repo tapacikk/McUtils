@@ -4,7 +4,6 @@ An exception that happens inside a `CoordinateSystem` method
 ### Properties and Methods
 
 
-### Examples
 
 
 

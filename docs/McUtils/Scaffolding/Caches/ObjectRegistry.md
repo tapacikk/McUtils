@@ -24,7 +24,6 @@ lookup(self, key):
 register(self, key, val): 
 ```
 
-### Examples
 
 
 

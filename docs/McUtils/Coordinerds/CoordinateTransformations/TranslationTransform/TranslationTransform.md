@@ -10,7 +10,6 @@ __init__(self, shift):
 - `shift`: `np.ndarray`
     >3D vector for translation
 
-### Examples
 
 
 

@@ -12,7 +12,6 @@ __init__(self, match_patterns, negative_match=False, use_basename=False):
 matches(self, f): 
 ```
 
-### Examples
 
 
 

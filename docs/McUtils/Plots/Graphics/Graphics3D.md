@@ -110,7 +110,6 @@ box_ratios(self):
 view_settings(self): 
 ```
 
-### Examples
 
 
 

@@ -68,7 +68,6 @@ evaluate(self, xdata):
 __call__(self, xdata): 
 ```
 
-### Examples
 
 
 

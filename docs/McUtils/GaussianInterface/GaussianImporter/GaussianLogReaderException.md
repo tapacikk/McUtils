@@ -4,7 +4,6 @@ A class for holding exceptions that occur in the course of reading from a log fi
 ### Properties and Methods
 
 
-### Examples
 
 
 

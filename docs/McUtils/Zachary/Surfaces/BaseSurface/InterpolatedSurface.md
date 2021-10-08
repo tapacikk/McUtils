@@ -24,7 +24,6 @@ We delegate all the dirty work to the Interpolator so hopefully that's working..
 minimize(self, initial_guess=None, function_options=None, **opts): 
 ```
 
-### Examples
 
 
 

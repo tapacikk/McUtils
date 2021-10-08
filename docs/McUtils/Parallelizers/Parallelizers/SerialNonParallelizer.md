@@ -144,7 +144,6 @@ No need to wait when you're in a serial environment
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

@@ -48,7 +48,6 @@ XV(self, m):
 QXV(self, n, m): 
 ```
 
-### Examples
 
 
 

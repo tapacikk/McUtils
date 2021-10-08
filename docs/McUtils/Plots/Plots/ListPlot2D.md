@@ -26,7 +26,6 @@ __init__(self, *params, plot_style=None, method='contour', colorbar=None, figure
 - `opts`: `Any`
     >options to be fed in when initializing the Graphics
 
-### Examples
 
 
 

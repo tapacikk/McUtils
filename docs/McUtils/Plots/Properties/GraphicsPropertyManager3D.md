@@ -37,7 +37,6 @@ ticks_style(self):
 view_settings(self): 
 ```
 
-### Examples
 
 
 

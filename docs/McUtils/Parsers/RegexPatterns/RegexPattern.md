@@ -316,7 +316,6 @@ findall(self, txt):
 finditer(self, txt): 
 ```
 
-### Examples
 
 
 

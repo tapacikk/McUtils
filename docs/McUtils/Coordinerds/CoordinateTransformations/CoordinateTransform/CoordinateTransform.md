@@ -61,7 +61,6 @@ Provides a way to "tag" a transformation
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

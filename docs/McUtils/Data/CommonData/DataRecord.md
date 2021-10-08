@@ -44,7 +44,6 @@ __getstate__(self):
 __setstate__(self, state): 
 ```
 
-### Examples
 
 
 

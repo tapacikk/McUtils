@@ -10,7 +10,6 @@ default_plot_style: dict
 __init__(self, *args, **kwargs): 
 ```
 
-### Examples
 
 
 

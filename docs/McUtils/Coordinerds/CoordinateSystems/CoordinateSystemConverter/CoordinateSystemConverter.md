@@ -40,7 +40,6 @@ Registers the CoordinateSystemConverter
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

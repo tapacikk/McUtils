@@ -19,7 +19,6 @@ __init__(self, converter_options=None, dimension=(None, None), coordinate_shape=
 - `opts`: `Any`
     >other options, if `converter_options` is None, these are used as the `converter_options`
 
-### Examples
 
 
 

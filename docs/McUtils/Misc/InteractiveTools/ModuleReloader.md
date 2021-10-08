@@ -41,7 +41,6 @@ Recursively searches for modules to reload and then reloads them.
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

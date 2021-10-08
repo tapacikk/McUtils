@@ -23,7 +23,6 @@ Special cases the default getitem so tuples are mapped
 load(self): 
 ```
 
-### Examples
 
 
 

@@ -47,7 +47,6 @@ Formats an SBATCH file from the held options
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

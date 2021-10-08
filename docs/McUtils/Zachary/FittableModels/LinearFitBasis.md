@@ -47,7 +47,6 @@ fourier_series(x, k):
 power_series(x, n): 
 ```
 
-### Examples
 
 
 

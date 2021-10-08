@@ -11,7 +11,6 @@ vec_normalize(vecs, axis=-1, zero_thresh=None):
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

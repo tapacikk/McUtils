@@ -8,7 +8,6 @@ Plots a bunch of x values against a bunch of y values using the `scatter` method
 __init__(self, *args, **kwargs): 
 ```
 
-### Examples
 
 
 

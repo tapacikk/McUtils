@@ -57,7 +57,6 @@ Chains some stuff to make Jupyter animations work
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

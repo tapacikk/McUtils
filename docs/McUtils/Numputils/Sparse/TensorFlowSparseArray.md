@@ -139,7 +139,6 @@ Takes a regular dot product of self and other
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

@@ -12,7 +12,6 @@ __init__(self, p1, p2, radius, circle_points=32, **opts):
 plot(self, graphics, *args, circle_points=None, **kwargs): 
 ```
 
-### Examples
 
 
 

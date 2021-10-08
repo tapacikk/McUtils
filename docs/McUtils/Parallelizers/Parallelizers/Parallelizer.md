@@ -361,7 +361,6 @@ Causes all processes to wait until they've met up at this point.
 __repr__(self): 
 ```
 
-### Examples
 
 
 

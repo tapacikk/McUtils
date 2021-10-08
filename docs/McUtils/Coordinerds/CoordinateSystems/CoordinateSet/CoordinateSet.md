@@ -92,7 +92,6 @@ Delegates to the jacobian function of the current coordinate system
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

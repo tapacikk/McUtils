@@ -13,7 +13,6 @@ Tries to handle zero-threshold application to vectors
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

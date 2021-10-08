@@ -19,7 +19,6 @@ __init__(self, rootdir='', rootpkg=None, retag=False):
 load(self, file, pkg=None): 
 ```
 
-### Examples
 
 
 

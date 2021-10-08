@@ -115,7 +115,6 @@ get_conf_attr(self, item):
 __getattr__(self, item): 
 ```
 
-### Examples
 
 
 

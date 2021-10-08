@@ -5,7 +5,6 @@ njit(*args, warn=False, **kwargs):
 ```
  
 
-### Examples: 
 
 
 

@@ -23,7 +23,6 @@ __init__(self, jacobians, derivatives=None, mixed_terms=None, jacobians_name='Q'
 convert(self, order=None, check_arrays=False): 
 ```
 
-### Examples
 
 
 

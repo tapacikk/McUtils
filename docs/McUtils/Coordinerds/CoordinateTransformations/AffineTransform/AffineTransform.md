@@ -62,7 +62,6 @@ operate(self, coords, shift=True):
 __repr__(self): 
 ```
 
-### Examples
 
 
 

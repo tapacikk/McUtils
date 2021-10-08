@@ -24,7 +24,6 @@ Since the Taylor expansion stuff is already built out this is super easy
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

@@ -330,7 +330,6 @@ A method to be overloaded.
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

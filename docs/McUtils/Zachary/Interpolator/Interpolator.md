@@ -79,7 +79,6 @@ Returns a new function representing the requested derivative
 __call__(self, *args, **kwargs): 
 ```
 
-### Examples
 
 
 

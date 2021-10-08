@@ -13,7 +13,6 @@ Derivative of `sin(a, b)` and `cos(a, b)` with respect to both vector components
 - `:returns`: `list`
     >derivative tensors 
 
-### Examples: 
 
 
 

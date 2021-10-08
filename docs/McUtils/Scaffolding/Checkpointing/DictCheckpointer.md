@@ -55,7 +55,6 @@ Loads a parameter from the checkpoint file
 keys(self): 
 ```
 
-### Examples
 
 
 

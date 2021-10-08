@@ -14,7 +14,6 @@ Indeterminate: MeshType
 __new__(cls, value): 
 ```
 
-### Examples
 
 
 

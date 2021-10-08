@@ -128,7 +128,6 @@ Handler to intercept `matmul` requests
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

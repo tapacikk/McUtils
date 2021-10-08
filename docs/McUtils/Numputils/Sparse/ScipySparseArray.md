@@ -374,7 +374,6 @@ __delitem__(self, item):
 __repr__(self): 
 ```
 
-### Examples
 
 
 

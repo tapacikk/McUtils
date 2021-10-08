@@ -13,7 +13,6 @@ Gives the derivative of the distance between i and j with respect to coords i an
 - `:returns`: `list`
     >derivatives of the distance with respect to atoms i, j, and k 
 
-### Examples: 
 
 
 

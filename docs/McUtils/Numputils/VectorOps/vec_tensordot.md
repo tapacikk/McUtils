@@ -16,7 +16,6 @@ Defines a version of tensordot that uses matmul to operate over stacks of things
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

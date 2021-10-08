@@ -13,7 +13,6 @@ Derivative of the norm of `a` with respect to its components
 - `:returns`: `list`
     >derivative tensors 
 
-### Examples: 
 
 
 

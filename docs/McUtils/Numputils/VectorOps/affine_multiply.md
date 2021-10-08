@@ -11,7 +11,6 @@ Multiplies affine mats and vecs
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

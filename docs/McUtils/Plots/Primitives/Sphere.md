@@ -12,7 +12,6 @@ __init__(self, position=(0, 0, 0), radius=1, sphere_points=48, **opts):
 plot(self, graphics, *args, sphere_points=None, **kwargs): 
 ```
 
-### Examples
 
 
 

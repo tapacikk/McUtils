@@ -31,7 +31,6 @@ second_deriv_array(self):
 third_deriv_array(self): 
 ```
 
-### Examples
 
 
 

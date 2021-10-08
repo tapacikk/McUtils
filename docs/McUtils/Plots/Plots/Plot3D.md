@@ -34,7 +34,6 @@ plot(self, *params, **plot_style):
 add_colorbar(self, **kw): 
 ```
 
-### Examples
 
 
 

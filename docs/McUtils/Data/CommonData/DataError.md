@@ -4,7 +4,6 @@ Exception subclass for data error
 ### Properties and Methods
 
 
-### Examples
 
 
 

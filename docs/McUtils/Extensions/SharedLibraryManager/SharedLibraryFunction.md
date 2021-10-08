@@ -51,7 +51,6 @@ Calls the function we loaded.
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

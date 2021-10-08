@@ -46,7 +46,6 @@ Converts base unit into target using the scraped NIST data
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

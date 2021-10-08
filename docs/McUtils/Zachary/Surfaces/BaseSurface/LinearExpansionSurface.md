@@ -24,7 +24,6 @@ First we just apply the basis to the gridpoints, then we dot this into the coeff
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

@@ -15,7 +15,6 @@ Converts a coerced array back to a full array
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

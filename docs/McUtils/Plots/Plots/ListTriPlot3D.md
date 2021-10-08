@@ -7,7 +7,6 @@ Creates a triangulated surface plot in 3D
 __init__(self, *params, **opts): 
 ```
 
-### Examples
 
 
 

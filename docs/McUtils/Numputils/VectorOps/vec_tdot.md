@@ -13,7 +13,6 @@ Tensor dot but just along the final axes by default. Totally a convenience funct
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

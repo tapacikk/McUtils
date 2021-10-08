@@ -110,7 +110,6 @@ __getitem__(self, item):
 __repr__(self): 
 ```
 
-### Examples
 
 
 

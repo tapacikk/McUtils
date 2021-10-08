@@ -42,7 +42,6 @@ isinstance(self, arg):
 cast(self, arg): 
 ```
 
-### Examples
 
 
 

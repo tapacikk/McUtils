@@ -42,7 +42,6 @@ third_deriv_array(self):
 fourth_deriv_array(self): 
 ```
 
-### Examples
 
 
 

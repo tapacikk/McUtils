@@ -37,7 +37,6 @@ Ought to always compile down to a proper ndarray
 __getitem__(self, i): 
 ```
 
-### Examples
 
 
 

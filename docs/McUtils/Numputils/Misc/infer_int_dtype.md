@@ -5,7 +5,6 @@ infer_int_dtype(max_dim):
 ```
  
 
-### Examples: 
 
 
 

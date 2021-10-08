@@ -121,7 +121,6 @@ Returns the keys of currently checkpointed
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

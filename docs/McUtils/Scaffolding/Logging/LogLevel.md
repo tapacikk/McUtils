@@ -40,7 +40,6 @@ __gt__(self, other):
 __new__(cls, value): 
 ```
 
-### Examples
 
 
 

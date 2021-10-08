@@ -50,7 +50,6 @@ Parse argv and call bound method
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

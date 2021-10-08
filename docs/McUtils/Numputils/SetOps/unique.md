@@ -5,7 +5,6 @@ unique(ar, return_index=False, return_inverse=False, return_counts=False, axis=0
 ```
 A variant on np.unique with default support for `axis=0` and sorting 
 
-### Examples: 
 
 
 

@@ -71,7 +71,6 @@ Saves requisite config data for a structure
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

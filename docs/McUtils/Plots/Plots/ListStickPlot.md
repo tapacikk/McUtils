@@ -7,7 +7,6 @@ A Plot object that plots sticks from a list
 __init__(self, griddata, **opts): 
 ```
 
-### Examples
 
 
 

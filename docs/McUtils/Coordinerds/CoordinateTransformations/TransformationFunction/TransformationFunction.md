@@ -38,7 +38,6 @@ Operates on the coords. *Must* be able to deal with a list of coordinates, optim
 - `coords`: `np.ndarry`
     >the list of coordinates to apply the transformation to
 
-### Examples
 
 
 

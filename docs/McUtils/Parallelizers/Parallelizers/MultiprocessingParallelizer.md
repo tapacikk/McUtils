@@ -81,7 +81,6 @@ on_main(self):
 from_config(**kw): 
 ```
 
-### Examples
 
 
 

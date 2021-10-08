@@ -5,7 +5,6 @@
 ```
 {description}{parameters} 
 
-### Examples: 
 {examples}
 
 {tests}

@@ -43,7 +43,6 @@ Just calls into `scipy.optimize.minimize` as the default implementation
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

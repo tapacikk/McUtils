@@ -19,7 +19,6 @@ __init__(self, theta, axis='z', center=None):
 reverse(self): 
 ```
 
-### Examples
 
 
 

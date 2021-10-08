@@ -127,7 +127,6 @@ Builds a grid from multiple linspace arguments,
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

@@ -7,7 +7,6 @@ Plots an array as an image
 __init__(self, *params, plot_style=None, colorbar=None, figure=None, axes=None, subplot_kw=None, method='imshow', **opts): 
 ```
 
-### Examples
 
 
 

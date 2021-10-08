@@ -86,7 +86,6 @@ Tries to locate the build library file (if it exists)
 cleanup(self): 
 ```
 
-### Examples
 
 
 

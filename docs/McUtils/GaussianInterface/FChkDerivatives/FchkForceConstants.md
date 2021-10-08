@@ -31,7 +31,6 @@ shape(self):
 array(self): 
 ```
 
-### Examples
 
 
 

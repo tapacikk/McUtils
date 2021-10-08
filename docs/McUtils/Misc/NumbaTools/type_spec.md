@@ -5,7 +5,6 @@ type_spec(t, warn=False):
 ```
  
 
-### Examples: 
 
 
 

@@ -11,7 +11,6 @@ Applies a threshold to cast nearly-zero vectors to proper zero
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

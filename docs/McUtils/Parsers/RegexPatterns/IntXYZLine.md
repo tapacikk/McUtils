@@ -4,7 +4,6 @@ Represents a line in an XYZ file that starts with an int, like
     1   -1.232323 2.23212421 43.44343434
     ```
 
-### Examples:
 
 
 ___

@@ -19,7 +19,6 @@ __repr__(self):
 __del__(self): 
 ```
 
-### Examples
 
 
 

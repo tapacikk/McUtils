@@ -12,7 +12,6 @@ __init__(self, data, **kwargs):
 from_file(file_name, format=None, **opts): 
 ```
 
-### Examples
 
 
 

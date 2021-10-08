@@ -18,7 +18,6 @@ load(self):
 get_distance(self, key, default=None): 
 ```
 
-### Examples
 
 
 

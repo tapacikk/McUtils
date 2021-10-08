@@ -7,7 +7,6 @@ A Plot that pulls the errorbar data from a list
 __init__(self, griddata, **opts): 
 ```
 
-### Examples
 
 
 

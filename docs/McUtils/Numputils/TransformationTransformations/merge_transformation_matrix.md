@@ -11,7 +11,6 @@ Merges two transformation matrices
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

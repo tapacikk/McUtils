@@ -7,7 +7,6 @@ Creates a ScatterPlot of 3D data
 __init__(self, *params, **opts): 
 ```
 
-### Examples
 
 
 

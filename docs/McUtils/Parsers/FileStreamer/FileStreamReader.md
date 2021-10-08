@@ -7,7 +7,6 @@ Represents a file from which we'll stream blocks of data by finding tags and par
 __init__(self, file, mode='r', encoding='utf-8', **kw): 
 ```
 
-### Examples
 
 
 

@@ -13,7 +13,6 @@ Provides the dihedral angle between pts4 and the plane of the other three vector
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

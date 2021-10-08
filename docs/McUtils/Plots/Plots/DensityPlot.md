@@ -7,7 +7,6 @@
 __init__(self, *params, **opts): 
 ```
 
-### Examples
 
 
 

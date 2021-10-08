@@ -9,7 +9,6 @@ This allows us to define flexible `CoordinateSystem` subclasses that we _don't_ 
 __init__(self, name, dimension=None, matrix=None, coordinate_shape=None, converter_options=None): 
 ```
 
-### Examples
 
 
 

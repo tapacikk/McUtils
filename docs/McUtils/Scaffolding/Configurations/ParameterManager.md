@@ -79,7 +79,6 @@ serialize(self, file, mode=None):
 deserialize(file, mode=None, attribute=None): 
 ```
 
-### Examples
 
 
 

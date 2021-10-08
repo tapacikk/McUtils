@@ -36,7 +36,6 @@ serialize(self, file, data, **kwargs):
 deserialize(self, file, key=None, **kwargs): 
 ```
 
-### Examples
 
 
 

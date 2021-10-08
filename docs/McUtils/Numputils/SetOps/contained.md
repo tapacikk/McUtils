@@ -5,7 +5,6 @@ contained(ar1, ar2, assume_unique=False, invert=False, sortings=None, union_sort
 ```
 Test whether each element of `ar1` is also present in `ar2`. 
 
-### Examples: 
 
 
 

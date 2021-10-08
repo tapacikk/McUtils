@@ -5,7 +5,6 @@ numba_decorator(*args, method=None, warn=False, **kwargs):
 ```
  
 
-### Examples: 
 
 
 

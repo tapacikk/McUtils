@@ -134,7 +134,6 @@ spacings(self):
 colorbar(self): 
 ```
 
-### Examples
 
 
 

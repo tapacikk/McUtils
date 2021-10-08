@@ -13,7 +13,6 @@ Gets the angles and normals between two vectors
 - `:returns`: `(np.ndarray, np.ndarray)`
     >angles and normals between two vectors 
 
-### Examples: 
 
 
 

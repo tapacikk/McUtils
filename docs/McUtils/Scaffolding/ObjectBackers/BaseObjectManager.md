@@ -50,7 +50,6 @@ Deletes some attribute of the object
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

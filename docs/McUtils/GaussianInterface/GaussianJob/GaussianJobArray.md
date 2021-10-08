@@ -30,7 +30,6 @@ Writes a linked Gaussian job to file
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

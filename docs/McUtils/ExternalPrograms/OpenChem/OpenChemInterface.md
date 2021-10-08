@@ -21,7 +21,6 @@ lib(self):
 method(self, name): 
 ```
 
-### Examples
 
 
 

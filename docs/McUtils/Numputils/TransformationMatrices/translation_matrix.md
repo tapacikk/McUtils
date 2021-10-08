@@ -5,7 +5,6 @@ translation_matrix(shift):
 ```
  
 
-### Examples: 
 
 
 

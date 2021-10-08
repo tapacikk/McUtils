@@ -164,7 +164,6 @@ Used by Jupyter and friends to make a version of the image that they can display
 add_colorbar(self, graphics=None, norm=None, cmap=None, size=(20, 200), tick_padding=40, **kw): 
 ```
 
-### Examples
 
 
 

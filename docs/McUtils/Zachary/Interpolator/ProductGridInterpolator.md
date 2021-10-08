@@ -53,7 +53,6 @@ derivative(self, order):
 - `:returns`: `ProductGridInterpolator`
     >No description...
 
-### Examples
 
 
 

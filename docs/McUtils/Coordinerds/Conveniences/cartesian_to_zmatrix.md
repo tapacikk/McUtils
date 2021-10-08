@@ -11,7 +11,6 @@ Converts Cartesians to Z-Matrix coords and returns the underlying arrays
 - `:returns`: `Iterable[np.ndarray | list]`
     >Z-matrix coords 
 
-### Examples: 
 
 
 

@@ -5,7 +5,6 @@ rotation_matrix(axis, theta):
 ```
  
 
-### Examples: 
 
 
 

@@ -13,7 +13,6 @@ __init__(self, basis, initial_params=None, pre_fit=False, covariance=None):
 evaluate(self, xdata): 
 ```
 
-### Examples
 
 
 

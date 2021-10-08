@@ -5,7 +5,6 @@ intersection(ar1, ar2, assume_unique=False, return_indices=False, sortings=None,
 ```
  
 
-### Examples: 
 
 
 

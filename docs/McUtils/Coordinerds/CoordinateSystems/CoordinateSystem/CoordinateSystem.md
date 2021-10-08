@@ -162,7 +162,6 @@ Provides a clean representation of a `CoordinateSystem` for printing
 - `:returns`: `str`
     >No description...
 
-### Examples
 
 
 

@@ -13,7 +13,6 @@ __init__(self, a, shape=None):
 array(self): 
 ```
 
-### Examples
 
 
 

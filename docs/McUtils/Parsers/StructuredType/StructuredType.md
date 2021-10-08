@@ -86,7 +86,6 @@ Extends the shape of the type such that base_shape precedes the existing shape
 __repr__(self): 
 ```
 
-### Examples
 
 
 

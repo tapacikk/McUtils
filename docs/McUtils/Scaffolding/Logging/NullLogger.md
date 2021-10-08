@@ -13,7 +13,6 @@ log_print(self, message, *params, print_options=None, padding=None, newline=None
 __bool__(self): 
 ```
 
-### Examples
 
 
 

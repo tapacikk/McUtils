@@ -13,7 +13,6 @@ Groups an array by keys
 - `:returns`: `_`
     >group pairs & sorting info 
 
-### Examples: 
 
 
 

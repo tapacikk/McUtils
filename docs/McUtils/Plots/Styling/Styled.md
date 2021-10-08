@@ -7,7 +7,6 @@ Simple styling class
 __init__(self, *str, **opts): 
 ```
 
-### Examples
 
 
 

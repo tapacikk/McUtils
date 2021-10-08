@@ -23,7 +23,6 @@ Writes the entire data structure
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

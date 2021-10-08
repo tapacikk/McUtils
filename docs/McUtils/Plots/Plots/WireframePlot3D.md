@@ -7,7 +7,6 @@ Creates a Wireframe mesh plot of 3D data
 __init__(self, *params, **opts): 
 ```
 
-### Examples
 
 
 

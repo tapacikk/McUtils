@@ -16,7 +16,6 @@ Splits an array up by edges defined by regions.
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

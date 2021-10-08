@@ -42,7 +42,6 @@ apply(self, gps, vals, extrap_value=nan):
 __call__(self, *args, **kwargs): 
 ```
 
-### Examples
 
 
 

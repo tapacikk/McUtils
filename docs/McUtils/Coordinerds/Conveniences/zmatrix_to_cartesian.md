@@ -17,7 +17,6 @@ Converts Z-maztrix coords to Cartesians
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

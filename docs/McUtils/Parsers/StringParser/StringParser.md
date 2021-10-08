@@ -99,7 +99,6 @@ Returns a handler that uses to_array
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

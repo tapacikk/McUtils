@@ -5,7 +5,6 @@ argsort(ar):
 ```
  
 
-### Examples: 
 
 
 

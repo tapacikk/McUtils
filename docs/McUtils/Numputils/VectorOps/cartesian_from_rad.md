@@ -24,7 +24,6 @@ Constructs a Cartesian coordinate from a bond length, angle, and dihedral
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

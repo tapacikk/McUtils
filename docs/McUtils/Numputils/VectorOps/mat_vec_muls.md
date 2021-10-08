@@ -11,7 +11,6 @@ Pairwise multiplies mats and vecs
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

@@ -18,7 +18,6 @@ array(self):
 __getitem__(self, item): 
 ```
 
-### Examples
 
 
 

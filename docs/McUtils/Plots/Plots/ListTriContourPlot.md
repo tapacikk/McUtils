@@ -7,7 +7,6 @@
 __init__(self, griddata, **opts): 
 ```
 
-### Examples
 
 
 

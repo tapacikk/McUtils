@@ -90,7 +90,6 @@ Parses the arguments in `sys.argv` and dispatches to the approriate action.
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

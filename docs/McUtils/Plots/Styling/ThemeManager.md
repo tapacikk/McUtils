@@ -71,7 +71,6 @@ backend_themes(self):
 theme_names(self): 
 ```
 
-### Examples
 
 
 

@@ -11,7 +11,6 @@ vec_norms(vecs, axis=-1):
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

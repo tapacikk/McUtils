@@ -24,7 +24,6 @@ __init__(self, *params, plot_style=None, method=None, figure=None, axes=None, su
 - `opts`: `Any`
     >options to be fed in when initializing the Graphics
 
-### Examples
 
 
 

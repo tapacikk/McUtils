@@ -60,7 +60,6 @@ __setstate__(self, state):
 __repr__(self): 
 ```
 
-### Examples
 
 
 

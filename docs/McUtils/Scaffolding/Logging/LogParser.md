@@ -49,7 +49,6 @@ get_blocks(self, tag=None, level=0):
 get_lines(self, tag=None, level=0): 
 ```
 
-### Examples
 
 
 

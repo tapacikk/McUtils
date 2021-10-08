@@ -47,7 +47,6 @@ Registers a converter between two coordinate systems
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

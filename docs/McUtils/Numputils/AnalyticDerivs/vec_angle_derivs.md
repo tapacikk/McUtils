@@ -15,7 +15,6 @@ Returns the derivatives of the angle between `a` and `b` with respect to their c
 - `:returns`: `list`
     >derivative tensors 
 
-### Examples: 
 
 
 

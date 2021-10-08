@@ -49,7 +49,6 @@ Deserializes from an object spec, dispatching
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

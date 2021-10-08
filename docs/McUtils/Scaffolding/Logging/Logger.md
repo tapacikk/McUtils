@@ -84,7 +84,6 @@ log_print(self, message, *messrest, message_prepper=None, padding=None, newline=
 __repr__(self): 
 ```
 
-### Examples
 
 
 

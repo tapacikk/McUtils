@@ -39,7 +39,6 @@ Reverses the conversion process
 __call__(self, data, allow_pickle=None): 
 ```
 
-### Examples
 
 
 

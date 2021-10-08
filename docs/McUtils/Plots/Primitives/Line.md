@@ -12,7 +12,6 @@ __init__(self, pos1, pos2, radius, **opts):
 plot(self, graphics, *args, **kwargs): 
 ```
 
-### Examples
 
 
 

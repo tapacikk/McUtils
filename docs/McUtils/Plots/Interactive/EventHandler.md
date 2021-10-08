@@ -110,7 +110,6 @@ AxesEnterEvent(self, handler, **kw):
 AxesLeaveEvent(self, handler, **kw): 
 ```
 
-### Examples
 
 
 

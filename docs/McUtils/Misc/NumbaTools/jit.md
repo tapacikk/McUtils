@@ -5,7 +5,6 @@ jit(*args, warn=False, nopython=False, **kwargs):
 ```
  
 
-### Examples: 
 
 
 

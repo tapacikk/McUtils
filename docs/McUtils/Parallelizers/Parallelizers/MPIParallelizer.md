@@ -122,7 +122,6 @@ Applies func to args in parallel on all of the processes.
 from_config(**kw): 
 ```
 
-### Examples
 
 
 

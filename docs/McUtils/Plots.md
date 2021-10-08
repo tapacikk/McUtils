@@ -2,7 +2,7 @@
     
 A plotting framework that builds off of matplotlib, but potentially could use a different backend
 
-### Members:
+### Members
 
   - [GraphicsBase](Plots/Graphics/GraphicsBase.md)
   - [Graphics](Plots/Graphics/Graphics.md)
@@ -49,9 +49,11 @@ A plotting framework that builds off of matplotlib, but potentially could use a 
   - [GraphicsPropertyManager](Plots/Properties/GraphicsPropertyManager.md)
   - [GraphicsPropertyManager3D](Plots/Properties/GraphicsPropertyManager3D.md)
 
-### Examples:
+### Examples
 
 
+
+### Unit Tests
 
 ```python
 

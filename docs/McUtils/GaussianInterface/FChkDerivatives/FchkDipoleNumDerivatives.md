@@ -32,7 +32,6 @@ first_derivatives(self):
 second_derivatives(self): 
 ```
 
-### Examples
 
 
 

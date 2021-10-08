@@ -2,7 +2,7 @@
     
 Utilities for writing parsers of structured text
 
-### Members:
+### Members
 
   - [FileStreamReader](Parsers/FileStreamer/FileStreamReader.md)
   - [FileStreamCheckPoint](Parsers/FileStreamer/FileStreamCheckPoint.md)
@@ -46,7 +46,7 @@ Utilities for writing parsers of structured text
   - [DisappearingTypeClass](Parsers/StructuredType/DisappearingTypeClass.md)
   - [StringParser](Parsers/StringParser/StringParser.md)
 
-### Examples:
+### Examples
 
 
 ## RegexPattern
@@ -184,6 +184,8 @@ Named(
 
 Here `StringParser.array_handler(dtype=float)` provides efficient parsing of data through `np.loadtxt` with a `float` as the target `dtype`.
 We also see the `prefix` and `joiner` options to `RegexPattern` in action.
+
+### Unit Tests
 
 ```python
 

@@ -5,7 +5,6 @@ find(ar, to_find, sorting=None, search_space_sorting=None, return_search_space_s
 ```
 Finds elements in an array and returns sorting 
 
-### Examples: 
 
 
 

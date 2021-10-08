@@ -49,7 +49,6 @@ Iterates through the files in the template_dir and writes them out to dir
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 

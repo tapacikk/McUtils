@@ -13,7 +13,6 @@ Defines a version of tensordot that uses sparse arrays, adapted from the sparse 
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

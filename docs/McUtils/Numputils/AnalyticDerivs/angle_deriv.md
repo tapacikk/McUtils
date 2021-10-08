@@ -15,7 +15,6 @@ Gives the derivative of the angle between i, j, and k with respect to the Cartes
 - `:returns`: `np.ndarray`
     >derivatives of the angle with respect to atoms i, j, and k 
 
-### Examples: 
 
 
 

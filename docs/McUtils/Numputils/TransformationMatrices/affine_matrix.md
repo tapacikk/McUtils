@@ -11,7 +11,6 @@ Creates an affine transformation matrix from a 3x3 transformation matrix or set 
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

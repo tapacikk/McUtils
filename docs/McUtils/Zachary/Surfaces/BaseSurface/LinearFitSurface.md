@@ -30,7 +30,6 @@ evaluate(self, points, **kwargs):
 minimize(self, initial_guess=None, function_options=None, **opts): 
 ```
 
-### Examples
 
 
 

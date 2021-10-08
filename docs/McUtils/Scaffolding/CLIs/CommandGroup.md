@@ -6,7 +6,6 @@ Basically just exists to be ingested by a CLI.
 ### Properties and Methods
 
 
-### Examples
 
 
 

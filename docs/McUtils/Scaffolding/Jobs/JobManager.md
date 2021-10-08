@@ -45,7 +45,6 @@ A special case convenience function that starts a
 - `:returns`: `Job`
     >No description...
 
-### Examples
 
 
 

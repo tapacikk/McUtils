@@ -14,7 +14,6 @@ Provides the outer product of a and b in a vectorized way.
 - `:returns`: `_`
     >No description... 
 
-### Examples: 
 
 
 

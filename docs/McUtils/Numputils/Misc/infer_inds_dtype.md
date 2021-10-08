@@ -5,7 +5,6 @@ infer_inds_dtype(max_size):
 ```
  
 
-### Examples: 
 
 
 

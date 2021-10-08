@@ -16,7 +16,6 @@ __init__(self, *surfs):
 __call__(self, gridpoints, **kwargs): 
 ```
 
-### Examples
 
 
 

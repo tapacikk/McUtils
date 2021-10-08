@@ -7,7 +7,6 @@ Makes a 2D histogram of data
 __init__(*args, **kwargs): 
 ```
 
-### Examples
 
 
 

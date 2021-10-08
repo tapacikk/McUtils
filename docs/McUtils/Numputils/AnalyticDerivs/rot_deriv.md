@@ -17,7 +17,6 @@ Gives a rotational derivative w/r/t some unspecified coordinate
 - `:returns`: `np.ndarray`
     >derivatives of the rotation matrices with respect to both the angle and the axis 
 
-### Examples: 
 
 
 

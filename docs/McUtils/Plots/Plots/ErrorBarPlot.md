@@ -8,7 +8,6 @@ Plots error bars using the `errorbar` method.
 __init__(self, *args, **kwargs): 
 ```
 
-### Examples
 
 
 

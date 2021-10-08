@@ -251,7 +251,6 @@ Casts a string of things with a given data type to an array of that type and doe
 __repr__(self): 
 ```
 
-### Examples
 
 
 

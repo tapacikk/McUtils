@@ -16,7 +16,6 @@ The one method that needs to be implemented, which takes the graphics and actual
 - `:returns`: `_`
     >No description...
 
-### Examples
 
 
 
