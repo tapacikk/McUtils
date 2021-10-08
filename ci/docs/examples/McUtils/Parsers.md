@@ -25,9 +25,6 @@ There is a slightly more sophisticated instance called `Named` which allows us t
 <div class="card in-out-block" markdown="1" id="Markdown_code">
 
 ```python
-RegexPattern = McUtils.Parsers.RegexPattern
-Named = McUtils.Parsers.Named
-Word = McUtils.Parsers.Word
 key_value_matcher = RegexPattern([Named(Word, "key"), "=", Named(Word, "value")])
 print(key_value_matcher)
 ```
@@ -69,3 +66,71 @@ for match in matches[:5]:
 </div>
 
 ## StringParser
+
+A more powerful interface than `RegexPattern` is through a `StringParser` instance.
+This provides a wrapper on `RegexPattern` that handles the process of turning matches into `NumPy` arrays of the appropriate type.
+The actual interface is quite simple, e.g. we can take our matcher from before and use it directly
+
+<div class="card in-out-block" markdown="1" id="Markdown_code">
+
+```python
+key_vals = StringParser(key_value_matcher).parse_all(sample_data)
+print(key_vals)
+```
+
+<div class="card-body out-block" markdown="1">
+
+```python
+StructuredTypeArray(shape=[(11493, 0), (11493, 0)], dtype=OrderedDict([('key', StructuredType(<class 'str'>, shape=(None,))), ('value', StructuredType(<class 'str'>, shape=(None,)))]))
+```
+
+</div>
+</div>
+
+This `StructuredTypeArray` is basically a version of `NumPy` [record arrays](https://numpy.org/doc/stable/reference/generated/numpy.recarray.html), 
+but was written without knowing about them.
+A smarter reimplementation of this portion of the parsing process would make use of `recarray` instead of this custom array type.
+
+That said, getting the raw `ndarray` objects out is straight-forward
+
+<div class="card in-out-block" markdown="1" id="Markdown_code">
+
+```python
+key_vals['key'].array
+```
+
+<div class="card-body out-block" markdown="1">
+
+```python
+array(['0', 'Input', 'Output', ..., 'State', 'RMSD', 'PG'], dtype='<U7')
+```
+
+</div>
+</div>
+
+NOTE: 90% of all bugs in the `StringParser` ecosystem will come from the design of `StructuredTypeArray`. 
+The need to be efficient in data handling can lead to some difficult implementation details. 
+As the data type has organically evolved it has become potentially tough to understand.
+A reimplementation based on `recarray` would _potentially_ solve some issues.
+{: .alert .alert-warning}
+
+### Block Handlers
+
+For efficiency sake, `StringParser` objects also provide a `block_handlers` argument (and handlers can be defined on `RegexPatterns` directly).
+A handler is a function that can be applied to a parsed piece of text and should directly return a `NumPy` array so that it can be worked into the returned `StructuredTypeArray`.
+The simplest handlers are already provided for convenience on `StringParser`, e.g. from `GaussianLogComponents.py`
+
+```python
+Named(
+    Repeating(
+        Capturing(Number),
+        min = 3, max = 3,
+        prefix=Optional(Whitespace),
+        joiner = Whitespace
+    ),
+    "Coordinates", handler=StringParser.array_handler(dtype=float)
+)
+```
+
+Here `StringParser.array_handler(dtype=float)` provides efficient parsing of data through `np.loadtxt` with a `float` as the target `dtype`.
+We also see the `prefix` and `joiner` options to `RegexPattern` in action.

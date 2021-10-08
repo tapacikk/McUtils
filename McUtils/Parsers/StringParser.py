@@ -495,18 +495,18 @@ class StringParser:
         if data is not None:
             if array.has_indeterminate_shape:
                 array.fill(data)
-            elif single and (append or (isinstance(append, int) and append == 0)):
+            elif single and (append or (append is not False and isinstance(append, int) and append == 0)):
                 # print("pre-append:>", array)
                 # print("axis:", append)
                 # print("total axis:", append + array.append_depth)
                 # print(data)
-                if append is True:
+                if append is True  or not isinstance(append, int):
                     append = 0
                 array.append(data, axis=append)
                 # print("<:post-append", array)
-            elif (append or (isinstance(append, int) and append == 0)):
+            elif (append or (append is not False and  isinstance(append, int) and append == 0)):
                 # print("pre-extend:>", array)
-                if append is True:
+                if append is True or not isinstance(append, int):
                     append = 0
                 array.extend(data, single=single, axis=append)
                 # print("<:post-extend", array)
