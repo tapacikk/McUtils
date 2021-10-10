@@ -319,8 +319,55 @@ array([[[[ -1.        ,   0.        ,   0.        ],
 
 ## Zachary
 
+Zachary is a higher-level package than `Numputils` and handles all numerical/tensor operations.
+It's become something of a monster but is very useful.
 
+1D finite difference derivative via [finite_difference](Zachary/FiniteDifferenceFunction/finite_difference.md):
 
+<div class="card in-out-block" markdown="1">
+
+```python
+from McUtils.Zachary import finite_difference
+import numpy as np
+
+sin_grid = np.linspace(0, 2*np.pi, 200)
+sin_vals = np.sin(sin_grid)
+
+deriv = finite_difference(sin_grid, sin_vals, 3) # 3rd deriv
+base = Plot(sin_grid, deriv, aspect_ratio = .6, image_size=500)
+Plot(sin_grid, np.sin(sin_grid), figure=base)
+```
+<div class="card-body out-block" markdown="1">
+
+![plot](/McUtils/img/McUtils_Zachary_1.png)
+</div>
+</div>
+
+2D finite difference derivative via [finite_difference](Zachary/FiniteDifferenceFunction/finite_difference.md):
+
+<div class="card in-out-block" markdown="1">
+
+```python
+from McUtils.Zachary import finite_difference
+import numpy as np
+
+x_grid = np.linspace(0, 2*np.pi, 200)
+y_grid = np.linspace(0, 2*np.pi, 100)
+sin_x_vals = np.sin(x_grid); sin_y_vals =  np.sin(y_grid)
+vals_2D = np.outer(sin_x_vals, sin_y_vals)
+grid_2D = np.array(np.meshgrid(x_grid, y_grid)).T
+
+deriv = finite_difference(grid_2D, vals_2D, (1, 3))
+TensorPlot(np.array([vals_2D, deriv]), image_size=500)
+```
+
+<div class="card-body out-block" markdown="1">
+
+![plot](/McUtils/img/McUtils_Zachary_2.png)
+</div>
+</div>
+
+Also supported: `Mesh` operations, automatic differentiation, tensor derivative coordinate transformations, and Taylor series expansions of functions
 
 ### Unit Tests
 
