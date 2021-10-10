@@ -61,7 +61,7 @@ main.colorbar = {"graphics": main[0, 1].graphics}
 
 <div class="card-body out-block" markdown="1">
 
-![plot](../img/McUtils_GraphicsGrid_1.png)
+![plot](/McUtils/img/McUtils_GraphicsGrid_1.png)
 </div>
 </div>
 
@@ -222,8 +222,9 @@ CoordinateSet([[ 0.        ,  0.        ,  0.        ],
 
 then convert that to Z-matrix coordinates
 
-```python
+<div class="card in-out-block" markdown="1">
 
+```python
 icrds = coords.convert(ZMatrixCoordinates)
 ```
 
@@ -242,8 +243,9 @@ CoordinateSet([[ 0.53121062,  0.        ,  0.        ],
 
 we can also get the Jacobian for the transformation
 
-```python
+<div class="card in-out-block" markdown="1">
 
+```python
 icrds = coords.convert(ZMatrixCoordinates)
 ```
 
@@ -288,5 +290,7 @@ array([[[[ -1.        ,   0.        ,   0.        ],
 
 </div>
 </div>
+
+## Zachary
 
 

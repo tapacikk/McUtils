@@ -46,8 +46,53 @@ class ModuleReloader:
             except TypeError:
                 pass
             else:
-                base = list(base) + others
+                base = [list(base), others]
         return base
+
+    def reload_member(self, member,
+        stack=None,
+        reloaded=None, blacklist=None, reload_parents=True,
+        verbose=False,
+        print_indent=""
+        ):
+        # print(print_indent + " member:", member)
+        if member.startswith('.'):
+            how_many = 0
+            while member[how_many] == ".":
+                how_many += 1
+                if how_many == len(member):
+                    break
+            main_name = self.mod.__name__.rsplit(".", how_many)[0]
+            test_key = main_name + "." + member[how_many:]
+        else:
+            test_key = self.mod.__name__ + "." + member
+        if test_key in sys.modules:
+            type(self)(test_key).reload(
+                reloaded=reloaded, blacklist=blacklist,
+                verbose=verbose,
+                reload_parents=reload_parents, print_indent=print_indent
+            )
+        else:
+            obj = getattr(self.mod, member)
+            if isinstance(obj, types.ModuleType):
+                type(self)(obj).reload(
+                    reloaded=reloaded, blacklist=blacklist,
+                    verbose=verbose,
+                    reload_parents=reload_parents, print_indent=print_indent
+                )
+            elif isinstance(obj, type):
+                type(self)(obj.__module__).reload(
+                    reloaded=reloaded, blacklist=blacklist,
+                    verbose=verbose,
+                    reload_parents=reload_parents, print_indent=print_indent
+                )
+            else:
+                obj = type(obj)
+                type(self)(obj.__module__).reload(
+                    reloaded=reloaded, blacklist=blacklist,
+                    verbose=verbose,
+                    reload_parents=reload_parents, print_indent=print_indent
+                )
 
     blacklist_keys = ['site-packages', os.path.abspath(os.path.dirname(inspect.getfile(os)))]
     def reload(self, 
@@ -86,45 +131,36 @@ class ModuleReloader:
 
             print_indent += "  "
 
-            for member in self.get_members():
-                # print(print_indent + " member:", member)
-                if member.startswith('.'):
-                    how_many = 0
-                    while member[how_many] == ".":
-                        how_many += 1
-                        if how_many == len(member):
-                            break
-                    main_name = self.mod.__name__.rsplit(".", how_many)[0]
-                    test_key = main_name + "." + member[how_many:]
-                else:
-                    test_key = self.mod.__name__ + "." + member
-                if test_key in sys.modules:
-                    type(self)(test_key).reload(
-                        reloaded=reloaded, blacklist=blacklist, 
-                        verbose=verbose,
-                        reload_parents=reload_parents, print_indent=print_indent
-                        )
-                else:
-                    obj = getattr(self.mod, member)
-                    if isinstance(obj, types.ModuleType):
-                        type(self)(obj).reload(
-                            reloaded=reloaded, blacklist=blacklist, 
-                            verbose=verbose,
-                            reload_parents=reload_parents, print_indent=print_indent
-                            )
-                    elif isinstance(obj, type):
-                        type(self)(obj.__module__).reload(
-                            reloaded=reloaded, blacklist=blacklist, 
-                            verbose=verbose,
-                            reload_parents=reload_parents, print_indent=print_indent
-                            )
-                    else:
-                        obj = type(obj)
-                        type(self)(obj.__module__).reload(
-                            reloaded=reloaded, blacklist=blacklist, 
-                            verbose=verbose,
-                            reload_parents=reload_parents, print_indent=print_indent
-                            )
+            mems = self.get_members()
+
+            if isinstance(mems[0], list):
+                req, opts = mems
+            else:
+                req = mems
+                opts = []
+
+            for member in req:
+                self.reload_member(member,
+                                   stack=stack,
+                                   reloaded=reloaded,
+                                   blacklist=blacklist,
+                                   reload_parents=reload_parents,
+                                   verbose=verbose,
+                                   print_indent=print_indent
+                                   )
+            for member in opts:
+                try:
+                    self.reload_member(member,
+                                       stack=stack,
+                                       reloaded=reloaded,
+                                       blacklist=blacklist,
+                                       reload_parents=reload_parents,
+                                       verbose=verbose,
+                                       print_indent=print_indent
+                                       )
+                except:
+                    pass
+
            
             
             if hasattr(self.mod, '__reload_hook__'):
