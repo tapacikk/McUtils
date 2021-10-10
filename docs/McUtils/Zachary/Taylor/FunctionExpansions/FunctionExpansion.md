@@ -41,11 +41,14 @@ Expands a function about a point up to the given order
 - `:returns`: `_`
     >No description...
 
-<a id="McUtils.Zachary.Taylor.FunctionExpansions.FunctionExpansion.tensors" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Zachary.Taylor.FunctionExpansions.FunctionExpansion.expansion_tensors" class="docs-object-method">&nbsp;</a>
 ```python
 @property
-tensors(self): 
+expansion_tensors(self): 
 ```
+Provides the tensors that will contracted
+- `:returns`: `_`
+    >No description...
 
 <a id="McUtils.Zachary.Taylor.FunctionExpansions.FunctionExpansion.get_expansions" class="docs-object-method">&nbsp;</a>
 ```python
@@ -71,16 +74,6 @@ Returns a numerical value for the expanded coordinates
 ```python
 __call__(self, coords, **kw): 
 ```
-
-<a id="McUtils.Zachary.Taylor.FunctionExpansions.FunctionExpansion.get_tensor" class="docs-object-method">&nbsp;</a>
-```python
-get_tensor(self, i): 
-```
-Defines the overall tensors of derivatives
-- `i`: `order of derivative tensor to provide`
-    >No description...
-- `:returns`: `Tensor`
-    >No description...
 
 ## <a id="McUtils.Zachary.Taylor.FunctionExpansions.FunctionExpansion">FunctionExpansion</a>
 A class for handling expansions of an internal coordinate potential up to 4th order

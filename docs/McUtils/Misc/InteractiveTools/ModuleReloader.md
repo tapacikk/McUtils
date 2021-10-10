@@ -30,6 +30,11 @@ Returns module members
 - `:returns`: `_`
     >No description...
 
+<a id="McUtils.Misc.InteractiveTools.ModuleReloader.reload_member" class="docs-object-method">&nbsp;</a>
+```python
+reload_member(self, member, stack=None, reloaded=None, blacklist=None, reload_parents=True, verbose=False, print_indent=''): 
+```
+
 <a id="McUtils.Misc.InteractiveTools.ModuleReloader.reload" class="docs-object-method">&nbsp;</a>
 ```python
 reload(self, stack=None, reloaded=None, blacklist=None, reload_parents=True, verbose=False, print_indent=''): 
