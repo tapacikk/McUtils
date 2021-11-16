@@ -18,7 +18,7 @@ mode_map: dict
 ```
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, logger=None): 
+__init__(self, logger=None, contract=None): 
 ```
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.load_registry" class="docs-object-method">&nbsp;</a>

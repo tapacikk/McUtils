@@ -10,7 +10,7 @@ default_converter_dispatch: OrderedDict
 ```
 <a id="McUtils.Scaffolding.Serializers.NDarrayMarshaller.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, allow_pickle=True, psuedopickler=None, allow_records=False, all_dicts=False, converters=None): 
+__init__(self, base_serializer, allow_pickle=True, psuedopickler=None, allow_records=False, all_dicts=False, converters=None): 
 ```
 
 <a id="McUtils.Scaffolding.Serializers.NDarrayMarshaller.convert" class="docs-object-method">&nbsp;</a>

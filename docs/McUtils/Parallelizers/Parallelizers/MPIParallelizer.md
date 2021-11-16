@@ -7,7 +7,7 @@ MPICommunicator: ABCMeta
 ```
 <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, root=0, comm=None): 
+__init__(self, root=0, comm=None, contract=None, logger=None): 
 ```
 
 <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.get_nprocs" class="docs-object-method">&nbsp;</a>
