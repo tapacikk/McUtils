@@ -127,22 +127,28 @@ class CoordinateSystemConverters:
         :return:
         :rtype:
         """
-        from .CartesianToZMatrix import __converters__ as converters
-        for conv in converters:
-            type_pair = tuple(conv.types)
-            self.converters[type_pair] = conv
-        from .ZMatrixToCartesian import __converters__ as converters
-        for conv in converters:
-            type_pair = tuple(conv.types)
-            self.converters[type_pair] = conv
-        if os.path.exists(self.converters_dir):
-            for file in os.listdir(self.converters_dir):
-                self.load_converter(file)
-        self._converters_loaded = True
+
+        if not self._converters_loaded:
+            from .CartesianToZMatrix import __converters__ as converters
+            for conv in converters:
+                type_pair = tuple(conv.types)
+                self.converters[type_pair] = conv
+                self.converters.move_to_end(type_pair)
+            from .ZMatrixToCartesian import __converters__ as converters
+            for conv in converters:
+                type_pair = tuple(conv.types)
+                self.converters[type_pair] = conv
+                self.converters.move_to_end(type_pair)
+            if os.path.exists(self.converters_dir):
+                for file in os.listdir(self.converters_dir):
+                    if os.path.splitext(file)[1] == ".py":
+                        self.load_converter(file)
+            self._converters_loaded = True
 
     @classmethod
     def get_converter(cls, system1, system2):
-        """Gets the appropriate converter for two CoordinateSystem objects
+        """
+        Gets the appropriate converter for two CoordinateSystem objects
 
         :param system1:
         :type system1: CoordinateSystem
@@ -152,8 +158,7 @@ class CoordinateSystemConverters:
         :rtype:
         """
 
-        if not cls._converters_loaded:
-            cls._preload_converters()
+        cls._preload_converters()
 
         try:
             converter = cls.converters[(system1, system2)]
@@ -181,6 +186,8 @@ class CoordinateSystemConverters:
         :return:
         :rtype:
         """
+
+        cls._preload_converters()
 
         if not isinstance(converter, CoordinateSystemConverter):
             raise TypeError('{}: registered converters should be subclasses of {} (got {})'.format(

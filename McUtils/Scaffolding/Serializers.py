@@ -379,12 +379,14 @@ class NDarrayMarshaller:
     """
 
     def __init__(self,
+                 base_serializer,
                  allow_pickle=True,
                  psuedopickler=None,
                  allow_records=False,
                  all_dicts=False,
                  converters=None
                  ):
+        self.parent=base_serializer
         self.allow_pickle = allow_pickle
         if allow_pickle and psuedopickler is None:
             psuedopickler = PseudoPickler(b64encode=True)
@@ -549,7 +551,7 @@ class NDarrayMarshaller:
         if hasattr(data, 'items'):
             res = {}
             for k, v in data.items():
-                res[k] = self.deconvert(v)
+                res[k] = self.parent.deconvert(v)
             if '_list_numitems' in res:
                 # actually an iterable but with inconsistent shape
                 n_items = res['_list_numitems']
@@ -557,7 +559,12 @@ class NDarrayMarshaller:
             elif list(res.keys()) == ['_data']:  # special case for if we just saved a single array to file
                 res = res['_data']
         elif not isinstance(data, np.ndarray):
-            res = [self.deconvert(v) for v in data]
+            try:
+                iter(data)
+            except TypeError:
+                res = data
+            else:
+                res = [self.parent.deconvert(v) for v in data]
         else:
             res = data
 
@@ -598,6 +605,7 @@ class HDF5Serializer(BaseSerializer):
             psuedopickler = PseudoPickler(b64encode=True)
         self.psuedopickler = psuedopickler
         self.marshaller = NDarrayMarshaller(
+            self,
             allow_pickle=allow_pickle,
             psuedopickler=psuedopickler,
             all_dicts=True,
