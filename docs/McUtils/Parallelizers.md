@@ -9,6 +9,7 @@ in a hopefully unobtrusive way
   - [MultiprocessingParallelizer](Parallelizers/Parallelizers/MultiprocessingParallelizer.md)
   - [MPIParallelizer](Parallelizers/Parallelizers/MPIParallelizer.md)
   - [SerialNonParallelizer](Parallelizers/Parallelizers/SerialNonParallelizer.md)
+  - [ClientServerRunner](Parallelizers/Runner/ClientServerRunner.md)
 
 ### Examples
 
