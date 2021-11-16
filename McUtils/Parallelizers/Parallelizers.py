@@ -16,6 +16,25 @@ __all__ = [
     "SerialNonParallelizer"
 ]
 
+class CallerContract:
+    """
+    Provides a structure so that a main process and child process can
+    be synchronized in their MPI-like calls
+    """
+
+    def __init__(self, calls):
+        self.calls = calls
+        self.which_call = 0
+
+    def handle_call(self, caller, next_call):
+        if next_call != self.calls[self.which_call]:
+            raise ValueError("caller {} tried to call {} but expected to call {}".format(
+                caller,
+                next_call,
+                self.calls[self.which_call]
+            ))
+        self.which_call = self.which_call + 1 % len(self.calls)
+
 class ChildProcessRuntimeError(RuntimeError):
     ...
 
@@ -39,12 +58,13 @@ class Parallelizer(metaclass=abc.ABCMeta):
     #
     _par_registry = None
     default_printer = print
-    def __init__(self, logger=None):
+    def __init__(self, logger=None, contract=None):
         self._active_sentinel=0
         self._pickle_prot = None
         if logger is None:
             logger = NullLogger()
         self.logger=logger
+        self.contract=contract if contract is None or isinstance(contract, CallerContract) else CallerContract(contract)
         self._default_stack = None
         # if printer is None:
         #     self._logger = Logger()
@@ -565,6 +585,8 @@ class SendRecieveParallelizer(Parallelizer):
         :return:
         :rtype:
         """
+        if self.contract is not None:
+            self.contract.handle_call(self, "send")
         return self.comm.send(data, loc, **kwargs)
     def receive(self, data, loc, **kwargs):
         """
@@ -577,6 +599,8 @@ class SendRecieveParallelizer(Parallelizer):
         :return:
         :rtype:
         """
+        if self.contract is not None:
+            self.contract.handle_call(self, "receive")
         return self.comm.receive(data, loc, **kwargs)
     def broadcast(self, data, **kwargs):
         """
@@ -589,6 +613,8 @@ class SendRecieveParallelizer(Parallelizer):
         :return:
         :rtype:
         """
+        if self.contract is not None:
+            self.contract.handle_call(self, "broadcast")
         if self.on_main:
             for i in self.comm.locations[1:]:
                 self.comm.send(data, i, **kwargs)
@@ -611,6 +637,8 @@ class SendRecieveParallelizer(Parallelizer):
         :rtype:
         """
 
+        if self.contract is not None:
+            self.contract.handle_call(self, "scatter")
         if self.on_main:
             locs = list(self.comm.locations) # gotta be safe
             nlocs = len(locs)
@@ -640,6 +668,9 @@ class SendRecieveParallelizer(Parallelizer):
         :return:
         :rtype:
         """
+
+        if self.contract is not None:
+            self.contract.handle_call(self, "gather")
         if self.on_main:
             locs = list(self.comm.locations) # gotta be safe
             nlocs = len(locs) # we reserve space for the main thread
@@ -835,6 +866,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
             :return:
             :rtype:
             """
+
             queue = self.queues[loc].send_queue #type: mp.queues.Queue
             if loc == self.id:
                 self.parent.print("Send: getting on {id}".format(id=self.id), log_level=Logger.LogLevel.Debug)
@@ -890,12 +922,13 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                  context=None,
                  manager=None,
                  logger=None,
+                 contract=None,
                  comm=None,
                  initialization_timeout=.5,
                  **kwargs
                  ):
         self.initialization_timeout=initialization_timeout
-        super().__init__(logger=logger)
+        super().__init__(logger=logger, contract=contract)
         self.opts=kwargs
         self.pool=pool
         self.worker=worker
@@ -1400,8 +1433,8 @@ class MPIParallelizer(SendRecieveParallelizer):
             else:
                 return self.gather_obj(data, root=root, **kwargs)
 
-    def __init__(self, root=0, comm=None):
-        super().__init__()
+    def __init__(self, root=0, comm=None, contract=None, logger=None):
+        super().__init__(contract=contract, logger=logger)
 
         from mpi4py import MPI as api
         self.api = api
@@ -1449,6 +1482,9 @@ class MPIParallelizer(SendRecieveParallelizer):
         :return:
         :rtype:
         """
+
+        if self.contract is not None:
+            self.contract.handle_call(self, "broadcast")
         return self.comm.broadcast(data, root=self.root, **kwargs)
     def scatter(self, data, shape=None, **kwargs):
         """
@@ -1465,6 +1501,9 @@ class MPIParallelizer(SendRecieveParallelizer):
         :return:
         :rtype:
         """
+
+        if self.contract is not None:
+            self.contract.handle_call(self, "scatter")
         return self.comm.scatter(data, root=self.root, shape=shape, **kwargs)
     def gather(self, data, shape=None, **kwargs):
         """
@@ -1478,6 +1517,9 @@ class MPIParallelizer(SendRecieveParallelizer):
         :return:
         :rtype:
         """
+
+        if self.contract is not None:
+            self.contract.handle_call(self, "gather")
         return self.comm.gather(data, root=self.root, shape=shape, **kwargs)
     def map(self, func, data, input_shape=None, output_shape=None, **kwargs):
         """
