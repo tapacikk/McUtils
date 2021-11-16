@@ -5,17 +5,13 @@ __all__ = [
     "ClientServerRunner"
 ]
 
-class Runnable(typing.Protocol):
-    def run(self):
-        raise NotImplementedError('abstract interface')
-
 class ClientServerRunner:
     """
     Provides a framework for running MPI-like scripts in a client/server
     model
     """
 
-    def __init__(self, client_runner:Runnable, server_runner:Runnable, parallelizer:Parallelizer):
+    def __init__(self, client_runner:typing.Callable, server_runner:typing.Callable, parallelizer:Parallelizer):
         self.client = client_runner
         self.server = server_runner
         self.par = parallelizer
@@ -29,8 +25,8 @@ class ClientServerRunner:
         :rtype:
         """
         if self.par.on_main:
-            self.client.run()
+            self.client()
         else:
-            self.server.run()
+            self.server()
 
 
