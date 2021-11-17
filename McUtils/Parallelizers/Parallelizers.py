@@ -1338,11 +1338,15 @@ class MPIParallelizer(SendRecieveParallelizer):
                     block_sizes = [block_size]*ranks
                     for i in range(block_remainder):
                         block_sizes[i] += 1
-                    block_sizes = np.array(block_sizes)
-                    block_offset = int(np.prod(shape[1:]))
-                    block_offsets = np.concatenate([[0], np.cumsum(block_sizes*block_offset)])[:-1]
+
                     recv_buf = np.empty((block_sizes[self.location],) + shape[1:], dtype=dtype)
+
+                    block_offset = int(np.prod(shape[1:]))
+                    block_sizes = np.array(block_sizes)*block_offset
+                    block_offsets = np.concatenate([[0], np.cumsum(block_sizes)])[:-1]
                     # print(block_offsets, block_offset, block_sizes)
+
+                    # self.parent.print("block sizes: {} offsets: {}".format(block_sizes, block_offsets))
                     self.comm.Scatterv(
                         [
                             send_buf,
@@ -1411,9 +1415,9 @@ class MPIParallelizer(SendRecieveParallelizer):
                     block_sizes = [block_size] * ranks
                     for i in range(block_remainder):
                         block_sizes[i] += 1
-                    block_sizes = np.array(block_sizes)
                     block_offset = int(np.prod(shape[1:]))
-                    block_offsets = np.concatenate([[0], np.cumsum(block_sizes*block_offset)])[:-1]
+                    block_sizes = np.array(block_sizes)*block_offset
+                    block_offsets = np.concatenate([[0], np.cumsum(block_sizes)])[:-1]
                     if root == self.location:
                         recv_buf = np.empty(shape, dtype=dtype)
                     else:
