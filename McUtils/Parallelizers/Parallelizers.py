@@ -33,7 +33,7 @@ class CallerContract:
                 next_call,
                 self.calls[self.which_call]
             ))
-        self.which_call = self.which_call + 1 % len(self.calls)
+        self.which_call = (self.which_call + 1) % len(self.calls)
 
 class ChildProcessRuntimeError(RuntimeError):
     ...
