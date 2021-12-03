@@ -4,7 +4,8 @@ provide a single unified interface for doing certain types of projects.
 
 All of the McUtils packages stand mostly on their own, but there will be little calls into one another here and there.
 
-The more scientifically-focused `Psience` package makes significant use of `McUtils`.
+The more scientifically-focused `Psience` package makes significant use of `McUtils` as do various packages that have
+been written over the years.
 """
 
 import McUtils.Data
