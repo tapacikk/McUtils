@@ -1,7 +1,7 @@
 ## <a id="McUtils.Data.CommonData.DataRecord">DataRecord</a>
 Represents an individual record that might be accessed from a `DataHandler`.
-Implements _most_ of the `dict` interface, but to make things a bit easier when
-pickling is not implemented as a proper subclass of `dict`.
+Implements _most_ of the `dict` interface, but, to make things a bit easier when
+pickling, is not implemented as a proper subclass of `dict`.
 
 ### Properties and Methods
 <a id="McUtils.Data.CommonData.DataRecord.__init__" class="docs-object-method">&nbsp;</a>
