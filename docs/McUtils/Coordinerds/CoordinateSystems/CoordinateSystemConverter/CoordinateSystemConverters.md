@@ -6,6 +6,7 @@ A coordinate converter class. It's a singleton so can't be instantiated.
 converters: OrderedDict
 converters_dir: str
 converters_package: str
+converter_type: ABCMeta
 ```
 <a id="McUtils.Coordinerds.CoordinateSystems.CoordinateSystemConverter.CoordinateSystemConverters.__init__" class="docs-object-method">&nbsp;</a>
 ```python
@@ -37,7 +38,7 @@ Gets the appropriate converter for two CoordinateSystem objects
 
 <a id="McUtils.Coordinerds.CoordinateSystems.CoordinateSystemConverter.CoordinateSystemConverters.register_converter" class="docs-object-method">&nbsp;</a>
 ```python
-register_converter(system1, system2, converter): 
+register_converter(system1, system2, converter, check=True): 
 ```
 Registers a converter between two coordinate systems
 - `system1`: `CoordinateSystem`

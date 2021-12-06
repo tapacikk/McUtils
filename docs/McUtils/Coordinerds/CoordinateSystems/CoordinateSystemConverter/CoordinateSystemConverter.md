@@ -2,6 +2,9 @@
 A base class for type converters
 
 ### Properties and Methods
+```python
+converters: weakref
+```
 <a id="McUtils.Coordinerds.CoordinateSystems.CoordinateSystemConverter.CoordinateSystemConverter.types" class="docs-object-method">&nbsp;</a>
 ```python
 @property
@@ -34,7 +37,7 @@ The main necessary implementation method for a converter class.
 
 <a id="McUtils.Coordinerds.CoordinateSystems.CoordinateSystemConverter.CoordinateSystemConverter.register" class="docs-object-method">&nbsp;</a>
 ```python
-register(self, where=None): 
+register(self, where=None, check=True): 
 ```
 Registers the CoordinateSystemConverter
 - `:returns`: `_`
