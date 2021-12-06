@@ -149,9 +149,15 @@ class Checkpointer(metaclass=abc.ABCMeta):
                 ))
 
     def __getitem__(self, item):
+        if not self.is_open:
+            with self:
+                return self.__getitem__(item)
         self.check_allowed_key(item)
         return self.load_parameter(item)
     def __setitem__(self, key, value):
+        if not self.is_open:
+            with self:
+                return self.__setitem__(key, value)
         self.check_allowed_key(key)
         self.save_parameter(key, value)
 
@@ -249,6 +255,9 @@ class DumpCheckpointer(Checkpointer):
         return self.backend[key]
 
     def keys(self):
+        if not self.is_open:
+            with self:
+                return self.keys()
         return self.backend.keys()
 
 class JSONCheckpointer(DumpCheckpointer):
@@ -412,10 +421,13 @@ class HDF5Checkpointer(Checkpointer):
         return self.serializer.deserialize(self.stream, key=key)
 
     def keys(self):
+        if not self.is_open:
+            with self:
+                return self.keys()
         file = self.stream
         if not isinstance(file, (self.serializer.api.File, self.serializer.api.Group)):
             file = self.serializer.api.File(file, "a")
-        return file.keys()
+        return list(file.keys())
 
 class DictCheckpointer(Checkpointer):
     """
