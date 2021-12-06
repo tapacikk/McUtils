@@ -3,7 +3,7 @@ Provides the conversion framework between coordinate systems
 """
 
 from collections import OrderedDict as odict
-import os, abc, numpy as np
+import os, abc, numpy as np, weakref
 from ...Extensions import ModuleLoader
 
 __all__ = [
@@ -22,6 +22,8 @@ class CoordinateSystemConverter(metaclass=abc.ABCMeta):
     """
     A base class for type converters
     """
+
+    converters = None
 
     @property
     @abc.abstractmethod
@@ -55,7 +57,7 @@ class CoordinateSystemConverter(metaclass=abc.ABCMeta):
         """
         pass
 
-    def register(self, where=None):
+    def register(self, where=None, check=True):
         """
         Registers the CoordinateSystemConverter
 
@@ -63,18 +65,17 @@ class CoordinateSystemConverter(metaclass=abc.ABCMeta):
         :rtype:
         """
         if where is None:
-            where = CoordinateSystemConverters
-        where.register_converter(*self.types, self)
+            where = self.converters if not isinstance(self.converters, weakref.ref) else self.converters()
+        where.register_converter(*self.types, self, check=check)
 
 ######################################################################################################
 ##
 ##                                   CoordinateSystemConverters Class
 ##
 ######################################################################################################
-
 class CoordinateSystemConverters:
-    """A coordinate converter class. It's a singleton so can't be instantiated.
-
+    """
+    A coordinate converter class. It's a singleton so can't be instantiated.
     """
 
     converters = odict([])
@@ -84,6 +85,7 @@ class CoordinateSystemConverters:
         "Converters"
     )
     converters_package = ".".join(__name__.split(".")[:-1])
+    converter_type = CoordinateSystemConverter
 
     def __init__(self):
         raise NotImplementedError("{} is a singleton".format(type(self)))
@@ -176,7 +178,7 @@ class CoordinateSystemConverters:
         return converter
 
     @classmethod
-    def register_converter(cls, system1, system2, converter):
+    def register_converter(cls, system1, system2, converter, check=True):
         """Registers a converter between two coordinate systems
 
         :param system1:
@@ -188,12 +190,14 @@ class CoordinateSystemConverters:
         """
 
         cls._preload_converters()
-
-        if not isinstance(converter, CoordinateSystemConverter):
-            raise TypeError('{}: registered converters should be subclasses of {} (got {})'.format(
+        if check and not isinstance(converter, cls.converter_type):
+            raise TypeError('{}: registered converters should be subclasses of {} <{}> (got {} which inherits from {})'.format(
                 cls.__name__,
-                CoordinateSystemConverter,
-                type(converter)
+                cls.converter_type, id(cls.converter_type),
+                type(converter),
+                ["{} <{}>".format(x, id(x)) for x in type(converter).__bases__]
             ))
 
         cls.converters[(system1, system2)] = converter
+
+CoordinateSystemConverter.converters = weakref.ref(CoordinateSystemConverters)
