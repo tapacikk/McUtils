@@ -27,8 +27,6 @@ class ParallelizerTests(TestCase):
         pass
 
     def run_job(self, parallelizer=None):
-        # self.main_print("Go!")
-        # self.worker_print("...")
         if parallelizer.on_main:
             data = np.arange(1000)
         else:
@@ -42,7 +40,7 @@ class ParallelizerTests(TestCase):
         data = parallelizer.scatter(data)
         lens = parallelizer.gather(len(data))
         return lens
-    @validationTest
+    @debugTest
     def test_BasicMultiprocessing(self):
         par_lens = MultiprocessingParallelizer().run(self.run_job)
         serial_lens = SerialNonParallelizer().run(self.run_job)
