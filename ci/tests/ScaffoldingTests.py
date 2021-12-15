@@ -179,6 +179,68 @@ class ScaffoldingTests(TestCase):
                 self.assertEquals(len(chk['step_2']), 100)
         finally:
             os.remove(my_file)
+    @debugTest
+    def test_JSONCheckpointingKeyed(self):
+        with tmpf.NamedTemporaryFile() as chk_file:
+            my_file = chk_file.name
+        try:
+            with JSONCheckpointer(my_file, allowed_keys=['step_1', 'step_2']) as chk:
+                # do something
+                data = [1, 2, 3]
+                chk['step_1'] = data
+                # do something else
+                try:
+                    chk['step_2_params'] = {
+                        'steps': 500,
+                        'step_size': .1,
+                        'method': 'implicit euler'
+                    }
+                except KeyError:
+                    # blobby
+                    data_2 = np.random.rand(100)
+                    chk['step_2'] = data_2
+
+
+            # do some other stuff, maybe need to reload from checkpoint?
+            with JSONCheckpointer(my_file) as chk:
+                self.assertEquals(len(chk['step_2']), 100)
+        finally:
+            os.remove(my_file)
+
+    @debugTest
+    def test_JSONCheckpointingCanonicalKeyed(self):
+        with tmpf.NamedTemporaryFile() as chk_file:
+            my_file = chk_file.name + ".json"
+        try:
+            with Checkpointer.build_canonical({'file':my_file, 'keys':['step_1', 'step_2']}) as chk:
+                # do something
+                data = [1, 2, 3]
+                chk['step_1'] = data
+                # do something else
+                try:
+                    chk['step_2_params'] = {
+                        'steps': 500,
+                        'step_size': .1,
+                        'method': 'implicit euler'
+                    }
+                except KeyError:
+                    # blobby
+                    data_2 = np.random.rand(100)
+                    chk['step_2'] = data_2
+
+            # do some other stuff, maybe need to reload from checkpoint?
+            with JSONCheckpointer(my_file) as chk:
+                self.assertEquals(len(chk['step_2']), 100)
+                try:
+                    self.assertEquals(len(chk['step_2_params']), 100)
+                except KeyError as e:
+                    pass
+                else:
+                    self.assertFalse(True, msg="key shouldn't be there")
+
+        finally:
+            os.remove(my_file)
+
     @validationTest
     def test_NumPyCheckpointing(self):
 
@@ -232,7 +294,6 @@ class ScaffoldingTests(TestCase):
                 self.assertEquals(len(chk['step_2']), 100)
         finally:
             os.remove(my_file)
-
 
     class DataHolderClass:
         def __init__(self, **keys):
@@ -519,7 +580,7 @@ class ScaffoldingTests(TestCase):
                 doop_str = doopy.read()
                 self.assertNotEqual("", doop_str)
 
-    @debugTest
+    @validationTest
     def test_CurrentJobDiffFile(self):
 
         import time
