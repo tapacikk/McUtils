@@ -835,7 +835,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                         self.parent.print("checking init flag on {i}".format(i=i), log_level=Logger.LogLevel.Debug)
                         wat = q.init_flag.wait(self.initialization_timeout)
                         if not wat:
-                            raise self.PoolError("Failed to initialize pool", log_level=Logger.LogLevel.Debug)
+                            raise self.PoolError("Failed to initialize pool")
 
         @property
         def locations(self):
@@ -972,6 +972,8 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
         state['comm'] = None
         state['_comm'] = None
         state['queues'] = None
+        state['_default_stack'] = None
+        state['_par_registry'] = None
         return state
 
     @staticmethod
