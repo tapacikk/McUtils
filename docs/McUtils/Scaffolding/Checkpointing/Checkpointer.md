@@ -21,6 +21,17 @@ __repr__(self):
 extension_map(): 
 ```
 
+<a id="McUtils.Scaffolding.Checkpointing.Checkpointer.build_canonical" class="docs-object-method">&nbsp;</a>
+```python
+build_canonical(checkpoint): 
+```
+Dispatches over types of objects to make a canonical checkpointer
+        from the supplied data
+- `checkpoint`: `None | str | Checkpoint | file | dict`
+    >provides
+- `:returns`: `Checkpointer`
+    >No description...
+
 <a id="McUtils.Scaffolding.Checkpointing.Checkpointer.from_file" class="docs-object-method">&nbsp;</a>
 ```python
 from_file(file, **opts): 
