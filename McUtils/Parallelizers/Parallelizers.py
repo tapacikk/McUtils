@@ -13,7 +13,8 @@ __all__ = [
     "Parallelizer",
     "MultiprocessingParallelizer",
     "MPIParallelizer",
-    "SerialNonParallelizer"
+    "SerialNonParallelizer",
+    "SendRecieveParallelizer"
 ]
 
 class CallerContract:
