@@ -658,7 +658,7 @@ class ScipySparseArray(SparseArray):
     # from memory_profiler import profile
     @classmethod
     # @profile
-    def coo_to_csr(cls, shape, vals, ij_inds, memmap=False, assume_sorted=True):
+    def coo_to_cs(cls, shape, vals, ij_inds, memmap=False, assume_sorted=True):
         """
         Reimplementation of scipy's internal "coo_tocsr" for memory-limited situations
         Assumes `ij_inds` are sorted by row then column, which allows vals to be used
@@ -669,6 +669,14 @@ class ScipySparseArray(SparseArray):
         """
 
         # return sp.csr_matrix((vals, ij_inds), shape=shape)
+
+        if shape[0] > shape[1]:
+            axis = 1
+            other = 0
+        else:
+            axis = 0
+            other = 1
+
 
         # hopefully this doesn't destroy my memmap...
         ij_inds = np.asanyarray(ij_inds)
@@ -681,10 +689,10 @@ class ScipySparseArray(SparseArray):
         if memmap:
             raise NotImplementedError("meh")
         else:
-            indptr = np.zeros(M + 1, dtype=ij_inds.dtype)
-            indices = ij_inds[1]
+            indptr = np.zeros(shape[axis] + 1, dtype=ij_inds.dtype)
+            indices = ij_inds[other]
 
-        urows, _, ucounts = nput_unique(ij_inds[0], sorting=np.arange(ij_inds.shape[1]), return_counts=True)
+        urows, _, ucounts = nput_unique(ij_inds[axis], sorting=np.arange(ij_inds.shape[other]), return_counts=True)
         indptr[urows+1] = ucounts.astype(ij_inds.dtype)
         # gc.collect()
         np.cumsum(indptr, out=indptr)
@@ -906,9 +914,11 @@ class ScipySparseArray(SparseArray):
             logger.log_print("initializing {fmt} from indices and values", fmt=fmt, log_level=logger.LogLevel.Debug)
 
         if fmt in [sp.csc_matrix, sp.csr_matrix]:
-            data = cls.coo_to_csr(total_shape, block_vals, init_inds)
-            if fmt is sp.csc_matrix:
+            data = cls.coo_to_cs(total_shape, block_vals, init_inds)
+            if fmt is sp.csc_matrix and data.format is sp.csr_matrix:
                 data = data.asformat('csc', copy=False)
+            elif fmt is sp.csr_matrix and data.format is sp.csc_matrix:
+                data = data.asformat('csr', copy=False)
         else:
             try:
                 data = fmt((block_vals, init_inds), shape=total_shape)
@@ -1598,7 +1608,7 @@ class ScipySparseArray(SparseArray):
         # return self._fast_stack(dats, axis)
         return sp.hstack(dats) if axis == 1 else sp.vstack(dats)
 
-    @profile
+    # @profile
     def concatenate_2d(self, *others, axis=0):
         dats = [self.data] + [o.data for o in others]
 
