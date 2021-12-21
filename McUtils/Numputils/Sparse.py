@@ -1,7 +1,7 @@
 import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc
 from ..Scaffolding import MaxSizeCache, Logger
-from .SetOps import contained
-from .Misc import infer_inds_dtype
+from .SetOps import contained, unique as nput_unique
+from .Misc import infer_inds_dtype, downcast_index_array
 
 __all__ = [
     "SparseArray",
@@ -574,6 +574,42 @@ class SparseArray(metaclass=abc.ABCMeta):
 
     # TODO: need to figure out if I want to support item assignment or not
 
+class lowmem_csr(sp.csr_matrix):
+    def __init__(self, arg1, shape=None, dtype=None, copy=False):
+        from scipy.sparse.compressed import _data_matrix, get_index_dtype
+        _data_matrix.__init__(self)
+        (data, indices, indptr) = arg1
+
+        # Select index dtype large enough to pass array and
+        # scalar parameters to sparsetools
+        maxval = None
+        if shape is not None:
+            maxval = max(shape)
+
+        idx_dtype = self.eval_idx_type(indices, indptr, maxval)
+        self._shape = shape
+        self._init_vals(indices, indptr, data, idx_dtype, dtype, copy=copy)
+
+    # @profile
+    def _init_vals(self, indices, indptr, data, idx_dtype, dtype, copy=False):
+        import time
+
+        self.indices = np.array(indices, copy=copy, dtype=idx_dtype)
+        self.indptr = np.array(indptr, copy=copy, dtype=idx_dtype)
+        self.data = np.array(data, copy=copy, dtype=dtype)
+        time.sleep(.2)
+
+    # @profile
+    def eval_idx_type(self, indices, indptr, maxval):
+        return infer_inds_dtype(maxval)
+        # from scipy.sparse.compressed import get_index_dtype
+        #
+        # idx_dtype = get_index_dtype((indices, indptr),
+        #                             maxval=maxval,
+        #                             check_contents=True)
+        #
+        # return idx_dtype
+
 class ScipySparseArray(SparseArray):
     """
     Array class that generalize the regular `scipy.sparse.spmatrix`.
@@ -618,6 +654,62 @@ class ScipySparseArray(SparseArray):
         if initialize:
             self._init_matrix(cache_block_data=cache_block_data)
             self._validate()
+
+    # from memory_profiler import profile
+    @classmethod
+    # @profile
+    def coo_to_csr(cls, shape, vals, ij_inds, memmap=False, assume_sorted=True):
+        """
+        Reimplementation of scipy's internal "coo_tocsr" for memory-limited situations
+        Assumes `ij_inds` are sorted by row then column, which allows vals to be used
+        directly once indptr is computed
+
+        :return:
+        :rtype:
+        """
+
+        # return sp.csr_matrix((vals, ij_inds), shape=shape)
+
+        # hopefully this doesn't destroy my memmap...
+        ij_inds = np.asanyarray(ij_inds)
+        vals = np.asanyarray(vals)
+        M, N = shape
+
+        if not assume_sorted:
+            raise NotImplementedError("meeeeh")
+
+        if memmap:
+            raise NotImplementedError("meh")
+        else:
+            indptr = np.zeros(M + 1, dtype=ij_inds.dtype)
+            indices = ij_inds[1]
+
+        urows, _, ucounts = nput_unique(ij_inds[0], sorting=np.arange(ij_inds.shape[1]), return_counts=True)
+        indptr[urows+1] = ucounts.astype(ij_inds.dtype)
+        # gc.collect()
+        np.cumsum(indptr, out=indptr)
+
+        # meh = sp.csr_matrix((vals, indices, indptr), shape=shape)
+        # a, b, c = sp.find(meh)
+        # feh = sp.csr_matrix((vals, ij_inds), shape=shape)
+        # d, e, f = sp.find(feh)
+        #
+        #
+        # assert np.allclose(a, d)
+
+        return cls._init_csr(vals, indices, indptr, shape)
+        # we'll assume no duplicate entries...
+
+        # coo_tocsr(M, N, self.nnz, row, col, self.data,
+        #           indptr, indices, data)
+
+    @classmethod
+    # @profile
+    def _init_csr(cls, vals, indices, indptr, shape):
+        if shape[0] > shape[1]:
+            return sp.csc_matrix((vals, indices, indptr), shape=shape)
+        else:
+            return sp.csr_matrix((vals, indices, indptr), shape=shape)
 
     def to_state(self, serializer=None):
         """
@@ -719,6 +811,8 @@ class ScipySparseArray(SparseArray):
                     fmt = sp.csc_matrix
                 else:
                     fmt = sp.csr_matrix
+            elif isinstance(self._fmt, str):
+                fmt = self.format_from_string(self._fmt)
             else:
                 fmt = self._fmt
             if self.logger is not None:
@@ -805,20 +899,27 @@ class ScipySparseArray(SparseArray):
                 fmt = sp.csc_matrix
             else:
                 fmt = sp.csr_matrix
+        elif isinstance(fmt, str):
+            fmt = cls.format_from_string(fmt)
 
         if logger is not None:
             logger.log_print("initializing {fmt} from indices and values", fmt=fmt, log_level=logger.LogLevel.Debug)
 
-        try:
-            data = fmt((block_vals, init_inds), shape=total_shape)
-        except TypeError:
-            data = fmt(sp.coo_matrix((block_vals, init_inds)), shape=total_shape)
-        except MemoryError:
-            if total_shape[0] > total_shape[1]:
-                fmt = sp.csc_matrix
-            else:
-                fmt = sp.csr_matrix
-            data = fmt((block_vals, init_inds), shape=total_shape)
+        if fmt in [sp.csc_matrix, sp.csr_matrix]:
+            data = cls.coo_to_csr(total_shape, block_vals, init_inds)
+            if fmt is sp.csc_matrix:
+                data = data.asformat('csc', copy=False)
+        else:
+            try:
+                data = fmt((block_vals, init_inds), shape=total_shape)
+            except TypeError:
+                data = fmt(sp.coo_matrix((block_vals, init_inds)), shape=total_shape)
+            except MemoryError:
+                if total_shape[0] > total_shape[1]:
+                    fmt = sp.csc_matrix
+                else:
+                    fmt = sp.csr_matrix
+                data = fmt((block_vals, init_inds), shape=total_shape)
 
         if not cache_block_data:
             block_vals = None
@@ -986,6 +1087,8 @@ class ScipySparseArray(SparseArray):
     def fmt(self):
         if self._fmt is None:
             return self.format_from_string(self.data.format)
+        elif isinstance(self._fmt, str):
+            return self.format_from_string(self._fmt)
         else:
             return self._fmt
     @property
@@ -1424,6 +1527,91 @@ class ScipySparseArray(SparseArray):
 
         return full_vals, full_inds, tot_shape
 
+    def concatenate_coo(self, *others, axis=0):
+        all_inds = [self.block_inds[1]] + [other.block_inds[1] for other in others]
+        all_vals = [self.block_vals] + [other.block_vals for other in others]
+        all_shapes = [self.shape] + [other.shape for other in others]
+
+        full_vals, full_inds, tot_shape = self._concat_coo(all_inds, all_vals, all_shapes, axis)
+
+        return type(self)(
+            (
+                full_vals,
+                full_inds
+            ),
+            shape=tot_shape
+        )
+
+    # @profile
+    # def _build_concat_inds(self, blocks, data, idx_dtype, axis, other_axis, constant_dim):
+    #
+    #     indices = np.empty(data.size, dtype=idx_dtype)
+    #     indptr = np.empty(sum(b.shape[axis] for b in blocks) + 1, dtype=idx_dtype)
+    #     last_indptr = idx_dtype(0)
+    #     sum_dim = 0
+    #     sum_indices = 0
+    #     for b in blocks:
+    #         if b.shape[other_axis] != constant_dim:
+    #             raise ValueError('incompatible dimensions for axis %d' % other_axis)
+    #         indices[sum_indices:sum_indices + b.indices.size] = b.indices
+    #         sum_indices += b.indices.size
+    #         idxs = slice(sum_dim, sum_dim + b.shape[axis])
+    #         indptr[idxs] = b.indptr[:-1]
+    #         indptr[idxs] += last_indptr
+    #         sum_dim += b.shape[axis]
+    #         last_indptr += b.indptr[-1]
+    #     indptr[-1] = last_indptr
+    #
+    #     return indices, indptr, sum_dim
+    #
+    # @profile
+    # def _fast_stack(self, blocks, axis):
+    #     """
+    #     Copy from scipy.sparse.construct...
+    #     Stacking fast path for CSR/CSC matrices
+    #     (i) vstack for CSR, (ii) hstack for CSC.
+    #     """
+    #     from scipy.sparse.compressed import get_index_dtype
+    #
+    #     import time
+    #     time.sleep(.5)
+    #
+    #     other_axis = 1 if axis == 0 else 0
+    #     data = np.concatenate([b.data for b in blocks])
+    #     constant_dim = blocks[0].shape[other_axis]
+    #     idx_dtype = get_index_dtype(arrays=[b.indptr for b in blocks],
+    #                                 maxval=max(data.size, constant_dim))
+    #
+    #     indices, indptr, sum_dim = self._build_concat_inds(blocks, data, idx_dtype, axis, other_axis, constant_dim)
+    #
+    #     return self._construct_mat(data, indices, indptr, sum_dim, constant_dim, axis)
+    #
+    # def _construct_mat(self, data, indices, indptr, sum_dim, constant_dim, axis):
+    #     if axis == 0:
+    #         return sp.csr_matrix((data, indices, indptr),
+    #                           shape=(sum_dim, constant_dim))
+    #     else:
+    #         return sp.csc_matrix((data, indices, indptr),
+    #                           shape=(constant_dim, sum_dim))
+
+    def _stack_data(self, dats, axis):
+        # return self._fast_stack(dats, axis)
+        return sp.hstack(dats) if axis == 1 else sp.vstack(dats)
+
+    @profile
+    def concatenate_2d(self, *others, axis=0):
+        dats = [self.data] + [o.data for o in others]
+
+        all_shapes = [self.shape] + [other.shape for other in others]
+        tot_shape = list(self.shape)
+        tot_shape[axis] = sum(a[axis] for a in all_shapes)
+
+        return type(self)(
+            self._stack_data(dats, axis),
+            shape=tot_shape
+        )
+
+    # @profile
     def concatenate(self, *others, axis=0):
         """
         Concatenates multiple arrays along the specified axis
@@ -1440,19 +1628,28 @@ class ScipySparseArray(SparseArray):
 
         others = [ScipySparseArray(o) if not isinstance(o, ScipySparseArray) else o for o in others]
 
-        all_inds = [self.block_inds[1]] + [other.block_inds[1] for other in others]
-        all_vals = [self.block_vals] + [other.block_vals for other in others]
-        all_shapes = [self.shape] + [other.shape for other in others]
+        # all_inds = [self.block_inds[1]] + [other.block_inds[1] for other in others]
+        # all_vals = [self.block_vals] + [other.block_vals for other in others]
+        # all_shapes = [self.shape] + [other.shape for other in others]
+        #
+        # full_vals, full_inds, tot_shape = self._concat_coo(all_inds, all_vals, all_shapes, axis)
+        #
+        # return type(self)(
+        #     (
+        #         full_vals,
+        #         full_inds
+        #     ),
+        #     shape=tot_shape
+        # )
 
-        full_vals, full_inds, tot_shape = self._concat_coo(all_inds, all_vals, all_shapes, axis)
+        if (
+                self.fmt is sp.csr_matrix and axis == 0
+            or self.fmt is sp.csc_matrix and axis == 1
+        ):
+            return self.concatenate_2d(*others, axis=axis)
+        else:
+            return self.concatenate_coo(*others, axis=axis)
 
-        return type(self)(
-            (
-                full_vals,
-                full_inds
-            ),
-            shape=tot_shape
-        )
 
     def broadcast_to(self, shape):
         """
@@ -1511,7 +1708,24 @@ class ScipySparseArray(SparseArray):
             raise ValueError("dunno what T means for high dimensional arrays")
     def __matmul__(self, other):
         return self.dot(other)
+    def _tocs(self):
+        if self.fmt not in [sp.csr_matrix, sp.csc_matrix]:
+            a = self.data
+            if a.shape[0] > a.shape[1]:
+                self._a = a.asformat('csc', copy=False)
+                self._fmt = None
+            else:
+                self._a = a.asformat('csr', copy=False)
+                self._fmt = None
+    def ascs(self, inplace=False):
+        if not inplace:
+            self = self.copy()
+        self._tocs()
+        return self
+
     def dot(self, b, reverse=False):
+        self._tocs()
+
         bshp = b.shape
         if isinstance(b, SparseArray) and len(bshp) > 2:
             bcols = int(np.prod(bshp[1:]))

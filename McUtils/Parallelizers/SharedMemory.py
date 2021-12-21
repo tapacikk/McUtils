@@ -21,7 +21,7 @@ class SharedMemoryInterface(typing.Protocol):
     def unlink(self):
         raise NotImplementedError("interface class")
 
-class SharedNDarray:
+class SharedMemoryNDarray:
     """
     Provides a very simple tracker for shared NumPy arrays
     """
@@ -145,7 +145,7 @@ class SharedObjectManager(BaseObjectManager):
         :param data:
         :type data: np.ndarray
         :return:
-        :rtype: SharedNDarray
+        :rtype: SharedMemoryNDarray
         """
 
         if self.mem_manager is not None:
@@ -153,14 +153,14 @@ class SharedObjectManager(BaseObjectManager):
         else:
             shm = self.api.SharedMemory
         buf = shm.SharedMemory(name, create=True, size=data.size)
-        return SharedNDarray.from_array(data, buf, parallelizer=self.parallelizer)
+        return SharedMemoryNDarray.from_array(data, buf, parallelizer=self.parallelizer)
 
     def delete_shared_array(self, shared_array):
         """
         Closes a buffer for a numpy array
 
         :param shared_array:
-        :type shared_array: SharedNDarray
+        :type shared_array: SharedMemoryNDarray
         :return:
         :rtype:
         """
@@ -171,7 +171,7 @@ class SharedObjectManager(BaseObjectManager):
         Updates a buffer for a numpy array
 
         :param shared_array:
-        :type shared_array: SharedNDarray
+        :type shared_array: SharedMemoryNDarray
         :return:
         :rtype:
         """

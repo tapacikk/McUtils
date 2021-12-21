@@ -379,7 +379,7 @@ class NDarrayMarshaller:
     """
 
     def __init__(self,
-                 base_serializer,
+                 base_serializer=None,
                  allow_pickle=True,
                  psuedopickler=None,
                  allow_records=False,
@@ -551,7 +551,9 @@ class NDarrayMarshaller:
         if hasattr(data, 'items'):
             res = {}
             for k, v in data.items():
-                res[k] = self.parent.deconvert(v)
+                if self.parent is not None:
+                    v = self.parent.deconvert(v)
+                res[k] = v
             if '_list_numitems' in res:
                 # actually an iterable but with inconsistent shape
                 n_items = res['_list_numitems']
@@ -564,7 +566,7 @@ class NDarrayMarshaller:
             except TypeError:
                 res = data
             else:
-                res = [self.parent.deconvert(v) for v in data]
+                res = [self.parent.deconvert(v) if self.parent is not None else v for v in data]
         else:
             res = data
 
