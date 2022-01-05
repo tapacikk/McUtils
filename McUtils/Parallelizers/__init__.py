@@ -16,3 +16,5 @@ from .Parallelizers import *; from .Parallelizers import __all__ as exposed
 __all__ += exposed
 from .Runner import *; from .Runner import __all__ as exposed
 __all__ += exposed
+from .SharedMemory import *; from .SharedMemory import __all__ as exposed
+__all__ += exposed

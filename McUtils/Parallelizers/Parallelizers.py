@@ -8,6 +8,7 @@ import abc, functools, multiprocessing as mp, typing
 import numpy as np, pickle
 
 from ..Scaffolding import Logger, NullLogger, ObjectRegistry
+from .SharedMemory import SharedObjectManager, SharedMemoryList, SharedMemoryDict
 
 __all__ = [
     "Parallelizer",
@@ -513,6 +514,26 @@ class Parallelizer(metaclass=abc.ABCMeta):
             nprocs = None
         return "{}(id={}, nprocs={})".format(type(self).__name__, id, nprocs)
 
+    def share(self, obj):
+        """
+        Converts `obj` into a form that can be cleanly used with shared memory via a `SharedObjectManager`
+
+        :param obj:
+        :type obj:
+        :return:
+        :rtype:
+        """
+
+        if isinstance(obj, dict):
+            sharer = SharedMemoryDict(obj, parallelizer=self)
+        elif isinstance(obj, (list, tuple)):
+            sharer = SharedMemoryList(obj, parallelizer=self)
+        else:
+            sharer = SharedObjectManager(obj, parallelizer=self)
+            sharer.save()
+
+        return sharer
+
 class SendRecieveParallelizer(Parallelizer):
     """
     Parallelizer that implements `scatter`, `gather`, `broadcast`, and `map`
@@ -800,7 +821,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                      parent: 'MultiprocessingParallelizer',
                      id:int,
                      queues: typing.Iterable['MultiprocessingParallelizer.SendRecvQueuePair'],
-                     initialization_timeout:float=.5,
+                     initialization_timeout:float=None,
                      group:typing.Iterable['MultiprocessingParallelizer.PoolCommunicator']=None
                      ):
             self.parent = parent

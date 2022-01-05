@@ -658,7 +658,7 @@ class ScipySparseArray(SparseArray):
     # from memory_profiler import profile
     @classmethod
     # @profile
-    def coo_to_cs(cls, shape, vals, ij_inds, memmap=False, assume_sorted=True):
+    def coo_to_cs(cls, shape, vals, ij_inds, memmap=False, assume_sorted=False):
         """
         Reimplementation of scipy's internal "coo_tocsr" for memory-limited situations
         Assumes `ij_inds` are sorted by row then column, which allows vals to be used
@@ -667,6 +667,11 @@ class ScipySparseArray(SparseArray):
         :return:
         :rtype:
         """
+
+        # if shape[0] > shape[1]:
+        #     return sp.csc_matrix((vals, ij_inds), shape=shape)
+        # else:
+        #     return sp.csr_matrix((vals, ij_inds), shape=shape)
 
         # return sp.csr_matrix((vals, ij_inds), shape=shape)
 
@@ -677,25 +682,39 @@ class ScipySparseArray(SparseArray):
             axis = 0
             other = 1
 
-
         # hopefully this doesn't destroy my memmap...
         ij_inds = np.asanyarray(ij_inds)
         vals = np.asanyarray(vals)
-        M, N = shape
 
         if not assume_sorted:
-            raise NotImplementedError("meeeeh")
+            sorting = None
+        else:
+            sorting = np.arange(ij_inds.shape[1])
 
         if memmap:
             raise NotImplementedError("meh")
         else:
-            indptr = np.zeros(shape[axis] + 1, dtype=ij_inds.dtype)
-            indices = ij_inds[other]
+            indptr = np.zeros(shape[axis] + 1, dtype=infer_inds_dtype(ij_inds.shape[1]+1))
+            indices = ij_inds[other]#.astype(indptr.dtype)
 
-        urows, _, ucounts = nput_unique(ij_inds[axis], sorting=np.arange(ij_inds.shape[other]), return_counts=True)
-        indptr[urows+1] = ucounts.astype(ij_inds.dtype)
+        urows, sorting, ucounts = nput_unique(ij_inds[axis], sorting=sorting, return_counts=True)
+        # urows, ucounts = np.unique(ij_inds[axis], return_counts=True)
+        indptr[urows+1] = ucounts.astype(indptr.dtype)
         # gc.collect()
-        np.cumsum(indptr, out=indptr)
+        indptr = np.cumsum(indptr, out=indptr)
+
+        if not assume_sorted:
+            indices = indices[sorting]
+            vals = vals[sorting]
+
+        if shape[0] > shape[1]:
+            real = sp.csc_matrix((vals, ij_inds), shape=shape)
+        else:
+            real = sp.csr_matrix((vals, ij_inds), shape=shape)
+        # print("??", indptr.shape, indptr)
+        # print(">>", real.indptr.shape, real.indptr)
+        # print("??", indices.shape, indices)
+        # print(">>", real.indices.shape, real.indices)
 
         # meh = sp.csr_matrix((vals, indices, indptr), shape=shape)
         # a, b, c = sp.find(meh)
@@ -705,7 +724,7 @@ class ScipySparseArray(SparseArray):
         #
         # assert np.allclose(a, d)
 
-        return cls._init_csr(vals, indices, indptr, shape)
+        return cls._init_cs(vals, indices, indptr, shape)
         # we'll assume no duplicate entries...
 
         # coo_tocsr(M, N, self.nnz, row, col, self.data,
@@ -713,11 +732,13 @@ class ScipySparseArray(SparseArray):
 
     @classmethod
     # @profile
-    def _init_csr(cls, vals, indices, indptr, shape):
+    def _init_cs(cls, vals, indices, indptr, shape):
         if shape[0] > shape[1]:
-            return sp.csc_matrix((vals, indices, indptr), shape=shape)
+            res = sp.csc_matrix((vals, indices, indptr), shape=shape)
         else:
-            return sp.csr_matrix((vals, indices, indptr), shape=shape)
+            res = sp.csr_matrix((vals, indices, indptr), shape=shape)
+        # print("?>>>>>?", res.nnz, len(vals), len(indices), len(indptr), indptr[0], indptr[-1])
+        return res
 
     def to_state(self, serializer=None):
         """
@@ -857,6 +878,8 @@ class ScipySparseArray(SparseArray):
 
     @classmethod
     def construct_sparse_from_val_inds(cls, block_vals, block_inds, shape, fmt, cache_block_data=True, logger=None):
+
+        # print("?", shape, min(block_inds[0]), max(block_inds[1]))
         block_vals = np.asanyarray(block_vals)
         if shape is None:
             shape = tuple(np.max(x) for x in block_inds)
