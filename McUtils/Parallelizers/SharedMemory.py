@@ -6,6 +6,8 @@ in a slightly more convenient way
 import abc, os, numpy as np, typing
 from dataclasses import dataclass
 
+from multiprocessing import Manager
+
 from ..Scaffolding import BaseObjectManager, NDarrayMarshaller
 
 __all__ = [
@@ -118,6 +120,9 @@ class SharedMemoryNDarray:
             self.shape,
             self.dtype
         )
+
+    def unshare(self):
+        return self.array.copy()
 
 class SharedArrayAllocator:
     """
@@ -246,10 +251,10 @@ class SharedMemoryPrimitive:
             elif isinstance(name, (int, np.integer)):
                 # add the array as a list element
                 if len(tree) < name:
-                    if tree[name] is None:
-                        tree[name] = self.allocator.create_shared_array(arr)
-                    else:
+                    if isinstance(tree[name], SharedMemoryNDarray):
                         tree[name] = self.allocator.update_shared_array(tree[name], arr)
+                    else:
+                        tree[name] = self.allocator.create_shared_array(arr)
                 else:
                     # expand the tree to just the necessary space
                     padding = len(tree) - name - 1
@@ -259,19 +264,21 @@ class SharedMemoryPrimitive:
                 raise ValueError("cannot save {} into {}".format(arr, tree))
         else:
             # walk an expression tree, updating buffers as needed
-            if name in tree:
-                subtree = tree[name]
-            elif hasattr(arr, 'keys'):
-                subtree = {}
-            else:
-                subtree = []
-
-            if hasattr(arr, 'keys'):
+            if hasattr(arr, 'items'):
+                subtree = {} if name not in tree or not hasattr(tree[name], 'items') else tree[name]
                 for k,v in arr.items():
                     self._save_to_buffer(subtree, k, v)
             else:
+                try:
+                    iter(tree[name])
+                except (AttributeError, TypeError):
+                    subtree = []
+                else:
+                    subtree = tree[name]
                 for i,v in enumerate(arr):
                     self._save_to_buffer(subtree, i, v)
+
+            tree[name] = subtree
 
     def __setitem__(self, key, value):
         self._save_to_buffer(self.buffers, key, value)
@@ -375,7 +382,7 @@ class SharedMemoryList(SharedMemoryPrimitive):
         across processes
         """
 
-    def __init__(self, *seq, sync_list=None, marshaller=None, allocator=None, parallelizer=None):
+    def __init__(self, *seq, sync_list=None, manager=None, marshaller=None, allocator=None, parallelizer=None):
         """
         :param marshaller:
         :type marshaller:
@@ -388,21 +395,30 @@ class SharedMemoryList(SharedMemoryPrimitive):
         """
 
         if sync_list is None:
-            from multiprocessing import Manager
-            sync_list = Manager().list()
+            if manager is None:
+                manager = Manager()
+            sync_list = manager.list()
+        self.manager = manager
 
-        super().__init__(sync_list, marshaller, allocator, parallelizer)
+        super().__init__(sync_list, marshaller=marshaller, allocator=allocator, parallelizer=parallelizer)
 
         if len(seq) == 1:
             self.extend(seq[0])
         elif len(seq) > 0:
             raise ValueError("only one positional argument allowed") # standardize this
 
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        d['manager'] = None
+
+    def __contains__(self, item):
+        return self.buffers.__contains__(item)
     def __iter__(self):
         return iter(self.buffers)
     def __len__(self):
         return len(self.buffers)
-    def load(self):
+
+    def unshare(self):
         return [self._load_from_buffer(self.buffers, i) for i in range(len(self))]
 
     def pop(self, k=0):
@@ -427,7 +443,7 @@ class SharedMemoryDict(SharedMemoryPrimitive):
     across processes
     """
 
-    def __init__(self, *seq, sync_dict=None, marshaller=None, allocator=None, parallelizer=None):
+    def __init__(self, *seq, sync_dict=None, manager=None, marshaller=None, allocator=None, parallelizer=None):
         """
         :param marshaller:
         :type marshaller:
@@ -440,16 +456,24 @@ class SharedMemoryDict(SharedMemoryPrimitive):
         """
 
         if sync_dict is None:
-            from multiprocessing import Manager
-            sync_dict = Manager().dict()
+            if manager is None:
+                manager = Manager()
+            sync_dict = manager.dict()
+        self.manager = manager
 
-        super().__init__(sync_dict, marshaller, allocator, parallelizer)
+        super().__init__(sync_dict, marshaller=marshaller, allocator=allocator, parallelizer=parallelizer)
 
         if len(seq) == 1:
             self.update(seq[0])
         elif len(seq) > 0:
             raise ValueError("only one positional argument allowed") # standardize this
 
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        d['manager'] = None
+
+    def __contains__(self, item):
+        return self.buffers.__contains__(item)
     def __iter__(self):
         return iter(self.buffers)
     def __len__(self):
@@ -461,7 +485,7 @@ class SharedMemoryDict(SharedMemoryPrimitive):
         return self.buffers.values()
     def items(self):
         return self.buffers.items()
-    def load(self):
+    def unshare(self):
         return {k:self._load_from_buffer(self.buffers, k) for k in self.keys()}
 
     def update(self, v):
@@ -501,7 +525,7 @@ class SharedObjectManager(BaseObjectManager):
             obj = PrimitiveTypeHolder(obj)
         super().__init__(obj)
 
-        self.base_dict = SharedMemoryDict() if base_dict is None else base_dict
+        self.base_dict = SharedMemoryDict(parallelizer=parallelizer) if base_dict is None else base_dict
         self.parallelizer = parallelizer
 
     primitive_types = (
@@ -539,22 +563,44 @@ class SharedObjectManager(BaseObjectManager):
     def get_saved_keys(self, obj):
         return obj.__dict__.keys()
 
-    def save(self, keys=None):
+    def save_keys(self, keys=None):
         if keys is None:
             keys = self.get_saved_keys(self.obj)
         for k in keys:
             self.save_attr(k)
-        return self.obj
 
-    def load(self, keys=None):
+    def share(self, keys=None):
+        try:
+            res = self.obj.share(self)
+        except AttributeError:
+            res = None
+            self.save_keys(keys=keys)
+
+        if res is None:
+            return self.obj
+        else:
+            return res
+
+    def load_keys(self, keys=None):
         if keys is None:
             keys = self.get_saved_keys(self.obj)
         for k in keys:
             self.load_attr(k)
-        if isinstance(self.obj, PrimitiveTypeHolder):
-            return self.obj.val
+
+    def unshare(self, keys=None):
+        try:
+            res = self.obj.unshare(self)
+        except AttributeError:
+            res = None
+            self.load_keys(keys=keys)
+
+        if res is None:
+            if isinstance(self.obj, PrimitiveTypeHolder):
+                return self.obj.val
+            else:
+                return self.obj
         else:
-            return self.obj
+            return res
 
     def _cleanup(self):
         try:
@@ -570,3 +616,24 @@ class SharedObjectManager(BaseObjectManager):
     # def delete(self):
     #     for k in self.get_saved_keys(self.obj):
     #         self.del_attr(k)
+
+
+    def list(self, *l):
+        return SharedMemoryList(*l,
+                                manager=self.base_dict.manager,
+                                marshaller=self.base_dict.marshaller,
+                                allocator=self.base_dict.allocator,
+                                parallelizer=self.parallelizer
+                                )
+    def dict(self, *d):
+        return SharedMemoryDict(*d,
+                                manager=self.base_dict.manager,
+                                marshaller=self.base_dict.marshaller,
+                                allocator=self.base_dict.allocator,
+                                parallelizer=self.parallelizer
+                                )
+    def array(self, a):
+        if not isinstance(a, SharedMemoryNDarray):
+           return self.base_dict.allocator.create_shared_array(a)
+        else:
+           return a

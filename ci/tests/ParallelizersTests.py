@@ -123,23 +123,25 @@ class ParallelizerTests(TestCase):
         a = np.random.rand(10, 5, 5)
         manager = SharedObjectManager(a)
 
-        saved = manager.save()
-        loaded = manager.load() #type: np.ndarray
+        saved = manager.share()
+        loaded = manager.unshare() #type: np.ndarray
         # print(type(loaded), loaded.shape, loaded.data, loaded.size)
 
         self.assertTrue(np.allclose(a, loaded))
 
 
     def mutate_shared_dict(self, d, parallelizer=None):
+        wat = d['d']
+        parallelizer.print('{a} {b} {c} {d}', a=id(wat), b=id(d['d']), c=id(d['d']), d=d)
         if not parallelizer.on_main:
             d['a'][1, 0, 0] = 5
-            # parallelizer.print('{v}', v=d['a'][1, 0, 0])
-        parallelizer.wait()
+            wat['key'] = 5
+        parallelizer.print('{v} {g}', v=wat, g=d['d'])
 
     @debugTest
     def test_DistributedDict(self):
 
-         my_data = {'a':np.random.rand(10, 5, 5), 'b':np.random.rand(10, 3, 8), 'c':np.random.rand(10, 15, 4)}
+         my_data = {'a':np.random.rand(10, 5, 5), 'b':np.random.rand(10, 3, 8), 'c':np.random.rand(10, 15, 4), 'd':{}}
 
          par = MultiprocessingParallelizer(processes=2, logger=Logger())
          my_data = par.share(my_data)
@@ -148,6 +150,6 @@ class ParallelizerTests(TestCase):
 
          self.assertEquals(my_data['a'][1, 0, 0], 5.0)
 
-         my_data = my_data.load()
+         my_data = my_data.unshare()
          self.assertIsInstance(my_data, dict)
          self.assertIsInstance(my_data['a'], np.ndarray)

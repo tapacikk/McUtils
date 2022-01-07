@@ -359,7 +359,7 @@ class YAMLSerializer(BaseSerializer):
         data = data.data
         self.api.dump(data, file, **kwargs)
     def deserialize(self, file, key=None, **kwargs):
-        dat = self.api.load(file)
+        dat = self.api.unshare(file)
         dat = self.deconvert(dat)
         if key is not None:
             if '/' in key:
