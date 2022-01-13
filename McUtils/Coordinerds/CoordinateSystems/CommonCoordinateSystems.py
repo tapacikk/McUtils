@@ -1,3 +1,5 @@
+
+import numpy as np
 from .CoordinateSystem import BaseCoordinateSystem
 
 __all__ = [
@@ -117,10 +119,31 @@ class ZMatrixCoordinateSystem(InternalCoordinateSystem):
             converter_options = opts
         super().__init__(dimension=dimension, coordinate_shape=coordinate_shape, converter_options=converter_options)
         # self.jacobian_prep = self.jacobian_prep_coordinates
-    # def jacobian_prep_coordinates(self, coord, displacements, values):
-    #     values = values[..., :, (1, 3, 5)]
-    #     # we will want to make sure all angles and dihedrals stay within a range of eachother...
-    #     return displacements, values
+    def jacobian_prep_coordinates(self,
+                                  coord, displacements, values,
+                                  dihedral_cutoff=4
+                                  ):
+        # target_ndim = len(self.dimension) + len(coord) + 1
+        extra_dim = displacements.ndim - values.ndim
+        raw_displacement_shape = displacements.shape[:-2]
+        analytic_order = extra_dim // 2
+        if analytic_order == 0:
+            dihedrals = values[..., 2]
+            central_point = tuple((x - 1) // 2 for x in raw_displacement_shape) # just need a rough check
+            ref = dihedrals[central_point]
+            for x in central_point:
+                ref = ref[np.newaxis]
+            true_diffs = dihedrals - ref
+            bad_spots = np.where(abs(true_diffs) > dihedral_cutoff)
+            if np.any(bad_spots):
+                raise Exception(true_diffs, bad_spots)
+        elif analytic_order == 1:
+            raise NotImplementedError('correcting periodicity wraparound not handled for analytic derivative order {}'.format(analytic_order))
+        else:
+            raise NotImplementedError('correcting periodicity wraparound not handled for analytic derivative order {}'.format(analytic_order))
+
+        # we will want to make sure all angles and dihedrals stay within a range of eachother...
+        return displacements, values
 ZMatrixCoordinates = ZMatrixCoordinateSystem()
 ZMatrixCoordinates.__name__ = "ZMatrixCoordinates"
 ZMatrixCoordinates.__doc__ = """

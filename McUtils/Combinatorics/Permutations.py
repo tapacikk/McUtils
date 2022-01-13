@@ -561,7 +561,7 @@ class UniquePermutations:
             return storage
 
     @staticmethod
-    @jit(nopython=True)
+    @jit(nopython=True, cache=True)
     def _fill_permutations_direct_jit(storage, inds, partition, dim):
         """
         Builds off of this algorithm for generating permutations
@@ -791,7 +791,7 @@ class UniquePermutations:
         inds[sn] = tree_data[cur_dim, 0]
 
     @staticmethod
-    @jit(nopython=True, parallel=True)
+    @jit(nopython=True, parallel=True, cache=True)
     def _fill_permutation_indices(
             inds: np.ndarray,
             perms: np.ndarray,
@@ -993,7 +993,7 @@ class UniquePermutations:
         return inds
 
     @staticmethod
-    @jit(nopython=True)
+    @jit(nopython=True, cache=True)
     def _fill_permutations_from_indices(perms, indices, counts, classes, dim, num_permutations, block_size):
 
         # we make a constant-time lookup for what a value maps to in
@@ -1168,7 +1168,7 @@ class UniquePermutations:
 
     # leaving this here so I remember how it works...
     @staticmethod
-    @jit(nopython=True)
+    @jit(nopython=True, cache=True)
     def _walk_perm_generator(counts, dim, num_permutations, indices, include_positions):
 
         tree_data = np.zeros((dim, 2), dtype=np.int64)
@@ -2127,7 +2127,7 @@ class SymmetricGroupGenerator:
     # from memory_profiler import profile
     # @profile
     @staticmethod
-    @jit(nopython=True)
+    @jit(nopython=True, cache=True)
     def _get_filter_mask(new_rep_perm, cls_inds, can_be_negative, class_negs):
         # if we run into negatives we need to mask them out
         not_negs = np.full(len(cls_inds), True)#, dtype=bool)
@@ -2137,7 +2137,7 @@ class SymmetricGroupGenerator:
         return not_negs
 
     @staticmethod
-    @jit(nopython=True)
+    @jit(nopython=True, cache=True)
     def _filter_negs_by_comp(comp, not_negs, idx, idx_starts, mask, perm_counts, start, end):
         not_sel = np.where(np.logical_not(not_negs))[0]
         mask_inds = np.reshape(

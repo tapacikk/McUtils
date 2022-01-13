@@ -8,6 +8,7 @@ import abc, functools, multiprocessing as mp, typing
 import numpy as np, pickle
 
 from ..Scaffolding import Logger, NullLogger, ObjectRegistry
+from .SharedMemory import SharedObjectManager, SharedMemoryList, SharedMemoryDict
 
 __all__ = [
     "Parallelizer",
@@ -513,12 +514,35 @@ class Parallelizer(metaclass=abc.ABCMeta):
             nprocs = None
         return "{}(id={}, nprocs={})".format(type(self).__name__, id, nprocs)
 
+    def share(self, obj):
+        """
+        Converts `obj` into a form that can be cleanly used with shared memory via a `SharedObjectManager`
+
+        :param obj:
+        :type obj:
+        :return:
+        :rtype:
+        """
+
+        if isinstance(obj, dict):
+            sharer = SharedMemoryDict(obj, parallelizer=self)
+        elif isinstance(obj, (list, tuple)):
+            sharer = SharedMemoryList(obj, parallelizer=self)
+        else:
+            sharer = SharedObjectManager(obj, parallelizer=self)
+            sharer.share()
+
+        return sharer
+
 class SendRecieveParallelizer(Parallelizer):
     """
     Parallelizer that implements `scatter`, `gather`, `broadcast`, and `map`
     based on just having a communicator that supports `send` and `receive methods
     """
 
+    class ReceivedError:
+        def __init__(self, error):
+            self.error = error
     class SendReceieveCommunicator(metaclass=abc.ABCMeta):
         """
         A base class that provides an interface for
@@ -602,7 +626,11 @@ class SendRecieveParallelizer(Parallelizer):
         """
         if self.contract is not None:
             self.contract.handle_call(self, "receive")
-        return self.comm.receive(data, loc, **kwargs)
+        val = self.comm.receive(data, loc, **kwargs)
+        if isinstance(val, self.ReceivedError):
+            raise val.error
+        else:
+            return val
     def broadcast(self, data, **kwargs):
         """
         Sends the same data to all processes
@@ -800,7 +828,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                      parent: 'MultiprocessingParallelizer',
                      id:int,
                      queues: typing.Iterable['MultiprocessingParallelizer.SendRecvQueuePair'],
-                     initialization_timeout:float=.5,
+                     initialization_timeout:float=None,
                      group:typing.Iterable['MultiprocessingParallelizer.PoolCommunicator']=None
                      ):
             self.parent = parent
@@ -1017,8 +1045,9 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
                 try:
                     return runner(*args, **main_kwargs, **kwargs)
                 except Exception as e:
-                    self.print(e)
-                    comm.send(e, 0)
+                    import traceback as tb
+                    self.print(tb.format_exc())
+                    comm.send(self.ReceivedError(e), 0)
                     raise
 
     def apply(self, func, *args, comm=None, main_kwargs=None, **kwargs):
@@ -1114,6 +1143,7 @@ class MultiprocessingParallelizer(SendRecieveParallelizer):
     def initialize(self, allow_restart=True):
         if not self.worker:
             if self.pool is None:
+                self.print("Initializing pool...", log_level=Logger.LogLevel.Debug)
                 if self.ctx is None:
                     self.ctx = mp.get_context() # get the default context
                 self.pool = self._get_pool(self.ctx, **self.opts)

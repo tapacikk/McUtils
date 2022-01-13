@@ -359,7 +359,7 @@ class YAMLSerializer(BaseSerializer):
         data = data.data
         self.api.dump(data, file, **kwargs)
     def deserialize(self, file, key=None, **kwargs):
-        dat = self.api.load(file)
+        dat = self.api.unshare(file)
         dat = self.deconvert(dat)
         if key is not None:
             if '/' in key:
@@ -379,7 +379,7 @@ class NDarrayMarshaller:
     """
 
     def __init__(self,
-                 base_serializer,
+                 base_serializer=None,
                  allow_pickle=True,
                  psuedopickler=None,
                  allow_records=False,
@@ -393,21 +393,29 @@ class NDarrayMarshaller:
         self.psuedopickler = psuedopickler
         self.all_dicts = all_dicts
         self.allow_records = allow_records
-        if converters is None:
-            converters = self.default_converter_dispatch
-        self.converter_dispatch = converters
+        self._converter_dispatch = converters
 
     # we define a converter layer that will coerce everything to NumPy arrays
     atomic_types = (str, int, float, bool, np.floating, np.integer, np.bool)
-    default_converter_dispatch = OrderedDict((
-        ((np.ndarray,), lambda data, cls: cls._iterable_to_numpy(data)),
-        ('to_state', lambda x, s: s._psuedo_pickle_to_numpy(x)),
-        ('asarray', lambda data, cls: cls._iterable_to_numpy(data.asarray())),
-        ((type(None),), lambda x, cls: cls._none_to_none(x)),
-        (atomic_types, lambda x, cls: cls._literal_to_numpy(x)),
-        ((dict,), lambda data, cls: cls._dict_to_numpy(data)),
-        ((list, tuple), lambda data, cls: cls._iterable_to_numpy(data))
-    ))
+
+    @classmethod
+    def get_default_converters(self):
+        return OrderedDict((
+            ((np.ndarray,), lambda data, cls: cls._iterable_to_numpy(data)),
+            ('to_state', lambda x, s: s._psuedo_pickle_to_numpy(x)),
+            ('asarray', lambda data, cls: cls._iterable_to_numpy(data.asarray())),
+            ((type(None),), lambda x, cls: cls._none_to_none(x)),
+            (self.atomic_types, lambda x, cls: cls._literal_to_numpy(x)),
+            ((dict,), lambda data, cls: cls._dict_to_numpy(data)),
+            ((list, tuple), lambda data, cls: cls._iterable_to_numpy(data))
+        ))
+
+    @property
+    def converter_dispatch(self):
+        if self._converter_dispatch is None:
+            return self.get_default_converters()
+        else:
+            return self._converter_dispatch
 
     @classmethod
     def _literal_to_numpy(cls, data):
@@ -525,7 +533,7 @@ class NDarrayMarshaller:
                     break
 
             if converter is None and allow_pickle:
-                converter = lambda x, s: s._psuedo_pickle_to_numpy(x)
+                converter = self._default_convert
 
             if converter is None:
                 raise TypeError("no registered converter to coerce {} into HDF5 compatible format".format(data))
@@ -535,6 +543,10 @@ class NDarrayMarshaller:
 
         finally:
             self.allow_pickle = cur_pickle
+
+    @staticmethod
+    def _default_convert(x, converter):
+        return converter._psuedo_pickle_to_numpy(x)
 
     def deconvert(self, data):
         """
@@ -551,7 +563,9 @@ class NDarrayMarshaller:
         if hasattr(data, 'items'):
             res = {}
             for k, v in data.items():
-                res[k] = self.parent.deconvert(v)
+                if self.parent is not None:
+                    v = self.parent.deconvert(v)
+                res[k] = v
             if '_list_numitems' in res:
                 # actually an iterable but with inconsistent shape
                 n_items = res['_list_numitems']
@@ -564,7 +578,7 @@ class NDarrayMarshaller:
             except TypeError:
                 res = data
             else:
-                res = [self.parent.deconvert(v) for v in data]
+                res = [self.parent.deconvert(v) if self.parent is not None else v for v in data]
         else:
             res = data
 
@@ -596,8 +610,7 @@ class HDF5Serializer(BaseSerializer):
     This restricts what we can serialize, but generally in insignificant ways.
     """
     default_extension = ".hdf5"
-    converter_dispatch = NDarrayMarshaller.default_converter_dispatch
-    def __init__(self, allow_pickle=True, psuedopickler=None):
+    def __init__(self, allow_pickle=True, psuedopickler=None, converters=None):
         import h5py as api
         self.api = api
         self.allow_pickle = allow_pickle
@@ -609,7 +622,7 @@ class HDF5Serializer(BaseSerializer):
             allow_pickle=allow_pickle,
             psuedopickler=psuedopickler,
             all_dicts=True,
-            converters=self.converter_dispatch
+            converters=converters
         )
 
     def convert(self, data):
@@ -800,13 +813,24 @@ class NumPySerializer(BaseSerializer):
 
     # we define a converter layer that will coerce everything to NumPy arrays
     atomic_types = (str, int, float)
-    converter_dispatch = OrderedDict((
+    converter_dispatch = None
+    @classmethod
+    def get_default_converters(self):
+        return OrderedDict((
         ((np.ndarray,), lambda data, cls: data),
         ('asarray', lambda data, cls: data.asarray()),
-        (atomic_types, lambda x, cls: cls._literal_to_numpy(x)),
+        (self.atomic_types, lambda x, cls: cls._literal_to_numpy(x)),
         ((dict,), lambda data, cls: cls._dict_to_numpy(data)),
         ((list, tuple), lambda data, cls: cls._iterable_to_numpy(data))
     ))
+
+    @classmethod
+    def get_converters(self):
+        if self.converter_dispatch is None:
+            return self.get_default_converters()
+        else:
+            return self.converter_dispatch
+
 
     @classmethod
     def _literal_to_numpy(cls, data):
@@ -836,7 +860,7 @@ class NumPySerializer(BaseSerializer):
         :rtype:
         """
         converter = None
-        for k, f in cls.converter_dispatch.items():
+        for k, f in cls.get_converters().items():
             if isinstance(k, tuple):  # check if we're dispatching based on type
                 if isinstance(data, k):
                     converter = f

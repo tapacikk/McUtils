@@ -55,6 +55,7 @@ class ModuleReloader:
         verbose=False,
         print_indent=""
         ):
+
         # print(print_indent + " member:", member)
         if member.startswith('.'):
             how_many = 0
@@ -80,13 +81,19 @@ class ModuleReloader:
                     verbose=verbose,
                     reload_parents=reload_parents, print_indent=print_indent
                 )
-            elif isinstance(obj, type):
+            elif isinstance(obj, (type, types.MethodType, types.FunctionType)):
                 type(self)(obj.__module__).reload(
                     reloaded=reloaded, blacklist=blacklist,
                     verbose=verbose,
                     reload_parents=reload_parents, print_indent=print_indent
                 )
             else:
+                # try:
+                #     isinstance(obj, (type, types.FunctionType))
+                # except Exception as e:
+                #     print(e)
+                # else:
+                #     print("...things can be functions")
                 obj = type(obj)
                 type(self)(obj.__module__).reload(
                     reloaded=reloaded, blacklist=blacklist,
