@@ -216,7 +216,7 @@ class SharedMemoryPrimitive:
 
         self.buffers = sync_buffer
 
-        self.allocator = SharedArrayAllocator() if allocator is None else allocator
+        self.allocator = SharedArrayAllocator(parallelizer=parallelizer) if allocator is None else allocator
 
         if marshaller is None:
             marshaller = NDarrayMarshaller()

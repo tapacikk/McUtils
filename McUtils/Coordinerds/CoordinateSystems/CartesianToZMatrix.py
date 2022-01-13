@@ -6,8 +6,8 @@ import numpy as np
 # what properties its class will have and will try to claim that the files don't exist
 
 class CartesianToZMatrixConverter(CoordinateSystemConverter):
-    """A converter class for going from Cartesian coordinates to ZMatrix coordinates
-
+    """
+    A converter class for going from Cartesian coordinates to ZMatrix coordinates
     """
 
     @property
