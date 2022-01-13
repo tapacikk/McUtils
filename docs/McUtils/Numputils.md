@@ -56,6 +56,9 @@ Any lowish-level numerical operations that need to be shared go here.
   - [infer_int_dtype](Numputils/Misc/infer_int_dtype.md)
   - [flatten_dtype](Numputils/Misc/flatten_dtype.md)
   - [unflatten_dtype](Numputils/Misc/unflatten_dtype.md)
+  - [recast_permutation](Numputils/Misc/recast_permutation.md)
+  - [recast_indices](Numputils/Misc/recast_indices.md)
+  - [downcast_index_array](Numputils/Misc/downcast_index_array.md)
 
 ### Examples
 
@@ -565,7 +568,7 @@ class NumputilsTests(TestCase):
         self.assertEquals(array.shape, (4, 3, 3))
         tp = array.transpose((1, 0, 2))
         self.assertEquals(tp.shape, (3, 4, 3))
-        self.assertLess(np.linalg.norm((tp.todense()-array.todense().transpose((1, 0, 2))).flatten()), 1e-8)
+        self.assertLess(np.linalg.norm((tp.asarray()-array.asarray().transpose((1, 0, 2))).flatten()), 1e-8)
         self.assertEquals(array[2, :, 2].shape, (3,))
         td = array.tensordot(array, axes=[1, 1])
         self.assertEquals(td.shape, (4, 3, 4, 3))

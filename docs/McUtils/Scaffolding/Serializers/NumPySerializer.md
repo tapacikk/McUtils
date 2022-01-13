@@ -5,9 +5,19 @@ A serializer that implements NPZ dumps
 ```python
 default_extension: str
 atomic_types: tuple
-converter_dispatch: OrderedDict
+converter_dispatch: NoneType
 dict_key_sep: str
 ```
+<a id="McUtils.Scaffolding.Serializers.NumPySerializer.get_default_converters" class="docs-object-method">&nbsp;</a>
+```python
+get_default_converters(): 
+```
+
+<a id="McUtils.Scaffolding.Serializers.NumPySerializer.get_converters" class="docs-object-method">&nbsp;</a>
+```python
+get_converters(): 
+```
+
 <a id="McUtils.Scaffolding.Serializers.NumPySerializer.convert" class="docs-object-method">&nbsp;</a>
 ```python
 convert(self, data): 

@@ -19,6 +19,11 @@ __init__(self, converter_options=None, dimension=(None, None), coordinate_shape=
 - `opts`: `Any`
     >other options, if `converter_options` is None, these are used as the `converter_options`
 
+<a id="McUtils.Coordinerds.CoordinateSystems.CommonCoordinateSystems.ZMatrixCoordinateSystem.jacobian_prep_coordinates" class="docs-object-method">&nbsp;</a>
+```python
+jacobian_prep_coordinates(self, coord, displacements, values, dihedral_cutoff=4): 
+```
+
 
 
 

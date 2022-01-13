@@ -54,6 +54,11 @@ Tries to get the default keys one might be expected to want depending on the typ
 - `:returns`: `tuple(str)`
     >key listing
 
+<a id="McUtils.GaussianInterface.GaussianImporter.GaussianLogReader.read_props" class="docs-object-method">&nbsp;</a>
+```python
+read_props(file, keys): 
+```
+
 We're working on improving this documentation, but in the meantime, here are the unit tests we use
 
 ```python

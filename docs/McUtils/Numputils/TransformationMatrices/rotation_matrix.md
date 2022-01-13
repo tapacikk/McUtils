@@ -3,7 +3,13 @@
 ```python
 rotation_matrix(axis, theta): 
 ```
- 
+
+- `axis`: `Any`
+    >No description...
+- `theta`: `Any`
+    >angle to rotate by (or Euler angles)
+- `:returns`: `_`
+    >No description... 
 
 
 

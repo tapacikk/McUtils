@@ -19,6 +19,9 @@ the `Parallelizer` object itself.
   - [SerialNonParallelizer](Parallelizers/Parallelizers/SerialNonParallelizer.md)
   - [SendRecieveParallelizer](Parallelizers/Parallelizers/SendRecieveParallelizer.md)
   - [ClientServerRunner](Parallelizers/Runner/ClientServerRunner.md)
+  - [SharedObjectManager](Parallelizers/SharedMemory/SharedObjectManager.md)
+  - [SharedMemoryDict](Parallelizers/SharedMemory/SharedMemoryDict.md)
+  - [SharedMemoryList](Parallelizers/SharedMemory/SharedMemoryList.md)
 
 ### Examples
 
@@ -186,6 +189,7 @@ To support MPI-style calling, a `ClientServerRunner` is also provided.
 
 ```python
 from Peeves.TestUtils import *
+from McUtils.Scaffolding import Logger
 from McUtils.Parallelizers import *
 from unittest import TestCase
 import numpy as np, io, os, sys, tempfile as tmpf
@@ -227,7 +231,7 @@ class ParallelizerTests(TestCase):
         data = parallelizer.scatter(data)
         lens = parallelizer.gather(len(data))
         return lens
-    @debugTest
+    @validationTest
     def test_BasicMultiprocessing(self):
         par_lens = MultiprocessingParallelizer().run(self.run_job)
         serial_lens = SerialNonParallelizer().run(self.run_job)
@@ -302,6 +306,43 @@ class ParallelizerTests(TestCase):
         l = MultiprocessingParallelizer().run(self.simple_scatter_1, comm=[0, 1, 2, 3, 4, 5, 6, 7, 8])
         MultiprocessingParallelizer().run(self.simple_print, comm=[0, 1, 2])
         # raise Exception(l)
+
+    @validationTest
+    def test_MakeSharedMem(self):
+
+        a = np.random.rand(10, 5, 5)
+        manager = SharedObjectManager(a)
+
+        saved = manager.share()
+        loaded = manager.unshare() #type: np.ndarray
+        # print(type(loaded), loaded.shape, loaded.data, loaded.size)
+
+        self.assertTrue(np.allclose(a, loaded))
+
+
+    def mutate_shared_dict(self, d, parallelizer=None):
+        wat = d['d']
+        parallelizer.print('{a} {b} {c} {d}', a=id(wat), b=id(d['d']), c=id(d['d']), d=d)
+        if not parallelizer.on_main:
+            d['a'][1, 0, 0] = 5
+            wat['key'] = 5
+        parallelizer.print('{v} {g}', v=wat, g=d['d'])
+
+    @debugTest
+    def test_DistributedDict(self):
+
+         my_data = {'a':np.random.rand(10, 5, 5), 'b':np.random.rand(10, 3, 8), 'c':np.random.rand(10, 15, 4), 'd':{}}
+
+         par = MultiprocessingParallelizer(processes=2, logger=Logger())
+         my_data = par.share(my_data)
+
+         par.run(self.mutate_shared_dict, my_data)
+
+         self.assertEquals(my_data['a'][1, 0, 0], 5.0)
+
+         my_data = my_data.unshare()
+         self.assertIsInstance(my_data, dict)
+         self.assertIsInstance(my_data['a'], np.ndarray)
 
 ```
 

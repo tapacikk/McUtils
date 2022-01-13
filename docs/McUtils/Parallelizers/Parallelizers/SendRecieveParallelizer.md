@@ -4,6 +4,7 @@ based on just having a communicator that supports `send` and `receive methods
 
 ### Properties and Methods
 ```python
+ReceivedError: type
 SendReceieveCommunicator: ABCMeta
 ```
 <a id="McUtils.Parallelizers.Parallelizers.SendRecieveParallelizer.comm" class="docs-object-method">&nbsp;</a>

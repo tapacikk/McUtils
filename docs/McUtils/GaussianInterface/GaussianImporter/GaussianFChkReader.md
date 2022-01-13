@@ -49,6 +49,11 @@ Skips the next block
 parse(self, keys=None, default='raise'): 
 ```
 
+<a id="McUtils.GaussianInterface.GaussianImporter.GaussianFChkReader.read_props" class="docs-object-method">&nbsp;</a>
+```python
+read_props(file, keys): 
+```
+
 ```python
 
 def test_Fchk(self):

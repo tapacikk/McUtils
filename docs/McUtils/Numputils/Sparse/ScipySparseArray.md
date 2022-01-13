@@ -29,6 +29,16 @@ __init__(self, a, shape=None, layout=None, dtype=None, initialize=True, cache_bl
 - `logger`: `Logger`
     >the logger to use for debug purposes
 
+<a id="McUtils.Numputils.Sparse.ScipySparseArray.coo_to_cs" class="docs-object-method">&nbsp;</a>
+```python
+coo_to_cs(shape, vals, ij_inds, memmap=False, assume_sorted=False): 
+```
+Reimplementation of scipy's internal "coo_tocsr" for memory-limited situations
+        Assumes `ij_inds` are sorted by row then column, which allows vals to be used
+        directly once indptr is computed
+- `:returns`: `_`
+    >No description...
+
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.to_state" class="docs-object-method">&nbsp;</a>
 ```python
 to_state(self, serializer=None): 
@@ -231,6 +241,16 @@ Returns a resized version of the tensor
 - `:returns`: `_`
     >No description...
 
+<a id="McUtils.Numputils.Sparse.ScipySparseArray.concatenate_coo" class="docs-object-method">&nbsp;</a>
+```python
+concatenate_coo(self, *others, axis=0): 
+```
+
+<a id="McUtils.Numputils.Sparse.ScipySparseArray.concatenate_2d" class="docs-object-method">&nbsp;</a>
+```python
+concatenate_2d(self, *others, axis=0): 
+```
+
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.concatenate" class="docs-object-method">&nbsp;</a>
 ```python
 concatenate(self, *others, axis=0): 
@@ -265,6 +285,11 @@ T(self):
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.__matmul__" class="docs-object-method">&nbsp;</a>
 ```python
 __matmul__(self, other): 
+```
+
+<a id="McUtils.Numputils.Sparse.ScipySparseArray.ascs" class="docs-object-method">&nbsp;</a>
+```python
+ascs(self, inplace=False): 
 ```
 
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.dot" class="docs-object-method">&nbsp;</a>

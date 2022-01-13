@@ -6,11 +6,10 @@ This restricts what we can serialize, but generally in insignificant ways.
 ### Properties and Methods
 ```python
 default_extension: str
-converter_dispatch: OrderedDict
 ```
 <a id="McUtils.Scaffolding.Serializers.HDF5Serializer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, allow_pickle=True, psuedopickler=None): 
+__init__(self, allow_pickle=True, psuedopickler=None, converters=None): 
 ```
 
 <a id="McUtils.Scaffolding.Serializers.HDF5Serializer.convert" class="docs-object-method">&nbsp;</a>

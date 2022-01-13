@@ -361,6 +361,16 @@ Causes all processes to wait until they've met up at this point.
 __repr__(self): 
 ```
 
+<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.share" class="docs-object-method">&nbsp;</a>
+```python
+share(self, obj): 
+```
+Converts `obj` into a form that can be cleanly used with shared memory via a `SharedObjectManager`
+- `obj`: `Any`
+    >No description...
+- `:returns`: `_`
+    >No description...
+
 
 
 
