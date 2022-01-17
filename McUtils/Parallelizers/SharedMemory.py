@@ -3,7 +3,7 @@ Provides classes for working with `multiprocessing.SharedMemory`
 in a slightly more convenient way
 """
 
-import abc, os, numpy as np, typing
+import abc, os, numpy as np, typing, weakref, mmap
 from dataclasses import dataclass
 
 from multiprocessing import Manager
@@ -23,7 +23,6 @@ class SharedMemoryInterface(typing.Protocol):
         raise NotImplementedError("interface class")
 
     buf: bytearray
-
     @abc.abstractmethod
     def close(self):
         raise NotImplementedError("interface class")
@@ -37,6 +36,12 @@ class SharedMemoryNDarray:
     Provides a very simple tracker for shared NumPy arrays
     """
 
+    # track reference counts to the existing buffer to hopefully keep it from
+    # being deleted...
+    _buf_refs = [
+        weakref.WeakKeyDictionary(),
+        {}
+    ]
     def __init__(self, shape, dtype, buf, autoclose=True, parallelizer=None):
         """
         :param shape:
@@ -53,7 +58,56 @@ class SharedMemoryNDarray:
         self.buf = buf
         self.autoclose = autoclose
         self.array = np.ndarray(self.shape, dtype=self.dtype, buffer=self.buf.buf)
+        self._incref()
         self.parallelizer = parallelizer
+        # self.parallelizer.print("initializing {} ({})".format(
+        #     self._bufid_ref()[0],
+        #     os.getpid()
+        # ))
+
+    def _bufid_ref(self):
+        try:
+            obj = self.buf.name
+        except AttributeError:
+            obj = self.buf.buf
+        if isinstance(obj, memoryview):
+            obj = obj.obj
+        # if isinstance(obj, mmap.mmap):
+        #     raise Exception(obj.fileno)
+            # obj = obj.
+        if isinstance(obj, (int, str)):
+            br = self._buf_refs[1]
+        else:
+            br = self._buf_refs[0]
+        return obj, br
+
+    def _ref(self):
+        bid, br = self._bufid_ref()
+        if bid not in br:
+            br[bid] = 0
+        return br[bid]
+    def _incref(self):
+        bid, br = self._bufid_ref()
+        if bid not in br:
+            br[bid] = 0
+        br[bid] += 1
+    def _decref(self):
+        bid, br = self._bufid_ref()
+        if bid not in br:
+            br[bid] = 0
+        br[bid] -= 1
+    def _rmref(self):
+        bid, br = self._bufid_ref()
+        del br[bid]
+
+    # def to_state(self, serializer=None):
+    #     return self.__getstate__()
+    # @classmethod
+    # def from_state(cls, state, serializer=None):
+    #     return cls(state['shape'], state['dtype'], state['buf'],
+    #                autoclose=state['autoclose'],
+    #                parallelizer=serializer.deserialize(state['parallelizer'])
+    #                )
 
     def __getstate__(self):
         return {
@@ -71,6 +125,11 @@ class SharedMemoryNDarray:
         self.autoclose = state['autoclose']
         self.parallelizer = state['parallelizer']
         self.array = np.ndarray(self.shape, dtype=self.dtype, buffer=self.buf.buf)
+        self._incref()
+        # self.parallelizer.print("cloned {} ({})".format(
+        #     self._bufid_ref()[0],
+        #     os.getpid()
+        # ))
 
     @classmethod
     def from_array(cls, arr, buf,
@@ -103,16 +162,30 @@ class SharedMemoryNDarray:
         return self.array[item]
 
     def close(self):
-        self.buf.close()
+        self._decref()
+        if self._ref() <= 0:
+            # self.parallelizer.print("???? {}".format(self._bufid_ref()[0]))
+            self._rmref()
+            self.buf.close()
 
     def unlink(self):
-        self.buf.unlink()
+        if self._ref() <= 0:
+            self.buf.unlink()
 
     def __del__(self):
-        if self.autoclose:
-            self.close()
-            if self.parallelizer is not None and self.parallelizer.on_main:
-                self.unlink()
+        try:
+            ac = self.autoclose
+        except AttributeError:
+            pass
+        else:
+            if ac:
+                if self.parallelizer is not None and self.parallelizer.on_main:
+                    # self.parallelizer.print("closing {} ({})".format(
+                    #     self._bufid_ref()[0],
+                    #     os.getpid()
+                    # ))
+                    self.close()
+                    self.unlink()
 
     def __repr__(self):
         return "{}({}, dtype={})".format(
@@ -130,39 +203,57 @@ class SharedArrayAllocator:
     NumPy arrays
     """
 
-    def __init__(self, parallelizer=None, mem_manager=None):
-        if mem_manager is None:
-            try:
-                from multiprocessing import shared_memory
-                self.api = shared_memory
-            except ImportError:
-                self.api = None
-                raise NotImplementedError(
-                    "{}: either `multiprocessing` needs the `shared_memory` submodule or `mem_manager` must be provided".format(
-                        type(self).__name__
-                    )
-                )
+    def __init__(self, parallelizer=None, mem_manager=None, autoclose=True):
+        # if mem_manager is None:
+        #     try:
+        #         from multiprocessing import shared_memory
+        #         self._api = shared_memory
+        #     except ImportError:
+        #         self._api = None
+        #         raise NotImplementedError(
+        #             "{}: either `multiprocessing` needs the `shared_memory` submodule or `mem_manager` must be provided".format(
+        #                 type(self).__name__
+        #             )
+        #         )
         self.parallelizer = parallelizer
         self.mem_manager = mem_manager
+        self.autoclose = autoclose
+        self._api = None
+        # self._refbuf = []
 
-    def __getstate__(self):
-        base = self.__dict__
-        base['api'] = None
-        return base
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        if self.mem_manager is None:
+    @property
+    def api(self):
+        if self._api is None:
             try:
                 from multiprocessing import shared_memory
-                self.api = shared_memory
+                self._api = shared_memory
             except ImportError:
-                self.api = None
+                self._api = None
                 raise NotImplementedError(
                     "{}: either `multiprocessing` needs the `shared_memory` submodule or `mem_manager` must be provided".format(
                         type(self).__name__
                     )
                 )
+        return self._api
+
+    def __getstate__(self):
+        base = self.__dict__.copy()
+        base['_api'] = None
+        return base
+
+    # def __setstate__(self, state):
+    #     self.__dict__.update(state)
+    #     if self.mem_manager is None:
+    #         try:
+    #             from multiprocessing import shared_memory
+    #             self.api = shared_memory
+    #         except ImportError:
+    #             self.api = None
+    #             raise NotImplementedError(
+    #                 "{}: either `multiprocessing` needs the `shared_memory` submodule or `mem_manager` must be provided".format(
+    #                     type(self).__name__
+    #                 )
+    #             )
 
 
     def create_shared_array(self, data, name=None):
@@ -180,7 +271,9 @@ class SharedArrayAllocator:
         else:
             shm = self.api.SharedMemory
         buf = shm(name, create=True, size=data.nbytes)
-        return SharedMemoryNDarray.from_array(data, buf, parallelizer=self.parallelizer)
+        arr = SharedMemoryNDarray.from_array(data, buf, parallelizer=self.parallelizer, autoclose=self.autoclose)
+        # self._refbuf.append(arr) # kludge to keep stuff from going out of scope
+        return arr
 
     def delete_shared_array(self, shared_array):
         """
@@ -192,6 +285,10 @@ class SharedArrayAllocator:
         :rtype:
         """
         shared_array.close()
+        # try:
+        #     self._refbuf.remove(shared_array)
+        # except IndexError:
+        #     pass
 
     def update_shared_array(self, shared_array, data):
         """
@@ -203,8 +300,9 @@ class SharedArrayAllocator:
         :rtype:
         """
         try:
-            shared_array.buf[:] = data
+            shared_array.array[:] = data
         except ValueError:
+            self.delete_shared_array(shared_array)
             shared_array = self.create_shared_array(data)
         return shared_array
 
@@ -216,7 +314,7 @@ class SharedMemoryPrimitive:
 
         self.buffers = sync_buffer
 
-        self.allocator = SharedArrayAllocator(parallelizer=parallelizer) if allocator is None else allocator
+        self.allocator = SharedArrayAllocator(parallelizer=parallelizer, autoclose=False) if allocator is None else allocator
 
         if marshaller is None:
             marshaller = NDarrayMarshaller()
@@ -410,6 +508,7 @@ class SharedMemoryList(SharedMemoryPrimitive):
     def __getstate__(self):
         d = self.__dict__.copy()
         d['manager'] = None
+        return d
 
     def __contains__(self, item):
         return self.buffers.__contains__(item)
@@ -417,6 +516,9 @@ class SharedMemoryList(SharedMemoryPrimitive):
         return iter(self.buffers)
     def __len__(self):
         return len(self.buffers)
+    def __del__(self):
+        for i in range(len(self)):
+            del self[i]
 
     def unshare(self):
         return [self._load_from_buffer(self.buffers, i) for i in range(len(self))]
@@ -471,6 +573,7 @@ class SharedMemoryDict(SharedMemoryPrimitive):
     def __getstate__(self):
         d = self.__dict__.copy()
         d['manager'] = None
+        return d
 
     def __contains__(self, item):
         return self.buffers.__contains__(item)
@@ -478,6 +581,13 @@ class SharedMemoryDict(SharedMemoryPrimitive):
         return iter(self.buffers)
     def __len__(self):
         return len(self.buffers)
+    def __del__(self):
+        if self.parallelizer.on_main:
+            try:
+                for k in self.keys():
+                    del self[k]
+            except FileNotFoundError:
+                pass
 
     def keys(self):
         return self.buffers.keys()

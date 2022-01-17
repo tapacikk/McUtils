@@ -17,6 +17,7 @@ class LogLevel(enum.Enum):
     Warnings = 1
     Normal = 10
     Debug = 50
+    MoreDebug = 75
     All = 100
     Never = 1000 # for debug statements that should really be deleted but I'm too lazy to
 
@@ -159,6 +160,18 @@ class Logger:
         if print_function is None:
             print_function = print
         self.print_function = print_function
+
+    def to_state(self, serializer=None):
+        return {
+            'log_file': self.log_file,
+            'verbosity': self.verbosity,
+            'padding': self.padding,
+            'newline': self.newline,
+            'print_function': None if self.print_function is print else self.print_function
+        }
+    @classmethod
+    def from_state(cls, state, serializer=None):
+        return cls(**state)
 
     def block(self, **kwargs):
         return LoggingBlock(self, block_level=self.block_level, **kwargs)

@@ -3,7 +3,7 @@ Provides scaffolding for creating serializers that dump data to a reloadable for
 Light-weight and unsophisticated, but that's what makes this useful..
 """
 
-import abc, numpy as np, json, io, pickle, importlib, types, base64
+import abc, numpy as np, json, io, pickle, importlib, base64, types
 from collections import OrderedDict
 
 __all__= [
@@ -38,10 +38,16 @@ class PseudoPickler:
         self.protocol=protocol
         self.b64encode=b64encode
 
-    _primitive_types = (int, float, bool, str, np.integer, np.floating, np.bool)
+    _primitive_types = (int, float, bool, str,
+                        np.integer, np.floating, np.bool
+                        )
     _list_types = (tuple, list)
     _dict_types = (dict, OrderedDict)
-    _importable_types = (type, types.MethodType, types.ModuleType)
+    _importable_types = (type, #types.MethodType, types.ModuleType,
+                         bytes, bytearray, memoryview,
+                         np.dtype
+                         )
+    _safe_modules = ["numpy", "multiprocessing"]
     def _to_state(self, obj, cache):
         """
         Tries to extract state for `obj` by walking through the
@@ -75,8 +81,9 @@ class PseudoPickler:
             return type(obj)((k, self.serialize(v, cache)) for k,v in obj.items())
         elif isinstance(obj, self._importable_types):
             return self._to_importable_state(obj)
+        elif self._can_import(obj):
+            return self._to_importable_state(obj)
         else:
-
             objid = id(obj)
             if objid in cache:
                 raise ValueError("multiple references to single object not allowed ({} already written)".format(obj))
@@ -84,7 +91,12 @@ class PseudoPickler:
             try:
                 odict = dict(obj.__dict__)
             except AttributeError:
-                raise Exception(obj)
+                raise_err = True
+            else:
+                raise_err = False
+
+            if raise_err:
+                raise ValueError("can't psuedopickle object of type {} (not a primitive nor supporting `obj.__dict__`): {}".format(type(obj), obj))
 
             return self.serialize(odict, cache=cache)
 
@@ -99,6 +111,12 @@ class PseudoPickler:
             "pseudopickle_protocol": self.protocol,
             "pickle_data": dump
         }
+    def _can_import(self, obj):
+        # print(type(obj).__module__)
+        return (
+                type(obj).__module__.split(".")[0] in self._safe_modules
+                or isinstance(obj, types.BuiltinFunctionType)
+        )
 
     def to_state(self, obj, cache=None):
         """
@@ -386,6 +404,7 @@ class NDarrayMarshaller:
                  all_dicts=False,
                  converters=None
                  ):
+        self._seen_cache=None
         self.parent=base_serializer
         self.allow_pickle = allow_pickle
         if allow_pickle and psuedopickler is None:
@@ -396,7 +415,7 @@ class NDarrayMarshaller:
         self._converter_dispatch = converters
 
     # we define a converter layer that will coerce everything to NumPy arrays
-    atomic_types = (str, int, float, bool, np.floating, np.integer, np.bool)
+    atomic_types = PseudoPickler._primitive_types
 
     @classmethod
     def get_default_converters(self):
@@ -500,6 +519,10 @@ class NDarrayMarshaller:
             return arr
 
     def _psuedo_pickle_to_numpy(self, data):
+        if self._seen_cache is not None:
+            if id(data) in self._seen_cache:
+                raise ValueError("conversion on object of type {} hit an infinite recusion: {}".format(type(data), data))
+            self._seen_cache.add(id(data))
         data = self.psuedopickler.serialize(data)
         # return self._convert(data, allow_pickle=False)
         return self.convert(data)
@@ -512,6 +535,10 @@ class NDarrayMarshaller:
         :return:
         :rtype:
         """
+
+        seen_cache = self._seen_cache
+        if self._seen_cache is None:
+            self._seen_cache = set()
 
         if allow_pickle is None:
             allow_pickle = self.allow_pickle
@@ -542,6 +569,7 @@ class NDarrayMarshaller:
             return woof
 
         finally:
+            self.seen_cache = seen_cache
             self.allow_pickle = cur_pickle
 
     @staticmethod
