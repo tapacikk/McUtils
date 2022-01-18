@@ -14,14 +14,44 @@ __init__(self, default='raise'):
 temp_default(self, val): 
 ```
 
+<a id="McUtils.Scaffolding.Caches.ObjectRegistry.__contains__" class="docs-object-method">&nbsp;</a>
+```python
+__contains__(self, item): 
+```
+
 <a id="McUtils.Scaffolding.Caches.ObjectRegistry.lookup" class="docs-object-method">&nbsp;</a>
 ```python
 lookup(self, key): 
 ```
 
+<a id="McUtils.Scaffolding.Caches.ObjectRegistry.__getitem__" class="docs-object-method">&nbsp;</a>
+```python
+__getitem__(self, item): 
+```
+
 <a id="McUtils.Scaffolding.Caches.ObjectRegistry.register" class="docs-object-method">&nbsp;</a>
 ```python
 register(self, key, val): 
+```
+
+<a id="McUtils.Scaffolding.Caches.ObjectRegistry.__setitem__" class="docs-object-method">&nbsp;</a>
+```python
+__setitem__(self, key, value): 
+```
+
+<a id="McUtils.Scaffolding.Caches.ObjectRegistry.keys" class="docs-object-method">&nbsp;</a>
+```python
+keys(self): 
+```
+
+<a id="McUtils.Scaffolding.Caches.ObjectRegistry.items" class="docs-object-method">&nbsp;</a>
+```python
+items(self): 
+```
+
+<a id="McUtils.Scaffolding.Caches.ObjectRegistry.values" class="docs-object-method">&nbsp;</a>
+```python
+values(self): 
 ```
 
 

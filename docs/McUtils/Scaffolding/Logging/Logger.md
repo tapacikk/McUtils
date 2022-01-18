@@ -11,6 +11,16 @@ default_verbosity: LogLevel
 __init__(self, log_file=None, log_level=None, print_function=None, padding='', newline='\n'): 
 ```
 
+<a id="McUtils.Scaffolding.Logging.Logger.to_state" class="docs-object-method">&nbsp;</a>
+```python
+to_state(self, serializer=None): 
+```
+
+<a id="McUtils.Scaffolding.Logging.Logger.from_state" class="docs-object-method">&nbsp;</a>
+```python
+from_state(state, serializer=None): 
+```
+
 <a id="McUtils.Scaffolding.Logging.Logger.block" class="docs-object-method">&nbsp;</a>
 ```python
 block(self, **kwargs): 

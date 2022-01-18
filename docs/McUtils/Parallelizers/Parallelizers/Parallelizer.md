@@ -18,7 +18,7 @@ mode_map: dict
 ```
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, logger=None, contract=None): 
+__init__(self, logger=None, contract=None, uid=None): 
 ```
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.load_registry" class="docs-object-method">&nbsp;</a>
@@ -296,6 +296,12 @@ id(self):
 Returns some form of identifier for the current process
 - `:returns`: `_`
     >No description...
+
+<a id="McUtils.Parallelizers.Parallelizers.Parallelizer.pid" class="docs-object-method">&nbsp;</a>
+```python
+@property
+pid(self): 
+```
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.get_id" class="docs-object-method">&nbsp;</a>
 ```python

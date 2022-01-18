@@ -38,6 +38,11 @@ __iter__(self):
 __len__(self): 
 ```
 
+<a id="McUtils.Parallelizers.SharedMemory.SharedMemoryDict.__del__" class="docs-object-method">&nbsp;</a>
+```python
+__del__(self): 
+```
+
 <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryDict.keys" class="docs-object-method">&nbsp;</a>
 ```python
 keys(self): 

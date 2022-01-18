@@ -9,7 +9,7 @@ PoolCommunicator: ABCMeta
 ```
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, worker=False, pool: <bound method BaseContext.Pool of <multiprocessing.context.DefaultContext instance>> = None, context=None, manager=None, logger=None, contract=None, comm=None, initialization_timeout=0.5, **kwargs): 
+__init__(self, worker=False, pool: <bound method BaseContext.Pool of <multiprocessing.context.DefaultContext instance>> = None, context=None, manager=None, logger=None, contract=None, comm=None, rank=None, allow_restart=True, initialization_timeout=0.5, **kwargs): 
 ```
 
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.get_nprocs" class="docs-object-method">&nbsp;</a>
@@ -34,6 +34,11 @@ Returns the communicator used by the paralellizer
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.__getstate__" class="docs-object-method">&nbsp;</a>
 ```python
 __getstate__(self): 
+```
+
+<a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.__setstate__" class="docs-object-method">&nbsp;</a>
+```python
+__setstate__(self, state): 
 ```
 
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.apply" class="docs-object-method">&nbsp;</a>
@@ -62,7 +67,7 @@ get_pool_nprocs(pool):
 
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.initialize" class="docs-object-method">&nbsp;</a>
 ```python
-initialize(self, allow_restart=True): 
+initialize(self, allow_restart=None): 
 ```
 
 <a id="McUtils.Parallelizers.Parallelizers.MultiprocessingParallelizer.finalize" class="docs-object-method">&nbsp;</a>

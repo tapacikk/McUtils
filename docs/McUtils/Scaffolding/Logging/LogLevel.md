@@ -7,6 +7,7 @@ Quiet: LogLevel
 Warnings: LogLevel
 Normal: LogLevel
 Debug: LogLevel
+MoreDebug: LogLevel
 All: LogLevel
 Never: LogLevel
 ```
