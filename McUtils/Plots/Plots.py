@@ -235,13 +235,14 @@ class Plot(Graphics):
     def _plot_data(self, *data, **plot_style):
         return self.method(*self._get_plot_data(*data), **plot_style)
 
-    def plot(self, *params, **plot_style):
+    def plot(self, *params, insert_default_styles=True, **plot_style):
         """
         Plots a set of data & stores the result
         :return: the graphics that matplotlib made
         :rtype:
         """
-        plot_style = dict(self.plot_style, **plot_style)
+        if insert_default_styles:
+            plot_style = dict(self.plot_style, **plot_style)
         self._data = (params, plot_style)
         self.graphics = self._plot_data(*params, **plot_style)
         if not self._initialized:
@@ -291,7 +292,16 @@ class Plot(Graphics):
         if self._initialized:
             if graphics is None and norm is None:
                 graphics = self.graphics
-            return super().add_colorbar(graphics = graphics, **kw)
+            return super().add_colorbar(graphics=graphics, **kw)
+
+    def set_graphics_properties(self, *which, **kw):
+        self.load_mpl()
+        if isinstance(self.graphics, tuple):
+            for n,g in enumerate(self.graphics):
+                if len(which) == 0 or n in which:
+                    self.pyplot.setp(g, **kw)
+        else:
+            self.pyplot.setp(self.graphics, **kw)
 
 class ScatterPlot(Plot):
     """
@@ -330,6 +340,24 @@ class StickPlot(Plot):
     default_plot_style = {'basefmt': " ", 'use_line_collection':True, 'markerfmt': " "}
     def __init__(self, *args, **kwargs):
         super().__init__(*args, method="stem", **kwargs)
+    def plot(self, *params, insert_default_styles=True, **plot_style):
+        """
+        Plots a set of data & stores the result
+        :return: the graphics that matplotlib made
+        :rtype:
+        """
+        if insert_default_styles:
+            plot_style = dict(self.plot_style, **plot_style)
+        plot_style = dict(self.plot_style, **plot_style)
+        if 'linewidth' in plot_style:
+            lw = plot_style['linewidth']
+            del plot_style['linewidth']
+        else:
+            lw = None
+        super().plot(*params, insert_default_styles=False, **plot_style)
+        if lw is not None:
+            self.set_graphics_properties(1, linewidth=lw)
+        return self.graphics
 
 
 class ListStickPlot(StickPlot):

@@ -1,4 +1,4 @@
-import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc
+import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc, gc
 from ..Scaffolding import MaxSizeCache, Logger
 from .SetOps import contained, unique as nput_unique
 from .Misc import infer_inds_dtype, downcast_index_array
@@ -512,18 +512,22 @@ class SparseArray(metaclass=abc.ABCMeta):
             #     return res
 
 
+            # import time
             if a.ndim > 1:
                 at = a.transpose(newaxes_a[0] + newaxes_a[1])
             else:
                 at = a
+            a = None
             at = at.reshape(newshape_a)
 
             if b.ndim > 1:
                 bt = b.transpose(newaxes_b[0] + newaxes_b[1])
             else:
                 bt = b
+            b = None
             bt = bt.reshape(newshape_b)
 
+            # time.sleep(.3)
             res = at.dot(bt)
 
             return res.reshape(olda + oldb)
@@ -535,6 +539,29 @@ class SparseArray(metaclass=abc.ABCMeta):
     #       objects using a weakref so that it's possible to just ask the parents
     #       if they have the data we need in their caches and then all caches
     #       will properly be cleaned up when objects go out of scope
+    class cacheing_manager:
+        def __init__(self, parent, enabled=True, clear=False):
+            self.to_set = enabled
+            self.cache_status = None
+            self.parent = parent
+            self.clear = clear
+        def __enter__(self):
+            self.cache_status = self.parent.get_caching_status()
+            if self.to_set:
+                self.parent.enable_caches()
+            else:
+                self.parent.disable_caches()
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            if self.cache_status:
+                self.parent.enable_caches()
+            else:
+                self.parent.disable_caches()
+            self.cache_status = None
+            if self.clear:
+                self.parent.clear_caches()
+    @classmethod
+    def cache_options(self, enabled=True, clear=False):
+        return self.cacheing_manager(self, enabled=enabled, clear=clear)
     @classmethod
     def get_caching_status(cls):
         """
@@ -572,6 +599,15 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
 
+    class initializer_list(list):
+        """
+        A simple wrapping head that allows us
+        to transfer ownership of initialization data to
+        a `SparseArray` during initialization
+        """
+        def __init__(self, *args):
+            super().__init__(args)
+
     # TODO: need to figure out if I want to support item assignment or not
 
 class lowmem_csr(sp.csr_matrix):
@@ -592,12 +628,12 @@ class lowmem_csr(sp.csr_matrix):
 
     # @profile
     def _init_vals(self, indices, indptr, data, idx_dtype, dtype, copy=False):
-        import time
+        # import time
 
         self.indices = np.array(indices, copy=copy, dtype=idx_dtype)
         self.indptr = np.array(indptr, copy=copy, dtype=idx_dtype)
         self.data = np.array(data, copy=copy, dtype=dtype)
-        time.sleep(.2)
+        # time.sleep(.2)
 
     # @profile
     def eval_idx_type(self, indices, indptr, maxval):
@@ -622,8 +658,9 @@ class ScipySparseArray(SparseArray):
                  layout=None,
                  dtype=None,
                  initialize=True,
-                 cache_block_data=True,
-                 logger=None
+                 cache_block_data=None,
+                 logger=None,
+                 init_kwargs=None
                  ):
         """
 
@@ -652,7 +689,8 @@ class ScipySparseArray(SparseArray):
         self._block_vals = None # cached to speed things up
         self.logger = logger
         if initialize:
-            self._init_matrix(cache_block_data=cache_block_data)
+            cache_block_data = self.get_caching_status() if cache_block_data is None else cache_block_data
+            self._init_matrix(cache_block_data=cache_block_data, init_kwargs=init_kwargs)
             self._validate()
 
     # from memory_profiler import profile
@@ -707,10 +745,10 @@ class ScipySparseArray(SparseArray):
             indices = indices[sorting]
             vals = vals[sorting]
 
-        if shape[0] > shape[1]:
-            real = sp.csc_matrix((vals, ij_inds), shape=shape)
-        else:
-            real = sp.csr_matrix((vals, ij_inds), shape=shape)
+        # if shape[0] > shape[1]:
+        #     real = sp.csc_matrix((vals, ij_inds), shape=shape)
+        # else:
+        #     real = sp.csr_matrix((vals, ij_inds), shape=shape)
         # print("??", indptr.shape, indptr)
         # print(">>", real.indptr.shape, real.indptr)
         # print("??", indices.shape, indices)
@@ -808,7 +846,7 @@ class ScipySparseArray(SparseArray):
 
     # from memory_profiler import profile
     # @profile
-    def _init_matrix(self, cache_block_data=True):
+    def _init_matrix(self, cache_block_data=True, init_kwargs=None):
         a = self._a
         if isinstance(a, ScipySparseArray):
             if self.logger is not None:
@@ -853,8 +891,12 @@ class ScipySparseArray(SparseArray):
         elif len(a) == 2 and len(a[1]) > 0 and len(a[0]) == len(a[1][0]):
             if self.logger is not None:
                 self.logger.log_print("initializing from vals and indices", log_level=self.logger.LogLevel.Debug)
+            if init_kwargs is None:
+                init_kwargs = {}
             data, block_vals, block_inds, self._shape = self.construct_sparse_from_val_inds(
-                a[0], a[1], self._shape, self._fmt
+                a, self._shape, self._fmt,
+                cache_block_data=cache_block_data,
+                **init_kwargs
             )
             self._a = data
             if cache_block_data and block_inds is not None: # corner case to avoid a sort in low-mem situation
@@ -877,8 +919,13 @@ class ScipySparseArray(SparseArray):
                     self._block_data_sorted = False
 
     @classmethod
-    def construct_sparse_from_val_inds(cls, block_vals, block_inds, shape, fmt, cache_block_data=True, logger=None):
-
+    def construct_sparse_from_val_inds(cls, a, shape, fmt,
+                                       cache_block_data=True, logger=None,
+                                       assume_sorted=False
+                                       ):
+        block_vals, block_inds = a
+        # import sys
+        # print("???2", sys.getrefcount(block_vals), sys.getrefcount(block_inds))
         # print("?", shape, min(block_inds[0]), max(block_inds[1]))
         block_vals = np.asanyarray(block_vals)
         if shape is None:
@@ -892,6 +939,8 @@ class ScipySparseArray(SparseArray):
             block_inds = None
         else:
             block_inds = tuple(np.asanyarray(i) for i in block_inds)
+            if isinstance(a, cls.initializer_list):
+                a[1] = None
             if len(block_inds) != len(shape):
                 raise ValueError("{}: can't initialize array of shape {} from non-zero indices of dimension {}".format(
                     cls.__name__,
@@ -899,14 +948,11 @@ class ScipySparseArray(SparseArray):
                     len(block_inds)
                 ))
 
-
             if logger is not None:
                 logger.log_print("calculating flat indices", log_level=logger.LogLevel.Debug)
 
             flat = np.ravel_multi_index(block_inds, shape)  # no reason to cache this since we're going to sort it...
-
             if cache_block_data:
-
                 if logger is not None:
                     logger.log_print("sorting cached data", log_level=logger.LogLevel.Debug)
                 # gotta make sure our inds are sorted so we don't run into sorting issues later...
@@ -924,6 +970,7 @@ class ScipySparseArray(SparseArray):
 
             if not cache_block_data:
                 block_inds = None
+                del flat
 
         if fmt is None:
             if total_shape[0] > total_shape[1]:
@@ -937,7 +984,10 @@ class ScipySparseArray(SparseArray):
             logger.log_print("initializing {fmt} from indices and values", fmt=fmt, log_level=logger.LogLevel.Debug)
 
         if fmt in [sp.csc_matrix, sp.csr_matrix]:
-            data = cls.coo_to_cs(total_shape, block_vals, init_inds)
+            data = cls.coo_to_cs(total_shape, block_vals, init_inds, assume_sorted=assume_sorted)
+            if isinstance(a, cls.initializer_list):
+                a[0] = None
+
             if fmt is sp.csc_matrix and data.format is sp.csr_matrix:
                 data = data.asformat('csc', copy=False)
             elif fmt is sp.csr_matrix and data.format is sp.csc_matrix:
@@ -953,6 +1003,9 @@ class ScipySparseArray(SparseArray):
                 else:
                     fmt = sp.csr_matrix
                 data = fmt((block_vals, init_inds), shape=total_shape)
+
+            if isinstance(a, cls.initializer_list):
+                a[0] = None
 
         if not cache_block_data:
             block_vals = None
@@ -1304,6 +1357,10 @@ class ScipySparseArray(SparseArray):
         if not self._block_data_sorted:
             self._sort_block_data()
         return self._block_vals
+    @block_vals.setter
+    def block_vals(self, bv):
+        self._block_vals = bv
+
 
     @property
     def block_inds(self):
@@ -1319,35 +1376,46 @@ class ScipySparseArray(SparseArray):
         return self._block_inds
     @block_inds.setter
     def block_inds(self, bi):
-        if isinstance(bi, tuple) and len(bi) == 2:
-            flat, unflat = bi
-            if isinstance(unflat[0], int):
-                row_inds, col_inds = bi
-                flat = self._ravel_indices((row_inds, col_inds), self.data.shape)
-                unflat = self._unravel_indices(flat, self.shape)
-        elif isinstance(bi[0], int):
-            flat = bi
-            unflat = self._unravel_indices(flat, self.shape)
+        if bi is None:
+            self._block_inds = None
         else:
-            unflat = bi
-            flat = self._ravel_indices(bi, self.shape)
-        if len(unflat) != len(self.shape):
-            raise ValueError("{}: block indices must have same dimension as array ({}); was given {}".format(
-                type(self).__name__,
-                len(self.shape),
-                len(unflat)
-            ))
-        if self._block_vals is not None and len(flat) != len(self._block_vals):
-                raise ValueError("{}: number of block indices must match number of non-zero elements ({}); was given {}".format(
+            if isinstance(bi, tuple) and len(bi) == 2:
+                flat, unflat = bi
+                if isinstance(unflat[0], int):
+                    row_inds, col_inds = bi
+                    flat = self._ravel_indices((row_inds, col_inds), self.data.shape)
+                    unflat = self._unravel_indices(flat, self.shape)
+            elif isinstance(bi[0], int):
+                flat = bi
+                unflat = self._unravel_indices(flat, self.shape)
+            else:
+                unflat = bi
+                flat = self._ravel_indices(bi, self.shape)
+            if len(unflat) != len(self.shape):
+                raise ValueError("{}: block indices must have same dimension as array ({}); was given {}".format(
                     type(self).__name__,
-                    len(self._block_vals),
-                    len(flat)
+                    len(self.shape),
+                    len(unflat)
                 ))
-        self._block_inds = (flat, unflat)
+            if self._block_vals is not None and len(flat) != len(self._block_vals):
+                    raise ValueError("{}: number of block indices must match number of non-zero elements ({}); was given {}".format(
+                        type(self).__name__,
+                        len(self._block_vals),
+                        len(flat)
+                    ))
+            self._block_inds = (flat, unflat)
     @property
     def block_data(self):
         res = self.block_vals, self.block_inds[1]
         return res
+    @block_data.setter
+    def block_data(self, bd):
+        if bd is None:
+            self.block_vals = None
+            self.block_inds = None
+        else:
+            self.block_vals, self.block_inds = bd
+
 
     # import memory_profiler
     # @memory_profiler.profile
@@ -1362,6 +1430,8 @@ class ScipySparseArray(SparseArray):
         :rtype:
         """
 
+        # import time
+
         shp = self.shape
 
         if len(transp) != self.ndim or np.any(np.sort(transp) != np.arange(self.ndim)):
@@ -1373,12 +1443,17 @@ class ScipySparseArray(SparseArray):
         if self._block_vals is None:
             row_inds, col_inds, data = self.find()
             flat = self._ravel_indices((row_inds, col_inds), self.data.shape)
+            del row_inds
+            del col_inds
             inds = self._unravel_indices(flat, self.shape)
+            del flat
+            new_inds = [inds[i] for i in transp]
+            del inds
         else:
             data = self.block_vals
             (flat, inds) = self.block_inds
+            new_inds = [inds[i] for i in transp]
 
-        new_inds = [inds[i] for i in transp]
         new_shape = tuple(shp[i] for i in transp)
         if len(data) == 0:
             return type(self).empty(new_shape, layout=self.fmt, dtype=data.dtype)
@@ -1392,11 +1467,17 @@ class ScipySparseArray(SparseArray):
             unflat = new_inds
             total_shape = new_shape
 
+        # time.sleep(.5)
         data = self._build_data(data, unflat, total_shape)
-
+        if not track_data:
+            del flat
+            del unflat
+            del new_inds
+            del total_shape
         # except MemoryError:
         #     raise Exception(data, unflat, new_shape, total_shape)
-        new = type(self)(data, shape=new_shape, layout=self.fmt)
+        new = type(self)(data, shape=new_shape, layout=self.fmt, initialize=False) # this is tuned for SciPySparse array...
+        # time.sleep(.5)
 
         if track_data:
 
@@ -1777,7 +1858,14 @@ class ScipySparseArray(SparseArray):
         elif isinstance(b, SparseArray):
             b = b.ascsr()
 
-        woof = a.dot(b)
+        try:
+            woof = a.dot(b)
+        except ValueError as e:
+            if e.args[0] == 'dimension mismatch':
+                raise ValueError("dimensions of tensors not aligned {} and {} incompatible".format(
+                    a.shape,
+                    b.shape
+                ))
 
         if isinstance(woof, sp.spmatrix):
             return type(self)(a.dot(b))
@@ -1790,23 +1878,29 @@ class ScipySparseArray(SparseArray):
         return self
     def __add__(self, other):
         return self.plus(other)
+    def __iadd__(self, other):
+        return self.plus(other, inplace=True)
     def __radd__(self, other):
         return self.plus(other)
-    def plus(self, other):
+    def plus(self, other, inplace=False):
         d = self.data
         if isinstance(other, (int, float, np.integer, np.floating)):
             if other == 0.:
                 return self.copy()
             else:
-                d = other + d
-                new = type(self)(d, shape=self.shape, layout=self.fmt)
-                if self._block_vals is not None:
-                    bvs = self._block_vals
-                    bi = self._block_inds
-                    new._block_vals = other + bvs
-                    new._block_inds = bi
-                    new._block_data_sorted = self._block_data_sorted
-                return new
+                if inplace:
+                    d += other
+                    return self
+                else:
+                    d = other + d
+                    new = type(self)(d, shape=self.shape, layout=self.fmt)
+                    if self._block_vals is not None:
+                        bvs = self._block_vals
+                        bi = self._block_inds
+                        new._block_vals = other + bvs
+                        new._block_inds = bi
+                        new._block_data_sorted = self._block_data_sorted
+                    return new
 
         if isinstance(other, ScipySparseArray):
             other = other.data
@@ -1814,11 +1908,18 @@ class ScipySparseArray(SparseArray):
             other = other.reshape(d.shape)
         elif isinstance(other, np.ndarray):
             other = np.broadcast_to(other, self.shape).reshape(d.shape)
-        new = d.__add__(other)
-        if isinstance(new, sp.spmatrix):
-            return type(self)(new, shape=self.shape, layout=self.fmt)
+
+        if inplace:
+            d += other
+            self.data = d # hmm...
+            self.block_data = None
+            return self
         else:
-            return np.array(new).reshape(self.shape)
+            new = d.__add__(other)
+            if isinstance(new, sp.spmatrix):
+                return type(self)(new, shape=self.shape, layout=self.fmt)
+            else:
+                return np.array(new).reshape(self.shape)
 
     def floopy_flop(self):
         return type(self)(1/self.data, shape = self.shape, layout=self.fmt)
