@@ -1927,7 +1927,7 @@ class SymmetricGroupGenerator:
         :rtype:
         """
 
-        if isinstance(n, int):
+        if isinstance(n, (int, np.integer)):
             n = [n]
 
         partitioners, counts = self._get_partition_perms(n)
