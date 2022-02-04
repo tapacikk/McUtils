@@ -476,7 +476,7 @@ class StringParser:
         if handler is not None:
             data = handler(data, array = array, append = append)
         if data is not None:
-            if single and (append or (append is 0)):
+            if single and (append or (append == 0)):
                 # print("pre-append:>", array)
                 # print("axis:", append)
                 # print("total axis:", append + array.append_depth)
@@ -485,7 +485,7 @@ class StringParser:
                     append = 0
                 array.append(data, axis = append)
                 # print("<:post-append", array)
-            elif (append or (append is 0)):
+            elif (append or (append == 0)):
                 # print("pre-extend:>", array)
                 if append is True:
                     append = 0

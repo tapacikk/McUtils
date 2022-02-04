@@ -166,7 +166,7 @@ class GaussianFChkReader(FileStreamReader):
         """
         with FileStreamCheckPoint(self):
             tag_line = self.readline()
-            if tag_line is b'':
+            if tag_line == b'':
                 return None
             tag_line = tag_line.decode(self._encoding)
             match = re.match(self.fchk_re, tag_line)

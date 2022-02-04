@@ -4,6 +4,7 @@
 
 from ..Parsers import *
 from collections import namedtuple, OrderedDict
+import numpy as np
 
 ########################################################################################################################
 #
@@ -320,6 +321,48 @@ GaussianLogComponents["MullikenCharges"] = {
 
 # endregion
 
+########################################################################################################################
+#
+#                                           Force Constants
+#
+
+tag_start = " Force constants in internal coordinates:"
+tag_end   = " Leave Link"
+mode      = " List "
+
+
+def parser(forces):
+    #"""Parses a Force Constants block"""
+    forces = str(forces[-1]).split('\n') #assumes last instance is what you want
+
+    l = []
+    for s in range(len(forces)):
+        if "                " in forces[s]:
+            l.append(s)
+    num_coords = l[1] - l[0] - 1
+    forces_mat = np.zeros((num_coords, num_coords))
+
+    for s in forces:
+        s = s.replace("D", "E")
+        if "                " in s:
+            coord_spec = np.fromstring(s, dtype=int, sep=' ')
+        elif len(s) > 0:
+            row = np.fromstring(s, sep=' ')
+            row_coord = int(row[0])
+            for i in range(1, len(row)):
+                forces_mat[row_coord - 1][coord_spec[i - 1] - 1] = row[i]
+    return forces_mat
+
+mode = "List"
+
+GaussianLogComponents["ForceConstants"] = {
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
+    "parser"   : parser,
+    "mode"     : mode
+}
+
+# endregion
 ########################################################################################################################
 #
 #                                           MultipoleMoments
@@ -728,7 +771,8 @@ glk = ( # this must be sorted by what appears when
     "OptimizedScanEnergies",
     "OptimizationScan",
     "Blurb",
-    "Footer"
+    "Footer",
+    "ForceConstants"
 )
 list_type = { k:-1 for k in GaussianLogComponents if GaussianLogComponents[k]["mode"] == "List" }
 GaussianLogOrdering = { k:i for i, k in enumerate([k for k in glk if k not in list_type]) }
