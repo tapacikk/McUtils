@@ -404,11 +404,12 @@ class NDarrayMarshaller:
                  all_dicts=False,
                  converters=None
                  ):
-        self._seen_cache=None
+
         self.parent=base_serializer
         self.allow_pickle = allow_pickle
         if allow_pickle and psuedopickler is None:
             psuedopickler = PseudoPickler(b64encode=True)
+        self._seen_cache = None
         self.psuedopickler = psuedopickler
         self.all_dicts = all_dicts
         self.allow_records = allow_records
@@ -518,12 +519,32 @@ class NDarrayMarshaller:
         else:
             return arr
 
+    class _pickle_cache:
+        def __init__(self, parent):
+            self.parent = parent
+            self.tree = []
+            self.parents = set()
+        def __call__(self, key):
+            self.add(key)
+            return self
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.pop()
+            if len(self.parents) == 0:
+                self.parent._seen_cache = None
+        def add(self, key):
+            if id(key) in self.parents:
+                raise RecursionError("conversion on object of type {} hit an infinite recusion: {}".format(type(key), key))
+            self.parents.add(id(key))
+            self.tree.append(id(key))
+        def pop(self):
+            self.parents.remove(self.tree.pop())
     def _psuedo_pickle_to_numpy(self, data):
-        if self._seen_cache is not None:
-            if id(data) in self._seen_cache:
-                raise ValueError("conversion on object of type {} hit an infinite recusion: {}".format(type(data), data))
-            self._seen_cache.add(id(data))
-        data = self.psuedopickler.serialize(data)
+        if self._seen_cache is None:
+            self._seen_cache = self._pickle_cache(self)
+        with self._seen_cache(data):
+            data = self.psuedopickler.serialize(data)
         # return self._convert(data, allow_pickle=False)
         return self.convert(data)
 
@@ -535,10 +556,6 @@ class NDarrayMarshaller:
         :return:
         :rtype:
         """
-
-        seen_cache = self._seen_cache
-        if self._seen_cache is None:
-            self._seen_cache = set()
 
         if allow_pickle is None:
             allow_pickle = self.allow_pickle
@@ -569,7 +586,6 @@ class NDarrayMarshaller:
             return woof
 
         finally:
-            self.seen_cache = seen_cache
             self.allow_pickle = cur_pickle
 
     @staticmethod

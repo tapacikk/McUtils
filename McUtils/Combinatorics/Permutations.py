@@ -1927,7 +1927,7 @@ class SymmetricGroupGenerator:
         :rtype:
         """
 
-        if isinstance(n, int):
+        if isinstance(n, (int, np.integer)):
             n = [n]
 
         partitioners, counts = self._get_partition_perms(n)
@@ -3261,6 +3261,14 @@ class PermutationRelationGraph:
 
     @classmethod
     def merge_groups(cls, groups):
+        """
+        This really needs to be cleaned up...
+
+        :param groups:
+        :type groups:
+        :return:
+        :rtype:
+        """
 
         num_groups = np.inf
         while len(groups) < num_groups:

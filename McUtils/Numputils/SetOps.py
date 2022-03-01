@@ -300,7 +300,7 @@ def difference1d(ar1, ar2, assume_unique=False, sortings=None, method=None, unio
 
 def find1d(ar, to_find, sorting=None,
            search_space_sorting=None, return_search_space_sorting=False,
-           check=True, minimal_dtype=False
+           check=True, minimal_dtype=False, missing_val='raise'
            ):
     """
     Finds elements in an array and returns sorting
@@ -346,11 +346,15 @@ def find1d(ar, to_find, sorting=None,
             else:
                 # print(vals, bad_vals)
                 vals[bad_vals] = -1
+
     else:
         bad_vals = np.full_like(to_find, True)
         vals = np.full_like(vals, -1)
     if check and bad_vals.any():
-        raise IndexError("{} not in array".format(to_find[bad_vals]))
+        if isinstance(missing_val, str) and missing_val == 'raise':
+            raise IndexError("{} not in array".format(to_find[bad_vals]))
+        else:
+            vals[bad_vals] = missing_val
 
     if search_space_sorting is not None:
         vals = vals[search_space_inverse_sorting]
@@ -362,7 +366,7 @@ def find1d(ar, to_find, sorting=None,
 def find(ar, to_find, sorting=None,
          search_space_sorting=None,
          return_search_space_sorting=False,
-         check=True, minimal_dtype=False):
+         check=True, minimal_dtype=False, missing_val='raise'):
     """
     Finds elements in an array and returns sorting
     """
@@ -381,7 +385,7 @@ def find(ar, to_find, sorting=None,
         ret = find1d(ar, to_find, sorting=sorting, check=check,
                      search_space_sorting=search_space_sorting,
                      return_search_space_sorting=return_search_space_sorting,
-                     minimal_dtype=minimal_dtype
+                     minimal_dtype=minimal_dtype, missing_val=missing_val
                      )
         return ret
 
@@ -390,7 +394,7 @@ def find(ar, to_find, sorting=None,
     output = find1d(ar, to_find, sorting=sorting, check=check,
                      search_space_sorting=search_space_sorting,
                      return_search_space_sorting=return_search_space_sorting,
-                     minimal_dtype=minimal_dtype
+                     minimal_dtype=minimal_dtype, missing_val=missing_val
                     )
     return output
 

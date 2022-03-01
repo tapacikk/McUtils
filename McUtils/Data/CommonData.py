@@ -78,7 +78,7 @@ class DataHandler:
             for k in self._alts:
                 extras.update({a[k]:a for a in self._data.values()}) #shouldn't increase memory bc mutable
             self._data.update(extras)
-    def load(self):
+    def load(self, env=None):
         """
         Actually loads the data from `data_file`.
         Currently set up to just use an `import` statement but should
@@ -89,7 +89,7 @@ class DataHandler:
         """
         # currently we only load python data
         # TODO: I should rewrite this to use a Deserializer object...
-        env = {}
+        env = {} if env is None else env
         import sys
         sys.path.insert(0, self._dir) #name needs to be unique enough...
         if self._pkg is None:
@@ -117,9 +117,10 @@ class DataHandler:
     def _get_data(self, key):
         def _get(a, k):
             if k not in a:
-                raise DataError("{}: data source {} doesn't have key {}".format(
+                raise DataError("{}: data source {} doesn't have subkey {} of {}".format(
                     type(self).__name__,
                     self._name,
+                    k,
                     key
                 ))
             return a[k]
