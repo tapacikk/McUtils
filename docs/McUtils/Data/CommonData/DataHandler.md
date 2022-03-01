@@ -32,7 +32,7 @@ data_file(self):
 
 <a id="McUtils.Data.CommonData.DataHandler.load" class="docs-object-method">&nbsp;</a>
 ```python
-load(self): 
+load(self, env=None): 
 ```
 Actually loads the data from `data_file`.
         Currently set up to just use an `import` statement but should

@@ -33,7 +33,7 @@ __init__(self, *params, method='plot', figure=None, axes=None, subplot_kw=None, 
 
 <a id="McUtils.Plots.Plots.Plot.plot" class="docs-object-method">&nbsp;</a>
 ```python
-plot(self, *params, **plot_style): 
+plot(self, *params, insert_default_styles=True, **plot_style): 
 ```
 Plots a set of data & stores the result
 - `:returns`: `_`
@@ -72,6 +72,11 @@ The styling options applied to the plot
 add_colorbar(self, graphics=None, norm=None, **kw): 
 ```
 Adds a colorbar to the plot
+
+<a id="McUtils.Plots.Plots.Plot.set_graphics_properties" class="docs-object-method">&nbsp;</a>
+```python
+set_graphics_properties(self, *which, **kw): 
+```
 
 Regular `matplotlib` plotting syntax works:
 

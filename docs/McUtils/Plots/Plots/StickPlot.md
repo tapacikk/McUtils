@@ -10,6 +10,14 @@ default_plot_style: dict
 __init__(self, *args, **kwargs): 
 ```
 
+<a id="McUtils.Plots.Plots.StickPlot.plot" class="docs-object-method">&nbsp;</a>
+```python
+plot(self, *params, insert_default_styles=True, **plot_style): 
+```
+Plots a set of data & stores the result
+- `:returns`: `_`
+    >the graphics that matplotlib made
+
 
 
 

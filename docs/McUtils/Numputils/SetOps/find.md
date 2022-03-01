@@ -1,7 +1,7 @@
 # <a id="McUtils.Numputils.SetOps.find">find</a>
 
 ```python
-find(ar, to_find, sorting=None, search_space_sorting=None, return_search_space_sorting=False, check=True, minimal_dtype=False): 
+find(ar, to_find, sorting=None, search_space_sorting=None, return_search_space_sorting=False, check=True, minimal_dtype=False, missing_val='raise'): 
 ```
 Finds elements in an array and returns sorting 
 

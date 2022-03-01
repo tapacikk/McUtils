@@ -5,6 +5,8 @@ which can be subclassed to provide a concrete implementation
 ### Properties and Methods
 ```python
 backends: NoneType
+cacheing_manager: type
+initializer_list: type
 ```
 <a id="McUtils.Numputils.Sparse.SparseArray.get_backends" class="docs-object-method">&nbsp;</a>
 ```python
@@ -289,6 +291,11 @@ Takes the dot product of self and other along the specified axes
     >the axes to contract along
 - `:returns`: `_`
     >No description...
+
+<a id="McUtils.Numputils.Sparse.SparseArray.cache_options" class="docs-object-method">&nbsp;</a>
+```python
+cache_options(enabled=True, clear=False): 
+```
 
 <a id="McUtils.Numputils.Sparse.SparseArray.get_caching_status" class="docs-object-method">&nbsp;</a>
 ```python

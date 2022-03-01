@@ -11,7 +11,7 @@ caching_enabled: bool
 ```
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.__init__" class="docs-object-method">&nbsp;</a>
 ```python
-__init__(self, a, shape=None, layout=None, dtype=None, initialize=True, cache_block_data=True, logger=None): 
+__init__(self, a, shape=None, layout=None, dtype=None, initialize=True, cache_block_data=None, logger=None, init_kwargs=None): 
 ```
 
 - `a`: `Any`
@@ -62,7 +62,7 @@ initialize_empty(shape, dtype=None, layout=None, **kw):
 
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.construct_sparse_from_val_inds" class="docs-object-method">&nbsp;</a>
 ```python
-construct_sparse_from_val_inds(block_vals, block_inds, shape, fmt, cache_block_data=True, logger=None): 
+construct_sparse_from_val_inds(a, shape, fmt, cache_block_data=True, logger=None, assume_sorted=False): 
 ```
 
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.dtype" class="docs-object-method">&nbsp;</a>
@@ -312,6 +312,11 @@ __pos__(self):
 __add__(self, other): 
 ```
 
+<a id="McUtils.Numputils.Sparse.ScipySparseArray.__iadd__" class="docs-object-method">&nbsp;</a>
+```python
+__iadd__(self, other): 
+```
+
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.__radd__" class="docs-object-method">&nbsp;</a>
 ```python
 __radd__(self, other): 
@@ -319,7 +324,7 @@ __radd__(self, other):
 
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.plus" class="docs-object-method">&nbsp;</a>
 ```python
-plus(self, other): 
+plus(self, other, inplace=False): 
 ```
 
 <a id="McUtils.Numputils.Sparse.ScipySparseArray.floopy_flop" class="docs-object-method">&nbsp;</a>
