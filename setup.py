@@ -21,7 +21,7 @@ def get_version():
 
 setup(
     # Self-descriptive entries which should always be present
-    name='McUtils',
+    name='mccoygroup-mcutils',
     author='Mark Boyer',
     author_email='b3m2a1@uw.edu',
     description=short_description[0],
@@ -33,7 +33,7 @@ setup(
     # Which Python importable modules should be included when your package is installed
     # Handled automatically by setuptools. Use 'exclude' to prevent some specific
     # subpackage(s) from being added, if needed
-    packages=find_packages("Psience")
+    packages=find_packages("McUtils")
 
     # Optional include package data to ship with your package
     # Customize MANIFEST.in if the general case does not suit your needs
