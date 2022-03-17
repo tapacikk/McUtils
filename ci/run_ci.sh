@@ -42,7 +42,7 @@ if [[ "$run_test" == "true" ]]; then
 fi
 
 if [[ "$build_docs" == "true" ]]; then
-  if [[ "$branch" == "edit" ]]; then
+  if [[ "$branch" == "master" ]]; then
     # build docs and push
     PYTHONPATH=/home python3 McUtils/ci/build_docs.py
     cp -r McUtils/ci/docs McUtils/
