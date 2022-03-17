@@ -5,110 +5,164 @@ Extends the standard matplotlib 3D plotting to use all the Graphics extensions
 ```python
 opt_keys: set
 ```
-<a id="McUtils.Plots.Graphics.Graphics3D.__init__" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, *args, figure=None, axes=None, subplot_kw=None, event_handlers=None, animate=None, axes_labels=None, plot_label=None, plot_range=None, plot_legend=None, ticks=None, scale=None, ticks_style=None, image_size=None, background=None, view_settings=None, backend=<Backends.MPL: 'matplotlib'>, **kwargs): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L710)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L710?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.set_options" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.set_options" class="docs-object-method">&nbsp;</a> 
 ```python
 set_options(self, view_settings=None, **parent_opts): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L751)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L751?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.load_mpl" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.load_mpl" class="docs-object-method">&nbsp;</a> 
 ```python
 load_mpl(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L766)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L766?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.plot_label" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.plot_label" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 plot_label(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.plot_legend" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.plot_legend" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 plot_legend(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.axes_labels" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.axes_labels" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 axes_labels(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.frame" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.frame" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 frame(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.plot_range" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.plot_range" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 plot_range(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.ticks" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.ticks" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 ticks(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.ticks_style" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.ticks_style" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 ticks_style(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.scale" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.scale" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 scale(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.aspect_ratio" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.aspect_ratio" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 aspect_ratio(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.image_size" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.image_size" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 image_size(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.padding" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.padding" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 padding(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.background" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.background" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 background(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.colorbar" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.colorbar" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 colorbar(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.box_ratios" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.box_ratios" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 box_ratios(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Graphics.Graphics3D.view_settings" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Graphics.Graphics3D.view_settings" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 view_settings(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
 
 
 
@@ -116,8 +170,8 @@ view_settings(self):
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Plots/Graphics/Graphics3D.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Plots/Graphics/Graphics3D.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Plots/Graphics/Graphics3D.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Plots/Graphics/Graphics3D.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Plots/Graphics/Graphics3D.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Plots/Graphics/Graphics3D.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Plots/Graphics/Graphics3D.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Plots/Graphics/Graphics3D.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Plots/Graphics.py?message=Update%20Docs)

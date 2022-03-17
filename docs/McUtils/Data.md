@@ -8,20 +8,53 @@ A slightly more involved example is in `ConstantsData.UnitsData`.
 
 ### Members
 
-  - [DataHandler](Data/CommonData/DataHandler.md)
-  - [DataError](Data/CommonData/DataError.md)
-  - [DataRecord](Data/CommonData/DataRecord.md)
-  - [AtomData](Data/AtomData/AtomData.md)
-  - [AtomDataHandler](Data/AtomData/AtomDataHandler.md)
-  - [UnitsData](Data/ConstantsData/UnitsData.md)
-  - [UnitsDataHandler](Data/ConstantsData/UnitsDataHandler.md)
-  - [BondData](Data/BondData/BondData.md)
-  - [BondDataHandler](Data/BondData/BondDataHandler.md)
-  - [WavefunctionData](Data/WavefunctionData/WavefunctionData.md)
-  - [PotentialData](Data/PotentialData/PotentialData.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[DataHandler](Data/CommonData/DataHandler.md)   
+</div>
+   <div class="col" markdown="1">
+[DataError](Data/CommonData/DataError.md)   
+</div>
+   <div class="col" markdown="1">
+[DataRecord](Data/CommonData/DataRecord.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[AtomData](Data/AtomData/AtomData.md)   
+</div>
+   <div class="col" markdown="1">
+[AtomDataHandler](Data/AtomData/AtomDataHandler.md)   
+</div>
+   <div class="col" markdown="1">
+[UnitsData](Data/ConstantsData/UnitsData.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[UnitsDataHandler](Data/ConstantsData/UnitsDataHandler.md)   
+</div>
+   <div class="col" markdown="1">
+[BondData](Data/BondData/BondData.md)   
+</div>
+   <div class="col" markdown="1">
+[BondDataHandler](Data/BondData/BondDataHandler.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[WavefunctionData](Data/WavefunctionData/WavefunctionData.md)   
+</div>
+   <div class="col" markdown="1">
+[PotentialData](Data/PotentialData/PotentialData.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
+## Examples
 We can work with atomic data. The key can be specified in multiple different ways.
 
 ```python
@@ -69,15 +102,44 @@ assert UnitsData.convert("Wavenumbers", "AtomicUnitOfEnergy") == UnitsData.conve
 
 ### Unit Tests
 
-```python
 
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [AtomData](#AtomData)
+- [AtomMasses](#AtomMasses)
+- [Conversions](#Conversions)
+- [AtomicUnits](#AtomicUnits)
+- [BondData](#BondData)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
+```python
 from Peeves.TestUtils import *
 from unittest import TestCase
 from McUtils.Data import *
+```
 
+All tests are wrapped in a test class
+```python
 class DataTests(TestCase):
+```
 
-    @validationTest
+ </div>
+</div>
+
+#### <a name="AtomData">AtomData</a>
+```python
     def test_AtomData(self):
         self.assertIsInstance(AtomData["H"], DataRecord)
         self.assertIsInstance(AtomData["Hydrogen"], DataRecord)
@@ -86,12 +148,14 @@ class DataTests(TestCase):
         self.assertIs(AtomData["H2"], AtomData["Deuterium"])
         self.assertIs(AtomData["H1"], AtomData["Hydrogen"])
         self.assertIs(AtomData[8], AtomData["Oxygen"])
-
-    @validationTest
+```
+#### <a name="AtomMasses">AtomMasses</a>
+```python
     def test_AtomMasses(self):
-        self.assertLess(AtomData["Helium3", "Mass"], AtomData["T"]["Mass"]) # fun weird divergence
-
-    @validationTest
+        self.assertLess(AtomData["Helium3", "Mass"], AtomData["T"]["Mass"])
+```
+#### <a name="Conversions">Conversions</a>
+```python
     def test_Conversions(self):
         # print(AtomData["T"]["Mass"]-AtomData["Helium3", "Mass"], file=sys.stderr)
         self.assertGreater(UnitsData.data[("Hartrees", "InverseMeters")]["Value"], 21947463.13)
@@ -104,13 +168,15 @@ class DataTests(TestCase):
             UnitsData.convert("Hartrees", "Wavenumbers"),
             UnitsData.convert("Centihartrees", "InverseMeters")
         )
-
-    @validationTest
+```
+#### <a name="AtomicUnits">AtomicUnits</a>
+```python
     def test_AtomicUnits(self):
         # print(UnitsData["AtomicUnitOfMass"])
         self.assertAlmostEqual(UnitsData.convert("AtomicMassUnits", "AtomicUnitOfMass"), 1822.888486217313)
-
-    @validationTest
+```
+#### <a name="BondData">BondData</a>
+```python
     def test_BondData(self):
         self.assertIsInstance(BondData["H"], dict)
         self.assertLess(BondData["H", "H", 1], 1)
@@ -118,10 +184,13 @@ class DataTests(TestCase):
         self.assertGreater(BondData["H", "C", 1], 1)
 ```
 
+ </div>
+</div>
+
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Data.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Data.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Data.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Data.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Data.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Data.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Data.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Data.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Data/__init__.py?message=Update%20Docs)

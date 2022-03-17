@@ -2,10 +2,14 @@
 Makes a 2D plot of arbitrary data using a plot method that handles that data type
 
 ### Properties and Methods
-<a id="McUtils.Plots.Plots.DataPlot.__init__" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.DataPlot.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, *params, plot_style=None, method=None, figure=None, axes=None, subplot_kw=None, colorbar=None, **opts): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L390)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L390?message=Update%20Docs)]
+</div>
+
 
 - `params`: `Any`
     >_empty_ or _data_
@@ -30,8 +34,8 @@ __init__(self, *params, plot_style=None, method=None, figure=None, axes=None, su
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Plots/Plots/DataPlot.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Plots/Plots/DataPlot.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Plots/Plots/DataPlot.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Plots/Plots/DataPlot.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Plots/Plots/DataPlot.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Plots/Plots/DataPlot.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Plots/Plots/DataPlot.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Plots/Plots/DataPlot.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Plots/Plots.py?message=Update%20Docs)

@@ -2,28 +2,40 @@
 Holds the data used by to construct a finite difference matrix
 
 ### Properties and Methods
-<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceData.__init__" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceData.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, weights, widths, order): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L608)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L608?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceData.weights" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceData.weights" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 weights(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceData.widths" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceData.widths" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 widths(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceData.order" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceData.order" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 order(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L?message=Update%20Docs)]
+</div>
 
 ## <a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.FiniteDifferenceData">FiniteDifferenceData</a>
 Holds the data used by to construct a finite difference matrix
@@ -67,8 +79,8 @@ ___
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceData.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceData.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceData.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceData.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceData.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceData.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceData.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceData.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Zachary/Taylor/FiniteDifferenceFunction.py?message=Update%20Docs)

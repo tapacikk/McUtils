@@ -10,21 +10,56 @@ been written over the years.
 
 ### Members
 
-  - [Misc](McUtils/Misc.md)
-  - [Parsers](McUtils/Parsers.md)
-  - [Extensions](McUtils/Extensions.md)
-  - [Plots](McUtils/Plots.md)
-  - [ExternalPrograms](McUtils/ExternalPrograms.md)
-  - [Zachary](McUtils/Zachary.md)
-  - [Data](McUtils/Data.md)
-  - [Coordinerds](McUtils/Coordinerds.md)
-  - [GaussianInterface](McUtils/GaussianInterface.md)
-  - [Numputils](McUtils/Numputils.md)
-  - [Scaffolding](McUtils/Scaffolding.md)
-  - [Parallelizers](McUtils/Parallelizers.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[Misc](McUtils/Misc.md)   
+</div>
+   <div class="col" markdown="1">
+[Parsers](McUtils/Parsers.md)   
+</div>
+   <div class="col" markdown="1">
+[Extensions](McUtils/Extensions.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Plots](McUtils/Plots.md)   
+</div>
+   <div class="col" markdown="1">
+[ExternalPrograms](McUtils/ExternalPrograms.md)   
+</div>
+   <div class="col" markdown="1">
+[Zachary](McUtils/Zachary.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Data](McUtils/Data.md)   
+</div>
+   <div class="col" markdown="1">
+[Coordinerds](McUtils/Coordinerds.md)   
+</div>
+   <div class="col" markdown="1">
+[GaussianInterface](McUtils/GaussianInterface.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Numputils](McUtils/Numputils.md)   
+</div>
+   <div class="col" markdown="1">
+[Scaffolding](McUtils/Scaffolding.md)   
+</div>
+   <div class="col" markdown="1">
+[Parallelizers](McUtils/Parallelizers.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
+## Examples
 
 We will provide a brief examples for the common use cases for each module.
 More information can be found on the pages themselves.
@@ -376,8 +411,8 @@ Also supported: `Mesh` operations, automatic differentiation, tensor derivative 
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/__init__.py?message=Update%20Docs)

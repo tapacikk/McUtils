@@ -6,31 +6,45 @@ Very unsophisticated but workable
 ```python
 ignored_files: list
 ```
-<a id="McUtils.Misc.TemplateWriter.TemplateWriter.__init__" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Misc.TemplateWriter.TemplateWriter.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, template_dir, replacements=None, file_filter=None, **opts): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/TemplateWriter.py#L16)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/TemplateWriter.py#L16?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Misc.TemplateWriter.TemplateWriter.replacements" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Misc.TemplateWriter.TemplateWriter.replacements" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 replacements(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/TemplateWriter.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/TemplateWriter.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Misc.TemplateWriter.TemplateWriter.apply_replacements" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Misc.TemplateWriter.TemplateWriter.apply_replacements" class="docs-object-method">&nbsp;</a> 
 ```python
 apply_replacements(self, string): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/TemplateWriter.py#L33)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/TemplateWriter.py#L33?message=Update%20Docs)]
+</div>
+
 Applies the defined replacements to the
 - `string`: `Any`
     >No description...
 - `:returns`: `_`
     >No description...
 
-<a id="McUtils.Misc.TemplateWriter.TemplateWriter.write_file" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Misc.TemplateWriter.TemplateWriter.write_file" class="docs-object-method">&nbsp;</a> 
 ```python
 write_file(self, template_file, out_dir, apply_template=True, template_dir=None): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/TemplateWriter.py#L45)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/TemplateWriter.py#L45?message=Update%20Docs)]
+</div>
+
 writes a single _file_ to _dir_ and fills the template from the parameters passed when intializing the class
 - `template_file`: `str`
     >the file to load and write into
@@ -41,10 +55,14 @@ writes a single _file_ to _dir_ and fills the template from the parameters passe
 - `:returns`: `_`
     >No description...
 
-<a id="McUtils.Misc.TemplateWriter.TemplateWriter.iterate_write" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Misc.TemplateWriter.TemplateWriter.iterate_write" class="docs-object-method">&nbsp;</a> 
 ```python
 iterate_write(self, out_dir, apply_template=True, src_dir=None, template_dir=None): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/TemplateWriter.py#L80)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/TemplateWriter.py#L80?message=Update%20Docs)]
+</div>
+
 Iterates through the files in the template_dir and writes them out to dir
 - `:returns`: `_`
     >No description...
@@ -55,8 +73,8 @@ Iterates through the files in the template_dir and writes them out to dir
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Misc/TemplateWriter/TemplateWriter.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Misc/TemplateWriter/TemplateWriter.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Misc/TemplateWriter/TemplateWriter.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Misc/TemplateWriter/TemplateWriter.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Misc/TemplateWriter/TemplateWriter.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Misc/TemplateWriter/TemplateWriter.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Misc/TemplateWriter/TemplateWriter.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Misc/TemplateWriter/TemplateWriter.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Misc/TemplateWriter.py?message=Update%20Docs)

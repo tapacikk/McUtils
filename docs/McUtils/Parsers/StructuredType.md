@@ -4,9 +4,19 @@
 
 ### Members
 
-  - [StructuredType](StructuredType/StructuredType.md)
-  - [StructuredTypeArray](StructuredType/StructuredTypeArray.md)
-  - [DisappearingTypeClass](StructuredType/DisappearingTypeClass.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[StructuredType](StructuredType/StructuredType.md)   
+</div>
+   <div class="col" markdown="1">
+[StructuredTypeArray](StructuredType/StructuredTypeArray.md)   
+</div>
+   <div class="col" markdown="1">
+[DisappearingTypeClass](StructuredType/DisappearingTypeClass.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
@@ -18,8 +28,8 @@
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Parsers/StructuredType.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Parsers/StructuredType.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Parsers/StructuredType.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Parsers/StructuredType.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Parsers/StructuredType.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Parsers/StructuredType.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Parsers/StructuredType.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Parsers/StructuredType.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Parsers/StructuredType/__init__.py?message=Update%20Docs)

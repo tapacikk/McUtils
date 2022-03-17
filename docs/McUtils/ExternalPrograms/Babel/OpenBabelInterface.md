@@ -6,22 +6,31 @@ A simple class to support operations that make use of the OpenBabel toolkit (whi
 PYBEL_SUPPORTED: NoneType
 OB_SUPPORTED: NoneType
 ```
-<a id="McUtils.ExternalPrograms.Babel.OpenBabelInterface.__init__" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.ExternalPrograms.Babel.OpenBabelInterface.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/ExternalPrograms/Babel.py#L15)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/ExternalPrograms/Babel.py#L15?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.ExternalPrograms.Babel.OpenBabelInterface.pybel" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.ExternalPrograms.Babel.OpenBabelInterface.pybel" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 pybel(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/ExternalPrograms/Babel.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/ExternalPrograms/Babel.py#L?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.ExternalPrograms.Babel.OpenBabelInterface.openbabel" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.ExternalPrograms.Babel.OpenBabelInterface.openbabel" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 openbabel(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/ExternalPrograms/Babel.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/ExternalPrograms/Babel.py#L?message=Update%20Docs)]
+</div>
 
 
 
@@ -29,8 +38,8 @@ openbabel(self):
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/ExternalPrograms/Babel/OpenBabelInterface.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/ExternalPrograms/Babel/OpenBabelInterface.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/ExternalPrograms/Babel/OpenBabelInterface.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/ExternalPrograms/Babel/OpenBabelInterface.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/ExternalPrograms/Babel/OpenBabelInterface.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/ExternalPrograms/Babel/OpenBabelInterface.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/ExternalPrograms/Babel/OpenBabelInterface.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/ExternalPrograms/Babel/OpenBabelInterface.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/ExternalPrograms/Babel.py?message=Update%20Docs)

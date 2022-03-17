@@ -15,27 +15,85 @@ Chained conversions are not _currently_ supported, but might well become support
 
 ### Members
 
-  - [CoordinateSystemConverters](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverters.md)
-  - [CoordinateSystemConverter](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverter.md)
-  - [CartesianCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem.md)
-  - [InternalCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/InternalCoordinateSystem.md)
-  - [CartesianCoordinateSystem3D](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem3D.md)
-  - [CartesianCoordinates3D](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinates3D.md)
-  - [SphericalCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/SphericalCoordinateSystem.md)
-  - [SphericalCoordinates](Coordinerds/CoordinateSystems/CommonCoordinateSystems/SphericalCoordinates.md)
-  - [ZMatrixCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.md)
-  - [ZMatrixCoordinates](Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinates.md)
-  - [CoordinateSystem](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystem.md)
-  - [BaseCoordinateSystem](Coordinerds/CoordinateSystems/CoordinateSystem/BaseCoordinateSystem.md)
-  - [CoordinateSystemError](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystemError.md)
-  - [CoordinateSet](Coordinerds/CoordinateSystems/CoordinateSet/CoordinateSet.md)
-  - [CoordinateTransform](Coordinerds/CoordinateTransformations/CoordinateTransform/CoordinateTransform.md)
-  - [TransformationFunction](Coordinerds/CoordinateTransformations/TransformationFunction/TransformationFunction.md)
-  - [AffineTransform](Coordinerds/CoordinateTransformations/AffineTransform/AffineTransform.md)
-  - [TranslationTransform](Coordinerds/CoordinateTransformations/TranslationTransform/TranslationTransform.md)
-  - [RotationTransform](Coordinerds/CoordinateTransformations/RotationTransform/RotationTransform.md)
-  - [cartesian_to_zmatrix](Coordinerds/Conveniences/cartesian_to_zmatrix.md)
-  - [zmatrix_to_cartesian](Coordinerds/Conveniences/zmatrix_to_cartesian.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[CoordinateSystemConverters](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverters.md)   
+</div>
+   <div class="col" markdown="1">
+[CoordinateSystemConverter](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverter.md)   
+</div>
+   <div class="col" markdown="1">
+[CartesianCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[InternalCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/InternalCoordinateSystem.md)   
+</div>
+   <div class="col" markdown="1">
+[CartesianCoordinateSystem3D](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem3D.md)   
+</div>
+   <div class="col" markdown="1">
+[CartesianCoordinates3D](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinates3D.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[SphericalCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/SphericalCoordinateSystem.md)   
+</div>
+   <div class="col" markdown="1">
+[SphericalCoordinates](Coordinerds/CoordinateSystems/CommonCoordinateSystems/SphericalCoordinates.md)   
+</div>
+   <div class="col" markdown="1">
+[ZMatrixCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[ZMatrixCoordinates](Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinates.md)   
+</div>
+   <div class="col" markdown="1">
+[CoordinateSystem](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystem.md)   
+</div>
+   <div class="col" markdown="1">
+[BaseCoordinateSystem](Coordinerds/CoordinateSystems/CoordinateSystem/BaseCoordinateSystem.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[CoordinateSystemError](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystemError.md)   
+</div>
+   <div class="col" markdown="1">
+[CoordinateSet](Coordinerds/CoordinateSystems/CoordinateSet/CoordinateSet.md)   
+</div>
+   <div class="col" markdown="1">
+[CoordinateTransform](Coordinerds/CoordinateTransformations/CoordinateTransform/CoordinateTransform.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[TransformationFunction](Coordinerds/CoordinateTransformations/TransformationFunction/TransformationFunction.md)   
+</div>
+   <div class="col" markdown="1">
+[AffineTransform](Coordinerds/CoordinateTransformations/AffineTransform/AffineTransform.md)   
+</div>
+   <div class="col" markdown="1">
+[TranslationTransform](Coordinerds/CoordinateTransformations/TranslationTransform/TranslationTransform.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[RotationTransform](Coordinerds/CoordinateTransformations/RotationTransform/RotationTransform.md)   
+</div>
+   <div class="col" markdown="1">
+[cartesian_to_zmatrix](Coordinerds/Conveniences/cartesian_to_zmatrix.md)   
+</div>
+   <div class="col" markdown="1">
+[zmatrix_to_cartesian](Coordinerds/Conveniences/zmatrix_to_cartesian.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
@@ -43,8 +101,49 @@ Chained conversions are not _currently_ supported, but might well become support
 
 ### Unit Tests
 
-```python
 
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [GetDihedrals](#GetDihedrals)
+- [CoordinateSet](#CoordinateSet)
+- [Loader](#Loader)
+- [CartesianToZMatrix](#CartesianToZMatrix)
+- [CartesianToZMatrixMulti](#CartesianToZMatrixMulti)
+- [CartesianToZMatrixAndBack](#CartesianToZMatrixAndBack)
+- [ExpansionCoordinates](#ExpansionCoordinates)
+- [ZMatrixToCartesian](#ZMatrixToCartesian)
+- [NumpyLikeTest](#NumpyLikeTest)
+- [CartesianToZMatrixJacobian](#CartesianToZMatrixJacobian)
+- [CartesianToZMatrixMultiJacobian](#CartesianToZMatrixMultiJacobian)
+- [CH5ZMatJacobian](#CH5ZMatJacobian)
+- [CartesianToZMatrixJacobian2](#CartesianToZMatrixJacobian2)
+- [CartesianToZMatrixJacobian2Planar](#CartesianToZMatrixJacobian2Planar)
+- [CartesianToZMatrixMultiJacobian2](#CartesianToZMatrixMultiJacobian2)
+- [CartesianToZMatrixMultiJacobian1](#CartesianToZMatrixMultiJacobian1)
+- [CartesianToZMatrixMultiJacobian10](#CartesianToZMatrixMultiJacobian10)
+- [CartesianToZMatrixMultiJacobian2Timing10](#CartesianToZMatrixMultiJacobian2Timing10)
+- [CartesianToZMatrixMultiJacobian3Timing1](#CartesianToZMatrixMultiJacobian3Timing1)
+- [CartesianToZMatrixMultiJacobian3Timing10](#CartesianToZMatrixMultiJacobian3Timing10)
+- [CartesianToZMatrixMultiJacobian3](#CartesianToZMatrixMultiJacobian3)
+- [CartesianToZMatrixMultiJacobianTargeted](#CartesianToZMatrixMultiJacobianTargeted)
+- [ZMatrixStep](#ZMatrixStep)
+- [CartStep](#CartStep)
+- [CartExpanded](#CartExpanded)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
+```python
 from Peeves.TestUtils import *
 from Peeves.Timer import Timer
 from unittest import TestCase
@@ -52,25 +151,23 @@ from McUtils.Coordinerds import *
 from McUtils.Plots import *
 from McUtils.Numputils import *
 import sys, numpy as np
+```
 
+All tests are wrapped in a test class
+```python
 class ConverterTest(TestCase):
-
     def setUp(self):
         super().setUp()
         self.initialize_data()
         self.load()
-
-    @property
     def loaded(self):
         return hasattr(self, "cases")
-
     def load(self, n=10):
         if not self.loaded:
             self.cases = n
             self.transforms = DataGenerator.mats(n)
             self.shifts = DataGenerator.vecs(n)
             self.mats = affine_matrix(self.transforms, self.shifts)
-
     def initialize_data(self):
         self.n = 10
         self.test_zmats = CoordinateSet(DataGenerator.zmats(self.n, 15), system=ZMatrixCoordinates)
@@ -99,8 +196,13 @@ class ConverterTest(TestCase):
             [2.233806981137821, 0.3567096955165336, 0.0],
             [-0.8247121421923925, -0.629530611338456, -1.775332267901544]
         ])
+```
 
-    @validationTest
+ </div>
+</div>
+
+#### <a name="GetDihedrals">GetDihedrals</a>
+```python
     def test_GetDihedrals(self):
         from McUtils.Numputils import pts_dihedrals as calc_dihed
 
@@ -108,35 +210,45 @@ class ConverterTest(TestCase):
 
         dihed = calc_dihed(orig[3:5], orig[2:4], orig[1:3], orig[0:2])
         self.assertEquals(round(dihed[0], 6), round(.591539, 6))
-    @validationTest
+```
+#### <a name="CoordinateSet">CoordinateSet</a>
+```python
     def test_CoordinateSet(self):
         import numpy as np
         coord_set = CoordinateSet(DataGenerator.coords(500))
         self.assertIsInstance(coord_set, np.ndarray)
-    @validationTest
+```
+#### <a name="Loader">Loader</a>
+```python
     def test_Loader(self):
         loaded = CoordinateSystemConverters.get_converter(CartesianCoordinates3D, ZMatrixCoordinates)
         self.assertIsInstance(loaded, CoordinateSystemConverter)
-    @validationTest
+```
+#### <a name="CartesianToZMatrix">CartesianToZMatrix</a>
+```python
     def test_CartesianToZMatrix(self):
         coord_set = CoordinateSet(DataGenerator.coords(10))
         coord_set = coord_set.convert(ZMatrixCoordinates, use_rad = False)
         self.assertEqual(coord_set.shape, (9, 3))
-    @validationTest
+```
+#### <a name="CartesianToZMatrixMulti">CartesianToZMatrixMulti</a>
+```python
     def test_CartesianToZMatrixMulti(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         coord_set = coord_set.convert(ZMatrixCoordinates, use_rad = False)
         self.assertEqual(coord_set.shape, (10, 9, 3))
-
-    @validationTest
+```
+#### <a name="CartesianToZMatrixAndBack">CartesianToZMatrixAndBack</a>
+```python
     def test_CartesianToZMatrixAndBack(self):
         cs1 = coord_set = CoordinateSet([self.zm_conv_test_structure]*4, CartesianCoordinates3D)
         coord_set = coord_set.convert(ZMatrixCoordinates)
         coord_set = coord_set.convert(CartesianCoordinates3D)
         cs2 = coord_set
         self.assertEqual(round(np.linalg.norm(cs2 - cs1), 8), 0.)
-
-    @validationTest
+```
+#### <a name="ExpansionCoordinates">ExpansionCoordinates</a>
+```python
     def test_ExpansionCoordinates(self):
         np.random.seed(0)
         coord_set = CoordinateSet([self.test_structure] * 2)
@@ -156,28 +268,23 @@ class ConverterTest(TestCase):
         coord_set2 = coord_set2.convert(cs2)
         coord_set2 = coord_set2.convert(CartesianCoordinates3D)
         self.assertEqual(round(np.linalg.norm(coord_set2 - coord_set), 8), 0.)
-    @validationTest
+```
+#### <a name="ZMatrixToCartesian">ZMatrixToCartesian</a>
+```python
     def test_ZMatrixToCartesian(self):
         # print(self.test_zmats.coords[0, 0], file=sys.stderr)
         coords = self.test_zmats.convert(CartesianCoordinates3D, use_rad = False)
         self.assertEqual(coords.shape, (self.n, 16, 3))
-    @validationTest
+```
+#### <a name="NumpyLikeTest">NumpyLikeTest</a>
+```python
     def test_NumpyLikeTest(self):
         # print(self.test_zmats.coords[0, 0], file=sys.stderr)
         coords = self.test_zmats.convert(CartesianCoordinates3D, use_rad = False)
         self.assertAlmostEqual(np.linalg.norm(coords - coords), 0.)
-    # @timeitTest(number=2500)
-    # def test_CartToZTiming(self):
-    #     coord_set = self.test_carts
-    #     coord_set = coord_set.convert(ZMatrixCoordinates, use_rad = False)
-    #     self.assertEqual(coord_set.shape, (self.n, 9, 6))
-    # @timeitTest(number=2500)
-    # def test_ZMatrixToCartesianTiming(self):
-    #     coords = self.test_zmats.convert(CartesianCoordinates3D, use_rad = False)
-    #     self.assertEqual(coords.shape, (self.n, 16, 3))
-
-    #region Jacobians
-    @validationTest
+```
+#### <a name="CartesianToZMatrixJacobian">CartesianToZMatrixJacobian</a>
+```python
     def test_CartesianToZMatrixJacobian(self):
         n = 10
         test_coords = DataGenerator.coords(n)
@@ -238,15 +345,17 @@ class ConverterTest(TestCase):
         self.assertTrue(np.allclose(ijacob,  nijacob))
         self.assertEquals(jacob.shape, (n*3, (n-1)*3)) # we always lose one atom
         self.assertAlmostEqual(np.sum((ijacob@jacob)), 3*n-6, 3)
-
-    @validationTest
+```
+#### <a name="CartesianToZMatrixMultiJacobian">CartesianToZMatrixMultiJacobian</a>
+```python
     def test_CartesianToZMatrixMultiJacobian(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, stencil = 5)
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (10, 10, 3, 10 - 1, 3 )) # we always lose one atom
-
-    @validationTest
+        self.assertEquals(jacob.shape, (10, 10, 3, 10 - 1, 3 ))
+```
+#### <a name="CH5ZMatJacobian">CH5ZMatJacobian</a>
+```python
     def test_CH5ZMatJacobian(self):
         coord_set = CoordinateSet([
             [
@@ -287,9 +396,10 @@ class ConverterTest(TestCase):
             stencil=5,
             prep=lambda coord, disps, zmcs: (disps, zmcs[..., :, 1])
         )
-        self.assertEquals(jacob.shape, (100,) + coord_set.shape[1:] + (5, 3)) # I requested 5 bond lengths
-
-    @validationTest
+        self.assertEquals(jacob.shape, (100,) + coord_set.shape[1:] + (5, 3))
+```
+#### <a name="CartesianToZMatrixJacobian2">CartesianToZMatrixJacobian2</a>
+```python
     def test_CartesianToZMatrixJacobian2(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10)[0])
         njacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil=5, all_numerical=True)
@@ -321,8 +431,9 @@ class ConverterTest(TestCase):
             np.allclose(diffs, 0., atol=1.0e-3),
             msg="wat: {}".format(np.max(np.abs(np.round(diffs, 3))))
         )
-
-    @inactiveTest
+```
+#### <a name="CartesianToZMatrixJacobian2Planar">CartesianToZMatrixJacobian2Planar</a>
+```python
     def test_CartesianToZMatrixJacobian2Planar(self):
 
         coord_set = CoordinateSet( # water
@@ -377,8 +488,9 @@ class ConverterTest(TestCase):
             np.allclose(diffs, 0., atol=1.0e-4),
             msg="wat: {}".format(np.max(np.abs(np.round(diffs, 6))))
         )
-
-    @validationTest
+```
+#### <a name="CartesianToZMatrixMultiJacobian2">CartesianToZMatrixMultiJacobian2</a>
+```python
     def test_CartesianToZMatrixMultiJacobian2(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         njacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil = 5, all_numerical=True)
@@ -400,67 +512,76 @@ class ConverterTest(TestCase):
 
 
         jacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil = 5) # semi-analytic
-        self.assertEquals(jacob.shape, (10, 10, 3, 10, 3, 10 - 1, 3)) # we always lose one atom
-        # self.assertEquals(jacob.shape, (10 * 3, 10, 10, 3, 10 - 1, 3)) # we always lose one atom
-
-    @timeitTest(number=1)
+        self.assertEquals(jacob.shape, (10, 10, 3, 10, 3, 10 - 1, 3))
+```
+#### <a name="CartesianToZMatrixMultiJacobian1">CartesianToZMatrixMultiJacobian1</a>
+```python
     def test_CartesianToZMatrixMultiJacobian1(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(1, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, stencil = 5)
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (1, 10*3, 10 * 3 - 3 )) # we always lose one atom
-    @timeitTest(number=1)
+        self.assertEquals(jacob.shape, (1, 10*3, 10 * 3 - 3 ))
+```
+#### <a name="CartesianToZMatrixMultiJacobian10">CartesianToZMatrixMultiJacobian10</a>
+```python
     def test_CartesianToZMatrixMultiJacobian10(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, stencil = 5)
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (10, 10*3, 10 * 3 - 3 )) # we always lose one atom
-    @timeitTest(number=1)
+        self.assertEquals(jacob.shape, (10, 10*3, 10 * 3 - 3 ))
+```
+#### <a name="CartesianToZMatrixMultiJacobian2Timing10">CartesianToZMatrixMultiJacobian2Timing10</a>
+```python
     def test_CartesianToZMatrixMultiJacobian2Timing10(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil = 5)
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (10, 10*3, 10*3, 10 * 3 - 3 )) # we always lose one atom
-    @timeitTest(number=1)
+        self.assertEquals(jacob.shape, (10, 10*3, 10*3, 10 * 3 - 3 ))
+```
+#### <a name="CartesianToZMatrixMultiJacobian3Timing1">CartesianToZMatrixMultiJacobian3Timing1</a>
+```python
     def test_CartesianToZMatrixMultiJacobian3Timing1(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(1, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, 3, stencil = 5)
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (1, 10*3, 10*3, 10*3, 10 * 3 - 3 )) # we always lose one atom
-    @timeitTest(number=1)
+        self.assertEquals(jacob.shape, (1, 10*3, 10*3, 10*3, 10 * 3 - 3 ))
+```
+#### <a name="CartesianToZMatrixMultiJacobian3Timing10">CartesianToZMatrixMultiJacobian3Timing10</a>
+```python
     def test_CartesianToZMatrixMultiJacobian3Timing10(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, 3, stencil = 5)
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (10, 10*3, 10*3, 10*3, 10 * 3 - 3 )) # we always lose one atom
-
-    @validationTest
+        self.assertEquals(jacob.shape, (10, 10*3, 10*3, 10*3, 10 * 3 - 3 ))
+```
+#### <a name="CartesianToZMatrixMultiJacobian3">CartesianToZMatrixMultiJacobian3</a>
+```python
     def test_CartesianToZMatrixMultiJacobian3(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, 3, stencil=5)
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (10 * 3, 10 * 3, 10, 10, 3, 10 - 1, 3))  # we always lose one atom
-
-    @validationTest
+        self.assertEquals(jacob.shape, (10 * 3, 10 * 3, 10, 10, 3, 10 - 1, 3))
+```
+#### <a name="CartesianToZMatrixMultiJacobianTargeted">CartesianToZMatrixMultiJacobianTargeted</a>
+```python
     def test_CartesianToZMatrixMultiJacobianTargeted(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, stencil=5, coordinates=[[1, 2, 3], None])
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (10, 10, 3, 10 - 1, 3))  # we always lose one atom
-
-    #endregion
-
-    #region CoordinateSystemTests
-
-    @validationTest
+        self.assertEquals(jacob.shape, (10, 10, 3, 10 - 1, 3))
+```
+#### <a name="ZMatrixStep">ZMatrixStep</a>
+```python
     def test_ZMatrixStep(self):
         self.assertEquals(ZMatrixCoordinates.displacement(.1), .1)
-
-    @validationTest
+```
+#### <a name="CartStep">CartStep</a>
+```python
     def test_CartStep(self):
         self.assertEquals(CartesianCoordinates3D.displacement(.1), .1)
-
-    @validationTest
+```
+#### <a name="CartExpanded">CartExpanded</a>
+```python
     def test_CartExpanded(self):
         expansion = (np.array(
             [
@@ -475,16 +596,15 @@ class ConverterTest(TestCase):
         )
         disp = system.displacement(.1)
         self.assertEquals(disp, .1)
-        # self.assertEquals(disp.shape, (3,))
-
-    #endregion
-
 ```
+
+ </div>
+</div>
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Coordinerds.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Coordinerds.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Coordinerds.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Coordinerds.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Coordinerds.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Coordinerds.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Coordinerds.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Coordinerds.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Coordinerds/__init__.py?message=Update%20Docs)

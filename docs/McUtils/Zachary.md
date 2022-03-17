@@ -5,40 +5,127 @@ Deals with anything tensor, Taylor expansion, or interpolation related
 
 ### Members
 
-  - [FiniteDifferenceFunction](Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceFunction.md)
-  - [FiniteDifferenceError](Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceError.md)
-  - [finite_difference](Zachary/Taylor/FiniteDifferenceFunction/finite_difference.md)
-  - [FiniteDifference1D](Zachary/Taylor/FiniteDifferenceFunction/FiniteDifference1D.md)
-  - [RegularGridFiniteDifference](Zachary/Taylor/FiniteDifferenceFunction/RegularGridFiniteDifference.md)
-  - [IrregularGridFiniteDifference](Zachary/Taylor/FiniteDifferenceFunction/IrregularGridFiniteDifference.md)
-  - [FiniteDifferenceData](Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceData.md)
-  - [FiniteDifferenceMatrix](Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceMatrix.md)
-  - [FunctionExpansion](Zachary/Taylor/FunctionExpansions/FunctionExpansion.md)
-  - [FiniteDifferenceDerivative](Zachary/Taylor/Derivatives/FiniteDifferenceDerivative.md)
-  - [Mesh](Zachary/Mesh/Mesh.md)
-  - [MeshType](Zachary/Mesh/MeshType.md)
-  - [BaseSurface](Zachary/Surfaces/BaseSurface/BaseSurface.md)
-  - [TaylorSeriesSurface](Zachary/Surfaces/BaseSurface/TaylorSeriesSurface.md)
-  - [LinearExpansionSurface](Zachary/Surfaces/BaseSurface/LinearExpansionSurface.md)
-  - [LinearFitSurface](Zachary/Surfaces/BaseSurface/LinearFitSurface.md)
-  - [InterpolatedSurface](Zachary/Surfaces/BaseSurface/InterpolatedSurface.md)
-  - [Surface](Zachary/Surfaces/Surface/Surface.md)
-  - [MultiSurface](Zachary/Surfaces/Surface/MultiSurface.md)
-  - [FittableModel](Zachary/FittableModels/FittableModel.md)
-  - [LinearFittableModel](Zachary/FittableModels/LinearFittableModel.md)
-  - [LinearFitBasis](Zachary/FittableModels/LinearFitBasis.md)
-  - [Interpolator](Zachary/Interpolator/Interpolator.md)
-  - [Extrapolator](Zachary/Interpolator/Extrapolator.md)
-  - [ProductGridInterpolator](Zachary/Interpolator/ProductGridInterpolator.md)
-  - [Tensor](Zachary/LazyTensors/Tensor.md)
-  - [TensorOp](Zachary/LazyTensors/TensorOp.md)
-  - [LazyOperatorTensor](Zachary/LazyTensors/LazyOperatorTensor.md)
-  - [SparseTensor](Zachary/LazyTensors/SparseTensor.md)
-  - [TensorDerivativeConverter](Zachary/TensorDerivativeConverter/TensorDerivativeConverter.md)
-  - [TensorExpansionTerms](Zachary/TensorDerivativeConverter/TensorExpansionTerms.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[FiniteDifferenceFunction](Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceFunction.md)   
+</div>
+   <div class="col" markdown="1">
+[FiniteDifferenceError](Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceError.md)   
+</div>
+   <div class="col" markdown="1">
+[finite_difference](Zachary/Taylor/FiniteDifferenceFunction/finite_difference.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[FiniteDifference1D](Zachary/Taylor/FiniteDifferenceFunction/FiniteDifference1D.md)   
+</div>
+   <div class="col" markdown="1">
+[RegularGridFiniteDifference](Zachary/Taylor/FiniteDifferenceFunction/RegularGridFiniteDifference.md)   
+</div>
+   <div class="col" markdown="1">
+[IrregularGridFiniteDifference](Zachary/Taylor/FiniteDifferenceFunction/IrregularGridFiniteDifference.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[FiniteDifferenceData](Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceData.md)   
+</div>
+   <div class="col" markdown="1">
+[FiniteDifferenceMatrix](Zachary/Taylor/FiniteDifferenceFunction/FiniteDifferenceMatrix.md)   
+</div>
+   <div class="col" markdown="1">
+[FunctionExpansion](Zachary/Taylor/FunctionExpansions/FunctionExpansion.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[FiniteDifferenceDerivative](Zachary/Taylor/Derivatives/FiniteDifferenceDerivative.md)   
+</div>
+   <div class="col" markdown="1">
+[Mesh](Zachary/Mesh/Mesh.md)   
+</div>
+   <div class="col" markdown="1">
+[MeshType](Zachary/Mesh/MeshType.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[BaseSurface](Zachary/Surfaces/BaseSurface/BaseSurface.md)   
+</div>
+   <div class="col" markdown="1">
+[TaylorSeriesSurface](Zachary/Surfaces/BaseSurface/TaylorSeriesSurface.md)   
+</div>
+   <div class="col" markdown="1">
+[LinearExpansionSurface](Zachary/Surfaces/BaseSurface/LinearExpansionSurface.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[LinearFitSurface](Zachary/Surfaces/BaseSurface/LinearFitSurface.md)   
+</div>
+   <div class="col" markdown="1">
+[InterpolatedSurface](Zachary/Surfaces/BaseSurface/InterpolatedSurface.md)   
+</div>
+   <div class="col" markdown="1">
+[Surface](Zachary/Surfaces/Surface/Surface.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[MultiSurface](Zachary/Surfaces/Surface/MultiSurface.md)   
+</div>
+   <div class="col" markdown="1">
+[FittableModel](Zachary/FittableModels/FittableModel.md)   
+</div>
+   <div class="col" markdown="1">
+[LinearFittableModel](Zachary/FittableModels/LinearFittableModel.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[LinearFitBasis](Zachary/FittableModels/LinearFitBasis.md)   
+</div>
+   <div class="col" markdown="1">
+[Interpolator](Zachary/Interpolator/Interpolator.md)   
+</div>
+   <div class="col" markdown="1">
+[Extrapolator](Zachary/Interpolator/Extrapolator.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[ProductGridInterpolator](Zachary/Interpolator/ProductGridInterpolator.md)   
+</div>
+   <div class="col" markdown="1">
+[Tensor](Zachary/LazyTensors/Tensor.md)   
+</div>
+   <div class="col" markdown="1">
+[TensorOp](Zachary/LazyTensors/TensorOp.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[LazyOperatorTensor](Zachary/LazyTensors/LazyOperatorTensor.md)   
+</div>
+   <div class="col" markdown="1">
+[SparseTensor](Zachary/LazyTensors/SparseTensor.md)   
+</div>
+   <div class="col" markdown="1">
+[TensorDerivativeConverter](Zachary/TensorDerivativeConverter/TensorDerivativeConverter.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[TensorExpansionTerms](Zachary/TensorDerivativeConverter/TensorExpansionTerms.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
+## Examples
 
 1D finite difference derivative via [finite_difference](Zachary/FiniteDifferenceFunction/finite_difference.md):
 
@@ -149,16 +236,60 @@ gg2[1, 2] = ContourPlot(*mesh,
 
 ### Unit Tests
 
-```python
 
-# because of the way multiprocessing works we need this to avoid crashes
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [stirs](#stirs)
+- [bin_gs](#bin_gs)
+- [bins](#bins)
+- [facs](#facs)
+- [fd_weights](#fd_weights)
+- [uneven_weights](#uneven_weights)
+- [finite_difference](#finite_difference)
+- [FD2D](#FD2D)
+- [FD2D_multi](#FD2D_multi)
+- [FDDeriv](#FDDeriv)
+- [FDDeriv2](#FDDeriv2)
+- [FiniteDifferenceParallelism](#FiniteDifferenceParallelism)
+- [TensorTerms](#TensorTerms)
+- [TensorConversion](#TensorConversion)
+- [PseudopotentialTerms](#PseudopotentialTerms)
+- [ExpandFunction](#ExpandFunction)
+- [LinSpaceMesh](#LinSpaceMesh)
+- [MeshGridMesh](#MeshGridMesh)
+- [StructuredMesh](#StructuredMesh)
+- [UnstructuredMesh](#UnstructuredMesh)
+- [RegularMesh](#RegularMesh)
+- [RegMeshSubgrids](#RegMeshSubgrids)
+- [SemiStructuredMesh](#SemiStructuredMesh)
+- [MeshFromList](#MeshFromList)
+- [RegularGridInterpolatorND](#RegularGridInterpolatorND)
+- [Interpolator1D](#Interpolator1D)
+- [InterpolatorExtrapolator2D](#InterpolatorExtrapolator2D)
+- [InterpolatorExtrapolator1D](#InterpolatorExtrapolator1D)
+- [RegularInterpolator3D](#RegularInterpolator3D)
+- [IrregularInterpolator3D](#IrregularInterpolator3D)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
+```python
 try:
     from Peeves.TestUtils import *
     from Peeves import BlockProfiler
 except:
     pass
 from unittest import TestCase
-
 from McUtils.Zachary import *
 from McUtils.Zachary.Taylor.ZachLib import *
 from McUtils.Plots import *
@@ -166,34 +297,24 @@ from McUtils.Data import *
 import McUtils.Numputils as nput
 from McUtils.Parallelizers import *
 from McUtils.Scaffolding import Logger
-
 import sys, h5py, math, numpy as np, itertools
+```
 
+All tests are wrapped in a test class
+```python
 class ZacharyTests(TestCase):
-
-    #region setup
-
     def setUp(self):
         self.save_data = TestManager.data_gen_tests
-
     def __getstate__(self):
         return {}
     def __setstate__(self, state):
         pass
-
-    # @validationTest
-    # def test_finite_difference_2d(self):
-    #     grid_1 = 4*np.math.pi / 100 * np.arange(100) + 2*np.math.pi
-    #     grid = np.meshgrid(grid_1, grid_1)
-    #     self.assertAlmostEqual(1, 0)#round(np.linalg.norm(dtest - sin_d3_vals), 4), 0)
-
     def get_error(self, ref_vals, vals):
         err = np.abs(vals - ref_vals)
         cum_err = np.linalg.norm(err.flatten())
         max_err = np.max(err.flatten())
         mean_err = np.average(err.flatten())
         return err, cum_err, max_err, mean_err
-
     def plot_err(self, grid, ref_vals, vals, errs):
         if grid.ndim == 1:
             Plot(grid, ref_vals, figure=Plot(grid, vals))
@@ -206,16 +327,46 @@ class ZacharyTests(TestCase):
             gg[1, 1] = ContourPlot(*g, errs[0], figure=gg[1, 1])
             gg[0, 0].tight_layout()
             gg.show()
-
     def print_error(self, n, order, errs):
         print(
             "Order: {}.{}\nCumulative Error: {}\nMax Error: {}\nMean Error: {}".format(n, order, *errs[1:])
         )
+    class harmonically_coupled_morse:
+        # mass_weights = masses[:2] / np.sum(masses[:2])
+        def __init__(self,
+                     De_1, a_1, re_1,
+                     De_2, a_2, re_2,
+                     kb, b_e
+                     ):
+            self.De_1 = De_1
+            self.a_1 = a_1
+            self.re_1 = re_1
+            self.De_2 = De_2
+            self.a_2 = a_2
+            self.re_2 = re_2
+            self.kb = kb
+            self.b_e = b_e
 
-    #endregion
+        def __call__(self, carts):
+            v1 = carts[..., 1, :] - carts[..., 0, :]
+            v2 = carts[..., 2, :] - carts[..., 0, :]
+            r1 = nput.vec_norms(v1) - self.re_1
+            r2 = nput.vec_norms(v2) - self.re_2
+            bend, _ = nput.vec_angles(v1, v2)
+            bend = bend - self.b_e
 
-    #region FD inputs
-    @validationTest
+            return (
+                    self.De_1 * (1 - np.exp(-self.a_1 * r1)) ** 2
+                    + self.De_2 * (1 - np.exp(-self.a_2 * r2)) ** 2
+                    + self.kb * bend**2
+            )
+```
+
+ </div>
+</div>
+
+#### <a name="stirs">stirs</a>
+```python
     def test_stirs(self):
         stir = StirlingS1(8)
         ans = np.array([
@@ -230,14 +381,17 @@ class ZacharyTests(TestCase):
         ])
         # print(stir, file=sys.stderr)
         self.assertAlmostEqual(np.round(np.linalg.norm(stir-ans), 6), 0.)
-
-    @validationTest
+```
+#### <a name="bin_gs">bin_gs</a>
+```python
     def test_bin_gs(self):
         gbin = GammaBinomial(7/2, 8)
         ans = np.array([1., 3.5, 4.375, 2.1875, 0.273438, -0.0273438, 0.00683594, -0.00244141])
         # print(gbin, file=sys.stderr)
         self.assertAlmostEqual(np.round(np.linalg.norm(gbin-ans), 5), 0.)
-    @validationTest
+```
+#### <a name="bins">bins</a>
+```python
     def test_bins(self):
         gbin = Binomial(8)
         ans = np.array([
@@ -252,13 +406,17 @@ class ZacharyTests(TestCase):
         ])
         # print(gbin, file=sys.stderr)
         self.assertAlmostEqual(np.sum(gbin-ans), 0.)
-    @validationTest
+```
+#### <a name="facs">facs</a>
+```python
     def test_facs(self):
         facs = Factorial(8)
         ans = np.array([1, 1, 2, 6, 24, 120, 720, 5040])
         # print(facs, file=sys.stderr)
         self.assertAlmostEqual(np.linalg.norm(facs-ans), 0.)
-    @validationTest
+```
+#### <a name="fd_weights">fd_weights</a>
+```python
     def test_fd_weights(self):
         coeffs = RegularGridFiniteDifference.get_weights(3, 7/2, 7)
         ans = [ -0.0192708, 0.259896, -2.02969, 4.92448, -4.92448, 2.02969, -0.259896, 0.0192708 ]
@@ -272,7 +430,9 @@ class ZacharyTests(TestCase):
         r1 = np.round(np.linalg.norm(coeffs-ans), 5)
         r2 = np.round(np.linalg.norm(coeffs2-ans2), 10)
         self.assertAlmostEqual(r1 + r2, 0.)
-    @validationTest
+```
+#### <a name="uneven_weights">uneven_weights</a>
+```python
     def test_uneven_weights(self):
         import numpy as np
         weights = IrregularGridFiniteDifference.get_weights
@@ -295,12 +455,9 @@ class ZacharyTests(TestCase):
                 passed = False
                 print((norm, e, w[-1]), file=sys.stderr)
         self.assertIs(passed, True)
-
-    #endregion
-
-    #region FD
-    # @dataGenTest
-    @validationTest
+```
+#### <a name="finite_difference">finite_difference</a>
+```python
     def test_finite_difference(self):
         sin_grid = np.arange(0, 1, .001)
         sin_vals = np.sin(sin_grid)
@@ -359,8 +516,9 @@ class ZacharyTests(TestCase):
             if print_error:
                 self.print_error(n, ord, errs)
             self.assertLess(errs[1], .05 / ord)
-
-    @validationTest
+```
+#### <a name="FD2D">FD2D</a>
+```python
     def test_FD2D(self):
 
         print_error = False
@@ -463,8 +621,9 @@ class ZacharyTests(TestCase):
                 if print_error:
                     self.print_error(n, ord, errs)
                 self.assertLess(errs[1], .5)
-
-    @validationTest
+```
+#### <a name="FD2D_multi">FD2D_multi</a>
+```python
     def test_FD2D_multi(self):
 
         print_error = False
@@ -499,8 +658,9 @@ class ZacharyTests(TestCase):
                 if print_error:
                     self.print_error(n, ord, errs)
                 self.assertLess(errs[1], .1 / ord)
-
-    @validationTest
+```
+#### <a name="FDDeriv">FDDeriv</a>
+```python
     def test_FDDeriv(self):
         # ggrid = GraphicsGrid(nrows=1, ncols=2)
 
@@ -519,8 +679,9 @@ class ZacharyTests(TestCase):
 
         self.assertLess(np.linalg.norm(diff_fun[0] - raw), .00001)
         self.assertIsInstance(diff_fun[0, 0, 0][0], (float,))
-
-    @validationTest
+```
+#### <a name="FDDeriv2">FDDeriv2</a>
+```python
     def test_FDDeriv2(self):
         def test(gps):
             x = gps[..., 0]
@@ -542,65 +703,9 @@ class ZacharyTests(TestCase):
 
         self.assertEquals(diff_fun[0, :].shape, (1, 2, npts, npts)) # should I implement this with a squeeze...?
         self.assertEquals(np.linalg.norm((diff_fun[:, :][1, 0] - diff_fun[1, 0]).flatten()), 0.)
-
-        # gg =  GraphicsGrid(nrows=2, ncols=4, graphics_class=Graphics3D, fig_kw={'figsize':(15, 8)})
-
-        # for i in range(2):
-        #     for j in range(2):
-        #         Plot3D(
-        #             *grid2D,
-        #             np.round(diff_fun[i, j].reshape(npts, npts), 5),
-        #             plot_style={
-        #                 "cmap" : "viridis"
-        #             },
-        #             axes_labels = ['x', 'y', 'z'],
-        #             figure= gg[i, j]
-        #         )
-        #         num_x = (1 if i == 0 else 0) + (1 if j == 0 else 0) # can be done with mod but too tired to thing
-        #         num_y = (0 if i == 0 else 1) + (0 if j == 0 else 1) # can be done with mod but too tired to thing
-        #         Plot3D(
-        #             *grid2D,
-        #             #test(gps),
-        #             np.round(finite_difference(gps, test(gps), (num_x, num_y), (5, 5)), 5),
-        #             plot_style={
-        #                 "cmap" : "viridis"
-        #             },
-        #             axes_labels = ['x', 'y', 'z'],
-        #             figure=gg[i, 2+j]
-        #         )
-        # gg.show()
-
-    class harmonically_coupled_morse:
-        # mass_weights = masses[:2] / np.sum(masses[:2])
-        def __init__(self,
-                     De_1, a_1, re_1,
-                     De_2, a_2, re_2,
-                     kb, b_e
-                     ):
-            self.De_1 = De_1
-            self.a_1 = a_1
-            self.re_1 = re_1
-            self.De_2 = De_2
-            self.a_2 = a_2
-            self.re_2 = re_2
-            self.kb = kb
-            self.b_e = b_e
-
-        def __call__(self, carts):
-            v1 = carts[..., 1, :] - carts[..., 0, :]
-            v2 = carts[..., 2, :] - carts[..., 0, :]
-            r1 = nput.vec_norms(v1) - self.re_1
-            r2 = nput.vec_norms(v2) - self.re_2
-            bend, _ = nput.vec_angles(v1, v2)
-            bend = bend - self.b_e
-
-            return (
-                    self.De_1 * (1 - np.exp(-self.a_1 * r1)) ** 2
-                    + self.De_2 * (1 - np.exp(-self.a_2 * r2)) ** 2
-                    + self.kb * bend**2
-            )
-
-    @debugTest
+```
+#### <a name="FiniteDifferenceParallelism">FiniteDifferenceParallelism</a>
+```python
     def test_FiniteDifferenceParallelism(self):
 
         re_1 = 0.9575
@@ -658,11 +763,9 @@ class ZacharyTests(TestCase):
 
         with BlockProfiler("Without parallelizer"):
             pot_derivs = deriv_gen.derivative_tensor([1, 2, 3, 4, 5, 6])
-
-    #endregion
-
-    #region Tensor Derivatives
-    @validationTest
+```
+#### <a name="TensorTerms">TensorTerms</a>
+```python
     def test_TensorTerms(self):
 
         n_Q = 10
@@ -722,8 +825,9 @@ class ZacharyTests(TestCase):
         self.assertEquals(len(vdQQQQ_subbed.terms), 14)
 
         self.assertEquals(vdQQQQ_subbed.array.shape, (n_Q, n_Q, n_Q, n_Q))
-
-    @validationTest
+```
+#### <a name="TensorConversion">TensorConversion</a>
+```python
     def test_TensorConversion(self):
 
         n_Q = 10
@@ -764,11 +868,9 @@ class ZacharyTests(TestCase):
         t1 = trace_derivs.QX(1).det().dQ().dQ()
 
         t1 = trace_derivs.QX(1).inverse().dQ()
-
-        # raise Exception(t1)
-        # raise Exception(t1)
-
-    @validationTest
+```
+#### <a name="PseudopotentialTerms">PseudopotentialTerms</a>
+```python
     def test_PseudopotentialTerms(self):
 
         n_Q = 10
@@ -979,12 +1081,9 @@ class ZacharyTests(TestCase):
         # raise Exception(gamdQ_I_new, gamdQQ_I_new)
         # raise Exception(gamdQQ_I_new.array.T, gamdQQ_I[0])
         self.assertTrue(np.allclose(gamdQQ_I_new.array.T, gamdQQ_I))
-
-    #endregion Tensor Derivatives
-
-    #region Function expansions
-
-    @validationTest
+```
+#### <a name="ExpandFunction">ExpandFunction</a>
+```python
     def test_ExpandFunction(self):
         dtype = np.float32
 
@@ -1030,67 +1129,59 @@ class ZacharyTests(TestCase):
 
         self.assertEquals(exp(point), exp.ref)
         self.assertLess(np.linalg.norm(test - ref), .01)
-
-    #endregion
-
-    #region Interpolation
-    # @inactiveTest
-    # def test_Interpolator1D(self):
-    #
-    #     sin_grid = np.arange(0, 1, .1)
-    #     sin_vals = np.sin(sin_grid)
-    #     reg_interp = RegularGridInterpolator(sin_grid, sin_vals)
-    #     raise NotImplementedError("need to finish test")
-    #
-    #     d2 = reg_interp.derivative(2)
-
-
-    #region Mesh
-
-    @validationTest
+```
+#### <a name="LinSpaceMesh">LinSpaceMesh</a>
+```python
     def test_LinSpaceMesh(self):
         mg = Mesh(np.linspace(-1, 1, 3))
         self.assertIs(mg.mesh_type, MeshType.Structured)
         self.assertEquals(mg.shape, (3,))
-
-    @validationTest
+```
+#### <a name="MeshGridMesh">MeshGridMesh</a>
+```python
     def test_MeshGridMesh(self):
         mg = np.array(np.meshgrid(np.array([-1, 0, 1]), np.array([-1, 0, 1]), indexing='ij'))
         regmesh = Mesh(mg)
         self.assertIs(regmesh.mesh_type, MeshType.Regular)
         self.assertEquals(regmesh.shape, (3, 3, 2))
-
-    @validationTest
+```
+#### <a name="StructuredMesh">StructuredMesh</a>
+```python
     def test_StructuredMesh(self):
         mg = np.array(np.meshgrid(np.array([-1, -.5, 0, 1]), np.array([-1, 0, 1]), indexing='ij'))
         regmesh = Mesh(mg)
         self.assertIs(regmesh.mesh_type, MeshType.Structured)
         self.assertEquals(regmesh.shape, (4, 3, 2))
-
-    @validationTest
+```
+#### <a name="UnstructuredMesh">UnstructuredMesh</a>
+```python
     def test_UnstructuredMesh(self):
         mg = np.random.rand(100, 10, 2)
         regmesh = Mesh(mg)
         self.assertIs(regmesh.mesh_type, MeshType.Unstructured)
-
-    @validationTest
+```
+#### <a name="RegularMesh">RegularMesh</a>
+```python
     def test_RegularMesh(self):
         regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
         self.assertIs(regmesh.mesh_type, MeshType.Regular)
         self.assertEquals(regmesh.shape, (3, 3, 2))
-
-    @validationTest
+```
+#### <a name="RegMeshSubgrids">RegMeshSubgrids</a>
+```python
     def test_RegMeshSubgrids(self):
         regmesh = Mesh.RegularMesh([-1, 1, 3], [-1, 1, 3])
         m = [Mesh(g) for g in regmesh.subgrids]
         self.assertTrue(all(g.mesh_type is MeshType.Regular for g in m))
-
-    @inactiveTest
+```
+#### <a name="SemiStructuredMesh">SemiStructuredMesh</a>
+```python
     def test_SemiStructuredMesh(self):
         semi_mesh = Mesh([[np.arange(i)] for i in range(10, 25)])
         self.assertIs(semi_mesh.mesh_type, MeshType.SemiStructured)
-
-    @validationTest
+```
+#### <a name="MeshFromList">MeshFromList</a>
+```python
     def test_MeshFromList(self):
         try:
             wat = np.asarray([[-1, 0, 1], [-1, 0, 1]])
@@ -1100,10 +1191,9 @@ class ZacharyTests(TestCase):
         else:
             # just to make it accessible through Mesh
             self.assertIs(bad.mesh_type, MeshType.Indeterminate)
-
-    #endregion Mesh
-
-    @validationTest
+```
+#### <a name="RegularGridInterpolatorND">RegularGridInterpolatorND</a>
+```python
     def test_RegularGridInterpolatorND(self):
 
         cos_grid = np.linspace(0, 1, 8)
@@ -1142,8 +1232,9 @@ class ZacharyTests(TestCase):
         test_deriv_vals = np.cos(test_points[:, 0]) * np.cos(test_points[:, 1]) * np.cos(test_points[:, 2])
         interp_vals = deriv(test_points)
         self.assertTrue(np.allclose(interp_vals, test_deriv_vals, atol=5e-4))
-
-    @validationTest
+```
+#### <a name="Interpolator1D">Interpolator1D</a>
+```python
     def test_Interpolator1D(self):
 
         def test_fn(grid):
@@ -1158,8 +1249,9 @@ class ZacharyTests(TestCase):
         test_vals = test_fn(test_points)
         interp_vals = interp(test_points)
         self.assertTrue(np.allclose(interp_vals, test_vals, atol=5e-5))
-
-    @validationTest
+```
+#### <a name="InterpolatorExtrapolator2D">InterpolatorExtrapolator2D</a>
+```python
     def test_InterpolatorExtrapolator2D(self):
 
         def test_fn(grid):
@@ -1223,9 +1315,9 @@ class ZacharyTests(TestCase):
                     )
 
         g.show()
-
-
-    @validationTest
+```
+#### <a name="InterpolatorExtrapolator1D">InterpolatorExtrapolator1D</a>
+```python
     def test_InterpolatorExtrapolator1D(self):
 
         sin_grid = np.linspace(0, np.pi, 5)
@@ -1237,30 +1329,9 @@ class ZacharyTests(TestCase):
         test_points = np.random.uniform(-np.pi, 2*np.pi, size=(20,))
         test_vals = np.sin(test_points)
         interp_vals = interp(test_points)
-
-        # g = GraphicsGrid(nrows=1, ncols=2)
-        #
-        # big_sin_grid = np.linspace(-np.pi, 2*np.pi, 200)
-        # Plot(big_sin_grid, np.sin(big_sin_grid), figure=g[0, 0])
-        # ScatterPlot(sin_grid, sin_vals, figure=g[0, 0],
-        #             plot_style=dict(color='red')
-        #             )
-        # ScatterPlot(test_points, interp_vals, figure=g[0, 0],
-        #             plot_style=dict(color='black')
-        #             )
-        #
-        # Plot(big_sin_grid, np.sin(big_sin_grid), figure=g[0, 1])
-        # ScatterPlot(sin_grid, sin_vals, figure=g[0, 1],
-        #             plot_style=dict(color='red')
-        #             )
-        # ScatterPlot(test_points, default_interp(test_points), figure=g[0, 1],
-        #             plot_style=dict(color='black')
-        #             )
-        # g.show()
-
-        # self.assertTrue(np.allclose(interp_vals, test_vals, atol=5e-5))
-
-    @validationTest
+```
+#### <a name="RegularInterpolator3D">RegularInterpolator3D</a>
+```python
     def test_RegularInterpolator3D(self):
 
         def test_fn(grid):
@@ -1280,8 +1351,9 @@ class ZacharyTests(TestCase):
         test_vals = test_fn(test_points)
         interp_vals = interp(test_points)
         self.assertTrue(np.allclose(interp_vals, test_vals, atol=5e-5))
-
-    @validationTest
+```
+#### <a name="IrregularInterpolator3D">IrregularInterpolator3D</a>
+```python
     def test_IrregularInterpolator3D(self):
 
         def test_fn(grid):
@@ -1299,17 +1371,15 @@ class ZacharyTests(TestCase):
         self.assertTrue(np.allclose(interp_vals, test_vals, atol=5e-3), msg='max diff: {}'.format(
             np.max(np.abs(interp_vals - test_vals))
         ))
-
-
-
-
-    #endregion
 ```
+
+ </div>
+</div>
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Zachary.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Zachary.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Zachary.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Zachary.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Zachary.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Zachary.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Zachary.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Zachary.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Zachary/__init__.py?message=Update%20Docs)

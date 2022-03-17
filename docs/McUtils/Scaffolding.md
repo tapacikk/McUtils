@@ -13,41 +13,137 @@ In order of usefulness, the design is:
 
 ### Members
 
-  - [Cache](Scaffolding/Caches/Cache.md)
-  - [MaxSizeCache](Scaffolding/Caches/MaxSizeCache.md)
-  - [ObjectRegistry](Scaffolding/Caches/ObjectRegistry.md)
-  - [PseudoPickler](Scaffolding/Serializers/PseudoPickler.md)
-  - [BaseSerializer](Scaffolding/Serializers/BaseSerializer.md)
-  - [JSONSerializer](Scaffolding/Serializers/JSONSerializer.md)
-  - [NumPySerializer](Scaffolding/Serializers/NumPySerializer.md)
-  - [NDarrayMarshaller](Scaffolding/Serializers/NDarrayMarshaller.md)
-  - [HDF5Serializer](Scaffolding/Serializers/HDF5Serializer.md)
-  - [YAMLSerializer](Scaffolding/Serializers/YAMLSerializer.md)
-  - [ModuleSerializer](Scaffolding/Serializers/ModuleSerializer.md)
-  - [Schema](Scaffolding/Schema/Schema.md)
-  - [Logger](Scaffolding/Logging/Logger.md)
-  - [NullLogger](Scaffolding/Logging/NullLogger.md)
-  - [LogLevel](Scaffolding/Logging/LogLevel.md)
-  - [LogParser](Scaffolding/Logging/LogParser.md)
-  - [Checkpointer](Scaffolding/Checkpointing/Checkpointer.md)
-  - [CheckpointerKeyError](Scaffolding/Checkpointing/CheckpointerKeyError.md)
-  - [DumpCheckpointer](Scaffolding/Checkpointing/DumpCheckpointer.md)
-  - [JSONCheckpointer](Scaffolding/Checkpointing/JSONCheckpointer.md)
-  - [NumPyCheckpointer](Scaffolding/Checkpointing/NumPyCheckpointer.md)
-  - [HDF5Checkpointer](Scaffolding/Checkpointing/HDF5Checkpointer.md)
-  - [DictCheckpointer](Scaffolding/Checkpointing/DictCheckpointer.md)
-  - [NullCheckpointer](Scaffolding/Checkpointing/NullCheckpointer.md)
-  - [PersistenceLocation](Scaffolding/Persistence/PersistenceLocation.md)
-  - [PersistenceManager](Scaffolding/Persistence/PersistenceManager.md)
-  - [BaseObjectManager](Scaffolding/ObjectBackers/BaseObjectManager.md)
-  - [FileBackedObjectManager](Scaffolding/ObjectBackers/FileBackedObjectManager.md)
-  - [Config](Scaffolding/Configurations/Config.md)
-  - [ParameterManager](Scaffolding/Configurations/ParameterManager.md)
-  - [Job](Scaffolding/Jobs/Job.md)
-  - [JobManager](Scaffolding/Jobs/JobManager.md)
-  - [CLI](Scaffolding/CLIs/CLI.md)
-  - [CommandGroup](Scaffolding/CLIs/CommandGroup.md)
-  - [Command](Scaffolding/CLIs/Command.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[Cache](Scaffolding/Caches/Cache.md)   
+</div>
+   <div class="col" markdown="1">
+[MaxSizeCache](Scaffolding/Caches/MaxSizeCache.md)   
+</div>
+   <div class="col" markdown="1">
+[ObjectRegistry](Scaffolding/Caches/ObjectRegistry.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[PseudoPickler](Scaffolding/Serializers/PseudoPickler.md)   
+</div>
+   <div class="col" markdown="1">
+[BaseSerializer](Scaffolding/Serializers/BaseSerializer.md)   
+</div>
+   <div class="col" markdown="1">
+[JSONSerializer](Scaffolding/Serializers/JSONSerializer.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[NumPySerializer](Scaffolding/Serializers/NumPySerializer.md)   
+</div>
+   <div class="col" markdown="1">
+[NDarrayMarshaller](Scaffolding/Serializers/NDarrayMarshaller.md)   
+</div>
+   <div class="col" markdown="1">
+[HDF5Serializer](Scaffolding/Serializers/HDF5Serializer.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[YAMLSerializer](Scaffolding/Serializers/YAMLSerializer.md)   
+</div>
+   <div class="col" markdown="1">
+[ModuleSerializer](Scaffolding/Serializers/ModuleSerializer.md)   
+</div>
+   <div class="col" markdown="1">
+[Schema](Scaffolding/Schema/Schema.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Logger](Scaffolding/Logging/Logger.md)   
+</div>
+   <div class="col" markdown="1">
+[NullLogger](Scaffolding/Logging/NullLogger.md)   
+</div>
+   <div class="col" markdown="1">
+[LogLevel](Scaffolding/Logging/LogLevel.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[LogParser](Scaffolding/Logging/LogParser.md)   
+</div>
+   <div class="col" markdown="1">
+[Checkpointer](Scaffolding/Checkpointing/Checkpointer.md)   
+</div>
+   <div class="col" markdown="1">
+[CheckpointerKeyError](Scaffolding/Checkpointing/CheckpointerKeyError.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[DumpCheckpointer](Scaffolding/Checkpointing/DumpCheckpointer.md)   
+</div>
+   <div class="col" markdown="1">
+[JSONCheckpointer](Scaffolding/Checkpointing/JSONCheckpointer.md)   
+</div>
+   <div class="col" markdown="1">
+[NumPyCheckpointer](Scaffolding/Checkpointing/NumPyCheckpointer.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[HDF5Checkpointer](Scaffolding/Checkpointing/HDF5Checkpointer.md)   
+</div>
+   <div class="col" markdown="1">
+[DictCheckpointer](Scaffolding/Checkpointing/DictCheckpointer.md)   
+</div>
+   <div class="col" markdown="1">
+[NullCheckpointer](Scaffolding/Checkpointing/NullCheckpointer.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[PersistenceLocation](Scaffolding/Persistence/PersistenceLocation.md)   
+</div>
+   <div class="col" markdown="1">
+[PersistenceManager](Scaffolding/Persistence/PersistenceManager.md)   
+</div>
+   <div class="col" markdown="1">
+[BaseObjectManager](Scaffolding/ObjectBackers/BaseObjectManager.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[FileBackedObjectManager](Scaffolding/ObjectBackers/FileBackedObjectManager.md)   
+</div>
+   <div class="col" markdown="1">
+[Config](Scaffolding/Configurations/Config.md)   
+</div>
+   <div class="col" markdown="1">
+[ParameterManager](Scaffolding/Configurations/ParameterManager.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Job](Scaffolding/Jobs/Job.md)   
+</div>
+   <div class="col" markdown="1">
+[JobManager](Scaffolding/Jobs/JobManager.md)   
+</div>
+   <div class="col" markdown="1">
+[CLI](Scaffolding/CLIs/CLI.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[CommandGroup](Scaffolding/CLIs/CommandGroup.md)   
+</div>
+   <div class="col" markdown="1">
+[Command](Scaffolding/CLIs/Command.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
@@ -55,17 +151,70 @@ In order of usefulness, the design is:
 
 ### Unit Tests
 
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [Pseudopickle](#Pseudopickle)
+- [HDF5Serialization](#HDF5Serialization)
+- [JSONSerialization](#JSONSerialization)
+- [JSONPseudoPickleSerialization](#JSONPseudoPickleSerialization)
+- [HDF5PseudoPickleSerialization](#HDF5PseudoPickleSerialization)
+- [NumPySerialization](#NumPySerialization)
+- [JSONCheckpointing](#JSONCheckpointing)
+- [JSONCheckpointingKeyed](#JSONCheckpointingKeyed)
+- [JSONCheckpointingCanonicalKeyed](#JSONCheckpointingCanonicalKeyed)
+- [NumPyCheckpointing](#NumPyCheckpointing)
+- [HDF5Checkpointing](#HDF5Checkpointing)
+- [HDF5CheckpointingPsuedopickle](#HDF5CheckpointingPsuedopickle)
+- [HDF5Problems](#HDF5Problems)
+- [BasicLogging](#BasicLogging)
+- [InformedLogging](#InformedLogging)
+- [Persistence](#Persistence)
+- [Jobbing](#Jobbing)
+- [CLI](#CLI)
+- [JobInit](#JobInit)
+- [CurrentJob](#CurrentJob)
+- [CurrentJobDiffFile](#CurrentJobDiffFile)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
 ```python
 from Peeves.TestUtils import *
 from McUtils.Scaffolding import *
 import McUtils.Parsers as parsers
 from unittest import TestCase
 import numpy as np, io, os, sys, tempfile as tmpf
+```
 
+All tests are wrapped in a test class
+```python
 class ScaffoldingTests(TestCase):
+    class DataHolderClass:
+        def __init__(self, **keys):
+            self.data = keys
+        def to_state(self, serializer=None):
+            return self.data
+        @classmethod
+        def from_state(cls, state, serializer=None):
+            return cls(**state)
+```
 
-    #region Checkpointing
-    @validationTest
+ </div>
+</div>
+
+#### <a name="Pseudopickle">Pseudopickle</a>
+```python
     def test_Pseudopickle(self):
 
         from McUtils.Numputils import SparseArray
@@ -75,8 +224,9 @@ class ScaffoldingTests(TestCase):
         serial = pickler.serialize(spa)
         deserial = pickler.deserialize(serial)
         self.assertTrue(np.allclose(spa.asarray(), deserial.asarray()))
-
-    @validationTest
+```
+#### <a name="HDF5Serialization">HDF5Serialization</a>
+```python
     def test_HDF5Serialization(self):
         tmp = io.BytesIO()
         serializer = HDF5Serializer()
@@ -109,7 +259,9 @@ class ScaffoldingTests(TestCase):
             loaded[1].tolist().decode('utf-8'),
             {k:v.tolist() for k,v in loaded[2].items()}
         ])
-    @validationTest
+```
+#### <a name="JSONSerialization">JSONSerialization</a>
+```python
     def test_JSONSerialization(self):
         tmp = io.StringIO()
         serializer = JSONSerializer()
@@ -142,8 +294,9 @@ class ScaffoldingTests(TestCase):
         tmp.seek(0)
         loaded = serializer.deserialize(tmp, key='mixed_data')
         self.assertEquals(mixed_data, loaded)
-
-    @validationTest
+```
+#### <a name="JSONPseudoPickleSerialization">JSONPseudoPickleSerialization</a>
+```python
     def test_JSONPseudoPickleSerialization(self):
 
         from McUtils.Numputils import SparseArray
@@ -158,8 +311,9 @@ class ScaffoldingTests(TestCase):
         loaded = serializer.deserialize(tmp)
 
         self.assertTrue(np.allclose(loaded.asarray(), data.asarray()))
-
-    @validationTest
+```
+#### <a name="HDF5PseudoPickleSerialization">HDF5PseudoPickleSerialization</a>
+```python
     def test_HDF5PseudoPickleSerialization(self):
 
         from McUtils.Numputils import SparseArray
@@ -174,8 +328,9 @@ class ScaffoldingTests(TestCase):
         loaded = serializer.deserialize(tmp)
 
         self.assertTrue(np.allclose(loaded.asarray(), data.asarray()))
-
-    @validationTest
+```
+#### <a name="NumPySerialization">NumPySerialization</a>
+```python
     def test_NumPySerialization(self):
         tmp = io.BytesIO()
         serializer = NumPySerializer()
@@ -212,7 +367,9 @@ class ScaffoldingTests(TestCase):
             loaded[1].tolist(),
             {k: v.tolist() for k, v in loaded[2].items()}
         ])
-    @validationTest
+```
+#### <a name="JSONCheckpointing">JSONCheckpointing</a>
+```python
     def test_JSONCheckpointing(self):
         with tmpf.NamedTemporaryFile() as chk_file:
             my_file = chk_file.name
@@ -237,7 +394,9 @@ class ScaffoldingTests(TestCase):
                 self.assertEquals(len(chk['step_2']), 100)
         finally:
             os.remove(my_file)
-    @debugTest
+```
+#### <a name="JSONCheckpointingKeyed">JSONCheckpointingKeyed</a>
+```python
     def test_JSONCheckpointingKeyed(self):
         with tmpf.NamedTemporaryFile() as chk_file:
             my_file = chk_file.name
@@ -264,8 +423,9 @@ class ScaffoldingTests(TestCase):
                 self.assertEquals(len(chk['step_2']), 100)
         finally:
             os.remove(my_file)
-
-    @debugTest
+```
+#### <a name="JSONCheckpointingCanonicalKeyed">JSONCheckpointingCanonicalKeyed</a>
+```python
     def test_JSONCheckpointingCanonicalKeyed(self):
         with tmpf.NamedTemporaryFile() as chk_file:
             my_file = chk_file.name + ".json"
@@ -298,8 +458,9 @@ class ScaffoldingTests(TestCase):
 
         finally:
             os.remove(my_file)
-
-    @validationTest
+```
+#### <a name="NumPyCheckpointing">NumPyCheckpointing</a>
+```python
     def test_NumPyCheckpointing(self):
 
         with tmpf.NamedTemporaryFile() as chk_file:
@@ -326,7 +487,9 @@ class ScaffoldingTests(TestCase):
                 self.assertEquals(len(chk['step_2']), 100)
         finally:
             os.remove(my_file)
-    @validationTest
+```
+#### <a name="HDF5Checkpointing">HDF5Checkpointing</a>
+```python
     def test_HDF5Checkpointing(self):
 
         with tmpf.NamedTemporaryFile(mode="w+b") as chk_file:
@@ -352,16 +515,9 @@ class ScaffoldingTests(TestCase):
                 self.assertEquals(len(chk['step_2']), 100)
         finally:
             os.remove(my_file)
-
-    class DataHolderClass:
-        def __init__(self, **keys):
-            self.data = keys
-        def to_state(self, serializer=None):
-            return self.data
-        @classmethod
-        def from_state(cls, state, serializer=None):
-            return cls(**state)
-    @validationTest
+```
+#### <a name="HDF5CheckpointingPsuedopickle">HDF5CheckpointingPsuedopickle</a>
+```python
     def test_HDF5CheckpointingPsuedopickle(self):
 
         with tmpf.NamedTemporaryFile(mode="w+b") as chk_file:
@@ -390,8 +546,9 @@ class ScaffoldingTests(TestCase):
                 self.assertEquals(chk['step_2_params'].data, keys)
         finally:
             os.remove(my_file)
-
-    @validationTest
+```
+#### <a name="HDF5Problems">HDF5Problems</a>
+```python
     def test_HDF5Problems(self):
 
         test = os.path.expanduser('~/Desktop/woof.hdf5')
@@ -418,11 +575,9 @@ class ScaffoldingTests(TestCase):
 
         with checkpointer as chk:
             self.assertEquals(list(chk.keys()), ['why', 'why2'])
-
-    #endregion
-
-    #region Logging
-    @validationTest
+```
+#### <a name="BasicLogging">BasicLogging</a>
+```python
     def test_BasicLogging(self):
         stdout = io.StringIO()
         logger = Logger(stdout)
@@ -461,7 +616,9 @@ class ScaffoldingTests(TestCase):
                 self.assertEquals(blocks[1].lines[1].lines[0].tag, "Doubly nested block!")
         finally:
             os.remove(log_dump)
-    @validationTest
+```
+#### <a name="InformedLogging">InformedLogging</a>
+```python
     def test_InformedLogging(self):
         import random
 
@@ -497,11 +654,9 @@ class ScaffoldingTests(TestCase):
 
         finally:
             os.remove(log_dump)
-
-    #endregion
-
-    #region Jobs
-    @validationTest
+```
+#### <a name="Persistence">Persistence</a>
+```python
     def test_Persistence(self):
         persist_dir = TestManager.test_data("persistence_tests")
 
@@ -522,7 +677,9 @@ class ScaffoldingTests(TestCase):
         obj = manager.load("obj1", strict=False)
 
         self.assertEquals(obj.val, 'test_val')
-    @validationTest
+```
+#### <a name="Jobbing">Jobbing</a>
+```python
     def test_Jobbing(self):
 
         import time
@@ -542,7 +699,9 @@ class ScaffoldingTests(TestCase):
             with open(job.logger.log_file) as doopy:
                 doop_str = doopy.read()
                 self.assertNotEqual("", doop_str)
-    @validationTest
+```
+#### <a name="CLI">CLI</a>
+```python
     def test_CLI(self):
         import McUtils.Plots as plt
         class PlottingInterface(CommandGroup):
@@ -596,8 +755,9 @@ class ScaffoldingTests(TestCase):
                 mccli.run()
             finally:
                 sys.argv = argv
-
-    @validationTest
+```
+#### <a name="JobInit">JobInit</a>
+```python
     def test_JobInit(self):
 
         import time
@@ -618,8 +778,9 @@ class ScaffoldingTests(TestCase):
             with open(job.logger.log_file) as doopy:
                 doop_str = doopy.read()
                 self.assertNotEqual("", doop_str)
-
-    @validationTest
+```
+#### <a name="CurrentJob">CurrentJob</a>
+```python
     def test_CurrentJob(self):
 
         import time
@@ -637,8 +798,9 @@ class ScaffoldingTests(TestCase):
             with open(job.logger.log_file) as doopy:
                 doop_str = doopy.read()
                 self.assertNotEqual("", doop_str)
-
-    @validationTest
+```
+#### <a name="CurrentJobDiffFile">CurrentJobDiffFile</a>
+```python
     def test_CurrentJobDiffFile(self):
 
         import time
@@ -661,14 +823,15 @@ class ScaffoldingTests(TestCase):
                     self.assertNotEqual("", doop_str)
         finally:
             os.chdir(curdir)
-
-    #endregion
 ```
+
+ </div>
+</div>
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Scaffolding.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Scaffolding.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Scaffolding.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Scaffolding.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Scaffolding.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Scaffolding.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Scaffolding.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Scaffolding.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Scaffolding/__init__.py?message=Update%20Docs)

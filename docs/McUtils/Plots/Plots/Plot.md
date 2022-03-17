@@ -9,10 +9,14 @@ since `matplotlib` is designed to infuriate.
 ```python
 default_plot_style: dict
 ```
-<a id="McUtils.Plots.Plots.Plot.__init__" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, *params, method='plot', figure=None, axes=None, subplot_kw=None, plot_style=None, theme=None, **opts): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L181)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L181?message=Update%20Docs)]
+</div>
+
 
 - `params`: `Any`
     >_empty_ or _x_, _y_ arrays or _function_, _xrange_
@@ -31,52 +35,79 @@ __init__(self, *params, method='plot', figure=None, axes=None, subplot_kw=None, 
 - `opts`: `Any`
     >options to be fed in when initializing the Graphics
 
-<a id="McUtils.Plots.Plots.Plot.plot" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot.plot" class="docs-object-method">&nbsp;</a> 
 ```python
 plot(self, *params, insert_default_styles=True, **plot_style): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L238)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L238?message=Update%20Docs)]
+</div>
+
 Plots a set of data & stores the result
 - `:returns`: `_`
     >the graphics that matplotlib made
 
-<a id="McUtils.Plots.Plots.Plot.clear" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot.clear" class="docs-object-method">&nbsp;</a> 
 ```python
 clear(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L252)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L252?message=Update%20Docs)]
+</div>
+
 Removes the plotted data
 
-<a id="McUtils.Plots.Plots.Plot.restyle" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot.restyle" class="docs-object-method">&nbsp;</a> 
 ```python
 restyle(self, **plot_style): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L260)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L260?message=Update%20Docs)]
+</div>
+
 Replots the data with updated plot styling
 - `plot_style`: `Any`
     >No description...
 
-<a id="McUtils.Plots.Plots.Plot.data" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot.data" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 data(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L?message=Update%20Docs)]
+</div>
+
 The data that we plotted
 
-<a id="McUtils.Plots.Plots.Plot.plot_style" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot.plot_style" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 plot_style(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L?message=Update%20Docs)]
+</div>
+
 The styling options applied to the plot
 
-<a id="McUtils.Plots.Plots.Plot.add_colorbar" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot.add_colorbar" class="docs-object-method">&nbsp;</a> 
 ```python
 add_colorbar(self, graphics=None, norm=None, **kw): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L288)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L288?message=Update%20Docs)]
+</div>
+
 Adds a colorbar to the plot
 
-<a id="McUtils.Plots.Plots.Plot.set_graphics_properties" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot.set_graphics_properties" class="docs-object-method">&nbsp;</a> 
 ```python
 set_graphics_properties(self, *which, **kw): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L297)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L297?message=Update%20Docs)]
+</div>
 
 Regular `matplotlib` plotting syntax works:
 
@@ -197,11 +228,92 @@ Plot(lambda x: np.sin(4*x), [0, 2*np.pi, np.pi/10])
 </div>
 
 
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [Plot](#Plot)
+- [PlotStyling](#PlotStyling)
+- [PlotDelayed](#PlotDelayed)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
+```python
+from Peeves.TestUtils import *
+from unittest import TestCase
+from McUtils.Plots import *
+import sys, os, numpy as np
+```
+
+All tests are wrapped in a test class
+```python
+class PlotsTests(TestCase):
+    def tearDownClass(cls):
+        import matplotlib.pyplot as plt
+    def result_file(self, fname):
+        if not os.path.isdir(os.path.join(TestManager.test_dir, "test_results")):
+            os.mkdir(os.path.join(TestManager.test_dir, "test_results"))
+        return os.path.join(TestManager.test_dir, "test_results", fname)
+```
+
+ </div>
+</div>
+
+#### <a name="Plot">Plot</a>
+```python
+    def test_Plot(self):
+        grid = np.linspace(0, 2*np.pi, 100)
+        plot = Plot(grid, np.sin(grid))
+
+        plot.savefig(self.result_file("test_Plot.png"))
+        plot.close()
+```
+#### <a name="PlotStyling">PlotStyling</a>
+```python
+    def test_PlotStyling(self):
+        grid = np.linspace(0, 2 * np.pi, 100)
+        # file = '~/Desktop/y.png'
+        plot = Plot(grid, np.sin(grid),
+                    aspect_ratio=1.3,
+                    theme='dark_background',
+                    ticks_style={'color':'red', 'labelcolor':'red'},
+                    plot_label='bleh',
+                    padding=((30, 0), (20, 20))
+                    )
+        # plot.savefig(file)
+        # plot = Image.from_file(file)
+        # plot.show()
+        plot.savefig(self.result_file("test_PlotStyling.png"))
+        plot.close()
+```
+#### <a name="PlotDelayed">PlotDelayed</a>
+```python
+    def test_PlotDelayed(self):
+        p = Plot(background = 'black')
+        for i, c in enumerate(('red', 'white', 'blue')):
+            p.plot(np.sin, [-2 + 4/3*i, -2 + 4/3*(i+1)], color = c)
+        # p.show()
+
+        p.savefig(self.result_file("test_PlotDelayed.gif"))
+        p.close()
+```
+
+ </div>
+</div>
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Plots/Plots/Plot.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Plots/Plots/Plot.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Plots/Plots/Plot.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Plots/Plots/Plot.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Plots/Plots/Plot.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Plots/Plots/Plot.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Plots/Plots/Plot.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Plots/Plots/Plot.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Plots/Plots.py?message=Update%20Docs)

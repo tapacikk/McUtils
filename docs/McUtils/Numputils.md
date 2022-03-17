@@ -5,60 +5,206 @@ Any lowish-level numerical operations that need to be shared go here.
 
 ### Members
 
-  - [euler_angles](Numputils/EulerSystem/euler_angles.md)
-  - [euler_matrix](Numputils/EulerSystem/euler_matrix.md)
-  - [rotation_matrix](Numputils/TransformationMatrices/rotation_matrix.md)
-  - [translation_matrix](Numputils/TransformationMatrices/translation_matrix.md)
-  - [affine_matrix](Numputils/TransformationMatrices/affine_matrix.md)
-  - [merge_transformation_matrix](Numputils/TransformationTransformations/merge_transformation_matrix.md)
-  - [vec_dots](Numputils/VectorOps/vec_dots.md)
-  - [vec_handle_zero_norms](Numputils/VectorOps/vec_handle_zero_norms.md)
-  - [vec_apply_zero_threshold](Numputils/VectorOps/vec_apply_zero_threshold.md)
-  - [vec_normalize](Numputils/VectorOps/vec_normalize.md)
-  - [vec_norms](Numputils/VectorOps/vec_norms.md)
-  - [vec_tensordot](Numputils/VectorOps/vec_tensordot.md)
-  - [vec_tdot](Numputils/VectorOps/vec_tdot.md)
-  - [vec_crosses](Numputils/VectorOps/vec_crosses.md)
-  - [vec_angles](Numputils/VectorOps/vec_angles.md)
-  - [vec_sins](Numputils/VectorOps/vec_sins.md)
-  - [vec_cos](Numputils/VectorOps/vec_cos.md)
-  - [vec_outer](Numputils/VectorOps/vec_outer.md)
-  - [pts_norms](Numputils/VectorOps/pts_norms.md)
-  - [pts_angles](Numputils/VectorOps/pts_angles.md)
-  - [pts_normals](Numputils/VectorOps/pts_normals.md)
-  - [pts_dihedrals](Numputils/VectorOps/pts_dihedrals.md)
-  - [mat_vec_muls](Numputils/VectorOps/mat_vec_muls.md)
-  - [one_pad_vecs](Numputils/VectorOps/one_pad_vecs.md)
-  - [affine_multiply](Numputils/VectorOps/affine_multiply.md)
-  - [cartesian_from_rad](Numputils/VectorOps/cartesian_from_rad.md)
-  - [rot_deriv](Numputils/AnalyticDerivs/rot_deriv.md)
-  - [rot_deriv2](Numputils/AnalyticDerivs/rot_deriv2.md)
-  - [cartesian_from_rad_derivatives](Numputils/AnalyticDerivs/cartesian_from_rad_derivatives.md)
-  - [dist_deriv](Numputils/AnalyticDerivs/dist_deriv.md)
-  - [angle_deriv](Numputils/AnalyticDerivs/angle_deriv.md)
-  - [dihed_deriv](Numputils/AnalyticDerivs/dihed_deriv.md)
-  - [vec_norm_derivs](Numputils/AnalyticDerivs/vec_norm_derivs.md)
-  - [vec_sin_cos_derivs](Numputils/AnalyticDerivs/vec_sin_cos_derivs.md)
-  - [vec_angle_derivs](Numputils/AnalyticDerivs/vec_angle_derivs.md)
-  - [SparseArray](Numputils/Sparse/SparseArray.md)
-  - [ScipySparseArray](Numputils/Sparse/ScipySparseArray.md)
-  - [TensorFlowSparseArray](Numputils/Sparse/TensorFlowSparseArray.md)
-  - [sparse_tensordot](Numputils/Sparse/sparse_tensordot.md)
-  - [unique](Numputils/SetOps/unique.md)
-  - [intersection](Numputils/SetOps/intersection.md)
-  - [contained](Numputils/SetOps/contained.md)
-  - [difference](Numputils/SetOps/difference.md)
-  - [find](Numputils/SetOps/find.md)
-  - [argsort](Numputils/SetOps/argsort.md)
-  - [group_by](Numputils/SetOps/group_by.md)
-  - [split_by_regions](Numputils/SetOps/split_by_regions.md)
-  - [infer_inds_dtype](Numputils/Misc/infer_inds_dtype.md)
-  - [infer_int_dtype](Numputils/Misc/infer_int_dtype.md)
-  - [flatten_dtype](Numputils/Misc/flatten_dtype.md)
-  - [unflatten_dtype](Numputils/Misc/unflatten_dtype.md)
-  - [recast_permutation](Numputils/Misc/recast_permutation.md)
-  - [recast_indices](Numputils/Misc/recast_indices.md)
-  - [downcast_index_array](Numputils/Misc/downcast_index_array.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[euler_angles](Numputils/EulerSystem/euler_angles.md)   
+</div>
+   <div class="col" markdown="1">
+[euler_matrix](Numputils/EulerSystem/euler_matrix.md)   
+</div>
+   <div class="col" markdown="1">
+[rotation_matrix](Numputils/TransformationMatrices/rotation_matrix.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[translation_matrix](Numputils/TransformationMatrices/translation_matrix.md)   
+</div>
+   <div class="col" markdown="1">
+[affine_matrix](Numputils/TransformationMatrices/affine_matrix.md)   
+</div>
+   <div class="col" markdown="1">
+[merge_transformation_matrix](Numputils/TransformationTransformations/merge_transformation_matrix.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[vec_dots](Numputils/VectorOps/vec_dots.md)   
+</div>
+   <div class="col" markdown="1">
+[vec_handle_zero_norms](Numputils/VectorOps/vec_handle_zero_norms.md)   
+</div>
+   <div class="col" markdown="1">
+[vec_apply_zero_threshold](Numputils/VectorOps/vec_apply_zero_threshold.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[vec_normalize](Numputils/VectorOps/vec_normalize.md)   
+</div>
+   <div class="col" markdown="1">
+[vec_norms](Numputils/VectorOps/vec_norms.md)   
+</div>
+   <div class="col" markdown="1">
+[vec_tensordot](Numputils/VectorOps/vec_tensordot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[vec_tdot](Numputils/VectorOps/vec_tdot.md)   
+</div>
+   <div class="col" markdown="1">
+[vec_crosses](Numputils/VectorOps/vec_crosses.md)   
+</div>
+   <div class="col" markdown="1">
+[vec_angles](Numputils/VectorOps/vec_angles.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[vec_sins](Numputils/VectorOps/vec_sins.md)   
+</div>
+   <div class="col" markdown="1">
+[vec_cos](Numputils/VectorOps/vec_cos.md)   
+</div>
+   <div class="col" markdown="1">
+[vec_outer](Numputils/VectorOps/vec_outer.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[pts_norms](Numputils/VectorOps/pts_norms.md)   
+</div>
+   <div class="col" markdown="1">
+[pts_angles](Numputils/VectorOps/pts_angles.md)   
+</div>
+   <div class="col" markdown="1">
+[pts_normals](Numputils/VectorOps/pts_normals.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[pts_dihedrals](Numputils/VectorOps/pts_dihedrals.md)   
+</div>
+   <div class="col" markdown="1">
+[mat_vec_muls](Numputils/VectorOps/mat_vec_muls.md)   
+</div>
+   <div class="col" markdown="1">
+[one_pad_vecs](Numputils/VectorOps/one_pad_vecs.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[affine_multiply](Numputils/VectorOps/affine_multiply.md)   
+</div>
+   <div class="col" markdown="1">
+[cartesian_from_rad](Numputils/VectorOps/cartesian_from_rad.md)   
+</div>
+   <div class="col" markdown="1">
+[rot_deriv](Numputils/AnalyticDerivs/rot_deriv.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[rot_deriv2](Numputils/AnalyticDerivs/rot_deriv2.md)   
+</div>
+   <div class="col" markdown="1">
+[cartesian_from_rad_derivatives](Numputils/AnalyticDerivs/cartesian_from_rad_derivatives.md)   
+</div>
+   <div class="col" markdown="1">
+[dist_deriv](Numputils/AnalyticDerivs/dist_deriv.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[angle_deriv](Numputils/AnalyticDerivs/angle_deriv.md)   
+</div>
+   <div class="col" markdown="1">
+[dihed_deriv](Numputils/AnalyticDerivs/dihed_deriv.md)   
+</div>
+   <div class="col" markdown="1">
+[vec_norm_derivs](Numputils/AnalyticDerivs/vec_norm_derivs.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[vec_sin_cos_derivs](Numputils/AnalyticDerivs/vec_sin_cos_derivs.md)   
+</div>
+   <div class="col" markdown="1">
+[vec_angle_derivs](Numputils/AnalyticDerivs/vec_angle_derivs.md)   
+</div>
+   <div class="col" markdown="1">
+[SparseArray](Numputils/Sparse/SparseArray.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[ScipySparseArray](Numputils/Sparse/ScipySparseArray.md)   
+</div>
+   <div class="col" markdown="1">
+[TensorFlowSparseArray](Numputils/Sparse/TensorFlowSparseArray.md)   
+</div>
+   <div class="col" markdown="1">
+[sparse_tensordot](Numputils/Sparse/sparse_tensordot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[unique](Numputils/SetOps/unique.md)   
+</div>
+   <div class="col" markdown="1">
+[intersection](Numputils/SetOps/intersection.md)   
+</div>
+   <div class="col" markdown="1">
+[contained](Numputils/SetOps/contained.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[difference](Numputils/SetOps/difference.md)   
+</div>
+   <div class="col" markdown="1">
+[find](Numputils/SetOps/find.md)   
+</div>
+   <div class="col" markdown="1">
+[argsort](Numputils/SetOps/argsort.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[group_by](Numputils/SetOps/group_by.md)   
+</div>
+   <div class="col" markdown="1">
+[split_by_regions](Numputils/SetOps/split_by_regions.md)   
+</div>
+   <div class="col" markdown="1">
+[infer_inds_dtype](Numputils/Misc/infer_inds_dtype.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[infer_int_dtype](Numputils/Misc/infer_int_dtype.md)   
+</div>
+   <div class="col" markdown="1">
+[flatten_dtype](Numputils/Misc/flatten_dtype.md)   
+</div>
+   <div class="col" markdown="1">
+[unflatten_dtype](Numputils/Misc/unflatten_dtype.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[recast_permutation](Numputils/Misc/recast_permutation.md)   
+</div>
+   <div class="col" markdown="1">
+[recast_indices](Numputils/Misc/recast_indices.md)   
+</div>
+   <div class="col" markdown="1">
+[downcast_index_array](Numputils/Misc/downcast_index_array.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
@@ -66,17 +212,47 @@ Any lowish-level numerical operations that need to be shared go here.
 
 ### Unit Tests
 
-```````````````````````python
 
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [ProblemPtsAllDerivs](#ProblemPtsAllDerivs)
+- [PtsDihedralsDeriv](#PtsDihedralsDeriv)
+- [PtsAngleDeriv](#PtsAngleDeriv)
+- [PtsDistDeriv](#PtsDistDeriv)
+- [NormDerivs](#NormDerivs)
+- [SinCosDerivs](#SinCosDerivs)
+- [AngleDerivs](#AngleDerivs)
+- [AngleDerivScan](#AngleDerivScan)
+- [SetOps](#SetOps)
+- [SparseArray](#SparseArray)
+- [Sparse](#Sparse)
+- [SparseConstructor](#SparseConstructor)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
+```python
 from Peeves.TestUtils import *
 from Peeves import BlockProfiler
 from McUtils.Numputils import *
 from McUtils.Zachary import FiniteDifferenceDerivative
 from unittest import TestCase
 import numpy as np, functools as ft
+```
 
+All tests are wrapped in a test class
+```python
 class NumputilsTests(TestCase):
-
     problem_coords = np.array([
                                   [-1.86403557e-17, -7.60465240e-02,  4.62443228e-02],
                                   [ 6.70904773e-17, -7.60465240e-02, -9.53755677e-01],
@@ -85,8 +261,13 @@ class NumputilsTests(TestCase):
                                   [-1.97215226e-31,  1.43714410e+00, -9.00306410e-01],
                                   [-1.75999392e-16, -1.43714410e+00, -9.00306410e-01]
     ])
+```
 
-    @validationTest
+ </div>
+</div>
+
+#### <a name="ProblemPtsAllDerivs">ProblemPtsAllDerivs</a>
+```python
     def test_ProblemPtsAllDerivs(self):
         import McUtils.Numputils.Options as NumOpts
 
@@ -116,30 +297,9 @@ class NumputilsTests(TestCase):
                                                            [0],
                                                            order=2
                                                            )
-
-        # raise Exception([
-        #     diheds,
-        #     [np.min(dihed_derivs), np.max(dihed_derivs)],
-        #     [np.min(dihed_derivs_2), np.max(dihed_derivs_2)]
-        #     ])
-        #
-        # raise Exception(
-        #     np.array([dists.flatten(), np.round(np.rad2deg(angs.flatten()), 1), np.round(np.rad2deg(diheds.flatten()), 1)]),
-        #     [
-        #         [np.min(dist_derivs), np.max(dist_derivs)],
-        #         [np.min(dist_derivs_2), np.max(dist_derivs_2)]
-        #         ],
-        #     [
-        #         [np.min(ang_derivs), np.max(ang_derivs)],
-        #         [np.min(ang_derivs_2), np.max(ang_derivs_2)]
-        #         ],
-        #     [
-        #         [np.min(dihed_derivs), np.max(dihed_derivs)],
-        #         [np.min(dihed_derivs_2), np.max(dihed_derivs_2)]
-        #     ]
-        # )
-
-    @validationTest
+```
+#### <a name="PtsDihedralsDeriv">PtsDihedralsDeriv</a>
+```python
     def test_PtsDihedralsDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -191,10 +351,9 @@ class NumputilsTests(TestCase):
         self.assertTrue(np.allclose(d2_flat.flatten(), fd2.flatten(), atol=1.0e-3), msg="d2: {} and {} differ".format(
             d2_flat.flatten(), fd2.flatten()
         ))
-
-        # raise Exception(fd2.flatten(), deriv_2.flatten())
-
-    @validationTest
+```
+#### <a name="PtsAngleDeriv">PtsAngleDeriv</a>
+```python
     def test_PtsAngleDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -233,10 +392,9 @@ class NumputilsTests(TestCase):
         self.assertTrue(np.allclose(d2_flat.flatten(), fd2.flatten(), atol=1.0e-3), msg="d2: {} and {} differ".format(
             d2_flat.flatten(), fd2.flatten()
         ))
-
-        # raise Exception(fd2.flatten(), deriv_2.flatten())
-
-    @validationTest
+```
+#### <a name="PtsDistDeriv">PtsDistDeriv</a>
+```python
     def test_PtsDistDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -275,10 +433,9 @@ class NumputilsTests(TestCase):
         self.assertTrue(np.allclose(d2_flat.flatten(), fd2.flatten(), atol=1.0e-3), msg="d2: {} and {} differ".format(
             d2_flat.flatten(), fd2.flatten()
         ))
-
-        # raise Exception(fd2.flatten(), deriv_2.flatten())
-
-    @validationTest
+```
+#### <a name="NormDerivs">NormDerivs</a>
+```python
     def test_NormDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -308,8 +465,9 @@ class NumputilsTests(TestCase):
         self.assertTrue(np.allclose(na_daa.flatten(), fd_nadaa.flatten(), atol=1.0e-4), msg="norm d1: {} and {} differ".format(
             na_daa.flatten(), fd_nadaa.flatten()
         ))
-
-    @validationTest
+```
+#### <a name="SinCosDerivs">SinCosDerivs</a>
+```python
     def test_SinCosDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -398,8 +556,9 @@ class NumputilsTests(TestCase):
         self.assertTrue(np.allclose(c2_flat.flatten(), cos_fd22.flatten()), msg="cos d2: {} and {} differ".format(
             c2_flat.flatten(), cos_fd22.flatten()
         ))
-
-    @validationTest
+```
+#### <a name="AngleDerivs">AngleDerivs</a>
+```python
     def test_AngleDerivs(self):
         np.random.seed(0)
         coords = np.random.rand(16, 3)
@@ -440,8 +599,9 @@ class NumputilsTests(TestCase):
         self.assertTrue(np.allclose(d2_flat.flatten(), fd_dang.flatten(), atol=1.0e-2), msg="ang d2: {} and {} differ ({})".format(
             d2_flat.flatten(), fd_dang.flatten(), d2_flat.flatten() - fd_dang.flatten()
         ))
-
-    @inactiveTest
+```
+#### <a name="AngleDerivScan">AngleDerivScan</a>
+```python
     def test_AngleDerivScan(self):
         np.random.seed(0)
         # a = np.random.rand(3) * 2 # make it longer to avoid stability issues
@@ -466,12 +626,9 @@ class NumputilsTests(TestCase):
             data['derivs2'].append(deriv_2.tolist())
 
             data['derivs_num2'].append(fd(np.array([a, b])).derivative_tensor(1).tolist())
-
-        # import json
-        # with open(dump_file, 'w+') as f:
-        #     json.dump(data, f)
-
-    @validationTest
+```
+#### <a name="SetOps">SetOps</a>
+```python
     def test_SetOps(self):
 
         unums, sorting = unique([1, 2, 3, 4, 5])
@@ -539,8 +696,9 @@ class NumputilsTests(TestCase):
         )
 
         self.assertEquals(diffs.tolist(), diffs2.tolist())
-
-    @validationTest
+```
+#### <a name="SparseArray">SparseArray</a>
+```python
     def test_SparseArray(self):
         array = SparseArray([
             [
@@ -573,8 +731,9 @@ class NumputilsTests(TestCase):
         td = array.tensordot(array, axes=[1, 1])
         self.assertEquals(td.shape, (4, 3, 4, 3))
         self.assertEquals(array.tensordot(array, axes=[[1, 2], [1, 2]]).shape, (4, 4))
-
-    @debugTest
+```
+#### <a name="Sparse">Sparse</a>
+```python
     def test_Sparse(self):
 
         shape = (1000, 100, 50)
@@ -917,8 +1076,9 @@ class NumputilsTests(TestCase):
                 new2.asarray()
             )
         )
-
-    @debugTest
+```
+#### <a name="SparseConstructor">SparseConstructor</a>
+```python
     def test_SparseConstructor(self):
 
         shape = (1000, 100, 50)
@@ -1259,12 +1419,15 @@ class NumputilsTests(TestCase):
                 new2.asarray()
             )
         )
-```````````````````````
+```
+
+ </div>
+</div>
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Numputils.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Numputils.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Numputils.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Numputils.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Numputils.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Numputils.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Numputils.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Numputils.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Numputils/__init__.py?message=Update%20Docs)

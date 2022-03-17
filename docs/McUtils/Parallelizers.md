@@ -13,18 +13,45 @@ the `Parallelizer` object itself.
 
 ### Members
 
-  - [Parallelizer](Parallelizers/Parallelizers/Parallelizer.md)
-  - [MultiprocessingParallelizer](Parallelizers/Parallelizers/MultiprocessingParallelizer.md)
-  - [MPIParallelizer](Parallelizers/Parallelizers/MPIParallelizer.md)
-  - [SerialNonParallelizer](Parallelizers/Parallelizers/SerialNonParallelizer.md)
-  - [SendRecieveParallelizer](Parallelizers/Parallelizers/SendRecieveParallelizer.md)
-  - [ClientServerRunner](Parallelizers/Runner/ClientServerRunner.md)
-  - [SharedObjectManager](Parallelizers/SharedMemory/SharedObjectManager.md)
-  - [SharedMemoryDict](Parallelizers/SharedMemory/SharedMemoryDict.md)
-  - [SharedMemoryList](Parallelizers/SharedMemory/SharedMemoryList.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[Parallelizer](Parallelizers/Parallelizers/Parallelizer.md)   
+</div>
+   <div class="col" markdown="1">
+[MultiprocessingParallelizer](Parallelizers/Parallelizers/MultiprocessingParallelizer.md)   
+</div>
+   <div class="col" markdown="1">
+[MPIParallelizer](Parallelizers/Parallelizers/MPIParallelizer.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[SerialNonParallelizer](Parallelizers/Parallelizers/SerialNonParallelizer.md)   
+</div>
+   <div class="col" markdown="1">
+[SendRecieveParallelizer](Parallelizers/Parallelizers/SendRecieveParallelizer.md)   
+</div>
+   <div class="col" markdown="1">
+[ClientServerRunner](Parallelizers/Runner/ClientServerRunner.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[SharedObjectManager](Parallelizers/SharedMemory/SharedObjectManager.md)   
+</div>
+   <div class="col" markdown="1">
+[SharedMemoryDict](Parallelizers/SharedMemory/SharedMemoryDict.md)   
+</div>
+   <div class="col" markdown="1">
+[SharedMemoryList](Parallelizers/SharedMemory/SharedMemoryList.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
+## Examples
 The simplest parallelism is just parallelizing with `multiprocessing` over a single function
 
 <div class="card in-out-block" markdown="1">
@@ -187,36 +214,47 @@ To support MPI-style calling, a `ClientServerRunner` is also provided.
 
 ### Unit Tests
 
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [BasicMultiprocessing](#BasicMultiprocessing)
+- [MapMultiprocessing](#MapMultiprocessing)
+- [MapMultiprocessingDataSmall](#MapMultiprocessingDataSmall)
+- [BroadcastParallelizer](#BroadcastParallelizer)
+- [ScatterGatherMultiprocessing](#ScatterGatherMultiprocessing)
+- [ScatterGatherMultiprocessingDataSmall](#ScatterGatherMultiprocessingDataSmall)
+- [MiscProblems](#MiscProblems)
+- [MakeSharedMem](#MakeSharedMem)
+- [DistributedDict](#DistributedDict)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
 ```python
 from Peeves.TestUtils import *
 from McUtils.Scaffolding import Logger
 from McUtils.Parallelizers import *
 from unittest import TestCase
 import numpy as np, io, os, sys, tempfile as tmpf
+```
 
-# @Parallelizer.main_restricted
-# def main_print(*args, parallelizer=None):
-#     print(*args)
-# @Parallelizer.worker_restricted
-# def worker_print(*args, parallelizer=None):
-#     print(*args)
-# def run_job(parallelizer=None):
-#     if parallelizer.on_main:
-#         data = np.arange(1000)
-#     else:
-#         data = None
-#     data = parallelizer.scatter(data)
-#     lens = parallelizer.gather(len(data))
-#     return lens
-
+All tests are wrapped in a test class
+```python
 class ParallelizerTests(TestCase):
-
-    # we don't really even need to send or get any state for these tests
     def __getstate__(self):
         return {}
     def __setstate__(self, state):
         pass
-
     def run_job(self, parallelizer=None):
         if parallelizer.on_main:
             data = np.arange(1000)
@@ -231,12 +269,6 @@ class ParallelizerTests(TestCase):
         data = parallelizer.scatter(data)
         lens = parallelizer.gather(len(data))
         return lens
-    @validationTest
-    def test_BasicMultiprocessing(self):
-        par_lens = MultiprocessingParallelizer().run(self.run_job)
-        serial_lens = SerialNonParallelizer().run(self.run_job)
-        self.assertEquals(sum(par_lens), serial_lens)
-
     def mapped_func(self, data):
         return 1 + data
     def map_applier(self, n=1000, parallelizer=None):
@@ -245,26 +277,8 @@ class ParallelizerTests(TestCase):
         else:
             data = None
         return parallelizer.map(self.mapped_func, data)
-    @validationTest
-    def test_MapMultiprocessing(self):
-        par_lens = MultiprocessingParallelizer().run(self.map_applier)
-        serial_lens = SerialNonParallelizer().run(self.map_applier)
-        self.assertEquals(par_lens, serial_lens)
-    @validationTest
-    def test_MapMultiprocessingDataSmall(self):
-        par_lens = MultiprocessingParallelizer().run(self.map_applier, n=3, comm=[0, 1, 2])
-        self.assertEquals(len(par_lens), 3)
-        serial_lens = SerialNonParallelizer().run(self.map_applier, n=3)
-        self.assertEquals(par_lens, serial_lens)
-
     def bcast_parallelizer(self, parallelizer=None):
         root_par = parallelizer.broadcast(parallelizer)
-    @validationTest
-    def test_BroadcastParallelizer(self):
-        with MultiprocessingParallelizer() as parallelizer:
-            parallelizer.run(self.bcast_parallelizer)
-            parallelizer.run(self.bcast_parallelizer)
-
     def scatter_gather(self, n=1000, parallelizer=None):
         if parallelizer.on_main:
             data = np.arange(n)
@@ -274,20 +288,6 @@ class ParallelizerTests(TestCase):
         l = len(data)
         res = parallelizer.gather(l)
         return res
-    @validationTest
-    def test_ScatterGatherMultiprocessing(self):
-        p = MultiprocessingParallelizer()
-        par_lens = p.run(self.scatter_gather)
-        self.assertEquals(len(par_lens), p.nprocs+1)
-        serial_lens = SerialNonParallelizer().run(self.scatter_gather)
-        self.assertEquals(sum(par_lens), serial_lens)
-    @validationTest
-    def test_ScatterGatherMultiprocessingDataSmall(self):
-        par_lens = MultiprocessingParallelizer().run(self.scatter_gather, 3, comm=[0, 1, 2])
-        self.assertEquals(len(par_lens), 3)
-        serial_lens = SerialNonParallelizer().run(self.scatter_gather, 3)
-        self.assertEquals(sum(par_lens), serial_lens)
-
     def simple_scatter_1(self, parallelizer=None):
         data = [
             np.array([[0, 0]]), np.array([[0, 1]]), np.array([[0, 2]]),
@@ -300,14 +300,73 @@ class ParallelizerTests(TestCase):
         return l
     def simple_print(self, parallelizer=None):
         parallelizer.print(1)
-    @validationTest
+    def mutate_shared_dict(self, d, parallelizer=None):
+        wat = d['d']
+        parallelizer.print('{a} {b} {c} {d}', a=id(wat), b=id(d['d']), c=id(d['d']), d=d)
+        if not parallelizer.on_main:
+            d['a'][1, 0, 0] = 5
+            wat['key'] = 5
+        parallelizer.print('{v} {g}', v=wat, g=d['d'])
+```
+
+ </div>
+</div>
+
+#### <a name="BasicMultiprocessing">BasicMultiprocessing</a>
+```python
+    def test_BasicMultiprocessing(self):
+        par_lens = MultiprocessingParallelizer().run(self.run_job)
+        serial_lens = SerialNonParallelizer().run(self.run_job)
+        self.assertEquals(sum(par_lens), serial_lens)
+```
+#### <a name="MapMultiprocessing">MapMultiprocessing</a>
+```python
+    def test_MapMultiprocessing(self):
+        par_lens = MultiprocessingParallelizer().run(self.map_applier)
+        serial_lens = SerialNonParallelizer().run(self.map_applier)
+        self.assertEquals(par_lens, serial_lens)
+```
+#### <a name="MapMultiprocessingDataSmall">MapMultiprocessingDataSmall</a>
+```python
+    def test_MapMultiprocessingDataSmall(self):
+        par_lens = MultiprocessingParallelizer().run(self.map_applier, n=3, comm=[0, 1, 2])
+        self.assertEquals(len(par_lens), 3)
+        serial_lens = SerialNonParallelizer().run(self.map_applier, n=3)
+        self.assertEquals(par_lens, serial_lens)
+```
+#### <a name="BroadcastParallelizer">BroadcastParallelizer</a>
+```python
+    def test_BroadcastParallelizer(self):
+        with MultiprocessingParallelizer() as parallelizer:
+            parallelizer.run(self.bcast_parallelizer)
+            parallelizer.run(self.bcast_parallelizer)
+```
+#### <a name="ScatterGatherMultiprocessing">ScatterGatherMultiprocessing</a>
+```python
+    def test_ScatterGatherMultiprocessing(self):
+        p = MultiprocessingParallelizer()
+        par_lens = p.run(self.scatter_gather)
+        self.assertEquals(len(par_lens), p.nprocs+1)
+        serial_lens = SerialNonParallelizer().run(self.scatter_gather)
+        self.assertEquals(sum(par_lens), serial_lens)
+```
+#### <a name="ScatterGatherMultiprocessingDataSmall">ScatterGatherMultiprocessingDataSmall</a>
+```python
+    def test_ScatterGatherMultiprocessingDataSmall(self):
+        par_lens = MultiprocessingParallelizer().run(self.scatter_gather, 3, comm=[0, 1, 2])
+        self.assertEquals(len(par_lens), 3)
+        serial_lens = SerialNonParallelizer().run(self.scatter_gather, 3)
+        self.assertEquals(sum(par_lens), serial_lens)
+```
+#### <a name="MiscProblems">MiscProblems</a>
+```python
     def test_MiscProblems(self):
 
         l = MultiprocessingParallelizer().run(self.simple_scatter_1, comm=[0, 1, 2, 3, 4, 5, 6, 7, 8])
         MultiprocessingParallelizer().run(self.simple_print, comm=[0, 1, 2])
-        # raise Exception(l)
-
-    @validationTest
+```
+#### <a name="MakeSharedMem">MakeSharedMem</a>
+```python
     def test_MakeSharedMem(self):
 
         a = np.random.rand(10, 5, 5)
@@ -318,17 +377,9 @@ class ParallelizerTests(TestCase):
         # print(type(loaded), loaded.shape, loaded.data, loaded.size)
 
         self.assertTrue(np.allclose(a, loaded))
-
-
-    def mutate_shared_dict(self, d, parallelizer=None):
-        wat = d['d']
-        parallelizer.print('{a} {b} {c} {d}', a=id(wat), b=id(d['d']), c=id(d['d']), d=d)
-        if not parallelizer.on_main:
-            d['a'][1, 0, 0] = 5
-            wat['key'] = 5
-        parallelizer.print('{v} {g}', v=wat, g=d['d'])
-
-    @debugTest
+```
+#### <a name="DistributedDict">DistributedDict</a>
+```python
     def test_DistributedDict(self):
 
          my_data = {'a':np.random.rand(10, 5, 5), 'b':np.random.rand(10, 3, 8), 'c':np.random.rand(10, 15, 4), 'd':{}}
@@ -343,13 +394,15 @@ class ParallelizerTests(TestCase):
          my_data = my_data.unshare()
          self.assertIsInstance(my_data, dict)
          self.assertIsInstance(my_data['a'], np.ndarray)
-
 ```
+
+ </div>
+</div>
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Parallelizers.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Parallelizers.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Parallelizers.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Parallelizers.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Parallelizers.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Parallelizers.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Parallelizers.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Parallelizers.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Parallelizers/__init__.py?message=Update%20Docs)

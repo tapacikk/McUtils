@@ -2,10 +2,14 @@
 A base class for 3D plots
 
 ### Properties and Methods
-<a id="McUtils.Plots.Plots.Plot3D.__init__" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot3D.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, *params, plot_style=None, method='plot_surface', colorbar=None, figure=None, axes=None, subplot_kw=None, **opts): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L672)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L672?message=Update%20Docs)]
+</div>
+
 
 - `params`: `Any`
     >either _empty_ or _x_, _y_, _z_ arrays or _function_, _xrange_, _yrange_
@@ -24,24 +28,110 @@ __init__(self, *params, plot_style=None, method='plot_surface', colorbar=None, f
 - `opts`: `Any`
     >options to be fed in when initializing the Graphics
 
-<a id="McUtils.Plots.Plots.Plot3D.plot" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot3D.plot" class="docs-object-method">&nbsp;</a> 
 ```python
 plot(self, *params, **plot_style): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L726)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L726?message=Update%20Docs)]
+</div>
 
-<a id="McUtils.Plots.Plots.Plot3D.add_colorbar" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.Plot3D.add_colorbar" class="docs-object-method">&nbsp;</a> 
 ```python
 add_colorbar(self, **kw): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L732)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L732?message=Update%20Docs)]
+</div>
 
 
 
 
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [Plot3D](#Plot3D)
+- [Plot3DDelayed](#Plot3DDelayed)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
+```python
+from Peeves.TestUtils import *
+from unittest import TestCase
+from McUtils.Plots import *
+import sys, os, numpy as np
+```
+
+All tests are wrapped in a test class
+```python
+class PlotsTests(TestCase):
+    def tearDownClass(cls):
+        import matplotlib.pyplot as plt
+    def result_file(self, fname):
+        if not os.path.isdir(os.path.join(TestManager.test_dir, "test_results")):
+            os.mkdir(os.path.join(TestManager.test_dir, "test_results"))
+        return os.path.join(TestManager.test_dir, "test_results", fname)
+```
+
+ </div>
+</div>
+
+#### <a name="Plot3D">Plot3D</a>
+```python
+    def test_Plot3D(self):
+        import matplotlib.cm as colormaps
+
+        f = lambda pt: np.sin(pt[0]) + np.cos(pt[1])
+        plot = Plot3D(f, np.arange(0, 2 * np.pi, .1), np.arange(0, 2 * np.pi, .1),
+                      plot_style={
+                          "cmap": colormaps.get_cmap('viridis')
+                      },
+                      axes_labels=['dogs', 'cats',
+                                   Styled('rats', color='red')
+                                   ],
+                      plot_label='my super cool 3D plot',
+                      plot_range=[(-5, 5)] * 3,
+                      plot_legend='i lik turtle',
+                      colorbar=True
+                      )
+        plot.savefig(self.result_file("test_Plot3D.png"))
+        plot.close()
+```
+#### <a name="Plot3DDelayed">Plot3DDelayed</a>
+```python
+    def test_Plot3DDelayed(self):
+        p = Plot3D(background = 'black')
+        for i, c in enumerate(('red', 'white', 'blue')):
+            p.plot(
+                lambda g: (
+                    np.sin(g.T[0]) + np.cos(g.T[1])
+                ),
+                [-2 + 4/3*i, -2 + 4/3*(i+1)],
+                [-2 + 4/3*i, -2 + 4/3*(i+1)],
+                color = c)
+        # p.show()
+
+        p.savefig(self.result_file("test_Plot3DDelayed.gif"))
+        p.close()
+```
+
+ </div>
+</div>
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Plots/Plots/Plot3D.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Plots/Plots/Plot3D.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Plots/Plots/Plot3D.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Plots/Plots/Plot3D.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Plots/Plots/Plot3D.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Plots/Plots/Plot3D.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Plots/Plots/Plot3D.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Plots/Plots/Plot3D.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Plots/Plots.py?message=Update%20Docs)

@@ -16,20 +16,53 @@ These are still in the prototype stage, but hopefully will allow us to unify str
 
 ### Members
 
-  - [GaussianFChkReader](GaussianInterface/GaussianImporter/GaussianFChkReader.md)
-  - [GaussianLogReader](GaussianInterface/GaussianImporter/GaussianLogReader.md)
-  - [GaussianLogReaderException](GaussianInterface/GaussianImporter/GaussianLogReaderException.md)
-  - [GaussianFChkReaderException](GaussianInterface/GaussianImporter/GaussianFChkReaderException.md)
-  - [GaussianJob](GaussianInterface/GaussianJob/GaussianJob.md)
-  - [GaussianJobArray](GaussianInterface/GaussianJob/GaussianJobArray.md)
-  - [FchkForceConstants](GaussianInterface/FChkDerivatives/FchkForceConstants.md)
-  - [FchkForceDerivatives](GaussianInterface/FChkDerivatives/FchkForceDerivatives.md)
-  - [FchkDipoleDerivatives](GaussianInterface/FChkDerivatives/FchkDipoleDerivatives.md)
-  - [FchkDipoleHigherDerivatives](GaussianInterface/FChkDerivatives/FchkDipoleHigherDerivatives.md)
-  - [FchkDipoleNumDerivatives](GaussianInterface/FChkDerivatives/FchkDipoleNumDerivatives.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[GaussianFChkReader](GaussianInterface/GaussianImporter/GaussianFChkReader.md)   
+</div>
+   <div class="col" markdown="1">
+[GaussianLogReader](GaussianInterface/GaussianImporter/GaussianLogReader.md)   
+</div>
+   <div class="col" markdown="1">
+[GaussianLogReaderException](GaussianInterface/GaussianImporter/GaussianLogReaderException.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[GaussianFChkReaderException](GaussianInterface/GaussianImporter/GaussianFChkReaderException.md)   
+</div>
+   <div class="col" markdown="1">
+[GaussianJob](GaussianInterface/GaussianJob/GaussianJob.md)   
+</div>
+   <div class="col" markdown="1">
+[GaussianJobArray](GaussianInterface/GaussianJob/GaussianJobArray.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[FchkForceConstants](GaussianInterface/FChkDerivatives/FchkForceConstants.md)   
+</div>
+   <div class="col" markdown="1">
+[FchkForceDerivatives](GaussianInterface/FChkDerivatives/FchkForceDerivatives.md)   
+</div>
+   <div class="col" markdown="1">
+[FchkDipoleDerivatives](GaussianInterface/FChkDerivatives/FchkDipoleDerivatives.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[FchkDipoleHigherDerivatives](GaussianInterface/FChkDerivatives/FchkDipoleHigherDerivatives.md)   
+</div>
+   <div class="col" markdown="1">
+[FchkDipoleNumDerivatives](GaussianInterface/FChkDerivatives/FchkDipoleNumDerivatives.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
+## Examples
 
 ## FChk Parsing
 
@@ -108,15 +141,51 @@ Support is also provided for the automatic generation of Gaussian job files (`.g
 
 ### Unit Tests
 
-```python
 
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [GetLogInfo](#GetLogInfo)
+- [DefaultLogParse](#DefaultLogParse)
+- [GetDipoles](#GetDipoles)
+- [GaussianLoad](#GaussianLoad)
+- [GaussianAllCartesians](#GaussianAllCartesians)
+- [GaussianCartesians](#GaussianCartesians)
+- [GaussianStandardCartesians](#GaussianStandardCartesians)
+- [GaussianZMatrixCartesians](#GaussianZMatrixCartesians)
+- [GZMatCoords](#GZMatCoords)
+- [ScanEnergies](#ScanEnergies)
+- [OptScanEnergies](#OptScanEnergies)
+- [OptDips](#OptDips)
+- [XMatrix](#XMatrix)
+- [Fchk](#Fchk)
+- [ForceConstants](#ForceConstants)
+- [ForceThirdDerivatives](#ForceThirdDerivatives)
+- [ForceFourthDerivatives](#ForceFourthDerivatives)
+- [FchkMasses](#FchkMasses)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
+```python
 from Peeves.TestUtils import *
 from unittest import TestCase
 from McUtils.GaussianInterface import *
 import sys, os, numpy as np
+```
 
+All tests are wrapped in a test class
+```python
 class GaussianInterfaceTests(TestCase):
-
     def setUp(self):
         self.test_log_water = TestManager.test_data("water_OH_scan.log")
         self.test_log_freq = TestManager.test_data("water_freq.log")
@@ -125,67 +194,80 @@ class GaussianInterfaceTests(TestCase):
         self.test_log_h2 = TestManager.test_data("outer_H2_scan_new.log")
         self.test_scan = TestManager.test_data("water_OH_scan.log")
         self.test_rel_scan = TestManager.test_data("tbhp_030.log")
+```
 
-    @validationTest
+ </div>
+</div>
+
+#### <a name="GetLogInfo">GetLogInfo</a>
+```python
     def test_GetLogInfo(self):
         with GaussianLogReader(self.test_rel_scan) as reader:
             parse = reader.parse("Header")
         self.assertIn("P", parse["Header"].job)
-
-    @inactiveTest
+```
+#### <a name="DefaultLogParse">DefaultLogParse</a>
+```python
     def test_DefaultLogParse(self):
         with GaussianLogReader(self.test_rel_scan) as reader:
             parse = reader.parse()
         self.assertLess(parse["OptimizedScanEnergies"][0][1], -308)
-
-    @validationTest
+```
+#### <a name="GetDipoles">GetDipoles</a>
+```python
     def test_GetDipoles(self):
         with GaussianLogReader(self.test_log_water) as reader:
             parse = reader.parse("DipoleMoments")
         dips = parse["DipoleMoments"]
         self.assertIsInstance(dips, np.ndarray)
         self.assertEquals(dips.shape, (251, 3))
-
-    @validationTest
+```
+#### <a name="GaussianLoad">GaussianLoad</a>
+```python
     def test_GaussianLoad(self):
         with GaussianLogReader(self.test_log_water) as reader:
             parse = reader.parse("InputZMatrix")
         zmat = parse["InputZMatrix"]
         self.assertIsInstance(zmat, str)
-
-    @validationTest
+```
+#### <a name="GaussianAllCartesians">GaussianAllCartesians</a>
+```python
     def test_GaussianAllCartesians(self):
         with GaussianLogReader(self.test_log_water) as reader:
             parse = reader.parse("CartesianCoordinates")
         carts = parse["CartesianCoordinates"]
         self.assertIsInstance(carts[1], np.ndarray)
         self.assertEquals(carts[1].shape, (502, 3, 3))
-
-    @validationTest
+```
+#### <a name="GaussianCartesians">GaussianCartesians</a>
+```python
     def test_GaussianCartesians(self):
         with GaussianLogReader(self.test_log_water) as reader:
             parse = reader.parse("CartesianCoordinates", num=15)
         carts = parse["CartesianCoordinates"]
         self.assertIsInstance(carts[1], np.ndarray)
         self.assertEquals(carts[1].shape, (15, 3, 3))
-
-    @validationTest
+```
+#### <a name="GaussianStandardCartesians">GaussianStandardCartesians</a>
+```python
     def test_GaussianStandardCartesians(self):
         with GaussianLogReader(self.test_log_water) as reader:
             parse = reader.parse("StandardCartesianCoordinates", num=15)
         carts = parse["StandardCartesianCoordinates"]
         self.assertIsInstance(carts[1], np.ndarray)
         self.assertEquals(carts[1].shape, (15, 3, 3))
-
-    @validationTest
+```
+#### <a name="GaussianZMatrixCartesians">GaussianZMatrixCartesians</a>
+```python
     def test_GaussianZMatrixCartesians(self):
         with GaussianLogReader(self.test_log_water) as reader:
             parse = reader.parse("ZMatCartesianCoordinates", num=15)
         carts = parse["ZMatCartesianCoordinates"]
         self.assertIsInstance(carts[1], np.ndarray)
         self.assertEquals(carts[1].shape, (15, 3, 3))
-
-    @validationTest
+```
+#### <a name="GZMatCoords">GZMatCoords</a>
+```python
     def test_GZMatCoords(self):
         with GaussianLogReader(self.test_log_water) as reader:
             parse = reader.parse("ZMatrices", num = 3)
@@ -195,8 +277,9 @@ class GaussianInterfaceTests(TestCase):
         self.assertIsInstance(zmats[1], np.ndarray)
         self.assertEquals(zmats[1].shape, (3, 3))
         self.assertEquals(zmats[2].shape, (3, 3, 3))
-
-    @validationTest
+```
+#### <a name="ScanEnergies">ScanEnergies</a>
+```python
     def test_ScanEnergies(self):
         with GaussianLogReader(self.test_scan) as reader:
             parse = reader.parse("ScanEnergies", num=3)
@@ -205,20 +288,9 @@ class GaussianInterfaceTests(TestCase):
         self.assertIsInstance(engs.coords, np.ndarray)
         self.assertEquals(engs.coords.shape, (4,))
         self.assertEquals(engs.energies.shape, (251, 4))
-
-    # @validationTest
-    # def test_GZMatCoordsBiggie(self):
-    #     num_pulled = 5
-    #     num_entries = 8
-    #     with GaussianLogReader(self.test_log_h2) as reader:
-    #         parse = reader.parse("ZMatrices", num = num_pulled)
-    #     zmats = parse["ZMatrices"]
-    #     # print(zmats, file=sys.stderr)
-    #     self.assertIsInstance(zmats[1], np.ndarray)
-    #     self.assertEquals(zmats[1].shape, (num_entries, 3))
-    #     self.assertEquals(zmats[2].shape, (num_pulled, num_entries, 3))
-
-    @validationTest
+```
+#### <a name="OptScanEnergies">OptScanEnergies</a>
+```python
     def test_OptScanEnergies(self):
         with GaussianLogReader(self.test_log_opt) as reader:
             parse = reader.parse("OptimizedScanEnergies")
@@ -227,16 +299,18 @@ class GaussianInterfaceTests(TestCase):
         self.assertEquals(e.shape, (9,))
         self.assertEquals(len(c.keys()), 14)
         self.assertEquals(list(c.values())[0].shape, (9,))
-
-    @validationTest
+```
+#### <a name="OptDips">OptDips</a>
+```python
     def test_OptDips(self):
         with GaussianLogReader(self.test_rel_scan) as reader:
             parse = reader.parse(["OptimizedScanEnergies", "OptimizedDipoleMoments"])
         c = np.array(parse["OptimizedDipoleMoments"])
         self.assertIsInstance(c, np.ndarray)
         self.assertEquals(c.shape, (28, 3))
-
-    @validationTest
+```
+#### <a name="XMatrix">XMatrix</a>
+```python
     def test_XMatrix(self):
         file=TestManager.test_data('qooh1.log')
         with GaussianLogReader(file) as reader:
@@ -247,15 +321,17 @@ class GaussianInterfaceTests(TestCase):
         self.assertEquals(X.shape, (39, 39))
         self.assertEquals(X[0, 10], -0.126703)
         self.assertEquals(X[33, 26], -0.642702E-1)
-
-    @validationTest
+```
+#### <a name="Fchk">Fchk</a>
+```python
     def test_Fchk(self):
         with GaussianFChkReader(self.test_fchk) as reader:
             parse = reader.parse()
         key = next(iter(parse.keys()))
         self.assertIsInstance(key, str)
-
-    @validationTest
+```
+#### <a name="ForceConstants">ForceConstants</a>
+```python
     def test_ForceConstants(self):
         n = 3 # water
         with GaussianFChkReader(self.test_fchk) as reader:
@@ -263,8 +339,9 @@ class GaussianInterfaceTests(TestCase):
         fcs = parse["ForceConstants"]
         self.assertEquals(fcs.n, n)
         self.assertEquals(fcs.array.shape, (3*n, 3*n))
-
-    @validationTest
+```
+#### <a name="ForceThirdDerivatives">ForceThirdDerivatives</a>
+```python
     def test_ForceThirdDerivatives(self):
         n = 3 # water
         with GaussianFChkReader(self.test_fchk) as reader:
@@ -283,8 +360,9 @@ class GaussianInterfaceTests(TestCase):
         self.assertTrue(
             np.allclose(tds[2], tds[2].T, rtol=1e-08, atol=1e-08)
         )
-
-    @validationTest
+```
+#### <a name="ForceFourthDerivatives">ForceFourthDerivatives</a>
+```python
     def test_ForceFourthDerivatives(self):
         n = 3 # water
         with GaussianFChkReader(self.test_fchk) as reader:
@@ -305,21 +383,24 @@ class GaussianInterfaceTests(TestCase):
         self.assertTrue(
             np.allclose(slice_2, slice_2.T, rtol=1e-08, atol=1e-08)
         )
-
-    @validationTest
+```
+#### <a name="FchkMasses">FchkMasses</a>
+```python
     def test_FchkMasses(self):
         n = 3 # water
         with GaussianFChkReader(self.test_fchk) as reader:
             parse = reader.parse("AtomicMasses")
         masses = parse["AtomicMasses"]
         self.assertEquals(len(masses), n)
-
 ```
+
+ </div>
+</div>
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/GaussianInterface.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/GaussianInterface.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/GaussianInterface.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/GaussianInterface.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/GaussianInterface.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/GaussianInterface.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/GaussianInterface.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/GaussianInterface.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/GaussianInterface/__init__.py?message=Update%20Docs)

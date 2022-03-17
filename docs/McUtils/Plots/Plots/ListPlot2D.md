@@ -2,10 +2,14 @@
 Convenience class that handles the interpolation first
 
 ### Properties and Methods
-<a id="McUtils.Plots.Plots.ListPlot2D.__init__" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.Plots.Plots.ListPlot2D.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, *params, plot_style=None, method='contour', colorbar=None, figure=None, axes=None, subplot_kw=None, interpolate=True, **opts): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L591)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L591?message=Update%20Docs)]
+</div>
+
 
 - `params`: `Any`
     >either _empty_ or and array of (_x_, _y_, _z_) points
@@ -32,8 +36,8 @@ __init__(self, *params, plot_style=None, method='contour', colorbar=None, figure
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Plots/Plots/ListPlot2D.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Plots/Plots/ListPlot2D.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Plots/Plots/ListPlot2D.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Plots/Plots/ListPlot2D.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Plots/Plots/ListPlot2D.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Plots/Plots/ListPlot2D.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Plots/Plots/ListPlot2D.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Plots/Plots/ListPlot2D.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Plots/Plots.py?message=Update%20Docs)

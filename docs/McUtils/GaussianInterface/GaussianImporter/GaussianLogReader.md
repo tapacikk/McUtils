@@ -33,10 +33,14 @@ default_keys: tuple
 default_ordering: dict
 job_default_keys: dict
 ```
-<a id="McUtils.GaussianInterface.GaussianImporter.GaussianLogReader.parse" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.GaussianInterface.GaussianImporter.GaussianLogReader.parse" class="docs-object-method">&nbsp;</a> 
 ```python
 parse(self, keys=None, num=None, reset=False): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L58)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L58?message=Update%20Docs)]
+</div>
+
 The main function we'll actually use. Parses bits out of a .log file.
 - `keys`: `str or list(str)`
     >the keys we'd like to read from the log file
@@ -45,19 +49,26 @@ The main function we'll actually use. Parses bits out of a .log file.
 - `:returns`: `dict`
     >the data pulled from the log file, strung together as a `dict` and keyed by the _keys_
 
-<a id="McUtils.GaussianInterface.GaussianImporter.GaussianLogReader.get_default_keys" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.GaussianInterface.GaussianImporter.GaussianLogReader.get_default_keys" class="docs-object-method">&nbsp;</a> 
 ```python
 get_default_keys(self): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L107)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L107?message=Update%20Docs)]
+</div>
+
 Tries to get the default keys one might be expected to want depending on the type of job as determined from the Header
         Currently only supports 'opt', 'scan', and 'popt' as job types.
 - `:returns`: `tuple(str)`
     >key listing
 
-<a id="McUtils.GaussianInterface.GaussianImporter.GaussianLogReader.read_props" class="docs-object-method">&nbsp;</a>
+<a id="McUtils.GaussianInterface.GaussianImporter.GaussianLogReader.read_props" class="docs-object-method">&nbsp;</a> 
 ```python
 read_props(file, keys): 
 ```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L136)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L136?message=Update%20Docs)]
+</div>
 
 We're working on improving this documentation, but in the meantime, here are the unit tests we use
 
@@ -179,8 +190,8 @@ def test_XMatrix(self):
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/GaussianInterface/GaussianImporter.py?message=Update%20Docs)

@@ -21,50 +21,170 @@ Image/animation support and other back end support for 3D graphics (`VTK`) are p
 
 ### Members
 
-  - [GraphicsBase](Plots/Graphics/GraphicsBase.md)
-  - [Graphics](Plots/Graphics/Graphics.md)
-  - [Graphics3D](Plots/Graphics/Graphics3D.md)
-  - [GraphicsGrid](Plots/Graphics/GraphicsGrid.md)
-  - [Plot](Plots/Plots/Plot.md)
-  - [ScatterPlot](Plots/Plots/ScatterPlot.md)
-  - [ErrorBarPlot](Plots/Plots/ErrorBarPlot.md)
-  - [ListErrorBarPlot](Plots/Plots/ListErrorBarPlot.md)
-  - [StickPlot](Plots/Plots/StickPlot.md)
-  - [ListStickPlot](Plots/Plots/ListStickPlot.md)
-  - [TriPlot](Plots/Plots/TriPlot.md)
-  - [ListTriPlot](Plots/Plots/ListTriPlot.md)
-  - [DataPlot](Plots/Plots/DataPlot.md)
-  - [HistogramPlot](Plots/Plots/HistogramPlot.md)
-  - [HistogramPlot2D](Plots/Plots/HistogramPlot2D.md)
-  - [VerticalLinePlot](Plots/Plots/VerticalLinePlot.md)
-  - [ArrayPlot](Plots/Plots/ArrayPlot.md)
-  - [TensorPlot](Plots/Plots/TensorPlot.md)
-  - [Plot2D](Plots/Plots/Plot2D.md)
-  - [ListPlot2D](Plots/Plots/ListPlot2D.md)
-  - [ContourPlot](Plots/Plots/ContourPlot.md)
-  - [DensityPlot](Plots/Plots/DensityPlot.md)
-  - [ListContourPlot](Plots/Plots/ListContourPlot.md)
-  - [ListDensityPlot](Plots/Plots/ListDensityPlot.md)
-  - [ListTriContourPlot](Plots/Plots/ListTriContourPlot.md)
-  - [ListTriDensityPlot](Plots/Plots/ListTriDensityPlot.md)
-  - [ListTriPlot3D](Plots/Plots/ListTriPlot3D.md)
-  - [Plot3D](Plots/Plots/Plot3D.md)
-  - [ListPlot3D](Plots/Plots/ListPlot3D.md)
-  - [ScatterPlot3D](Plots/Plots/ScatterPlot3D.md)
-  - [WireframePlot3D](Plots/Plots/WireframePlot3D.md)
-  - [ContourPlot3D](Plots/Plots/ContourPlot3D.md)
-  - [GraphicsPrimitive](Plots/Primitives/GraphicsPrimitive.md)
-  - [Sphere](Plots/Primitives/Sphere.md)
-  - [Cylinder](Plots/Primitives/Cylinder.md)
-  - [Disk](Plots/Primitives/Disk.md)
-  - [Line](Plots/Primitives/Line.md)
-  - [EventHandler](Plots/Interactive/EventHandler.md)
-  - [Animator](Plots/Interactive/Animator.md)
-  - [Styled](Plots/Styling/Styled.md)
-  - [ThemeManager](Plots/Styling/ThemeManager.md)
-  - [Image](Plots/Image/Image.md)
-  - [GraphicsPropertyManager](Plots/Properties/GraphicsPropertyManager.md)
-  - [GraphicsPropertyManager3D](Plots/Properties/GraphicsPropertyManager3D.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[GraphicsBase](Plots/Graphics/GraphicsBase.md)   
+</div>
+   <div class="col" markdown="1">
+[Graphics](Plots/Graphics/Graphics.md)   
+</div>
+   <div class="col" markdown="1">
+[Graphics3D](Plots/Graphics/Graphics3D.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[GraphicsGrid](Plots/Graphics/GraphicsGrid.md)   
+</div>
+   <div class="col" markdown="1">
+[Plot](Plots/Plots/Plot.md)   
+</div>
+   <div class="col" markdown="1">
+[ScatterPlot](Plots/Plots/ScatterPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[ErrorBarPlot](Plots/Plots/ErrorBarPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[ListErrorBarPlot](Plots/Plots/ListErrorBarPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[StickPlot](Plots/Plots/StickPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[ListStickPlot](Plots/Plots/ListStickPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[TriPlot](Plots/Plots/TriPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[ListTriPlot](Plots/Plots/ListTriPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[DataPlot](Plots/Plots/DataPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[HistogramPlot](Plots/Plots/HistogramPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[HistogramPlot2D](Plots/Plots/HistogramPlot2D.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[VerticalLinePlot](Plots/Plots/VerticalLinePlot.md)   
+</div>
+   <div class="col" markdown="1">
+[ArrayPlot](Plots/Plots/ArrayPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[TensorPlot](Plots/Plots/TensorPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Plot2D](Plots/Plots/Plot2D.md)   
+</div>
+   <div class="col" markdown="1">
+[ListPlot2D](Plots/Plots/ListPlot2D.md)   
+</div>
+   <div class="col" markdown="1">
+[ContourPlot](Plots/Plots/ContourPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[DensityPlot](Plots/Plots/DensityPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[ListContourPlot](Plots/Plots/ListContourPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[ListDensityPlot](Plots/Plots/ListDensityPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[ListTriContourPlot](Plots/Plots/ListTriContourPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[ListTriDensityPlot](Plots/Plots/ListTriDensityPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[ListTriPlot3D](Plots/Plots/ListTriPlot3D.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Plot3D](Plots/Plots/Plot3D.md)   
+</div>
+   <div class="col" markdown="1">
+[ListPlot3D](Plots/Plots/ListPlot3D.md)   
+</div>
+   <div class="col" markdown="1">
+[ScatterPlot3D](Plots/Plots/ScatterPlot3D.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[WireframePlot3D](Plots/Plots/WireframePlot3D.md)   
+</div>
+   <div class="col" markdown="1">
+[ContourPlot3D](Plots/Plots/ContourPlot3D.md)   
+</div>
+   <div class="col" markdown="1">
+[GraphicsPrimitive](Plots/Primitives/GraphicsPrimitive.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Sphere](Plots/Primitives/Sphere.md)   
+</div>
+   <div class="col" markdown="1">
+[Cylinder](Plots/Primitives/Cylinder.md)   
+</div>
+   <div class="col" markdown="1">
+[Disk](Plots/Primitives/Disk.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Line](Plots/Primitives/Line.md)   
+</div>
+   <div class="col" markdown="1">
+[EventHandler](Plots/Interactive/EventHandler.md)   
+</div>
+   <div class="col" markdown="1">
+[Animator](Plots/Interactive/Animator.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Styled](Plots/Styling/Styled.md)   
+</div>
+   <div class="col" markdown="1">
+[ThemeManager](Plots/Styling/ThemeManager.md)   
+</div>
+   <div class="col" markdown="1">
+[Image](Plots/Image/Image.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[GraphicsPropertyManager](Plots/Properties/GraphicsPropertyManager.md)   
+</div>
+   <div class="col" markdown="1">
+[GraphicsPropertyManager3D](Plots/Properties/GraphicsPropertyManager3D.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
@@ -72,35 +192,69 @@ Image/animation support and other back end support for 3D graphics (`VTK`) are p
 
 ### Unit Tests
 
-```python
 
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [Plot](#Plot)
+- [Plot3D](#Plot3D)
+- [GraphicsGrid](#GraphicsGrid)
+- [PlotStyling](#PlotStyling)
+- [PlotGridStyling](#PlotGridStyling)
+- [Scatter](#Scatter)
+- [ListContourPlot](#ListContourPlot)
+- [ListTriPlot3D](#ListTriPlot3D)
+- [ListTriDensityPlot](#ListTriDensityPlot)
+- [ListTriContourPlot](#ListTriContourPlot)
+- [Animation](#Animation)
+- [VTK](#VTK)
+- [PlotDelayed](#PlotDelayed)
+- [Plot3DDelayed](#Plot3DDelayed)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
+```python
 from Peeves.TestUtils import *
 from unittest import TestCase
 from McUtils.Plots import *
 import sys, os, numpy as np
+```
 
+All tests are wrapped in a test class
+```python
 class PlotsTests(TestCase):
-
-    @classmethod
     def tearDownClass(cls):
         import matplotlib.pyplot as plt
-        # plt.show()
-
     def result_file(self, fname):
         if not os.path.isdir(os.path.join(TestManager.test_dir, "test_results")):
             os.mkdir(os.path.join(TestManager.test_dir, "test_results"))
         return os.path.join(TestManager.test_dir, "test_results", fname)
+```
 
-    @validationTest
+ </div>
+</div>
+
+#### <a name="Plot">Plot</a>
+```python
     def test_Plot(self):
         grid = np.linspace(0, 2*np.pi, 100)
         plot = Plot(grid, np.sin(grid))
 
         plot.savefig(self.result_file("test_Plot.png"))
         plot.close()
-        # plot.show()
-
-    @validationTest
+```
+#### <a name="Plot3D">Plot3D</a>
+```python
     def test_Plot3D(self):
         import matplotlib.cm as colormaps
 
@@ -119,8 +273,9 @@ class PlotsTests(TestCase):
                       )
         plot.savefig(self.result_file("test_Plot3D.png"))
         plot.close()
-
-    @validationTest
+```
+#### <a name="GraphicsGrid">GraphicsGrid</a>
+```python
     def test_GraphicsGrid(self):
 
         main = GraphicsGrid(ncols=3, nrows=1)
@@ -133,8 +288,9 @@ class PlotsTests(TestCase):
 
         main.savefig(self.result_file("test_GraphicsGrid.png"))
         main.close()
-
-    @validationTest
+```
+#### <a name="PlotStyling">PlotStyling</a>
+```python
     def test_PlotStyling(self):
         grid = np.linspace(0, 2 * np.pi, 100)
         # file = '~/Desktop/y.png'
@@ -150,8 +306,9 @@ class PlotsTests(TestCase):
         # plot.show()
         plot.savefig(self.result_file("test_PlotStyling.png"))
         plot.close()
-
-    @debugTest
+```
+#### <a name="PlotGridStyling">PlotGridStyling</a>
+```python
     def test_PlotGridStyling(self):
         main = GraphicsGrid(ncols=3, nrows=1, theme='Solarize_Light2', figure_label='my beuatufil triptych',
                             padding=((35, 60), (35, 40)))
@@ -173,8 +330,9 @@ class PlotsTests(TestCase):
 
         main.savefig(self.result_file("test_PlotGridStyling.png"))
         main.close()
-
-    @debugTest
+```
+#### <a name="Scatter">Scatter</a>
+```python
     def test_Scatter(self):
         pts = np.random.rand(50, 2)
         plot = ScatterPlot(*pts.T,
@@ -184,8 +342,9 @@ class PlotsTests(TestCase):
         # plot.show()
         plot.savefig(self.result_file("test_Scatter.pdf"), format='pdf')
         plot.close()
-
-    @validationTest
+```
+#### <a name="ListContourPlot">ListContourPlot</a>
+```python
     def test_ListContourPlot(self):
         pts = np.pi*np.random.rand(150, 2)
         sins = np.sin(pts[:, 0])
@@ -195,8 +354,9 @@ class PlotsTests(TestCase):
 
         plot.savefig(self.result_file("test_ListContourPlot.png"))
         plot.close()
-
-    @validationTest
+```
+#### <a name="ListTriPlot3D">ListTriPlot3D</a>
+```python
     def test_ListTriPlot3D(self):
         pts = np.pi*np.random.rand(150, 2)
         sins = np.sin(pts[:, 0])
@@ -206,8 +366,9 @@ class PlotsTests(TestCase):
 
         plot.savefig(self.result_file("test_ListTriPlot3D.png"))
         plot.close()
-
-    @validationTest
+```
+#### <a name="ListTriDensityPlot">ListTriDensityPlot</a>
+```python
     def test_ListTriDensityPlot(self):
         pts = np.pi*np.random.rand(150, 2)
         sins = np.sin(pts[:, 0])
@@ -217,8 +378,9 @@ class PlotsTests(TestCase):
 
         plot.savefig(self.result_file("test_ListTriDensityPlot.png"))
         plot.close()
-
-    @validationTest
+```
+#### <a name="ListTriContourPlot">ListTriContourPlot</a>
+```python
     def test_ListTriContourPlot(self):
         pts = np.pi*np.random.rand(150, 2)
         sins = np.sin(pts[:, 0])
@@ -229,8 +391,9 @@ class PlotsTests(TestCase):
 
         plot.savefig(self.result_file("test_ListTriContourPlot.png"))
         plot.close()
-
-    @inactiveTest
+```
+#### <a name="Animation">Animation</a>
+```python
     def test_Animation(self):
         "Currently broken"
         def get_data(*args):
@@ -251,20 +414,15 @@ class PlotsTests(TestCase):
 
         plot.savefig(self.result_file("test_ListTriContourPlot.gif"))
         plot.close()
-
-    @inactiveTest
+```
+#### <a name="VTK">VTK</a>
+```python
     def test_VTK(self):
         plot = Graphics3D(backend="VTK", image_size=[1500, 500])
         Sphere().plot(plot)
-        # plot.show()
-
-    # @validationTest
-    # def test_Plot3D_adaptive(self):
-    #     f = lambda pt: np.sin(pt[0]) + np.cos(pt[1])
-    #     plot = Plot3D(f, [0, 2*np.pi], [0, 2*np.pi])
-    #     plot.show()
-
-    @validationTest
+```
+#### <a name="PlotDelayed">PlotDelayed</a>
+```python
     def test_PlotDelayed(self):
         p = Plot(background = 'black')
         for i, c in enumerate(('red', 'white', 'blue')):
@@ -273,8 +431,9 @@ class PlotsTests(TestCase):
 
         p.savefig(self.result_file("test_PlotDelayed.gif"))
         p.close()
-
-    @validationTest
+```
+#### <a name="Plot3DDelayed">Plot3DDelayed</a>
+```python
     def test_Plot3DDelayed(self):
         p = Plot3D(background = 'black')
         for i, c in enumerate(('red', 'white', 'blue')):
@@ -291,10 +450,13 @@ class PlotsTests(TestCase):
         p.close()
 ```
 
+ </div>
+</div>
+
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Plots.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Plots.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Plots.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Plots.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Plots.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Plots.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Plots.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Plots.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Plots/__init__.py?message=Update%20Docs)

@@ -15,50 +15,163 @@ Three main threads are handled:
 
 ### Members
 
-  - [FileStreamReader](Parsers/FileStreamer/FileStreamReader.md)
-  - [FileStreamCheckPoint](Parsers/FileStreamer/FileStreamCheckPoint.md)
-  - [FileStreamerTag](Parsers/FileStreamer/FileStreamerTag.md)
-  - [FileStreamReaderException](Parsers/FileStreamer/FileStreamReaderException.md)
-  - [StringStreamReader](Parsers/FileStreamer/StringStreamReader.md)
-  - [RegexPattern](Parsers/RegexPatterns/RegexPattern.md)
-  - [Capturing](Parsers/RegexPatterns/Capturing.md)
-  - [NonCapturing](Parsers/RegexPatterns/NonCapturing.md)
-  - [Optional](Parsers/RegexPatterns/Optional.md)
-  - [Alternatives](Parsers/RegexPatterns/Alternatives.md)
-  - [Longest](Parsers/RegexPatterns/Longest.md)
-  - [Shortest](Parsers/RegexPatterns/Shortest.md)
-  - [Repeating](Parsers/RegexPatterns/Repeating.md)
-  - [Duplicated](Parsers/RegexPatterns/Duplicated.md)
-  - [PatternClass](Parsers/RegexPatterns/PatternClass.md)
-  - [Parenthesized](Parsers/RegexPatterns/Parenthesized.md)
-  - [Named](Parsers/RegexPatterns/Named.md)
-  - [Any](Parsers/RegexPatterns/Any.md)
-  - [Sign](Parsers/RegexPatterns/Sign.md)
-  - [Number](Parsers/RegexPatterns/Number.md)
-  - [Integer](Parsers/RegexPatterns/Integer.md)
-  - [PositiveInteger](Parsers/RegexPatterns/PositiveInteger.md)
-  - [ASCIILetter](Parsers/RegexPatterns/ASCIILetter.md)
-  - [AtomName](Parsers/RegexPatterns/AtomName.md)
-  - [WhitespaceCharacter](Parsers/RegexPatterns/WhitespaceCharacter.md)
-  - [WhitespaceCharacter](Parsers/RegexPatterns/WhitespaceCharacter.md)
-  - [Word](Parsers/RegexPatterns/Word.md)
-  - [WordCharacter](Parsers/RegexPatterns/WordCharacter.md)
-  - [VariableName](Parsers/RegexPatterns/VariableName.md)
-  - [CartesianPoint](Parsers/RegexPatterns/CartesianPoint.md)
-  - [IntXYZLine](Parsers/RegexPatterns/IntXYZLine.md)
-  - [XYZLine](Parsers/RegexPatterns/XYZLine.md)
-  - [Empty](Parsers/RegexPatterns/Empty.md)
-  - [Newline](Parsers/RegexPatterns/Newline.md)
-  - [ZMatPattern](Parsers/RegexPatterns/ZMatPattern.md)
-  - [StringParser](Parsers/StringParser/StringParser.md)
-  - [StringParserException](Parsers/StringParser/StringParserException.md)
-  - [StructuredType](Parsers/StructuredType/StructuredType.md)
-  - [StructuredTypeArray](Parsers/StructuredType/StructuredTypeArray.md)
-  - [DisappearingTypeClass](Parsers/StructuredType/DisappearingTypeClass.md)
-  - [StringParser](Parsers/StringParser/StringParser.md)
+<div class="container alert alert-secondary bg-light">
+  <div class="row">
+   <div class="col" markdown="1">
+[FileStreamReader](Parsers/FileStreamer/FileStreamReader.md)   
+</div>
+   <div class="col" markdown="1">
+[FileStreamCheckPoint](Parsers/FileStreamer/FileStreamCheckPoint.md)   
+</div>
+   <div class="col" markdown="1">
+[FileStreamerTag](Parsers/FileStreamer/FileStreamerTag.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[FileStreamReaderException](Parsers/FileStreamer/FileStreamReaderException.md)   
+</div>
+   <div class="col" markdown="1">
+[StringStreamReader](Parsers/FileStreamer/StringStreamReader.md)   
+</div>
+   <div class="col" markdown="1">
+[RegexPattern](Parsers/RegexPatterns/RegexPattern.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Capturing](Parsers/RegexPatterns/Capturing.md)   
+</div>
+   <div class="col" markdown="1">
+[NonCapturing](Parsers/RegexPatterns/NonCapturing.md)   
+</div>
+   <div class="col" markdown="1">
+[Optional](Parsers/RegexPatterns/Optional.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Alternatives](Parsers/RegexPatterns/Alternatives.md)   
+</div>
+   <div class="col" markdown="1">
+[Longest](Parsers/RegexPatterns/Longest.md)   
+</div>
+   <div class="col" markdown="1">
+[Shortest](Parsers/RegexPatterns/Shortest.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Repeating](Parsers/RegexPatterns/Repeating.md)   
+</div>
+   <div class="col" markdown="1">
+[Duplicated](Parsers/RegexPatterns/Duplicated.md)   
+</div>
+   <div class="col" markdown="1">
+[PatternClass](Parsers/RegexPatterns/PatternClass.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Parenthesized](Parsers/RegexPatterns/Parenthesized.md)   
+</div>
+   <div class="col" markdown="1">
+[Named](Parsers/RegexPatterns/Named.md)   
+</div>
+   <div class="col" markdown="1">
+[Any](Parsers/RegexPatterns/Any.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Sign](Parsers/RegexPatterns/Sign.md)   
+</div>
+   <div class="col" markdown="1">
+[Number](Parsers/RegexPatterns/Number.md)   
+</div>
+   <div class="col" markdown="1">
+[Integer](Parsers/RegexPatterns/Integer.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[PositiveInteger](Parsers/RegexPatterns/PositiveInteger.md)   
+</div>
+   <div class="col" markdown="1">
+[ASCIILetter](Parsers/RegexPatterns/ASCIILetter.md)   
+</div>
+   <div class="col" markdown="1">
+[AtomName](Parsers/RegexPatterns/AtomName.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[WhitespaceCharacter](Parsers/RegexPatterns/WhitespaceCharacter.md)   
+</div>
+   <div class="col" markdown="1">
+[WhitespaceCharacter](Parsers/RegexPatterns/WhitespaceCharacter.md)   
+</div>
+   <div class="col" markdown="1">
+[Word](Parsers/RegexPatterns/Word.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[WordCharacter](Parsers/RegexPatterns/WordCharacter.md)   
+</div>
+   <div class="col" markdown="1">
+[VariableName](Parsers/RegexPatterns/VariableName.md)   
+</div>
+   <div class="col" markdown="1">
+[CartesianPoint](Parsers/RegexPatterns/CartesianPoint.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[IntXYZLine](Parsers/RegexPatterns/IntXYZLine.md)   
+</div>
+   <div class="col" markdown="1">
+[XYZLine](Parsers/RegexPatterns/XYZLine.md)   
+</div>
+   <div class="col" markdown="1">
+[Empty](Parsers/RegexPatterns/Empty.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Newline](Parsers/RegexPatterns/Newline.md)   
+</div>
+   <div class="col" markdown="1">
+[ZMatPattern](Parsers/RegexPatterns/ZMatPattern.md)   
+</div>
+   <div class="col" markdown="1">
+[StringParser](Parsers/StringParser/StringParser.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[StringParserException](Parsers/StringParser/StringParserException.md)   
+</div>
+   <div class="col" markdown="1">
+[StructuredType](Parsers/StructuredType/StructuredType.md)   
+</div>
+   <div class="col" markdown="1">
+[StructuredTypeArray](Parsers/StructuredType/StructuredTypeArray.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[DisappearingTypeClass](Parsers/StructuredType/DisappearingTypeClass.md)   
+</div>
+   <div class="col" markdown="1">
+[StringParser](Parsers/StringParser/StringParser.md)   
+</div>
+</div>
+</div>
 
 ### Examples
 
+## Examples
 
 ## RegexPattern
 
@@ -198,16 +311,44 @@ We also see the `prefix` and `joiner` options to `RegexPattern` in action.
 
 ### Unit Tests
 
-```python
 
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
+ </div>
+<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
+
+- [RegexGroups](#RegexGroups)
+- [OptScan](#OptScan)
+- [XYZ](#XYZ)
+- [BasicParse](#BasicParse)
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
+
+Before we can run our examples we should get a bit of setup out of the way.
+Since these examples were harvested from the unit tests not all pieces
+will be necessary for all situations.
+```python
 from Peeves.TestUtils import *
 from unittest import TestCase
 from McUtils.Parsers import *
 import sys, os, numpy as np
+```
 
+All tests are wrapped in a test class
+```python
 class ParserTests(TestCase):
+```
 
-    @validationTest
+ </div>
+</div>
+
+#### <a name="RegexGroups">RegexGroups</a>
+```python
     def test_RegexGroups(self):
         # tests whether we capture subgroups or not (by default _not_)
 
@@ -223,8 +364,9 @@ class ParserTests(TestCase):
             )
         )
         self.assertEquals(len(pattern.search(test_str).groups()), 2)
-
-    @validationTest
+```
+#### <a name="OptScan">OptScan</a>
+```python
     def test_OptScan(self):
 
         eigsPattern = RegexPattern(
@@ -266,10 +408,9 @@ class ParserTests(TestCase):
         self.assertEquals(parse_res.shape, [(4, 5), [(4, 32), (4, 32, 5)]])
         self.assertIsInstance(parse_res["Coordinates"][1].array, np.ndarray)
         self.assertEquals(int(parse_res["Coordinates"][1, 0].sum()), 3230)
-
-        # print(parse_single["Coordinates"], file = sys.stderr)
-
-    @validationTest
+```
+#### <a name="XYZ">XYZ</a>
+```python
     def test_XYZ(self):
 
         with open(TestManager.test_data('test_100.xyz')) as test:
@@ -293,8 +434,9 @@ class ParserTests(TestCase):
         atom_coords = res["Atoms"].array[1].array
         self.assertIsInstance(atom_coords, np.ndarray)
         self.assertEquals(atom_coords.shape, (100, 13, 3))
-
-    @validationTest
+```
+#### <a name="BasicParse">BasicParse</a>
+```python
     def test_BasicParse(self):
         regex = RegexPattern(
             (
@@ -325,25 +467,15 @@ class ParserTests(TestCase):
         comment_string = res["Comment"].array[0]
         self.assertTrue('comment' in comment_string)
         self.assertEquals(res['Atoms'].array.shape, (4, 3))
-
-        # print(
-        #     # regex.dtype,
-        #     "",
-        #     res,
-        #     print(repr(str(regex))),
-        #     repr(regex.search(test_str).group("NumAtoms")),
-        #     res["NumAtoms"].array,
-        #     res['Atoms'].array,
-        #     file = sys.stderr,
-        #     sep="\n",
-        #     end="\n"
-        # )
 ```
+
+ </div>
+</div>
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/ci/docs/McUtils/Parsers.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/ci/docs/McUtils/Parsers.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/ci/docs/McUtils/Parsers.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/ci/docs/McUtils/Parsers.md) <br/>
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Parsers.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Parsers.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Parsers.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Parsers.md) <br/>
 [Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Parsers/__init__.py?message=Update%20Docs)
