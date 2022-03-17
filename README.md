@@ -7,7 +7,13 @@ Docs for the actively edited, unstable branch can be found [here](https://mccoyg
 
 ### Installation & Requirements
 
-**COMING SOON**
+The easiest way to install is via `pip`, as
+
+```lang-shell
+pip install mccoygroup-mcutils
+```
+
+This hasn't been thoroughly tested, so if things break it is always possible to clone the repository and go from there.
 
 ### Contributing
 
