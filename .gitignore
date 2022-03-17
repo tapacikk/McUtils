@@ -8,7 +8,6 @@ CMakeLists.txt
 cmake-build-debug
 Icon?
 
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
