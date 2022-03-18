@@ -1,6 +1,6 @@
 ## <a id="McUtils.Parsers.StructuredType.StructuredType">StructuredType</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L11?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L11?message=Update%20Docs)]
 </div>
 
 Represents a structured type with a defined calculus to simplify the construction of combined types when writing
@@ -21,7 +21,7 @@ Supports a compound StructuredType where the types are keyed
 __init__(self, base_type, shape=None, is_alternative=False, is_optional=False, default_value=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L18)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L18?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L18)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L18?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredType.is_simple" class="docs-object-method">&nbsp;</a> 
@@ -30,7 +30,7 @@ __init__(self, base_type, shape=None, is_alternative=False, is_optional=False, d
 is_simple(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredType.add_types" class="docs-object-method">&nbsp;</a> 
@@ -38,7 +38,7 @@ is_simple(self):
 add_types(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L63)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L63?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L63)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L63?message=Update%20Docs)]
 </div>
 
 Constructs a new type by treating the two objects as siblings, that is if they can be merged due to type and
@@ -55,7 +55,7 @@ Constructs a new type by treating the two objects as siblings, that is if they c
 __add__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L136)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L136?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L136)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L136?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredType.compound_types" class="docs-object-method">&nbsp;</a> 
@@ -63,7 +63,7 @@ __add__(self, other):
 compound_types(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L139)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L139?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L139)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L139?message=Update%20Docs)]
 </div>
 
 Creates a structured type where rather than merging types they simply compound onto one another
@@ -77,7 +77,7 @@ Creates a structured type where rather than merging types they simply compound o
 __call__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L148)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L148?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L148)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L148?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredType.repeat" class="docs-object-method">&nbsp;</a> 
@@ -85,7 +85,7 @@ __call__(self, other):
 repeat(self, n=None, m=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L152)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L152?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L152)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L152?message=Update%20Docs)]
 </div>
 
 Returns a new version of the type, but with the appropriate shape for being repeated n-to-m times
@@ -101,7 +101,7 @@ Returns a new version of the type, but with the appropriate shape for being repe
 drop_axis(self, axis=0): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L175)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L175?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L175)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L175?message=Update%20Docs)]
 </div>
 
 Returns a new version of the type, but with the appropriate shape for dropping an axis
@@ -115,7 +115,7 @@ Returns a new version of the type, but with the appropriate shape for dropping a
 extend_shape(self, base_shape): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L197)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L197?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L197)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L197?message=Update%20Docs)]
 </div>
 
 Extends the shape of the type such that base_shape precedes the existing shape
@@ -129,7 +129,7 @@ Extends the shape of the type such that base_shape precedes the existing shape
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L235)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L235?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L235)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L235?message=Update%20Docs)]
 </div>
 
  </div>
@@ -144,4 +144,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Parsers/StructuredType/StructuredType.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Parsers/StructuredType/StructuredType.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Parsers/StructuredType/StructuredType.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L11?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L11?message=Update%20Docs)

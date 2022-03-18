@@ -1,6 +1,6 @@
 ## <a id="McUtils.Parsers.StructuredType.StructuredTypeArray">StructuredTypeArray</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L268)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L268?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L268)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L268?message=Update%20Docs)]
 </div>
 
 Represents an array of objects defined by the StructuredType spec provided
@@ -25,7 +25,7 @@ A _compound_ StructuredTypeArray requires either a list or OrderedDict of Struct
 __init__(self, stype, num_elements=50, padding_mode='fill', padding_value=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L282)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L282?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L282)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L282?message=Update%20Docs)]
 </div>
 
 
@@ -40,7 +40,7 @@ __init__(self, stype, num_elements=50, padding_mode='fill', padding_value=None):
 is_simple(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 Just returns wheter the core datatype is simple
@@ -53,7 +53,7 @@ Just returns wheter the core datatype is simple
 dict_like(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.extension_axis" class="docs-object-method">&nbsp;</a> 
@@ -62,7 +62,7 @@ dict_like(self):
 extension_axis(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 Determines which axis to extend when adding more memory to the array
@@ -75,7 +75,7 @@ Determines which axis to extend when adding more memory to the array
 shape(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.block_size" class="docs-object-method">&nbsp;</a> 
@@ -84,7 +84,7 @@ shape(self):
 block_size(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.append_depth" class="docs-object-method">&nbsp;</a> 
@@ -93,7 +93,7 @@ block_size(self):
 append_depth(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.dtype" class="docs-object-method">&nbsp;</a> 
@@ -102,7 +102,7 @@ append_depth(self):
 dtype(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 Returns the core data type held by the StructuredType that represents the array
@@ -115,7 +115,7 @@ Returns the core data type held by the StructuredType that represents the array
 stype(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 Returns the StructuredType that the array holds data for
@@ -128,7 +128,7 @@ Returns the StructuredType that the array holds data for
 array(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.axis_shape_indeterminate" class="docs-object-method">&nbsp;</a> 
@@ -136,7 +136,7 @@ array(self):
 axis_shape_indeterminate(self, axis): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L478)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L478?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L478)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L478?message=Update%20Docs)]
 </div>
 
 Tries to determine if an axis has had any data placed into it or otherwise been given a determined shape
@@ -151,7 +151,7 @@ Tries to determine if an axis has had any data placed into it or otherwise been 
 has_indeterminate_shape(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 Tries to determine if the entire array has a determined shape
@@ -166,7 +166,7 @@ Tries to determine if the entire array has a determined shape
 filled_to(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.set_filling" class="docs-object-method">&nbsp;</a> 
@@ -174,7 +174,7 @@ filled_to(self):
 set_filling(self, amt, axis=0): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L542)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L542?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L542)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L542?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.increment_filling" class="docs-object-method">&nbsp;</a> 
@@ -182,7 +182,7 @@ set_filling(self, amt, axis=0):
 increment_filling(self, inc=1, axis=0): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L551)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L551?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L551)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L551?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.__len__" class="docs-object-method">&nbsp;</a> 
@@ -190,7 +190,7 @@ increment_filling(self, inc=1, axis=0):
 __len__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L561)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L561?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L561)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L561?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.empty_array" class="docs-object-method">&nbsp;</a> 
@@ -198,7 +198,7 @@ __len__(self):
 empty_array(self, shape=None, num_elements=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L564)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L564?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L564)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L564?message=Update%20Docs)]
 </div>
 
 Creates empty arrays with (potentially) default elements
@@ -217,7 +217,7 @@ Creates empty arrays with (potentially) default elements
 extend_array(self, axis=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L607)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L607?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L607)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L607?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.__setitem__" class="docs-object-method">&nbsp;</a> 
@@ -225,7 +225,7 @@ extend_array(self, axis=None):
 __setitem__(self, key, value): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L626)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L626?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L626)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L626?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.set_part" class="docs-object-method">&nbsp;</a> 
@@ -233,7 +233,7 @@ __setitem__(self, key, value):
 set_part(self, key, value): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L628)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L628?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L628)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L628?message=Update%20Docs)]
 </div>
 
 Recursively sets parts of an array if not simple, otherwise just delegates to NumPy
@@ -249,7 +249,7 @@ Recursively sets parts of an array if not simple, otherwise just delegates to Nu
 __getitem__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L746)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L746?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L746)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L746?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parsers.StructuredType.StructuredTypeArray.get_part" class="docs-object-method">&nbsp;</a> 
@@ -257,7 +257,7 @@ __getitem__(self, item):
 get_part(self, item, use_full_array=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L748)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L748?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L748)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L748?message=Update%20Docs)]
 </div>
 
 If simple, delegates to NumPy, otherwise tries to recursively get parts...?
@@ -272,7 +272,7 @@ If simple, delegates to NumPy, otherwise tries to recursively get parts...?
 add_axis(self, which=0, num_elements=None, change_shape=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L782)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L782?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L782)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L782?message=Update%20Docs)]
 </div>
 
 Adds an axis to the array, generally used for expanding from singular or 1D data to higher dimensional
@@ -289,7 +289,7 @@ Adds an axis to the array, generally used for expanding from singular or 1D data
 can_cast(self, val): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L876)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L876?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L876)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L876?message=Update%20Docs)]
 </div>
 
 Determines whether val can probably be cast to the right return type and shape without further processing or if that's definitely not possible
@@ -303,7 +303,7 @@ Determines whether val can probably be cast to the right return type and shape w
 append(self, val, axis=0): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L904)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L904?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L904)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L904?message=Update%20Docs)]
 </div>
 
 Puts val in the first empty slot in the array
@@ -317,7 +317,7 @@ Puts val in the first empty slot in the array
 extend(self, val, single=True, prepend=False, axis=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L945)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L945?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L945)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L945?message=Update%20Docs)]
 </div>
 
 Adds the sequence val to the array
@@ -333,7 +333,7 @@ Adds the sequence val to the array
 fill(self, array): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L1050)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L1050?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L1050)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L1050?message=Update%20Docs)]
 </div>
 
 Sets the result array to be the passed array
@@ -347,7 +347,7 @@ Sets the result array to be the passed array
 cast_to_array(self, txt): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L1136)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L1136?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L1136)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L1136?message=Update%20Docs)]
 </div>
 
 Casts a string of things with a given data type to an array of that type and does some optional
@@ -362,7 +362,7 @@ Casts a string of things with a given data type to an array of that type and doe
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StructuredType.py#L1174)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L1174?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StructuredType.py#L1174)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L1174?message=Update%20Docs)]
 </div>
 
  </div>
@@ -377,4 +377,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Parsers/StructuredType/StructuredTypeArray.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Parsers/StructuredType/StructuredTypeArray.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Parsers/StructuredType/StructuredTypeArray.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StructuredType.py#L268?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StructuredType.py#L268?message=Update%20Docs)

@@ -1,6 +1,6 @@
 ## <a id="McUtils.Misc.InteractiveTools.MoleculeGraphics">MoleculeGraphics</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/InteractiveTools.py#L201)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/InteractiveTools.py#L201?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/InteractiveTools.py#L201)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/InteractiveTools.py#L201?message=Update%20Docs)]
 </div>
 
 
@@ -18,7 +18,7 @@
 __init__(self, *args, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/InteractiveTools.py#L202)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/InteractiveTools.py#L202?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/InteractiveTools.py#L202)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/InteractiveTools.py#L202?message=Update%20Docs)]
 </div>
 
  </div>
@@ -33,4 +33,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Misc/InteractiveTools/MoleculeGraphics.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Misc/InteractiveTools/MoleculeGraphics.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Misc/InteractiveTools/MoleculeGraphics.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/InteractiveTools.py#L201?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Misc/InteractiveTools.py#L201?message=Update%20Docs)

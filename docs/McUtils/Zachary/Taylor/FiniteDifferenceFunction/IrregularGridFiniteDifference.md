@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.Taylor.FiniteDifferenceFunction.IrregularGridFiniteDifference">IrregularGridFiniteDifference</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L508)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L508?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FiniteDifferenceFunction.py#L508)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FiniteDifferenceFunction.py#L508?message=Update%20Docs)]
 </div>
 
 Defines a finite difference over an irregular grid
@@ -18,7 +18,7 @@ Defines a finite difference over an irregular grid
 __init__(self, grid, order, stencil=None, accuracy=2, end_point_accuracy=2, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L512)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L512?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FiniteDifferenceFunction.py#L512)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FiniteDifferenceFunction.py#L512?message=Update%20Docs)]
 </div>
 
 
@@ -40,7 +40,7 @@ __init__(self, grid, order, stencil=None, accuracy=2, end_point_accuracy=2, **kw
 get_grid_slices(grid, stencil): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L539)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L539?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FiniteDifferenceFunction.py#L539)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FiniteDifferenceFunction.py#L539?message=Update%20Docs)]
 </div>
 
 
@@ -56,7 +56,7 @@ get_grid_slices(grid, stencil):
 get_weights(m, z, x): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L552)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L552?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FiniteDifferenceFunction.py#L552)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FiniteDifferenceFunction.py#L552?message=Update%20Docs)]
 </div>
 
 Extracts the grid weights for an unevenly spaced grid based off of the algorithm outlined by
@@ -73,7 +73,7 @@ Extracts the grid weights for an unevenly spaced grid based off of the algorithm
 finite_difference_data(grid, order, stencil, end_point_precision): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L569)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L569?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FiniteDifferenceFunction.py#L569)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FiniteDifferenceFunction.py#L569?message=Update%20Docs)]
 </div>
 
 Constructs a finite-difference function that computes the nth derivative with a given width
@@ -282,4 +282,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/Taylor/FiniteDifferenceFunction/IrregularGridFiniteDifference.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/Taylor/FiniteDifferenceFunction/IrregularGridFiniteDifference.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/Taylor/FiniteDifferenceFunction/IrregularGridFiniteDifference.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FiniteDifferenceFunction.py#L508?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FiniteDifferenceFunction.py#L508?message=Update%20Docs)

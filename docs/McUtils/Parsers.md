@@ -1,6 +1,6 @@
 # <a id="McUtils.Parsers">McUtils.Parsers</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers)]
+[[source](https://github.com/McCoyGroup/McUtils/tree/master/Parsers)]
 </div>
     
 Utilities for writing parsers of structured text.
@@ -471,8 +471,8 @@ class ParserTests(TestCase):
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Parsers.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Parsers.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Parsers.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Parsers.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/__init__.py?message=Update%20Docs)
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Parsers.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Parsers.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Parsers.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Parsers.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/__init__.py?message=Update%20Docs)

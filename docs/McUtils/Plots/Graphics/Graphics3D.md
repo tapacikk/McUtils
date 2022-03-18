@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Graphics.Graphics3D">Graphics3D</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L705)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L705?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L705)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L705?message=Update%20Docs)]
 </div>
 
 Extends the standard matplotlib 3D plotting to use all the Graphics extensions
@@ -21,7 +21,7 @@ opt_keys: set
 __init__(self, *args, figure=None, axes=None, subplot_kw=None, event_handlers=None, animate=None, axes_labels=None, plot_label=None, plot_range=None, plot_legend=None, ticks=None, scale=None, ticks_style=None, image_size=None, background=None, view_settings=None, backend=<Backends.MPL: 'matplotlib'>, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L710)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L710?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L710)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L710?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.set_options" class="docs-object-method">&nbsp;</a> 
@@ -29,7 +29,7 @@ __init__(self, *args, figure=None, axes=None, subplot_kw=None, event_handlers=No
 set_options(self, view_settings=None, **parent_opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L751)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L751?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L751)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L751?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.load_mpl" class="docs-object-method">&nbsp;</a> 
@@ -37,7 +37,7 @@ set_options(self, view_settings=None, **parent_opts):
 load_mpl(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L766)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L766?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L766)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L766?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.plot_label" class="docs-object-method">&nbsp;</a> 
@@ -46,7 +46,7 @@ load_mpl(self):
 plot_label(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.plot_legend" class="docs-object-method">&nbsp;</a> 
@@ -55,7 +55,7 @@ plot_label(self):
 plot_legend(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.axes_labels" class="docs-object-method">&nbsp;</a> 
@@ -64,7 +64,7 @@ plot_legend(self):
 axes_labels(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.frame" class="docs-object-method">&nbsp;</a> 
@@ -73,7 +73,7 @@ axes_labels(self):
 frame(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.plot_range" class="docs-object-method">&nbsp;</a> 
@@ -82,7 +82,7 @@ frame(self):
 plot_range(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.ticks" class="docs-object-method">&nbsp;</a> 
@@ -91,7 +91,7 @@ plot_range(self):
 ticks(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.ticks_style" class="docs-object-method">&nbsp;</a> 
@@ -100,7 +100,7 @@ ticks(self):
 ticks_style(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.scale" class="docs-object-method">&nbsp;</a> 
@@ -109,7 +109,7 @@ ticks_style(self):
 scale(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.aspect_ratio" class="docs-object-method">&nbsp;</a> 
@@ -118,7 +118,7 @@ scale(self):
 aspect_ratio(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.image_size" class="docs-object-method">&nbsp;</a> 
@@ -127,7 +127,7 @@ aspect_ratio(self):
 image_size(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.padding" class="docs-object-method">&nbsp;</a> 
@@ -136,7 +136,7 @@ image_size(self):
 padding(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.background" class="docs-object-method">&nbsp;</a> 
@@ -145,7 +145,7 @@ padding(self):
 background(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.colorbar" class="docs-object-method">&nbsp;</a> 
@@ -154,7 +154,7 @@ background(self):
 colorbar(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.box_ratios" class="docs-object-method">&nbsp;</a> 
@@ -163,7 +163,7 @@ colorbar(self):
 box_ratios(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.view_settings" class="docs-object-method">&nbsp;</a> 
@@ -172,7 +172,7 @@ box_ratios(self):
 view_settings(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
  </div>
@@ -187,4 +187,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Graphics/Graphics3D.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Graphics/Graphics3D.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Graphics/Graphics3D.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Graphics.py#L705?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L705?message=Update%20Docs)

@@ -1,6 +1,6 @@
 ## <a id="McUtils.Scaffolding.Serializers.YAMLSerializer">YAMLSerializer</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L358)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L358?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L358)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L358?message=Update%20Docs)]
 </div>
 
 A serializer that makes dumping data to YAML simpler.
@@ -23,7 +23,7 @@ default_extension: str
 __init__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L365)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L365?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L365)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L365?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Serializers.YAMLSerializer.convert" class="docs-object-method">&nbsp;</a> 
@@ -31,7 +31,7 @@ __init__(self):
 convert(self, data): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L370)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L370?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L370)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L370?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Serializers.YAMLSerializer.deconvert" class="docs-object-method">&nbsp;</a> 
@@ -39,7 +39,7 @@ convert(self, data):
 deconvert(self, data): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L372)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L372?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L372)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L372?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Serializers.YAMLSerializer.serialize" class="docs-object-method">&nbsp;</a> 
@@ -47,7 +47,7 @@ deconvert(self, data):
 serialize(self, file, data, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L374)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L374?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L374)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L374?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Serializers.YAMLSerializer.deserialize" class="docs-object-method">&nbsp;</a> 
@@ -55,7 +55,7 @@ serialize(self, file, data, **kwargs):
 deserialize(self, file, key=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L379)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L379?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L379)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L379?message=Update%20Docs)]
 </div>
 
  </div>
@@ -70,4 +70,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Scaffolding/Serializers/YAMLSerializer.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Scaffolding/Serializers/YAMLSerializer.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Scaffolding/Serializers/YAMLSerializer.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L358?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L358?message=Update%20Docs)

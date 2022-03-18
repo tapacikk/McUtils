@@ -1,6 +1,6 @@
 # <a id="McUtils">McUtils</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/)]
+[[source](https://github.com/McCoyGroup/McUtils/tree/master/)]
 </div>
     
 A growing package of assorted functionality that finds use across many different packages, but doesn't attempt to
@@ -408,8 +408,8 @@ Also supported: `Mesh` operations, automatic differentiation, tensor derivative 
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/__init__.py?message=Update%20Docs)
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/__init__.py?message=Update%20Docs)

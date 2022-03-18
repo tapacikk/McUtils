@@ -1,6 +1,6 @@
 ## <a id="McUtils.Coordinerds.CoordinateTransformations.TransformationFunction.TransformationFunction">TransformationFunction</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L13)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L13?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L13)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L13?message=Update%20Docs)]
 </div>
 
 The TransformationFunction class is an abstract class
@@ -19,7 +19,7 @@ It provides the scaffolding for representing a single transformation operation
 __init__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L19)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L19?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L19)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L19?message=Update%20Docs)]
 </div>
 
 Initializes a transformation function based on the transfdata
@@ -32,7 +32,7 @@ Initializes a transformation function based on the transfdata
 inverse(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L?message=Update%20Docs)]
 </div>
 
 Returns the inverse of the transformation
@@ -44,7 +44,7 @@ Returns the inverse of the transformation
 merge(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L36)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L36?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L36)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L36?message=Update%20Docs)]
 </div>
 
 Tries to merge with another TransformationFunction
@@ -58,7 +58,7 @@ Tries to merge with another TransformationFunction
 operate(self, coords, shift=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L47)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L47?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L47)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L47?message=Update%20Docs)]
 </div>
 
 Operates on the coords. *Must* be able to deal with a list of coordinates, optimally in an efficient manner
@@ -77,4 +77,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Coordinerds/CoordinateTransformations/TransformationFunction/TransformationFunction.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Coordinerds/CoordinateTransformations/TransformationFunction/TransformationFunction.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Coordinerds/CoordinateTransformations/TransformationFunction/TransformationFunction.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/TransformationFunction.py#L13?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/TransformationFunction.py#L13?message=Update%20Docs)

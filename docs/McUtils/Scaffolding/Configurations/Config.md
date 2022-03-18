@@ -1,6 +1,6 @@
 ## <a id="McUtils.Scaffolding.Configurations.Config">Config</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L12)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L12?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L12)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L12?message=Update%20Docs)]
 </div>
 
 A configuration object which basically just supports
@@ -25,7 +25,7 @@ config_file_extensions: list
 __init__(self, config, serializer=None, extra_params=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L19)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L19?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L19)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L19?message=Update%20Docs)]
 </div>
 
 Loads the config from a file
@@ -39,7 +39,7 @@ Loads the config from a file
 find_config(config, name=None, extensions=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L36)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L36?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L36)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L36?message=Update%20Docs)]
 </div>
 
 Finds configuration file (if config isn't a file)
@@ -53,7 +53,7 @@ Finds configuration file (if config isn't a file)
 get_serializer(file): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L64)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L64?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L64)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L64?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.new" class="docs-object-method">&nbsp;</a> 
@@ -61,7 +61,7 @@ get_serializer(file):
 new(loc, init=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L72)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L72?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L72)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L72?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.serialize" class="docs-object-method">&nbsp;</a> 
@@ -69,7 +69,7 @@ new(loc, init=None):
 serialize(self, file, ops): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L84)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L84?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L84)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L84?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.deserialize" class="docs-object-method">&nbsp;</a> 
@@ -77,7 +77,7 @@ serialize(self, file, ops):
 deserialize(self, file): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L91)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L91?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L91)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L91?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.save" class="docs-object-method">&nbsp;</a> 
@@ -85,7 +85,7 @@ deserialize(self, file):
 save(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L99)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L99?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L99)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L99?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.load" class="docs-object-method">&nbsp;</a> 
@@ -93,7 +93,7 @@ save(self):
 load(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L101)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L101?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L101)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L101?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.name" class="docs-object-method">&nbsp;</a> 
@@ -102,7 +102,7 @@ load(self):
 name(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.opt_dict" class="docs-object-method">&nbsp;</a> 
@@ -111,7 +111,7 @@ name(self):
 opt_dict(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.filter" class="docs-object-method">&nbsp;</a> 
@@ -119,7 +119,7 @@ opt_dict(self):
 filter(self, keys, strict=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L116)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L116?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L116)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L116?message=Update%20Docs)]
 </div>
 
 Returns a filtered option dictionary according to keys.
@@ -137,7 +137,7 @@ Returns a filtered option dictionary according to keys.
 apply(self, func, strict=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L151)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L151?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L151)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L151?message=Update%20Docs)]
 </div>
 
 Applies func to stored parameters
@@ -151,7 +151,7 @@ Applies func to stored parameters
 update(self, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L163)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L163?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L163)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L163?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.load_opts" class="docs-object-method">&nbsp;</a> 
@@ -159,7 +159,7 @@ update(self, **kw):
 load_opts(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L168)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L168?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L168)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L168?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.get_conf_attr" class="docs-object-method">&nbsp;</a> 
@@ -167,7 +167,7 @@ load_opts(self):
 get_conf_attr(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L176)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L176?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L176)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L176?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.Config.__getattr__" class="docs-object-method">&nbsp;</a> 
@@ -175,7 +175,7 @@ get_conf_attr(self, item):
 __getattr__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Configurations.py#L184)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L184?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L184)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L184?message=Update%20Docs)]
 </div>
 
  </div>
@@ -190,4 +190,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Scaffolding/Configurations/Config.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Scaffolding/Configurations/Config.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Scaffolding/Configurations/Config.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Configurations.py#L12?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L12?message=Update%20Docs)

@@ -1,6 +1,6 @@
 # <a id="McUtils.Numputils">McUtils.Numputils</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Numputils)]
+[[source](https://github.com/McCoyGroup/McUtils/tree/master/Numputils)]
 </div>
     
 Provides utilities to work with pretty low-level stuff.
@@ -1423,8 +1423,8 @@ class NumputilsTests(TestCase):
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Numputils.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Numputils.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Numputils.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Numputils.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Numputils/__init__.py?message=Update%20Docs)
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Numputils.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Numputils.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/__init__.py?message=Update%20Docs)

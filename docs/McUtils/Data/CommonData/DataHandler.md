@@ -1,6 +1,6 @@
 ## <a id="McUtils.Data.CommonData.DataHandler">DataHandler</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L18)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L18?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L18)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L18?message=Update%20Docs)]
 </div>
 
 Defines a general data loader class that we can use for `AtomData` and any other data classes we might find useful.
@@ -18,7 +18,7 @@ Defines a general data loader class that we can use for `AtomData` and any other
 __init__(self, data_name, data_key=None, source_key=None, data_dir=None, data_pkg=None, alternate_keys=None, getter=None, record_type=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L22)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L22?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L22)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L22?message=Update%20Docs)]
 </div>
 
 
@@ -45,7 +45,7 @@ __init__(self, data_name, data_key=None, source_key=None, data_dir=None, data_pk
 data_file(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Data.CommonData.DataHandler.load" class="docs-object-method">&nbsp;</a> 
@@ -53,7 +53,7 @@ data_file(self):
 load(self, env=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L81)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L81?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L81)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L81?message=Update%20Docs)]
 </div>
 
 Actually loads the data from `data_file`.
@@ -68,7 +68,7 @@ Actually loads the data from `data_file`.
 data(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Data.CommonData.DataHandler.source" class="docs-object-method">&nbsp;</a> 
@@ -77,7 +77,7 @@ data(self):
 source(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Data.CommonData.DataHandler.__getitem__" class="docs-object-method">&nbsp;</a> 
@@ -85,7 +85,7 @@ source(self):
 __getitem__(self, key): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L143)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L143?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L143)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L143?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Data.CommonData.DataHandler.__len__" class="docs-object-method">&nbsp;</a> 
@@ -93,7 +93,7 @@ __getitem__(self, key):
 __len__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L146)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L146?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L146)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L146?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Data.CommonData.DataHandler.__iter__" class="docs-object-method">&nbsp;</a> 
@@ -101,7 +101,7 @@ __len__(self):
 __iter__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L148)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L148?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L148)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L148?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Data.CommonData.DataHandler.__getstate__" class="docs-object-method">&nbsp;</a> 
@@ -109,7 +109,7 @@ __iter__(self):
 __getstate__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L152)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L152?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L152)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L152?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Data.CommonData.DataHandler.__setstate__" class="docs-object-method">&nbsp;</a> 
@@ -117,7 +117,7 @@ __getstate__(self):
 __setstate__(self, state): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L160)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L160?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L160)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L160?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Data.CommonData.DataHandler.__repr__" class="docs-object-method">&nbsp;</a> 
@@ -125,7 +125,7 @@ __setstate__(self, state):
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L164)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L164?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L164)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L164?message=Update%20Docs)]
 </div>
 
  </div>
@@ -140,4 +140,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Data/CommonData/DataHandler.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Data/CommonData/DataHandler.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Data/CommonData/DataHandler.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L18?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L18?message=Update%20Docs)

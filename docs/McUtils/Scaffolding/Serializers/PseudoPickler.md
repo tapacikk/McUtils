@@ -1,6 +1,6 @@
 ## <a id="McUtils.Scaffolding.Serializers.PseudoPickler">PseudoPickler</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L20?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L20?message=Update%20Docs)]
 </div>
 
 A simple plugin to work _like_ pickle, in that it should
@@ -24,7 +24,7 @@ Falls back to naive pickling when necessary.
 __init__(self, allow_pickle=False, protocol=1, b64encode=False): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L32)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L32?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L32)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L32?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Serializers.PseudoPickler.to_state" class="docs-object-method">&nbsp;</a> 
@@ -32,7 +32,7 @@ __init__(self, allow_pickle=False, protocol=1, b64encode=False):
 to_state(self, obj, cache=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L121)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L121?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L121)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L121?message=Update%20Docs)]
 </div>
 
 Tries to extract state from `obj`, first through its `to_state`
@@ -48,7 +48,7 @@ Tries to extract state from `obj`, first through its `to_state`
 serialize(self, obj, cache=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L152)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L152?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L152)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L152?message=Update%20Docs)]
 </div>
 
 Serializes an object first by checking for a `to_state`
@@ -65,7 +65,7 @@ Serializes an object first by checking for a `to_state`
 deserialize(self, spec): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Serializers.py#L196)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L196?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L196)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L196?message=Update%20Docs)]
 </div>
 
 Deserializes from an object spec, dispatching
@@ -143,4 +143,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Scaffolding/Serializers/PseudoPickler.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Scaffolding/Serializers/PseudoPickler.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Scaffolding/Serializers/PseudoPickler.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Serializers.py#L20?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L20?message=Update%20Docs)

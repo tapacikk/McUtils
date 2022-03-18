@@ -1,6 +1,6 @@
 # <a id="McUtils.Numputils.Sparse.sparse_tensordot">sparse_tensordot</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/edit/Numputils/Sparse.py#L2629)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2629)]
 </div>
 
 ```python
@@ -24,4 +24,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Numputils/Sparse/sparse_tensordot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Numputils/Sparse/sparse_tensordot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Numputils/Sparse/sparse_tensordot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Numputils/Sparse.py#L2629?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2629?message=Update%20Docs)

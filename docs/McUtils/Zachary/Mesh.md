@@ -1,6 +1,6 @@
 # <a id="McUtils.Zachary.Mesh">McUtils.Zachary.Mesh</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Mesh)]
+[[source](https://github.com/McCoyGroup/McUtils/tree/master/Zachary/Mesh)]
 </div>
     
 Represents an n-dimensional grid, used by Interpolator and (eventually) FiniteDifferenceFunction to automatically
@@ -195,8 +195,8 @@ class ZacharyTests(TestCase):
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Zachary/Mesh.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Zachary/Mesh.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Zachary/Mesh.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Zachary/Mesh.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Mesh/__init__.py?message=Update%20Docs)
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Zachary/Mesh.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Zachary/Mesh.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Zachary/Mesh.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Zachary/Mesh.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/__init__.py?message=Update%20Docs)

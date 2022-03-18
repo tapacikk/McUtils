@@ -1,6 +1,6 @@
 ## <a id="McUtils.Scaffolding.Persistence.PersistenceManager">PersistenceManager</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L74)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L74?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L74)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L74?message=Update%20Docs)]
 </div>
 
 Defines a manager that can load configuration data from a directory
@@ -20,7 +20,7 @@ Requires class that supports `from_config` to load and `to_config` to save.
 __init__(self, cls, persistence_loc=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L80)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L80?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L80)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L80?message=Update%20Docs)]
 </div>
 
 
@@ -34,7 +34,7 @@ __init__(self, cls, persistence_loc=None):
 obj_loc(self, key): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L98)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L98?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L98)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L98?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Persistence.PersistenceManager.load_config" class="docs-object-method">&nbsp;</a> 
@@ -42,7 +42,7 @@ obj_loc(self, key):
 load_config(self, key, make_new=False, init=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L101)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L101?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L101)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L101?message=Update%20Docs)]
 </div>
 
 Loads the config for the persistent structure named `key`
@@ -56,7 +56,7 @@ Loads the config for the persistent structure named `key`
 new_config(self, key, init=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L119)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L119?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L119)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L119?message=Update%20Docs)]
 </div>
 
 Creates a new space and config for the persistent structure named `key`
@@ -72,7 +72,7 @@ Creates a new space and config for the persistent structure named `key`
 contains(self, key): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L163)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L163?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L163)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L163?message=Update%20Docs)]
 </div>
 
 Checks if `key` is a supported persistent structure
@@ -86,7 +86,7 @@ Checks if `key` is a supported persistent structure
 load(self, key, make_new=False, strict=True, init=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L174)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L174?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L174)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L174?message=Update%20Docs)]
 </div>
 
 Loads the persistent structure named `key`
@@ -100,7 +100,7 @@ Loads the persistent structure named `key`
 save(self, obj): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L196)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L196?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L196)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L196?message=Update%20Docs)]
 </div>
 
 Saves requisite config data for a structure
@@ -188,4 +188,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Scaffolding/Persistence/PersistenceManager.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Scaffolding/Persistence/PersistenceManager.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Scaffolding/Persistence/PersistenceManager.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L74?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L74?message=Update%20Docs)

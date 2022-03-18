@@ -1,6 +1,6 @@
 ## <a id="McUtils.Scaffolding.Schema.Schema">Schema</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Schema.py#L7)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Schema.py#L7?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Schema.py#L7)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Schema.py#L7?message=Update%20Docs)]
 </div>
 
 An object that represents a schema that can be used to test
@@ -19,7 +19,7 @@ if an object matches that schema or not
 __init__(self, schema, optional_schema=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Schema.py#L13)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Schema.py#L13?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Schema.py#L13)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Schema.py#L13?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Schema.Schema.canonicalize_schema" class="docs-object-method">&nbsp;</a> 
@@ -27,7 +27,7 @@ __init__(self, schema, optional_schema=None):
 canonicalize_schema(schema): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Schema.py#L17)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Schema.py#L17?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Schema.py#L17)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Schema.py#L17?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Schema.Schema.validate" class="docs-object-method">&nbsp;</a> 
@@ -35,7 +35,7 @@ canonicalize_schema(schema):
 validate(self, obj, throw=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Schema.py#L68)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Schema.py#L68?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Schema.py#L68)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Schema.py#L68?message=Update%20Docs)]
 </div>
 
 Validates that `obj` matches the provided schema
@@ -52,7 +52,7 @@ Validates that `obj` matches the provided schema
 to_dict(self, obj, throw=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Schema.py#L88)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Schema.py#L88?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Schema.py#L88)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Schema.py#L88?message=Update%20Docs)]
 </div>
 
 Converts `obj` into a plain `dict` representation
@@ -66,7 +66,7 @@ Converts `obj` into a plain `dict` representation
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Schema.py#L113)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Schema.py#L113?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Schema.py#L113)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Schema.py#L113?message=Update%20Docs)]
 </div>
 
  </div>
@@ -81,4 +81,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Scaffolding/Schema/Schema.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Scaffolding/Schema/Schema.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Scaffolding/Schema/Schema.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Schema.py#L7?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Schema.py#L7?message=Update%20Docs)

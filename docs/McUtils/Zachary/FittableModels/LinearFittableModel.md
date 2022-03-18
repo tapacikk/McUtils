@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.FittableModels.LinearFittableModel">LinearFittableModel</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L106)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L106?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L106)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L106?message=Update%20Docs)]
 </div>
 
 Defines a class of models that can be expressed as linear expansions of basis functions.
@@ -19,7 +19,7 @@ We _could_ define an alternate fit function by explicitly building & fitting a d
 __init__(self, basis, initial_params=None, pre_fit=False, covariance=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L112)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L112?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L112)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L112?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.LinearFittableModel.evaluate" class="docs-object-method">&nbsp;</a> 
@@ -27,7 +27,7 @@ __init__(self, basis, initial_params=None, pre_fit=False, covariance=None):
 evaluate(self, xdata): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L124)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L124?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L124)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L124?message=Update%20Docs)]
 </div>
 
  </div>
@@ -42,4 +42,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/FittableModels/LinearFittableModel.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/FittableModels/LinearFittableModel.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/FittableModels/LinearFittableModel.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L106?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L106?message=Update%20Docs)

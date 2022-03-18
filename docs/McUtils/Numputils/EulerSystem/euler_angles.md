@@ -1,6 +1,6 @@
 # <a id="McUtils.Numputils.EulerSystem.euler_angles">euler_angles</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/edit/Numputils/EulerSystem.py#L102)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/EulerSystem.py#L102)]
 </div>
 
 ```python
@@ -18,4 +18,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Numputils/EulerSystem/euler_angles.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Numputils/EulerSystem/euler_angles.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Numputils/EulerSystem/euler_angles.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Numputils/EulerSystem.py#L102?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/EulerSystem.py#L102?message=Update%20Docs)

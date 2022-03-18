@@ -1,6 +1,6 @@
 # <a id="McUtils.Scaffolding">McUtils.Scaffolding</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding)]
+[[source](https://github.com/McCoyGroup/McUtils/tree/master/Scaffolding)]
 </div>
     
 Provides development utilities.
@@ -827,8 +827,8 @@ class ScaffoldingTests(TestCase):
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Scaffolding.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Scaffolding.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Scaffolding.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Scaffolding.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/__init__.py?message=Update%20Docs)
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Scaffolding.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Scaffolding.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Scaffolding.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Scaffolding.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/__init__.py?message=Update%20Docs)

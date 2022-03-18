@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.LazyTensors.LazyOperatorTensor">LazyOperatorTensor</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L251)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L251?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L251)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L251?message=Update%20Docs)]
 </div>
 
 A super-lazy tensor that represents the elements of an operator
@@ -18,7 +18,7 @@ A super-lazy tensor that represents the elements of an operator
 __init__(self, operator, shape, memoization=True, dtype=<class 'object'>, fill=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L254)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L254?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L254)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L254?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.LazyTensors.LazyOperatorTensor.array" class="docs-object-method">&nbsp;</a> 
@@ -27,7 +27,7 @@ __init__(self, operator, shape, memoization=True, dtype=<class 'object'>, fill=N
 array(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.LazyTensors.LazyOperatorTensor.__getitem__" class="docs-object-method">&nbsp;</a> 
@@ -35,7 +35,7 @@ array(self):
 __getitem__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L301)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L301?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L301)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L301?message=Update%20Docs)]
 </div>
 
  </div>
@@ -50,4 +50,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/LazyTensors/LazyOperatorTensor.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/LazyTensors/LazyOperatorTensor.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/LazyTensors/LazyOperatorTensor.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L251?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L251?message=Update%20Docs)

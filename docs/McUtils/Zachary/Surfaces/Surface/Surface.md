@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.Surfaces.Surface.Surface">Surface</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Surfaces/Surface.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Surfaces/Surface.py#L11?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Surfaces/Surface.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Surfaces/Surface.py#L11?message=Update%20Docs)]
 </div>
 
 This actually isn't a concrete implementation of BaseSurface.
@@ -19,7 +19,7 @@ Instead it's a class that _dispatches_ to an implementation of BaseSurface to do
 __init__(self, data, dimension=None, base=None, **metadata): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Surfaces/Surface.py#L16)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Surfaces/Surface.py#L16?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Surfaces/Surface.py#L16)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Surfaces/Surface.py#L16?message=Update%20Docs)]
 </div>
 
 
@@ -38,7 +38,7 @@ __init__(self, data, dimension=None, base=None, **metadata):
 data(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Surfaces/Surface.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Surfaces/Surface.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Surfaces/Surface.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Surfaces/Surface.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.Surfaces.Surface.Surface.minimize" class="docs-object-method">&nbsp;</a> 
@@ -46,7 +46,7 @@ data(self):
 minimize(self, initial_guess=None, function_options=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Surfaces/Surface.py#L44)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Surfaces/Surface.py#L44?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Surfaces/Surface.py#L44)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Surfaces/Surface.py#L44?message=Update%20Docs)]
 </div>
 
 Provides a uniform interface for minimization, basically just dispatching to the BaseSurface implementation if provided
@@ -64,7 +64,7 @@ Provides a uniform interface for minimization, basically just dispatching to the
 detect_base(data, opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Surfaces/Surface.py#L64)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Surfaces/Surface.py#L64?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Surfaces/Surface.py#L64)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Surfaces/Surface.py#L64?message=Update%20Docs)]
 </div>
 
 Infers what type of base surface works for the data that's passed in.
@@ -89,7 +89,7 @@ Infers what type of base surface works for the data that's passed in.
 __call__(self, gridpoints, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Surfaces/Surface.py#L108)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Surfaces/Surface.py#L108?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Surfaces/Surface.py#L108)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Surfaces/Surface.py#L108?message=Update%20Docs)]
 </div>
 
  </div>
@@ -104,4 +104,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/Surfaces/Surface/Surface.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/Surfaces/Surface/Surface.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/Surfaces/Surface/Surface.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Surfaces/Surface.py#L11?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Surfaces/Surface.py#L11?message=Update%20Docs)

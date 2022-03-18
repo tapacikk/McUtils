@@ -1,6 +1,6 @@
 ## <a id="McUtils.Misc.SBatchHelper.SBatchJob">SBatchJob</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/SBatchHelper.py#L9)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/SBatchHelper.py#L9?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/SBatchHelper.py#L9)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/SBatchHelper.py#L9?message=Update%20Docs)]
 </div>
 
 Provides a simple interface to formatting SLURM
@@ -29,7 +29,7 @@ sbatch_exit_command: str
 __init__(self, description=None, job_name=None, account=None, partition=None, mem=None, nodes=None, ntasks_per_node=None, chdir=None, output=None, steps=(), **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/SBatchHelper.py#L38)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/SBatchHelper.py#L38?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/SBatchHelper.py#L38)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/SBatchHelper.py#L38?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Misc.SBatchHelper.SBatchJob.clean_opts" class="docs-object-method">&nbsp;</a> 
@@ -37,7 +37,7 @@ __init__(self, description=None, job_name=None, account=None, partition=None, me
 clean_opts(self, opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/SBatchHelper.py#L60)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/SBatchHelper.py#L60?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/SBatchHelper.py#L60)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/SBatchHelper.py#L60?message=Update%20Docs)]
 </div>
 
 Makes sure opt names are clean.
@@ -52,7 +52,7 @@ Makes sure opt names are clean.
 format_opt_block(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/SBatchHelper.py#L80)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/SBatchHelper.py#L80?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/SBatchHelper.py#L80)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/SBatchHelper.py#L80?message=Update%20Docs)]
 </div>
 
 Formats block of options
@@ -64,7 +64,7 @@ Formats block of options
 format(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/SBatchHelper.py#L107)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/SBatchHelper.py#L107?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/SBatchHelper.py#L107)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/SBatchHelper.py#L107?message=Update%20Docs)]
 </div>
 
 Formats an SBATCH file from the held options
@@ -85,4 +85,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Misc/SBatchHelper/SBatchJob.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Misc/SBatchHelper/SBatchJob.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Misc/SBatchHelper/SBatchJob.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/SBatchHelper.py#L9?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Misc/SBatchHelper.py#L9?message=Update%20Docs)

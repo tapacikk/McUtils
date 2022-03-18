@@ -1,6 +1,6 @@
 # <a id="McUtils.Coordinerds">McUtils.Coordinerds</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds)]
+[[source](https://github.com/McCoyGroup/McUtils/tree/master/Coordinerds)]
 </div>
     
 The Coordinerds package implements stuff for dealing with coordinates and generalized coordinate systems
@@ -600,8 +600,8 @@ class ConverterTest(TestCase):
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Coordinerds.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Coordinerds.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Coordinerds.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Coordinerds.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/__init__.py?message=Update%20Docs)
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Coordinerds.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Coordinerds.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Coordinerds.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Coordinerds.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/__init__.py?message=Update%20Docs)

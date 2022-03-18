@@ -1,6 +1,6 @@
 ## <a id="McUtils.GaussianInterface.FChkDerivatives.FchkForceConstants">FchkForceConstants</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/FChkDerivatives.py#L15)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/FChkDerivatives.py#L15?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/FChkDerivatives.py#L15)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/FChkDerivatives.py#L15?message=Update%20Docs)]
 </div>
 
 Holder class for force constants coming out of an fchk file.
@@ -19,7 +19,7 @@ Allows us to construct the force constant matrix in lazy fashion if we want.
 __init__(self, fcs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/FChkDerivatives.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/FChkDerivatives.py#L20?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/FChkDerivatives.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/FChkDerivatives.py#L20?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.GaussianInterface.FChkDerivatives.FchkForceConstants.__len__" class="docs-object-method">&nbsp;</a> 
@@ -27,7 +27,7 @@ __init__(self, fcs):
 __len__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/FChkDerivatives.py#L24)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/FChkDerivatives.py#L24?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/FChkDerivatives.py#L24)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/FChkDerivatives.py#L24?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.GaussianInterface.FChkDerivatives.FchkForceConstants.n" class="docs-object-method">&nbsp;</a> 
@@ -36,7 +36,7 @@ __len__(self):
 n(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/FChkDerivatives.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/FChkDerivatives.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/FChkDerivatives.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/FChkDerivatives.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.GaussianInterface.FChkDerivatives.FchkForceConstants.shape" class="docs-object-method">&nbsp;</a> 
@@ -45,7 +45,7 @@ n(self):
 shape(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/FChkDerivatives.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/FChkDerivatives.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/FChkDerivatives.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/FChkDerivatives.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.GaussianInterface.FChkDerivatives.FchkForceConstants.array" class="docs-object-method">&nbsp;</a> 
@@ -54,7 +54,7 @@ shape(self):
 array(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/FChkDerivatives.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/FChkDerivatives.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/FChkDerivatives.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/FChkDerivatives.py#L?message=Update%20Docs)]
 </div>
 
  </div>
@@ -69,4 +69,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/GaussianInterface/FChkDerivatives/FchkForceConstants.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/GaussianInterface/FChkDerivatives/FchkForceConstants.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/GaussianInterface/FChkDerivatives/FchkForceConstants.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/FChkDerivatives.py#L15?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/FChkDerivatives.py#L15?message=Update%20Docs)

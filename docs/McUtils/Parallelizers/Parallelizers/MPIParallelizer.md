@@ -1,6 +1,6 @@
 ## <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer">MPIParallelizer</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1266)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1266?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1266)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1266?message=Update%20Docs)]
 </div>
 
 Parallelizes using `mpi4py`
@@ -21,7 +21,7 @@ MPICommunicator: ABCMeta
 __init__(self, root=0, comm=None, contract=None, logger=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1557)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1557?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1557)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1557?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.get_nprocs" class="docs-object-method">&nbsp;</a> 
@@ -29,7 +29,7 @@ __init__(self, root=0, comm=None, contract=None, logger=None):
 get_nprocs(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1570)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1570?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1570)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1570?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.get_id" class="docs-object-method">&nbsp;</a> 
@@ -37,7 +37,7 @@ get_nprocs(self):
 get_id(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1572)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1572?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1572)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1572?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.initialize" class="docs-object-method">&nbsp;</a> 
@@ -45,7 +45,7 @@ get_id(self):
 initialize(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1575)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1575?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1575)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1575?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.finalize" class="docs-object-method">&nbsp;</a> 
@@ -53,7 +53,7 @@ initialize(self):
 finalize(self, exc_type, exc_val, exc_tb): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1578)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1578?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1578)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1578?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.comm" class="docs-object-method">&nbsp;</a> 
@@ -62,7 +62,7 @@ finalize(self, exc_type, exc_val, exc_tb):
 comm(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L?message=Update%20Docs)]
 </div>
 
 Returns the communicator used by the paralellizer
@@ -75,7 +75,7 @@ Returns the communicator used by the paralellizer
 on_main(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.Parallelizers.MPIParallelizer.broadcast" class="docs-object-method">&nbsp;</a> 
@@ -83,7 +83,7 @@ on_main(self):
 broadcast(self, data, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1595)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1595?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1595)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1595?message=Update%20Docs)]
 </div>
 
 Sends the same data to all processes
@@ -99,7 +99,7 @@ Sends the same data to all processes
 scatter(self, data, shape=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1610)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1610?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1610)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1610?message=Update%20Docs)]
 </div>
 
 Performs a scatter of data to the different
@@ -119,7 +119,7 @@ Performs a scatter of data to the different
 gather(self, data, shape=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1629)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1629?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1629)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1629?message=Update%20Docs)]
 </div>
 
 Performs a gather of data from the different
@@ -136,7 +136,7 @@ Performs a gather of data from the different
 map(self, func, data, input_shape=None, output_shape=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1645)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1645?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1645)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1645?message=Update%20Docs)]
 </div>
 
 Performs a parallel map of function over
@@ -155,7 +155,7 @@ Performs a parallel map of function over
 apply(self, func, *args, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1663)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1663?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1663)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1663?message=Update%20Docs)]
 </div>
 
 Applies func to args in parallel on all of the processes.
@@ -175,7 +175,7 @@ Applies func to args in parallel on all of the processes.
 from_config(**kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Parallelizers.py#L1680)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1680?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers.py#L1680)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1680?message=Update%20Docs)]
 </div>
 
  </div>
@@ -190,4 +190,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Parallelizers/Parallelizers/MPIParallelizer.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Parallelizers/Parallelizers/MPIParallelizer.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Parallelizers/Parallelizers/MPIParallelizer.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Parallelizers.py#L1266?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Parallelizers.py#L1266?message=Update%20Docs)

@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.TensorDerivativeConverter.TensorExpansionTerms">TensorExpansionTerms</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/TensorDerivativeConverter.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/TensorDerivativeConverter.py#L11?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L11?message=Update%20Docs)]
 </div>
 
 A friend of DumbTensor which exists
@@ -39,7 +39,7 @@ DeterminantTerm: ABCMeta
 __init__(self, qx_terms, xv_terms, qxv_terms=None, base_qx=None, base_xv=None, q_name='Q', v_name='V'): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/TensorDerivativeConverter.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/TensorDerivativeConverter.py#L20?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L20?message=Update%20Docs)]
 </div>
 
 
@@ -53,7 +53,7 @@ __init__(self, qx_terms, xv_terms, qxv_terms=None, base_qx=None, base_xv=None, q
 QX(self, n): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/TensorDerivativeConverter.py#L37)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/TensorDerivativeConverter.py#L37?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L37)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L37?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.TensorDerivativeConverter.TensorExpansionTerms.XV" class="docs-object-method">&nbsp;</a> 
@@ -61,7 +61,7 @@ QX(self, n):
 XV(self, m): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/TensorDerivativeConverter.py#L39)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/TensorDerivativeConverter.py#L39?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L39)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L39?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.TensorDerivativeConverter.TensorExpansionTerms.QXV" class="docs-object-method">&nbsp;</a> 
@@ -69,7 +69,7 @@ XV(self, m):
 QXV(self, n, m): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/TensorDerivativeConverter.py#L41)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/TensorDerivativeConverter.py#L41?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L41)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L41?message=Update%20Docs)]
 </div>
 
  </div>
@@ -84,4 +84,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/TensorDerivativeConverter.py#L11?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L11?message=Update%20Docs)

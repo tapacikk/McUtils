@@ -1,6 +1,6 @@
 ## <a id="McUtils.Coordinerds.CoordinateTransformations.AffineTransform.AffineTransform">AffineTransform</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L17)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L17?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L17)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L17?message=Update%20Docs)]
 </div>
 
 A simple AffineTranform implementation of the TransformationFunction abstract base class
@@ -18,7 +18,7 @@ A simple AffineTranform implementation of the TransformationFunction abstract ba
 __init__(self, tmat, shift=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L22)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L22?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L22)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L22?message=Update%20Docs)]
 </div>
 
 tmat must be a transformation matrix to work properly
@@ -33,7 +33,7 @@ tmat must be a transformation matrix to work properly
 transform(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Coordinerds.CoordinateTransformations.AffineTransform.AffineTransform.inverse" class="docs-object-method">&nbsp;</a> 
@@ -42,7 +42,7 @@ transform(self):
 inverse(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L?message=Update%20Docs)]
 </div>
 
 Returns the inverse of the transformation
@@ -55,7 +55,7 @@ Returns the inverse of the transformation
 shift(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Coordinerds.CoordinateTransformations.AffineTransform.AffineTransform.merge" class="docs-object-method">&nbsp;</a> 
@@ -63,7 +63,7 @@ shift(self):
 merge(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L57)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L57?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L57)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L57?message=Update%20Docs)]
 </div>
 
 
@@ -75,7 +75,7 @@ merge(self, other):
 reverse(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L73)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L73?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L73)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L73?message=Update%20Docs)]
 </div>
 
 Inverts the matrix
@@ -87,7 +87,7 @@ Inverts the matrix
 operate(self, coords, shift=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L84)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L84?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L84)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L84?message=Update%20Docs)]
 </div>
 
 
@@ -99,7 +99,7 @@ operate(self, coords, shift=True):
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L119)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L119?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L119)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L119?message=Update%20Docs)]
 </div>
 
  </div>
@@ -114,4 +114,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Coordinerds/CoordinateTransformations/AffineTransform/AffineTransform.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Coordinerds/CoordinateTransformations/AffineTransform/AffineTransform.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Coordinerds/CoordinateTransformations/AffineTransform/AffineTransform.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/AffineTransform.py#L17?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/AffineTransform.py#L17?message=Update%20Docs)

@@ -1,6 +1,6 @@
 # <a id="McUtils.Zachary.Interpolator">McUtils.Zachary.Interpolator</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator)]
+[[source](https://github.com/McCoyGroup/McUtils/tree/master/Zachary/Interpolator)]
 </div>
     
 Sets up a general Interpolator class that looks like Mathematica's InterpolatingFunction class
@@ -271,8 +271,8 @@ class ZacharyTests(TestCase):
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Zachary/Interpolator.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Zachary/Interpolator.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Zachary/Interpolator.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Zachary/Interpolator.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator/__init__.py?message=Update%20Docs)
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Zachary/Interpolator.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Zachary/Interpolator.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Zachary/Interpolator.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Zachary/Interpolator.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/__init__.py?message=Update%20Docs)

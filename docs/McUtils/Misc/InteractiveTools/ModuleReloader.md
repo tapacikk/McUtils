@@ -1,6 +1,6 @@
 ## <a id="McUtils.Misc.InteractiveTools.ModuleReloader">ModuleReloader</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/InteractiveTools.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/InteractiveTools.py#L11?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/InteractiveTools.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/InteractiveTools.py#L11?message=Update%20Docs)]
 </div>
 
 Reloads a module & recursively descends its 'all' tree
@@ -22,7 +22,7 @@ blacklist_keys: list
 __init__(self, modspec): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/InteractiveTools.py#L17)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/InteractiveTools.py#L17?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/InteractiveTools.py#L17)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/InteractiveTools.py#L17?message=Update%20Docs)]
 </div>
 
 
@@ -34,7 +34,7 @@ __init__(self, modspec):
 get_parents(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/InteractiveTools.py#L26)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/InteractiveTools.py#L26?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/InteractiveTools.py#L26)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/InteractiveTools.py#L26?message=Update%20Docs)]
 </div>
 
 Returns module parents
@@ -46,7 +46,7 @@ Returns module parents
 get_members(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/InteractiveTools.py#L35)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/InteractiveTools.py#L35?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/InteractiveTools.py#L35)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/InteractiveTools.py#L35?message=Update%20Docs)]
 </div>
 
 Returns module members
@@ -58,7 +58,7 @@ Returns module members
 reload_member(self, member, stack=None, reloaded=None, blacklist=None, reload_parents=True, verbose=False, print_indent=''): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/InteractiveTools.py#L52)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/InteractiveTools.py#L52?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/InteractiveTools.py#L52)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/InteractiveTools.py#L52?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Misc.InteractiveTools.ModuleReloader.reload" class="docs-object-method">&nbsp;</a> 
@@ -66,7 +66,7 @@ reload_member(self, member, stack=None, reloaded=None, blacklist=None, reload_pa
 reload(self, stack=None, reloaded=None, blacklist=None, reload_parents=True, verbose=False, print_indent=''): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/InteractiveTools.py#L105)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/InteractiveTools.py#L105?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/InteractiveTools.py#L105)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/InteractiveTools.py#L105?message=Update%20Docs)]
 </div>
 
 Recursively searches for modules to reload and then reloads them.
@@ -88,4 +88,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Misc/InteractiveTools/ModuleReloader.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Misc/InteractiveTools/ModuleReloader.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Misc/InteractiveTools/ModuleReloader.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/InteractiveTools.py#L11?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Misc/InteractiveTools.py#L11?message=Update%20Docs)

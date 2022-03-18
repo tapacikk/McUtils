@@ -1,6 +1,6 @@
 ## <a id="McUtils.Parsers.StringParser.StringParserException">StringParserException</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StringParser.py#L17)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StringParser.py#L17?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StringParser.py#L17)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StringParser.py#L17?message=Update%20Docs)]
 </div>
 
 
@@ -27,4 +27,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Parsers/StringParser/StringParserException.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Parsers/StringParser/StringParserException.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Parsers/StringParser/StringParserException.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StringParser.py#L17?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StringParser.py#L17?message=Update%20Docs)

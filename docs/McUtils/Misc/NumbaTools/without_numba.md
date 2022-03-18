@@ -1,6 +1,6 @@
 ## <a id="McUtils.Misc.NumbaTools.without_numba">without_numba</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/NumbaTools.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/NumbaTools.py#L20?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/NumbaTools.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/NumbaTools.py#L20?message=Update%20Docs)]
 </div>
 
 
@@ -18,7 +18,7 @@
 __init__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/NumbaTools.py#L21)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/NumbaTools.py#L21?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/NumbaTools.py#L21)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/NumbaTools.py#L21?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Misc.NumbaTools.without_numba.__enter__" class="docs-object-method">&nbsp;</a> 
@@ -26,7 +26,7 @@ __init__(self):
 __enter__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/NumbaTools.py#L23)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/NumbaTools.py#L23?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/NumbaTools.py#L23)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/NumbaTools.py#L23?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Misc.NumbaTools.without_numba.__exit__" class="docs-object-method">&nbsp;</a> 
@@ -34,7 +34,7 @@ __enter__(self):
 __exit__(self, exc_type, exc_val, exc_tb): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc/NumbaTools.py#L26)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/NumbaTools.py#L26?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/NumbaTools.py#L26)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/NumbaTools.py#L26?message=Update%20Docs)]
 </div>
 
  </div>
@@ -49,4 +49,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Misc/NumbaTools/without_numba.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Misc/NumbaTools/without_numba.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Misc/NumbaTools/without_numba.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/NumbaTools.py#L20?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Misc/NumbaTools.py#L20?message=Update%20Docs)

@@ -1,6 +1,6 @@
 ## <a id="McUtils.Scaffolding.Persistence.PersistenceLocation">PersistenceLocation</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L20?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L20?message=Update%20Docs)]
 </div>
 
 An object that tracks a location to persist data
@@ -20,7 +20,7 @@ exit
 __init__(self, loc, name=None, delete=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L27)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L27?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L27)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L27?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Persistence.PersistenceLocation.__repr__" class="docs-object-method">&nbsp;</a> 
@@ -28,7 +28,7 @@ __init__(self, loc, name=None, delete=None):
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L59)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L59?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L59)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L59?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Persistence.PersistenceLocation.__del__" class="docs-object-method">&nbsp;</a> 
@@ -36,7 +36,7 @@ __repr__(self):
 __del__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Persistence.py#L67)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L67?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Persistence.py#L67)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L67?message=Update%20Docs)]
 </div>
 
  </div>
@@ -51,4 +51,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Scaffolding/Persistence/PersistenceLocation.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Scaffolding/Persistence/PersistenceLocation.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Scaffolding/Persistence/PersistenceLocation.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Persistence.py#L20?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Persistence.py#L20?message=Update%20Docs)

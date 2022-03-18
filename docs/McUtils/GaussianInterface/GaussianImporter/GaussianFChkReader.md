@@ -1,6 +1,6 @@
 ## <a id="McUtils.GaussianInterface.GaussianImporter.GaussianFChkReader">GaussianFChkReader</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L151)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L151?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L151)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L151?message=Update%20Docs)]
 </div>
 
 Implements a stream based reader for a Gaussian .fchk file. Pretty generall I think. Should be robust-ish.
@@ -27,7 +27,7 @@ fchk_re: Pattern
 read_header(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L161)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L161?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L161)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L161?message=Update%20Docs)]
 </div>
 
 Reads the header and skips the stream to where we want to be
@@ -39,7 +39,7 @@ Reads the header and skips the stream to where we want to be
 get_next_block_params(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L171)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L171?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L171)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L171?message=Update%20Docs)]
 </div>
 
 Pulls the tag of the next block, the type, the number of bytes it'll be,
@@ -52,7 +52,7 @@ Pulls the tag of the next block, the type, the number of bytes it'll be,
 get_block(self, name=None, dtype=None, byte_count=None, value=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L237)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L237?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L237)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L237?message=Update%20Docs)]
 </div>
 
 Pulls the next block by first pulling the block tag
@@ -64,7 +64,7 @@ Pulls the next block by first pulling the block tag
 skip_block(self, name=None, dtype=None, byte_count=None, value=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L263)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L263?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L263)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L263?message=Update%20Docs)]
 </div>
 
 Skips the next block
@@ -76,7 +76,7 @@ Skips the next block
 parse(self, keys=None, default='raise'): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L273)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L273?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L273)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L273?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.GaussianInterface.GaussianImporter.GaussianFChkReader.read_props" class="docs-object-method">&nbsp;</a> 
@@ -84,7 +84,7 @@ parse(self, keys=None, default='raise'):
 read_props(file, keys): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L340)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L340?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L340)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L340?message=Update%20Docs)]
 </div>
 
  </div>
@@ -165,4 +165,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L151?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L151?message=Update%20Docs)

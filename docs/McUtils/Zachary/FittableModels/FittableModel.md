@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.FittableModels.FittableModel">FittableModel</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L16)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L16?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L16)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L16?message=Update%20Docs)]
 </div>
 
 Defines a model that can be fit
@@ -18,7 +18,7 @@ Defines a model that can be fit
 __init__(self, parameters, function, pre_fit=False, covariance=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L20?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L20?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.FittableModel.parameters" class="docs-object-method">&nbsp;</a> 
@@ -27,7 +27,7 @@ __init__(self, parameters, function, pre_fit=False, covariance=None):
 parameters(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.FittableModel.parameter_values" class="docs-object-method">&nbsp;</a> 
@@ -36,7 +36,7 @@ parameters(self):
 parameter_values(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.FittableModel.parameter_names" class="docs-object-method">&nbsp;</a> 
@@ -45,7 +45,7 @@ parameter_values(self):
 parameter_names(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.FittableModel.fitted" class="docs-object-method">&nbsp;</a> 
@@ -54,7 +54,7 @@ parameter_names(self):
 fitted(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.FittableModel.fit" class="docs-object-method">&nbsp;</a> 
@@ -62,7 +62,7 @@ fitted(self):
 fit(self, xdata, ydata=None, fitter=None, **methopts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L52)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L52?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L52)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L52?message=Update%20Docs)]
 </div>
 
 Fits the model to the data using scipy.optimize.curve_fit or a function that provides the same interface
@@ -78,7 +78,7 @@ Fits the model to the data using scipy.optimize.curve_fit or a function that pro
 get_parameter(self, name): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L81)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L81?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L81)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L81?message=Update%20Docs)]
 </div>
 
 Returns the fitted value of the parameter given by 'name'
@@ -92,7 +92,7 @@ Returns the fitted value of the parameter given by 'name'
 __getitem__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L96)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L96?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L96)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L96?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.FittableModel.evaluate" class="docs-object-method">&nbsp;</a> 
@@ -100,7 +100,7 @@ __getitem__(self, item):
 evaluate(self, xdata): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L99)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L99?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L99)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L99?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.FittableModel.__call__" class="docs-object-method">&nbsp;</a> 
@@ -108,7 +108,7 @@ evaluate(self, xdata):
 __call__(self, xdata): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L103)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L103?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L103)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L103?message=Update%20Docs)]
 </div>
 
  </div>
@@ -123,4 +123,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/FittableModels/FittableModel.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/FittableModels/FittableModel.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/FittableModels/FittableModel.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L16?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L16?message=Update%20Docs)

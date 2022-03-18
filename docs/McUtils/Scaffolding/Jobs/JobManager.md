@@ -1,6 +1,6 @@
 ## <a id="McUtils.Scaffolding.Jobs.JobManager">JobManager</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Jobs.py#L173)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Jobs.py#L173?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Jobs.py#L173)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Jobs.py#L173?message=Update%20Docs)]
 </div>
 
 A class to manage job instances.
@@ -22,7 +22,7 @@ default_job_type: type
 __init__(self, job_dir, job_type=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Jobs.py#L179)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Jobs.py#L179?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Jobs.py#L179)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Jobs.py#L179?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Jobs.JobManager.job" class="docs-object-method">&nbsp;</a> 
@@ -30,7 +30,7 @@ __init__(self, job_dir, job_type=None):
 job(self, name, timestamp=False, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Jobs.py#L184)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Jobs.py#L184?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Jobs.py#L184)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Jobs.py#L184?message=Update%20Docs)]
 </div>
 
 Returns a loaded or new job with the given name and settings
@@ -48,7 +48,7 @@ Returns a loaded or new job with the given name and settings
 job_from_folder(folder, job_type=None, make_config=True, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Jobs.py#L204)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Jobs.py#L204?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Jobs.py#L204)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Jobs.py#L204?message=Update%20Docs)]
 </div>
 
 A special case convenience function that goes
@@ -61,7 +61,7 @@ A special case convenience function that goes
 current_job(job_type=None, make_config=True, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/Jobs.py#L223)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Jobs.py#L223?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Jobs.py#L223)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Jobs.py#L223?message=Update%20Docs)]
 </div>
 
 A special case convenience function that starts a
@@ -194,4 +194,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Scaffolding/Jobs/JobManager.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Scaffolding/Jobs/JobManager.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Scaffolding/Jobs/JobManager.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/Jobs.py#L173?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Jobs.py#L173?message=Update%20Docs)

@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.TensorDerivativeConverter.TensorDerivativeConverter">TensorDerivativeConverter</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/TensorDerivativeConverter.py#L706)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/TensorDerivativeConverter.py#L706?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L706)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L706?message=Update%20Docs)]
 </div>
 
 A class that makes it possible to convert expressions
@@ -22,7 +22,7 @@ TensorExpansionError: type
 __init__(self, jacobians, derivatives=None, mixed_terms=None, jacobians_name='Q', values_name='V'): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/TensorDerivativeConverter.py#L715)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/TensorDerivativeConverter.py#L715?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L715)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L715?message=Update%20Docs)]
 </div>
 
 
@@ -38,7 +38,7 @@ __init__(self, jacobians, derivatives=None, mixed_terms=None, jacobians_name='Q'
 convert(self, order=None, check_arrays=False): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/TensorDerivativeConverter.py#L735)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/TensorDerivativeConverter.py#L735?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L735)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L735?message=Update%20Docs)]
 </div>
 
  </div>
@@ -53,4 +53,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/TensorDerivativeConverter/TensorDerivativeConverter.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/TensorDerivativeConverter/TensorDerivativeConverter.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/TensorDerivativeConverter/TensorDerivativeConverter.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/TensorDerivativeConverter.py#L706?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L706?message=Update%20Docs)

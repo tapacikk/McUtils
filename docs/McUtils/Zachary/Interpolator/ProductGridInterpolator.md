@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.Interpolator.ProductGridInterpolator">ProductGridInterpolator</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L52)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L52?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L52)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L52?message=Update%20Docs)]
 </div>
 
 A set of interpolators that support interpolation
@@ -19,7 +19,7 @@ on a regular (tensor product) grid
 __init__(self, grids, vals, caller=None, order=None, extrapolate=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L58)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L58?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L58)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L58?message=Update%20Docs)]
 </div>
 
 
@@ -37,7 +37,7 @@ __init__(self, grids, vals, caller=None, order=None, extrapolate=True):
 construct_ndspline(grids, vals, order, extrapolate=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L92)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L92?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L92)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L92?message=Update%20Docs)]
 </div>
 
 Builds a tensor product ndspline by constructing a product of 1D splines
@@ -55,7 +55,7 @@ Builds a tensor product ndspline by constructing a product of 1D splines
 __call__(self, *args, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L134)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L134?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L134)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L134?message=Update%20Docs)]
 </div>
 
 
@@ -71,7 +71,7 @@ __call__(self, *args, **kwargs):
 derivative(self, order): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L145)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L145?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L145)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L145?message=Update%20Docs)]
 </div>
 
 
@@ -92,4 +92,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/Interpolator/ProductGridInterpolator.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/Interpolator/ProductGridInterpolator.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/Interpolator/ProductGridInterpolator.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L52?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L52?message=Update%20Docs)

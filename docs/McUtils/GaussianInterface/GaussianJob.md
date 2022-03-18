@@ -1,6 +1,6 @@
 # <a id="McUtils.GaussianInterface.GaussianJob">McUtils.GaussianInterface.GaussianJob</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianJob)]
+[[source](https://github.com/McCoyGroup/McUtils/tree/master/GaussianInterface/GaussianJob)]
 </div>
     
 Defines a symbolic representation of a Gaussian job for batch generation
@@ -33,8 +33,8 @@ Defines a symbolic representation of a Gaussian job for batch generation
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/GaussianInterface/GaussianJob.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/GaussianInterface/GaussianJob.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/GaussianInterface/GaussianJob.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/GaussianInterface/GaussianJob.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianJob/__init__.py?message=Update%20Docs)
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/GaussianInterface/GaussianJob.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/GaussianInterface/GaussianJob.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/GaussianInterface/GaussianJob.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/GaussianInterface/GaussianJob.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianJob/__init__.py?message=Update%20Docs)

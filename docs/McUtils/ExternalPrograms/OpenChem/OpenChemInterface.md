@@ -1,6 +1,6 @@
 ## <a id="McUtils.ExternalPrograms.OpenChem.OpenChemInterface">OpenChemInterface</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/ExternalPrograms/OpenChem.py#L10)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/ExternalPrograms/OpenChem.py#L10?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/ExternalPrograms/OpenChem.py#L10)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/ExternalPrograms/OpenChem.py#L10?message=Update%20Docs)]
 </div>
 
 A simple class to support operations that make use of the OpenChemistry toolkit
@@ -21,7 +21,7 @@ OC_SUPPORTED: NoneType
 __init__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/ExternalPrograms/OpenChem.py#L15)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/ExternalPrograms/OpenChem.py#L15?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/ExternalPrograms/OpenChem.py#L15)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/ExternalPrograms/OpenChem.py#L15?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.ExternalPrograms.OpenChem.OpenChemInterface.lib" class="docs-object-method">&nbsp;</a> 
@@ -30,7 +30,7 @@ __init__(self):
 lib(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/ExternalPrograms/OpenChem.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/ExternalPrograms/OpenChem.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/ExternalPrograms/OpenChem.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/ExternalPrograms/OpenChem.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.ExternalPrograms.OpenChem.OpenChemInterface.method" class="docs-object-method">&nbsp;</a> 
@@ -38,7 +38,7 @@ lib(self):
 method(self, name): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/ExternalPrograms/OpenChem.py#L37)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/ExternalPrograms/OpenChem.py#L37?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/ExternalPrograms/OpenChem.py#L37)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/ExternalPrograms/OpenChem.py#L37?message=Update%20Docs)]
 </div>
 
  </div>
@@ -53,4 +53,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/ExternalPrograms/OpenChem/OpenChemInterface.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/ExternalPrograms/OpenChem/OpenChemInterface.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/ExternalPrograms/OpenChem/OpenChemInterface.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/ExternalPrograms/OpenChem.py#L10?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/ExternalPrograms/OpenChem.py#L10?message=Update%20Docs)

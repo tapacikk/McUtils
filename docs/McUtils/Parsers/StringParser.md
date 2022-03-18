@@ -1,6 +1,6 @@
 # <a id="McUtils.Parsers.StringParser">McUtils.Parsers.StringParser</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parsers/StringParser)]
+[[source](https://github.com/McCoyGroup/McUtils/tree/master/Parsers/StringParser)]
 </div>
     
 
@@ -135,8 +135,8 @@ class ParserTests(TestCase):
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Parsers/StringParser.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Parsers/StringParser.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Parsers/StringParser.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Parsers/StringParser.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Parsers/StringParser/__init__.py?message=Update%20Docs)
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Parsers/StringParser.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Parsers/StringParser.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Parsers/StringParser.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Parsers/StringParser.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Parsers/StringParser/__init__.py?message=Update%20Docs)

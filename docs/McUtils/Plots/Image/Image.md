@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Image.Image">Image</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Image.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Image.py#L11?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Image.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Image.py#L11?message=Update%20Docs)]
 </div>
 
 Simple subclass of ArrayPlot that just turns off most of the unnecessary features
@@ -18,7 +18,7 @@ Simple subclass of ArrayPlot that just turns off most of the unnecessary feature
 __init__(self, data, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Image.py#L16)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Image.py#L16?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Image.py#L16)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Image.py#L16?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Image.Image.from_file" class="docs-object-method">&nbsp;</a> 
@@ -26,7 +26,7 @@ __init__(self, data, **kwargs):
 from_file(file_name, format=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Image.py#L27)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Image.py#L27?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Image.py#L27)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Image.py#L27?message=Update%20Docs)]
 </div>
 
  </div>
@@ -41,4 +41,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Image/Image.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Image/Image.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Image/Image.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Image.py#L11?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Image.py#L11?message=Update%20Docs)

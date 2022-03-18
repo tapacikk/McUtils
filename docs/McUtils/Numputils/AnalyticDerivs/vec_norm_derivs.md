@@ -1,6 +1,6 @@
 # <a id="McUtils.Numputils.AnalyticDerivs.vec_norm_derivs">vec_norm_derivs</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/edit/Numputils/AnalyticDerivs.py#L367)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/AnalyticDerivs.py#L367)]
 </div>
 
 ```python
@@ -24,4 +24,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Numputils/AnalyticDerivs/vec_norm_derivs.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Numputils/AnalyticDerivs/vec_norm_derivs.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Numputils/AnalyticDerivs/vec_norm_derivs.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Numputils/AnalyticDerivs.py#L367?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L367?message=Update%20Docs)

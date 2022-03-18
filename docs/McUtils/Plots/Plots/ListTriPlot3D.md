@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.ListTriPlot3D">ListTriPlot3D</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L822)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L822?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L822)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L822?message=Update%20Docs)]
 </div>
 
 Creates a triangulated surface plot in 3D
@@ -18,7 +18,7 @@ Creates a triangulated surface plot in 3D
 __init__(self, *params, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L826)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L826?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L826)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L826?message=Update%20Docs)]
 </div>
 
  </div>
@@ -86,4 +86,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ListTriPlot3D.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ListTriPlot3D.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ListTriPlot3D.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L822?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L822?message=Update%20Docs)

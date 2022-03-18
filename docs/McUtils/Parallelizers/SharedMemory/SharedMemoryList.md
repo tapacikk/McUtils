@@ -1,6 +1,6 @@
 ## <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryList">SharedMemoryList</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L476)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L476?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L476)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L476?message=Update%20Docs)]
 </div>
 
 Implements a shared dict that uses
@@ -20,7 +20,7 @@ across processes
 __init__(self, *seq, sync_list=None, manager=None, marshaller=None, allocator=None, parallelizer=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L483)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L483?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L483)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L483?message=Update%20Docs)]
 </div>
 
 
@@ -38,7 +38,7 @@ __init__(self, *seq, sync_list=None, manager=None, marshaller=None, allocator=No
 __getstate__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L508)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L508?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L508)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L508?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryList.__contains__" class="docs-object-method">&nbsp;</a> 
@@ -46,7 +46,7 @@ __getstate__(self):
 __contains__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L513)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L513?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L513)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L513?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryList.__iter__" class="docs-object-method">&nbsp;</a> 
@@ -54,7 +54,7 @@ __contains__(self, item):
 __iter__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L515)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L515?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L515)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L515?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryList.__len__" class="docs-object-method">&nbsp;</a> 
@@ -62,7 +62,7 @@ __iter__(self):
 __len__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L517)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L517?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L517)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L517?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryList.__del__" class="docs-object-method">&nbsp;</a> 
@@ -70,7 +70,7 @@ __len__(self):
 __del__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L519)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L519?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L519)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L519?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryList.unshare" class="docs-object-method">&nbsp;</a> 
@@ -78,7 +78,7 @@ __del__(self):
 unshare(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L523)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L523?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L523)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L523?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryList.pop" class="docs-object-method">&nbsp;</a> 
@@ -86,7 +86,7 @@ unshare(self):
 pop(self, k=0): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L526)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L526?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L526)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L526?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryList.insert" class="docs-object-method">&nbsp;</a> 
@@ -94,7 +94,7 @@ pop(self, k=0):
 insert(self, k, v): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L529)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L529?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L529)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L529?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryList.append" class="docs-object-method">&nbsp;</a> 
@@ -102,7 +102,7 @@ insert(self, k, v):
 append(self, v): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L532)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L532?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L532)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L532?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.SharedMemory.SharedMemoryList.extend" class="docs-object-method">&nbsp;</a> 
@@ -110,7 +110,7 @@ append(self, v):
 extend(self, v): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/SharedMemory.py#L535)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L535?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/SharedMemory.py#L535)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L535?message=Update%20Docs)]
 </div>
 
  </div>
@@ -125,4 +125,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Parallelizers/SharedMemory/SharedMemoryList.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Parallelizers/SharedMemory/SharedMemoryList.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Parallelizers/SharedMemory/SharedMemoryList.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/SharedMemory.py#L476?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/SharedMemory.py#L476?message=Update%20Docs)

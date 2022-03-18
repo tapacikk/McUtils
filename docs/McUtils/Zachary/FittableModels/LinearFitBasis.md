@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.FittableModels.LinearFitBasis">LinearFitBasis</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L129)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L129?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L129)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L129?message=Update%20Docs)]
 </div>
 
 Provides a container to build bases of functions for fitting.
@@ -20,7 +20,7 @@ Product functions are taken up to some max order
 __init__(self, *generators, order=3): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L135)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L135?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L135)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L135?message=Update%20Docs)]
 </div>
 
 
@@ -35,7 +35,7 @@ __init__(self, *generators, order=3):
 functions(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.LinearFitBasis.names" class="docs-object-method">&nbsp;</a> 
@@ -44,7 +44,7 @@ functions(self):
 names(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.LinearFitBasis.order" class="docs-object-method">&nbsp;</a> 
@@ -53,7 +53,7 @@ names(self):
 order(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.LinearFitBasis.construct_basis" class="docs-object-method">&nbsp;</a> 
@@ -61,7 +61,7 @@ order(self):
 construct_basis(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L171)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L171?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L171)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L171?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.LinearFitBasis.<lambda>" class="docs-object-method">&nbsp;</a> 
@@ -69,7 +69,7 @@ construct_basis(self):
 fourier_series(x, k): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L192)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L192?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L192)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L192?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.FittableModels.LinearFitBasis.<lambda>" class="docs-object-method">&nbsp;</a> 
@@ -77,7 +77,7 @@ fourier_series(x, k):
 power_series(x, n): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/FittableModels.py#L193)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L193?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/FittableModels.py#L193)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L193?message=Update%20Docs)]
 </div>
 
  </div>
@@ -92,4 +92,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/FittableModels/LinearFitBasis.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/FittableModels/LinearFitBasis.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/FittableModels/LinearFitBasis.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/FittableModels.py#L129?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/FittableModels.py#L129?message=Update%20Docs)

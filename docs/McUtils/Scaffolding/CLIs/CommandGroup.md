@@ -1,6 +1,6 @@
 ## <a id="McUtils.Scaffolding.CLIs.CommandGroup">CommandGroup</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Scaffolding/CLIs.py#L189)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/CLIs.py#L189?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/CLIs.py#L189)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/CLIs.py#L189?message=Update%20Docs)]
 </div>
 
 Generic interface that defines an available set of commands
@@ -29,4 +29,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Scaffolding/CLIs/CommandGroup.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Scaffolding/CLIs/CommandGroup.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Scaffolding/CLIs/CommandGroup.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Scaffolding/CLIs.py#L189?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/CLIs.py#L189?message=Update%20Docs)

@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.LazyTensors.TensorOp">TensorOp</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L128)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L128?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L128)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L128?message=Update%20Docs)]
 </div>
 
 A lazy representation of tensor operations to save memory
@@ -18,7 +18,7 @@ A lazy representation of tensor operations to save memory
 __init__(self, a, b, axis=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L130)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L130?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L130)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L130?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.LazyTensors.TensorOp.op" class="docs-object-method">&nbsp;</a> 
@@ -26,7 +26,7 @@ __init__(self, a, b, axis=None):
 op(self, a, b): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L148)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L148?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L148)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L148?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.LazyTensors.TensorOp.get_shape" class="docs-object-method">&nbsp;</a> 
@@ -34,7 +34,7 @@ op(self, a, b):
 get_shape(self, a, b): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L152)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L152?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L152)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L152?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.LazyTensors.TensorOp.shape" class="docs-object-method">&nbsp;</a> 
@@ -43,7 +43,7 @@ get_shape(self, a, b):
 shape(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Zachary.LazyTensors.TensorOp.array" class="docs-object-method">&nbsp;</a> 
@@ -52,7 +52,7 @@ shape(self):
 array(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L?message=Update%20Docs)]
 </div>
 
 Ought to always compile down to a proper ndarray
@@ -64,7 +64,7 @@ Ought to always compile down to a proper ndarray
 __getitem__(self, i): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/LazyTensors.py#L165)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L165?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/LazyTensors.py#L165)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L165?message=Update%20Docs)]
 </div>
 
  </div>
@@ -79,4 +79,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/LazyTensors/TensorOp.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/LazyTensors/TensorOp.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/LazyTensors/TensorOp.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/LazyTensors.py#L128?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/LazyTensors.py#L128?message=Update%20Docs)

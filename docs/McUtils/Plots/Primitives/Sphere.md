@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Primitives.Sphere">Sphere</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Primitives.py#L92)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Primitives.py#L92?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L92)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L92?message=Update%20Docs)]
 </div>
 
 
@@ -18,7 +18,7 @@
 __init__(self, position=(0, 0, 0), radius=1, sphere_points=48, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Primitives.py#L93)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Primitives.py#L93?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L93)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L93?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Primitives.Sphere.plot" class="docs-object-method">&nbsp;</a> 
@@ -26,7 +26,7 @@ __init__(self, position=(0, 0, 0), radius=1, sphere_points=48, **opts):
 plot(self, graphics, *args, sphere_points=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Primitives.py#L99)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Primitives.py#L99?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L99)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L99?message=Update%20Docs)]
 </div>
 
  </div>
@@ -88,4 +88,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Primitives/Sphere.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Primitives/Sphere.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Primitives/Sphere.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Primitives.py#L92?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L92?message=Update%20Docs)

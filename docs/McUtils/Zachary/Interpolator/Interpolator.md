@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.Interpolator.Interpolator">Interpolator</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L254)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L254?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L254)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L254?message=Update%20Docs)]
 </div>
 
 A general purpose that takes your data and just interpolates it without whining or making you do a pile of extra work
@@ -21,7 +21,7 @@ DefaultExtrapolator: ExtrapolatorType
 __init__(self, grid, vals, interpolation_function=None, interpolation_order=None, extrapolator=None, extrapolation_order=None, **interpolation_opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L259)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L259?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L259)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L259?message=Update%20Docs)]
 </div>
 
 
@@ -45,7 +45,7 @@ __init__(self, grid, vals, interpolation_function=None, interpolation_order=None
 get_interpolator(grid, vals, interpolation_order=None, allow_extrapolation=True, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L304)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L304?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L304)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L304?message=Update%20Docs)]
 </div>
 
 Returns a function that can be called on grid points to interpolate them
@@ -65,7 +65,7 @@ Returns a function that can be called on grid points to interpolate them
 get_extrapolator(grid, vals, extrapolation_order=1, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L355)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L355?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L355)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L355?message=Update%20Docs)]
 </div>
 
 Returns an Extrapolator that can be called on grid points to extrapolate them
@@ -81,7 +81,7 @@ Returns an Extrapolator that can be called on grid points to extrapolate them
 apply(self, grid_points, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L417)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L417?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L417)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L417?message=Update%20Docs)]
 </div>
 
 Interpolates then extrapolates the function at the grid_points
@@ -95,7 +95,7 @@ Interpolates then extrapolates the function at the grid_points
 derivative(self, order): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L433)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L433?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L433)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L433?message=Update%20Docs)]
 </div>
 
 Returns a new function representing the requested derivative
@@ -110,7 +110,7 @@ Returns a new function representing the requested derivative
 __call__(self, *args, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Interpolator.py#L450)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L450?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L450)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L450?message=Update%20Docs)]
 </div>
 
  </div>
@@ -125,4 +125,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/Interpolator/Interpolator.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/Interpolator/Interpolator.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/Interpolator/Interpolator.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Interpolator.py#L254?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L254?message=Update%20Docs)

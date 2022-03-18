@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.ListTriDensityPlot">ListTriDensityPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L660)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L660?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L660)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L660?message=Update%20Docs)]
 </div>
 
 
@@ -18,7 +18,7 @@
 __init__(self, griddata, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L661)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L661?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L661)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L661?message=Update%20Docs)]
 </div>
 
  </div>
@@ -86,4 +86,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ListTriDensityPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ListTriDensityPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ListTriDensityPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L660?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L660?message=Update%20Docs)

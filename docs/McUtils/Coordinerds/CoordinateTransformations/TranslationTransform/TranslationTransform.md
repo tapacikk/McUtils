@@ -1,6 +1,6 @@
 ## <a id="McUtils.Coordinerds.CoordinateTransformations.TranslationTransform.TranslationTransform">TranslationTransform</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/TranslationTransform.py#L15)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/TranslationTransform.py#L15?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/TranslationTransform.py#L15)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/TranslationTransform.py#L15?message=Update%20Docs)]
 </div>
 
 A simple TranslationTransform from the basic AffineTransformation class
@@ -18,7 +18,7 @@ A simple TranslationTransform from the basic AffineTransformation class
 __init__(self, shift): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Coordinerds/CoordinateTransformations/TranslationTransform.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/TranslationTransform.py#L20?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateTransformations/TranslationTransform.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/TranslationTransform.py#L20?message=Update%20Docs)]
 </div>
 
 
@@ -37,4 +37,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Coordinerds/CoordinateTransformations/TranslationTransform/TranslationTransform.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Coordinerds/CoordinateTransformations/TranslationTransform/TranslationTransform.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Coordinerds/CoordinateTransformations/TranslationTransform/TranslationTransform.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/CoordinateTransformations/TranslationTransform.py#L15?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateTransformations/TranslationTransform.py#L15?message=Update%20Docs)

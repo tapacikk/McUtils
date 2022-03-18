@@ -1,6 +1,6 @@
 ## <a id="McUtils.Parallelizers.Runner.ClientServerRunner">ClientServerRunner</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Runner.py#L8)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Runner.py#L8?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Runner.py#L8)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Runner.py#L8?message=Update%20Docs)]
 </div>
 
 Provides a framework for running MPI-like scripts in a client/server
@@ -19,7 +19,7 @@ model
 __init__(self, client_runner: Callable, server_runner: Callable, parallelizer: McUtils.Parallelizers.Parallelizers.Parallelizer): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Runner.py#L14)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Runner.py#L14?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Runner.py#L14)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Runner.py#L14?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Parallelizers.Runner.ClientServerRunner.run" class="docs-object-method">&nbsp;</a> 
@@ -27,7 +27,7 @@ __init__(self, client_runner: Callable, server_runner: Callable, parallelizer: M
 run(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Parallelizers/Runner.py#L19)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Runner.py#L19?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Runner.py#L19)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Runner.py#L19?message=Update%20Docs)]
 </div>
 
 Runs the client/server processes depending on if the parallelizer
@@ -47,4 +47,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Parallelizers/Runner/ClientServerRunner.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Parallelizers/Runner/ClientServerRunner.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Parallelizers/Runner/ClientServerRunner.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Parallelizers/Runner.py#L8?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Parallelizers/Runner.py#L8?message=Update%20Docs)

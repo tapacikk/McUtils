@@ -1,6 +1,6 @@
 # <a id="McUtils.Misc">McUtils.Misc</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Misc)]
+[[source](https://github.com/McCoyGroup/McUtils/tree/master/Misc)]
 </div>
     
 Defines a set of miscellaneous helper utilities that are commonly used across projects.
@@ -69,8 +69,8 @@ Defines a set of miscellaneous helper utilities that are commonly used across pr
 
 ___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/edit/ci/examples/McUtils/Misc.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/examples/McUtils/Misc.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/McUtils/Misc.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/edit/?filename=ci/docs/templates/McUtils/Misc.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Misc/__init__.py?message=Update%20Docs)
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Misc.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Misc.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Misc.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Misc.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Misc/__init__.py?message=Update%20Docs)

@@ -1,6 +1,6 @@
 # <a id="McUtils.Coordinerds.Conveniences.zmatrix_to_cartesian">zmatrix_to_cartesian</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/edit/Coordinerds/Conveniences.py#L30)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/Conveniences.py#L30)]
 </div>
 
 ```python
@@ -28,4 +28,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Coordinerds/Conveniences/zmatrix_to_cartesian.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Coordinerds/Conveniences/zmatrix_to_cartesian.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Coordinerds/Conveniences/zmatrix_to_cartesian.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Coordinerds/Conveniences.py#L30?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/Conveniences.py#L30?message=Update%20Docs)

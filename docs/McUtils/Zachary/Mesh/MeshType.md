@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.Mesh.MeshType">MeshType</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Mesh.py#L12)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Mesh.py#L12?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L12)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L12?message=Update%20Docs)]
 </div>
 
 An enumeration.
@@ -25,7 +25,7 @@ Indeterminate: MeshType
 __new__(cls, value): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Mesh.py#L631)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Mesh.py#L631?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L631)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L631?message=Update%20Docs)]
 </div>
 
  </div>
@@ -40,4 +40,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/Mesh/MeshType.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/Mesh/MeshType.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/Mesh/MeshType.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Mesh.py#L12?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L12?message=Update%20Docs)

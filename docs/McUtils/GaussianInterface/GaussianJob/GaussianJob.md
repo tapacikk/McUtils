@@ -1,6 +1,6 @@
 ## <a id="McUtils.GaussianInterface.GaussianJob.GaussianJob">GaussianJob</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianJob.py#L78)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianJob.py#L78?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianJob.py#L78)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianJob.py#L78?message=Update%20Docs)]
 </div>
 
 A class that writes Gaussian .gjf files given a system and config/template options
@@ -24,7 +24,7 @@ System: type
 __init__(self, name, *args, description=None, system=None, job=None, config=None, template='TemplateTerse.gjf', footer=None, file=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianJob.py#L83)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianJob.py#L83?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianJob.py#L83)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianJob.py#L83?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.GaussianInterface.GaussianJob.GaussianJob.format" class="docs-object-method">&nbsp;</a> 
@@ -32,7 +32,7 @@ __init__(self, name, *args, description=None, system=None, job=None, config=None
 format(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianJob.py#L135)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianJob.py#L135?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianJob.py#L135)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianJob.py#L135?message=Update%20Docs)]
 </div>
 
 Formats the job string
@@ -44,7 +44,7 @@ Formats the job string
 write(self, file=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianJob.py#L156)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianJob.py#L156?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianJob.py#L156)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianJob.py#L156?message=Update%20Docs)]
 </div>
 
 Writes the job to a file
@@ -58,7 +58,7 @@ Writes the job to a file
 start(self, *cmd, binary='g09', **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianJob.py#L179)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianJob.py#L179?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianJob.py#L179)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianJob.py#L179?message=Update%20Docs)]
 </div>
 
 Starts a Gaussian job
@@ -76,7 +76,7 @@ Starts a Gaussian job
 run(self, *args, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianJob.py#L206)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianJob.py#L206?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianJob.py#L206)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianJob.py#L206?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.GaussianInterface.GaussianJob.GaussianJob.__str__" class="docs-object-method">&nbsp;</a> 
@@ -84,7 +84,7 @@ run(self, *args, **kwargs):
 __str__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianJob.py#L210)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianJob.py#L210?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianJob.py#L210)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianJob.py#L210?message=Update%20Docs)]
 </div>
 
  </div>
@@ -131,4 +131,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/GaussianInterface/GaussianJob/GaussianJob.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/GaussianInterface/GaussianJob/GaussianJob.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/GaussianInterface/GaussianJob/GaussianJob.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianJob.py#L78?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianJob.py#L78?message=Update%20Docs)

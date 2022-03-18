@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Primitives.Cylinder">Cylinder</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Primitives.py#L118)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Primitives.py#L118?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L118)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L118?message=Update%20Docs)]
 </div>
 
 
@@ -18,7 +18,7 @@
 __init__(self, p1, p2, radius, circle_points=32, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Primitives.py#L119)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Primitives.py#L119?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L119)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L119?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Primitives.Cylinder.plot" class="docs-object-method">&nbsp;</a> 
@@ -26,7 +26,7 @@ __init__(self, p1, p2, radius, circle_points=32, **opts):
 plot(self, graphics, *args, circle_points=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Primitives.py#L126)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Primitives.py#L126?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L126)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L126?message=Update%20Docs)]
 </div>
 
  </div>
@@ -41,4 +41,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Primitives/Cylinder.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Primitives/Cylinder.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Primitives/Cylinder.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Primitives.py#L118?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L118?message=Update%20Docs)

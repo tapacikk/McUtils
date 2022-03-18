@@ -1,6 +1,6 @@
 ## <a id="McUtils.Zachary.Taylor.FunctionExpansions.FunctionExpansion">FunctionExpansion</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FunctionExpansions.py#L18)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FunctionExpansions.py#L18?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FunctionExpansions.py#L18)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FunctionExpansions.py#L18?message=Update%20Docs)]
 </div>
 
 A class for handling expansions of an internal coordinate potential up to 4th order
@@ -23,7 +23,7 @@ FunctionDerivatives: type
 __init__(self, derivatives, transforms=None, center=None, ref=0, weight_coefficients=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FunctionExpansions.py#L24)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FunctionExpansions.py#L24?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FunctionExpansions.py#L24)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FunctionExpansions.py#L24?message=Update%20Docs)]
 </div>
 
 
@@ -43,7 +43,7 @@ __init__(self, derivatives, transforms=None, center=None, ref=0, weight_coeffici
 expand_function(f, point, order=4, basis=None, function_shape=None, transforms=None, weight_coefficients=True, **fd_options): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FunctionExpansions.py#L56)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FunctionExpansions.py#L56?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FunctionExpansions.py#L56)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FunctionExpansions.py#L56?message=Update%20Docs)]
 </div>
 
 Expands a function about a point up to the given order
@@ -66,7 +66,7 @@ Expands a function about a point up to the given order
 expansion_tensors(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FunctionExpansions.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FunctionExpansions.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FunctionExpansions.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FunctionExpansions.py#L?message=Update%20Docs)]
 </div>
 
 Provides the tensors that will contracted
@@ -78,7 +78,7 @@ Provides the tensors that will contracted
 get_expansions(self, coords, squeeze=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FunctionExpansions.py#L109)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FunctionExpansions.py#L109?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FunctionExpansions.py#L109)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FunctionExpansions.py#L109?message=Update%20Docs)]
 </div>
 
 
@@ -92,7 +92,7 @@ get_expansions(self, coords, squeeze=True):
 expand(self, coords, squeeze=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FunctionExpansions.py#L145)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FunctionExpansions.py#L145?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FunctionExpansions.py#L145)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FunctionExpansions.py#L145?message=Update%20Docs)]
 </div>
 
 Returns a numerical value for the expanded coordinates
@@ -106,7 +106,7 @@ Returns a numerical value for the expanded coordinates
 __call__(self, coords, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Zachary/Taylor/FunctionExpansions.py#L157)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FunctionExpansions.py#L157?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Taylor/FunctionExpansions.py#L157)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FunctionExpansions.py#L157?message=Update%20Docs)]
 </div>
 
  </div>
@@ -347,4 +347,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/Taylor/FunctionExpansions/FunctionExpansion.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/Taylor/FunctionExpansions/FunctionExpansion.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/Taylor/FunctionExpansions/FunctionExpansion.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Zachary/Taylor/FunctionExpansions.py#L18?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Taylor/FunctionExpansions.py#L18?message=Update%20Docs)

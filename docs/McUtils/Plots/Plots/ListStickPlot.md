@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.ListStickPlot">ListStickPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L363)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L363?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L363)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L363?message=Update%20Docs)]
 </div>
 
 A Plot object that plots sticks from a list
@@ -18,7 +18,7 @@ A Plot object that plots sticks from a list
 __init__(self, griddata, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L365)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L365?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L365)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L365?message=Update%20Docs)]
 </div>
 
  </div>
@@ -33,4 +33,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ListStickPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ListStickPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ListStickPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L363?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L363?message=Update%20Docs)

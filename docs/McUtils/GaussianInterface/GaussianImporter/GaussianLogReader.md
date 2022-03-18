@@ -1,6 +1,6 @@
 ## <a id="McUtils.GaussianInterface.GaussianImporter.GaussianLogReader">GaussianLogReader</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L23)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L23?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L23)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L23?message=Update%20Docs)]
 </div>
 
 Implements a stream based reader for a Gaussian .log file.
@@ -49,7 +49,7 @@ job_default_keys: dict
 parse(self, keys=None, num=None, reset=False): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L58)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L58?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L58)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L58?message=Update%20Docs)]
 </div>
 
 The main function we'll actually use. Parses bits out of a .log file.
@@ -65,7 +65,7 @@ The main function we'll actually use. Parses bits out of a .log file.
 get_default_keys(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L107)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L107?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L107)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L107?message=Update%20Docs)]
 </div>
 
 Tries to get the default keys one might be expected to want depending on the type of job as determined from the Header
@@ -78,7 +78,7 @@ Tries to get the default keys one might be expected to want depending on the typ
 read_props(file, keys): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/GaussianInterface/GaussianImporter.py#L136)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L136?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L136)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L136?message=Update%20Docs)]
 </div>
 
  </div>
@@ -207,4 +207,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/GaussianInterface/GaussianImporter.py#L23?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L23?message=Update%20Docs)

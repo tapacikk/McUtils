@@ -1,6 +1,6 @@
 ## <a id="McUtils.Data.CommonData.DataError">DataError</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Data/CommonData.py#L13)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L13?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/CommonData.py#L13)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L13?message=Update%20Docs)]
 </div>
 
 Exception subclass for data error
@@ -27,4 +27,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Data/CommonData/DataError.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Data/CommonData/DataError.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Data/CommonData/DataError.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Data/CommonData.py#L13?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Data/CommonData.py#L13?message=Update%20Docs)

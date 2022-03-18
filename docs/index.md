@@ -26,13 +26,13 @@ https://mccoygroup.github.io/McUtils/Molecools/Molecule.html
 you'll either add the appropriate file by going to 
 
 ```
-https://github.com/McCoyGroup/McUtils/new/edit?filename=ci/docs/examples/Molecools/Molecule.md
+https://github.com/McCoyGroup/McUtils/new/master?filename=ci/docs/examples/Molecools/Molecule.md
 ```
 
 or edit the existing one by going to 
 
 ```
-https://github.com/McCoyGroup/McUtils/edit/edit/ci/docs/examples/Molecools/Molecule.md
+https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/examples/Molecools/Molecule.md
 ```
 
 ##### Documentation
@@ -46,7 +46,7 @@ Psience / Molecools
 ```
 
 So you'd go to [https://github.com/McCoyGroup/McUtils/McUtils/Molecools](https://github.com/McCoyGroup/McUtils/McUtils/Molecools) & then notice that there is a package called `Molecule.py`.
-Then, clicking on the package's edit link ( [McCoyGroup/McUtils/edit/edit/McUtils/Molecools/Molecule.py](https://github.com/McCoyGroup/McUtils/edit/edit/McUtils/Molecools/Molecule.py) ) you can navigate to where `Molecule` is defined and edit that.
+Then, clicking on the package's edit link ( [McCoyGroup/McUtils/edit/master/McUtils/Molecools/Molecule.py](https://github.com/McCoyGroup/McUtils/edit/master/McUtils/Molecools/Molecule.py) ) you can navigate to where `Molecule` is defined and edit that.
 Alternately, if you know the line number in the source file, you can link directly to that line in the source and then people can use the GitHub UI.
 
 After editing, you'll need to rerun the site build via the [GitHub Action](https://github.com/McCoyGroup/McUtils/actions?query=workflow%3A%22McBuild+site%22) we set up.
@@ -54,7 +54,7 @@ After editing, you'll need to rerun the site build via the [GitHub Action](https
 ##### Templates
 
 The documentation build makes use of a template system to generate its Markdown pages.
-In particular, it uses the files [here](https://github.com/McCoyGroup/McUtils/tree/edit/ci/docs/templates) to make this work, where the following hierarchy is used:
+In particular, it uses the files [here](https://github.com/McCoyGroup/McUtils/tree/master/ci/docs/templates) to make this work, where the following hierarchy is used:
 * `index.md` is used for this main index page
 * `module.md` is used for modules
 * `class.md` is used for classes
@@ -63,7 +63,7 @@ In particular, it uses the files [here](https://github.com/McCoyGroup/McUtils/tr
 * `object.md` is used for objects with a `__name__` parameter
 
 You can also add custom templates for pages, if you feel they need more information than the auto-generator can provide.
-To do so, we'll add to the file path in the [templates](https://github.com/McCoyGroup/McUtils/tree/edit/ci/docs/templates) directory of the documentation.
+To do so, we'll add to the file path in the [templates](https://github.com/McCoyGroup/McUtils/tree/master/ci/docs/templates) directory of the documentation.
 
 For the `McUtils.GaussianInterface` example from before, to edit the template we would have
 
