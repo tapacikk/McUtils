@@ -1,0 +1,36 @@
+## <a id="McUtils.Plots.Plots.ContourPlot3D">ContourPlot3D</a> 
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L756)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L756?message=Update%20Docs)]
+</div>
+
+Creates a 3D ContourPlot of 3D data
+
+<div class="collapsible-section">
+ <div class="collapsible-section collapsible-section-header" markdown="1">
+ 
+### <a class="collapse-link" data-toggle="collapse" href="#methods">Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
+
+ </div>
+ <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
+
+<a id="McUtils.Plots.Plots.ContourPlot3D.__init__" class="docs-object-method">&nbsp;</a> 
+```python
+__init__(self, *params, **opts): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/edit/Plots/Plots.py#L760)/[edit](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L760?message=Update%20Docs)]
+</div>
+
+ </div>
+</div>
+
+
+
+
+___
+
+[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Plots/Plots/ContourPlot3D.md) or 
+[Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ContourPlot3D.md) <br/>
+[Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ContourPlot3D.md) or 
+[Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ContourPlot3D.md) <br/>
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/edit/Plots/Plots.py#L756?message=Update%20Docs)
