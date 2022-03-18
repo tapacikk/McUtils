@@ -28,7 +28,6 @@ RUN \
     git clone https://github.com/McCoyGroup/McUtils.git
 
 RUN \
-    cd /home/McUtils && \
-    git checkout edit
+    cd /home/McUtils
 
 ENTRYPOINT ["/bin/bash", "/home/McUtils/ci/run_ci.sh"]
