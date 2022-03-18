@@ -7,10 +7,13 @@ Docs for the actively edited, unstable branch can be found [here](https://mccoyg
 
 ### Installation & Requirements
 
-McUtils is written in pure python. A small amount of C++ code has been added in the past, but we are trying to walk back from that, as it decreases ease of installation/portability.
-We make use of `numpy`, `scipy`, and `matplotlib`, but have worked to avoid any dependencies beyond those three.
+The easiest way to install is via `pip`, as
 
-It is unlikely that McUtils will even find its way onto PyPI, so the best thing to do is install from GitHub via `git clone`. The `master` branch _should_ be stable. Other branches are intended to be development branches. 
+```lang-shell
+pip install mccoygroup-mcutils
+```
+
+This hasn't been thoroughly tested, so if things break it is always possible to clone the repository and go from there.
 
 ### Contributing
 
