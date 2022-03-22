@@ -5,9 +5,7 @@ import sys, os, types, importlib, inspect, numpy as np
 
 __all__ = [
     "ModuleReloader",
-    "MoleculeGraphics",
-    "JupyterFormatter",
-    "load_Bootstrap"
+    "MoleculeGraphics"
 ]
 
 class ModuleReloader:
@@ -365,18 +363,3 @@ $$$$
                 viewer[0].set_scale(scale)
             return viewer
 
-def load_Bootstrap():
-    """
-    Embeds Bootstrap style definitions into the active notebook
-
-    :return:
-    :rtype:
-    """
-    from IPython.core.display import HTML as IPyHTML
-    from urllib.request import urlopen
-    return IPyHTML("<style>" + urlopen(
-        'https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css').read().decode() + "</style>")
-class JupyterFormatter:
-    def __init__(self):
-        import IPython.core.display as api
-        self.api = api

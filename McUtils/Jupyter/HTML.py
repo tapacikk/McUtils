@@ -359,53 +359,106 @@ class HTML:
 
         def __init__(self, tag, *elems, **attrs):
             self.tag = tag
-            self.elems = elems[0] if len(elems) == 1 and isinstance(elems[0], (list, tuple)) else elems
+            self._elems = list(elems[0] if len(elems) == 1 and isinstance(elems[0], (list, tuple)) else elems)
+            self._elem_view = None
             if 'cls' in attrs:
                 attrs['class'] = attrs['cls']
                 del attrs['cls']
-            self.attrs = attrs
+            self._attrs = attrs
+            self._attr_view = None
+            self._parents = set()
+            self._tree_cache = None
+        @property
+        def attrs(self):
+            if self._attr_view is None:
+                self._attr_view = self._attrs.copy()
+            return self._attr_view
+        @attrs.setter
+        def attrs(self, attrs):
+            self._attrs = attrs
+            self._attr_view = None
+            self._invalidate_cache()
+        @property
+        def elems(self):
+            if self._elem_view is None:
+                self._elem_view = tuple(self._elems)
+            return self._elem_view
+        @elems.setter
+        def elems(self, elems):
+            self._elems = elems
+            self._elem_view = None
+            self._invalidate_cache()
 
-        def to_tree(self, root=None):
-            if root is None:
-                root = ElementTree.Element('root')
-            attrs = self.attrs
-            _copied = False
-            if 'style' in attrs:
-                if isinstance(attrs['style'], CSS):
-                    if not _copied:
-                        attrs = attrs.copy()
-                        _copied = True
-                    attrs['style'] = attrs['style'].tostring()
-            if 'class' in attrs:
-                if not isinstance(attrs['class'], str):
-                    if not _copied:
-                        attrs = attrs.copy()
-                        _copied = True
-                    attrs['class'] = " ".join(attrs['class'])
-            my_el = ElementTree.SubElement(root, self.tag, attrs)
-            if all(isinstance(e, str) for e in self.elems):
-                my_el.text = "\n".join(self.elems)
+        def _invalidate_cache(self):
+            if self._tree_cache is not None:
+                self._tree_cache = None
+                for p in self._parents:
+                    p._invalidate_cache()
+                    self._parents.remove(p)
+        def __getitem__(self, item):
+            if isinstance(item, str):
+                return self._attrs[item]
             else:
-                for elem in self.elems:
-                    if isinstance(elem, HTML.XMLElement):
-                        elem.to_tree(root=my_el)
-                    elif isinstance(elem, HTML.ElementModifier):
-                        elem.modify().to_tree(root=my_el)
-                    elif isinstance(elem, ElementTree.Element):
-                        my_el.append(elem)
-                    elif isinstance(elem, (str, int, float, CSS)):
-                        elem = str(elem)
-                        kids = list(my_el)
-                        if len(kids) > 0:
-                            if kids[-1].tail is None:
-                                kids[-1].tail = elem
+                return self._elems[item]
+        def __setitem__(self, item, value):
+            if isinstance(item, str):
+                self._attrs[item] = value
+                self._attr_view = None
+            else:
+                self._elems[item] = value
+                self._elem_view = None
+            self._invalidate_cache()
+
+        @property
+        def tree(self):
+            return self.to_tree()
+        def to_tree(self, root=None, parent=None):
+            if parent is not None:
+                self._parents.add(parent)
+            if self._tree_cache is None:
+                if root is None:
+                    root = ElementTree.Element('root')
+                attrs = self.attrs
+                _copied = False
+                if 'style' in attrs:
+                    if isinstance(attrs['style'], CSS):
+                        if not _copied:
+                            attrs = attrs.copy()
+                            _copied = True
+                        attrs['style'] = attrs['style'].tostring()
+                if 'class' in attrs:
+                    if not isinstance(attrs['class'], str):
+                        if not _copied:
+                            attrs = attrs.copy()
+                            _copied = True
+                        attrs['class'] = " ".join(attrs['class'])
+                my_el = ElementTree.SubElement(root, self.tag, attrs)
+                if all(isinstance(e, str) for e in self.elems):
+                    my_el.text = "\n".join(self.elems)
+                else:
+                    for elem in self.elems:
+                        if isinstance(elem, HTML.XMLElement):
+                            elem.to_tree(root=my_el, parent=self)
+                        elif isinstance(elem, HTML.ElementModifier):
+                            elem.modify().to_tree(root=my_el, parent=self)
+                        elif isinstance(elem, ElementTree.Element):
+                            my_el.append(elem)
+                        elif isinstance(elem, (str, int, float, CSS)):
+                            elem = str(elem)
+                            kids = list(my_el)
+                            if len(kids) > 0:
+                                if kids[-1].tail is None:
+                                    kids[-1].tail = elem
+                                else:
+                                    kids[-1].tail += "\n"+elem
                             else:
-                                kids[-1].tail += "\n"+elem
+                                my_el.text = elem
+                        elif hasattr(elem, 'to_widget'):
+                            raise ValueError("can't convert {} to pure HTML. It looks like a `JupyterHTMLWrapper` so look for the appropriate `JHTML` subclass.".format(elem))
                         else:
-                            my_el.text = elem
-                    else:
-                        raise ValueError("don't know what to do with {}".format(elem))
-            return my_el
+                            raise ValueError("don't know what to do with {}".format(elem))
+                self._tree_cache = my_el
+            return self._tree_cache
         def tostring(self):
             return "\n".join(s.decode() for s in ElementTree.tostringlist(self.to_tree()))
         def __repr__(self):
@@ -418,6 +471,51 @@ class HTML:
             return HTML.ClassAdder(self, cls)
         def add_styles(self, **sty):
             return HTML.StyleAdder(self, **sty)
+
+        def _find_child_node(self, etree):
+            from collections import deque
+            # BFS to try to find the element that matches
+            remaining = deque()
+            remaining.append(self)
+            while remaining:
+                elem = remaining.popleft()
+                if isinstance(elem, HTML.XMLElement):
+                    if etree == elem.tree:
+                        return elem
+                    else:
+                        for e in elem.elems:
+                            remaining.append(e)
+
+        def find(self, path, find_element=True):
+            base = self.tree.find(path)
+            if find_element and base is not None:
+                new = self._find_child_node(base)
+                if new is not None:
+                    base = new
+            return base
+        def findall(self, path, find_element=True):
+            bases = self.tree.findall(path)
+            if find_element:
+                new = []
+                for b in bases:
+                    newb = self._find_child_node(b)
+                    if newb is not None:
+                        new.append(newb)
+                    else:
+                        new.append(b)
+                bases = new
+            return bases
+        def iterfind(self, path, find_element=True):
+            bases = self.tree.iterfind(path)
+            for b in bases:
+                if find_element:
+                    newb = self._find_child_node(b)
+                    if newb is not None:
+                        yield newb
+                    else:
+                        yield b
+                else:
+                    yield b
 
         def copy(self):
             import copy
@@ -433,6 +531,16 @@ class HTML:
             return self.modify().tostring()
         def _repr_html_(self):
             return self.tostring()
+        def copy(self):
+            import copy
+            new = copy.copy(self)
+            new.el = new.el.copy()
+        def add_class(self, *cls):
+            return HTML.ClassAdder(self, cls)
+        def remove_class(self, *cls):
+            return HTML.ClassRemover(self, cls)
+        def add_styles(self, **sty):
+            return HTML.StyleAdder(self, **sty)
     class ClassAdder(ElementModifier):
         cls = None
         def __init__(self, el, cls=None):
@@ -443,7 +551,10 @@ class HTML:
             self.cls = cls
             super().__init__(el)
         def modify(self):
-            el = self.el.copy()
+            if isinstance(self.el, HTML.ElementModifier):
+                el = self.el.modify()
+            else:
+                el = self.el.copy()
             if 'class' in el.attrs:
                 if isinstance(el.attrs['class'], str):
                     el.make_class_list()
@@ -456,26 +567,58 @@ class HTML:
             return el
         def __repr__(self):
             return "{}({}, {})".format(type(self).__name__, self.el, self.cls)
+    class ClassRemover(ElementModifier):
+        cls = None
+        def __init__(self, el, cls=None):
+            if cls is None:
+                cls = self.cls
+            if isinstance(cls, str):
+                cls = cls.split()
+            self.cls = cls
+            super().__init__(el)
+        def modify(self):
+            if isinstance(self.el, HTML.ElementModifier):
+                el = self.el.modify()
+            else:
+                el = self.el.copy()
+            if 'class' in el.attrs:
+                if isinstance(el.attrs['class'], str):
+                    el.make_class_list()
+                class_list = el.attrs['class']
+                for cls in self.cls:
+                    try:
+                        class_list.remove(cls)
+                    except ValueError:
+                        pass
+            else:
+                el.attrs['class'] = self.cls
+            return el
+        def __repr__(self):
+            return "{}({}, {})".format(type(self).__name__, self.el, self.cls)
     class StyleAdder(ElementModifier):
         def __init__(self, el, **styles):
             self.styles = styles
             super().__init__(el)
         def modify(self):
-            el = self.el.copy()
+
+            if isinstance(self.el, HTML.ElementModifier):
+                el = self.el.modify()
+            else:
+                el = self.el.copy()
 
             if 'style' in el.attrs:
                 style = el.attrs['style']
                 if isinstance(style, str):
                     style = CSS.parse(style)
                 else:
-                    style = copy.copy(style)
+                    style = style.copy()
                 style.props = dict(style.props, **self.styles)
                 el.attrs['style'] = style
             else:
                 el.attrs['style'] = CSS(**self.styles)
             return el
         def __repr__(self):
-            return "{}({}, {})".format(type(self).__name__, self.el, self.cls)
+            return "{}({}, {})".format(type(self).__name__, self.el, self.styles)
 
     class TagElement(XMLElement):
         tag = None
@@ -517,13 +660,51 @@ class HTML:
             rows = [
                 HTML.TableRow(
                     [HTML.TableItem(y) if not isinstance(y, HTML.TableItem) else y for y in x]
-                ) if not isinstance(x, HTML.TableHeading) else x for x in rows
+                ) if not isinstance(x, HTML.TableRow) else x for x in rows
             ]
             if headers is not None:
                 rows = [
                     HTML.TableRow([HTML.TableHeading(x) if not isinstance(x, HTML.TableHeading) else x for x in headers])
                 ] + rows
             super().__init__(rows, **attrs)
+
+    _cls_map = None
+    @classmethod
+    def get_class_map(cls):
+        if cls._cls_map is None:
+            cls._cls_map = {}
+            for v in cls.__dict__.values():
+                if isinstance(v, type) and hasattr(v, 'tag'):
+                    cls._cls_map[v.tag] = v
+        return cls._cls_map
+
+    @classmethod
+    def convert(cls, etree:ElementTree.Element):
+        children = [cls.convert(x) for x in etree]
+        text = etree.text
+        tail = etree.tail
+
+        elems = (
+                ([text] if text is not None else [])
+                + children
+                + (list(tail) if tail is not None else [])
+        )
+
+        tag = etree.tag
+        map = cls.get_class_map()
+        try:
+            tag_class = map[tag]
+        except KeyError:
+            tag_class = lambda *es,**ats:HTML.XMLElement(tag, *es, **ats)
+
+        attrs = {} if etree.attrib is None else etree.attrib
+
+        return tag_class(*elems, **attrs)
+
+    @classmethod
+    def parse(cls, str):
+        etree = ElementTree.fromstring(str)
+        return cls.convert(etree)
 
 class Bootstrap(HTML):
     # Bootstrap components
@@ -600,7 +781,7 @@ class Bootstrap(HTML):
 
     class Col(HTML.Div):
         cls='col'
-        def __init__(self, *elems, width=1, size='xs', cls=None, **attrs):
+        def __init__(self, *elems, width=None, size=None, cls=None, **attrs):
             added_cls = self.cls
             if size is not None:
                 added_cls += '-'+str(size)
@@ -640,7 +821,7 @@ class Bootstrap(HTML):
 
     class Button(HTML.Button):
         cls = 'btn'
-        base_style = 'default'
+        base_style = 'primary'
         def __init__(self, *elems, variant=None, cls=None, **attrs):
             cls = Bootstrap._manage_cls(self, cls, variant)
             super().__init__(*elems, cls=cls, **attrs)
