@@ -18,8 +18,8 @@ class JHTML:
     def load(cls):
         from IPython.core.display import display
         display(
-            BootstrapWidgets.load(),
-            JupyterHTMLWrapper.load_styles()
+            BootstrapWidgets.load()
+            # JupyterHTMLWrapper.load_styles()
         )
 
     def __init__(self, context=None, include_bootstrap=False):
@@ -79,113 +79,363 @@ class JHTML:
         else:
             return src(*elements, event_handlers=event_handlers, extra_classes=extra_classes, **styles)
 
+    def dispatcher(fn):
+        name = fn.__name__
+        @functools.wraps(fn)
+        def dispatcher(jhtml, *elements, **attrs):
+            return jhtml._dispatch(getattr(HTML, name), getattr(HTMLWidgets, name), *elements, **attrs)
+        return dispatcher
+
     @classmethod
-    def Nav(jhtml, *elements, **styles):
-        plain, widget = HTML.Nav, HTMLWidgets.Nav
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Abbr(jhtml, *elements, **styles): ...
     @classmethod
-    def Anchor(jhtml, *elements, **styles):
-        plain, widget = HTML.Anchor, HTMLWidgets.Anchor
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Address(jhtml, *elements, **styles): ...
     @classmethod
-    def Text(jhtml, *elements, **styles):
-        plain, widget = HTML.Text, HTMLWidgets.Text
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Anchor(jhtml, *elements, **styles): ...
+    A = Anchor
     @classmethod
-    def Div(jhtml, *elements, **styles):
-        plain, widget = HTML.Div, HTMLWidgets.Div
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Area(jhtml, *elements, **styles): ...
     @classmethod
-    def Heading(jhtml, *elements, **styles):
-        plain, widget = HTML.Heading, HTMLWidgets.Heading
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Article(jhtml, *elements, **styles): ...
     @classmethod
-    def SubHeading(jhtml, *elements, **styles):
-        plain, widget = HTML.SubHeading, HTMLWidgets.SubHeading
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Aside(jhtml, *elements, **styles): ...
     @classmethod
-    def SubsubHeading(jhtml, *elements, **styles):
-        plain, widget = HTML.SubsubHeading, HTMLWidgets.SubsubHeading
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Audio(jhtml, *elements, **styles): ...
     @classmethod
-    def SubsubsubHeading(jhtml, *elements, **styles):
-        plain, widget = HTML.SubsubsubHeading, HTMLWidgets.SubsubsubHeading
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def B(jhtml, *elements, **styles): ...
     @classmethod
-    def Small(jhtml, *elements, **styles):
-        plain, widget = HTML.Small, HTMLWidgets.Small
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Base(jhtml, *elements, **styles): ...
     @classmethod
-    def Bold(jhtml, *elements, **styles):
-        plain, widget = HTML.Bold, HTMLWidgets.Bold
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Bdi(jhtml, *elements, **styles): ...
     @classmethod
-    def Italic(jhtml, *elements, **styles):
-        plain, widget = HTML.Italic, HTMLWidgets.Italic
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Bdo(jhtml, *elements, **styles): ...
     @classmethod
-    def Image(jhtml, *elements, **styles):
-        plain, widget = HTML.Image, HTMLWidgets.Image
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Blockquote(jhtml, *elements, **styles): ...
     @classmethod
-    def ListItem(jhtml, *elements, **styles):
-        plain, widget = HTML.ListItem, HTMLWidgets.ListItem
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Body(jhtml, *elements, **styles): ...
     @classmethod
-    def List(jhtml, *elements, **styles):
-        plain, widget = HTML.List, HTMLWidgets.List
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Bold(jhtml, *elements, **styles): ...
     @classmethod
-    def NumberedList(jhtml, *elements, **styles):
-        plain, widget = HTML.NumberedList, HTMLWidgets.NumberedList
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Br(jhtml, *elements, **styles): ...
     @classmethod
-    def Pre(jhtml, *elements, **styles):
-        plain, widget = HTML.Pre, HTMLWidgets.Pre
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Button(jhtml, *elements, **styles): ...
     @classmethod
-    def Style(jhtml, *elements, **styles):
-        plain, widget = HTML.Style, HTMLWidgets.Style
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Canvas(jhtml, *elements, **styles): ...
     @classmethod
-    def Script(jhtml, *elements, **styles):
-        plain, widget = HTML.Script, HTMLWidgets.Script
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Caption(jhtml, *elements, **styles): ...
     @classmethod
-    def Span(jhtml, *elements, **styles):
-        plain, widget = HTML.Span, HTMLWidgets.Span
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Cite(jhtml, *elements, **styles): ...
     @classmethod
-    def Button(jhtml, *elements, **styles):
-        plain, widget = HTML.Button, HTMLWidgets.Button
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Code(jhtml, *elements, **styles): ...
     @classmethod
-    def TableRow(jhtml, *elements, **styles):
-        plain, widget = HTML.TableRow, HTMLWidgets.TableRow
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Col(jhtml, *elements, **styles): ...
     @classmethod
-    def TableHeading(jhtml, *elements, **styles):
-        plain, widget = HTML.TableHeading, HTMLWidgets.TableHeading
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Colgroup(jhtml, *elements, **styles): ...
     @classmethod
-    def TableItem(jhtml, *elements, **styles):
-        plain, widget = HTML.TableItem, HTMLWidgets.TableItem
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Data(jhtml, *elements, **styles): ...
     @classmethod
-    def Table(jhtml, *elements, **styles):
-        plain, widget = HTML.Table, HTMLWidgets.Table
-        return jhtml._dispatch(plain, widget, *elements, **styles)
+    @dispatcher
+    def Datalist(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Dd(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Del(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Details(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Dfn(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Dialog(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Div(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Dl(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Dt(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Em(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Embed(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Fieldset(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Figcaption(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Figure(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Footer(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Form(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Head(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Header(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Heading(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Hr(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Html(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Iframe(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Image(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Img(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Input(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Ins(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Italic(jhtml, *elements, **styles): ...
+    I = Italic
+    @classmethod
+    @dispatcher
+    def Kbd(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Label(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Legend(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Link(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def List(jhtml, *elements, **styles): ...
+    Ul = List
+    @classmethod
+    @dispatcher
+    def ListItem(jhtml, *elements, **styles): ...
+    Li = ListItem
+    @classmethod
+    @dispatcher
+    def Main(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Map(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Mark(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Meta(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Meter(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Nav(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Noscript(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def NumberedList(jhtml, *elements, **styles): ...
+    Ol = NumberedList
+    @classmethod
+    @dispatcher
+    def Object(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Optgroup(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Option(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Output(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Param(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Picture(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Pre(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Progress(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Q(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Rp(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Rt(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Ruby(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def S(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Samp(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Script(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Section(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Select(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Small(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Source(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Span(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Strong(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Style(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Sub(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def SubHeading(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def SubsubHeading(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def SubsubsubHeading(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Summary(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Sup(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Svg(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Table(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def TableBody(jhtml, *elements, **styles): ...
+    Tbody = TableBody
+    @classmethod
+    @dispatcher
+    def TableFooter(jhtml, *elements, **styles): ...
+    Tfoot = TableFooter
+    @classmethod
+    @dispatcher
+    def TableHeader(jhtml, *elements, **styles): ...
+    Thead = TableHeader
+    @classmethod
+    @dispatcher
+    def TableHeading(jhtml, *elements, **styles): ...
+    Th = TableHeading
+    @classmethod
+    @dispatcher
+    def TableItem(jhtml, *elements, **styles): ...
+    Td = TableItem
+    @classmethod
+    @dispatcher
+    def TableRow(jhtml, *elements, **styles): ...
+    Tr = TableRow
+    @classmethod
+    @dispatcher
+    def Template(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Text(jhtml, *elements, **styles): ...
+    P = Text
+    @classmethod
+    @dispatcher
+    def Textarea(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Time(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Title(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Track(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def U(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Var(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Video(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def Wbr(jhtml, *elements, **styles): ...
+
+    del dispatcher
 
     class Bootstrap:
 
         Class = Bootstrap.Class
         Variant = Bootstrap.Variant
 
-        def Dispatcher(name, plain, widget):
-            def dispatch(*elems, **attrs):
-                return JHTML._dispatch(plain, widget, *elems, **attrs)
-            dispatch.__name__ = plain.__name__
-            return dispatch
         @classmethod
         def _dispatch(jhtml, *elems, **attrs):
             return JHTML._dispatch(*elems, **attrs)
@@ -280,15 +530,33 @@ class JHTML:
         @classmethod
         @dispatcher
         def BreadcrumbItem(boots, *elements, **styles): ...
+
+
         @classmethod
         @dispatcher
-        def DivComponent(boots, *elements, **styles): ...
+        def Accordion(boots, *elements, **styles): ...
         @classmethod
         @dispatcher
-        def PanelBody(boots, *elements, **styles): ...
+        def AccordionItem(boots, *elements, **styles): ...
         @classmethod
         @dispatcher
-        def PanelHeader(boots, *elements, **styles): ...
+        def AccordionCollapse(boots, *elements, **styles): ...
         @classmethod
         @dispatcher
-        def Panel(boots, *elements, **styles): ...
+        def AccordionBody(boots, *elements, **styles): ...
+
+        @classmethod
+        @dispatcher
+        def Carousel(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def CarouselInner(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def CarouselItem(boots, *elements, **styles): ...
+
+        @classmethod
+        @dispatcher
+        def Collapse(boots, *elements, **styles): ...
+
+        del dispatcher

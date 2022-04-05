@@ -7,6 +7,9 @@ __reload_hook__ = [".HTML", ".HTMLWidgets", ".Bootstrap"]
 
 class BootstrapWidgetsBase:
     cdn_loader = None
+    cdn_css = []
+    cdn_js = []
+    _cdn_cache = {}
     bootstrap_version = None
 
     @classmethod
@@ -18,12 +21,32 @@ class BootstrapWidgetsBase:
         :rtype:
         """
         from IPython.core.display import HTML as IPyHTML
-        return IPyHTML(
-            cls.cdn_loader
-            + """
-            <div class="alert alert-info">Boostrap loaded</div>
-            """
-        )
+        from urllib.request import urlopen
+
+        if cls.cdn_loader is not None:
+            loader = cls.cdn_loader
+        else:
+            loader = ""
+            for sheet in cls.cdn_css:
+                if sheet in cls._cdn_cache:
+                    styles = cls._cdn_cache[sheet]
+                else:
+                    styles = urlopen(sheet).read().decode()
+                    cls._cdn_cache[sheet] = styles
+                loader += "\n<style>"+styles+"</style>"
+            for package in cls.cdn_js:
+                if package in cls._cdn_cache:
+                    js = cls._cdn_cache[package]
+                else:
+                    js = urlopen(package).read().decode()
+                    cls._cdn_cache[package] = js
+                loader += "\n<script>"+js+"</style>"
+        loader_HTML = loader + """
+        <div class="alert alert-info">Bootstrap loaded <p class="d-none" style="color:red">This text will be visible if Bootstrap isn't loaded</p></div>
+        """
+
+        # print(loader_HTML)
+        return IPyHTML(loader_HTML)
 
     @classmethod
     def _monkey_patch(cls):
@@ -115,6 +138,13 @@ class Bootstrap5Widgets(BootstrapWidgetsBase):
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
             """
+    cdn_css = [
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css",
+        "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css"
+    ]
+    cdn_js = [
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+    ]
     bootstrap_version = Bootstrap5
     class Icon(HTMLWidgets.WrappedElement): base = Bootstrap5.Icon
     class Alert(HTMLWidgets.WrappedElement): base = Bootstrap5.Alert
@@ -123,7 +153,7 @@ class Bootstrap5Widgets(BootstrapWidgetsBase):
     class CardHeader(HTMLWidgets.WrappedElement): base = Bootstrap5.CardHeader
     class CardFooter(HTMLWidgets.WrappedElement): base = Bootstrap5.CardFooter
     class CardImage(HTMLWidgets.WrappedElement): base = Bootstrap5.CardImage
-    class Card(HTMLWidgets.WrappedElement): base = Bootstrap5.Card
+    class Card(HTMLWidgets.ContainerWrapper): base = Bootstrap5.Card
     class Col(HTMLWidgets.ContainerWrapper): base = Bootstrap5.Col
     class Row(HTMLWidgets.ContainerWrapper): base = Bootstrap5.Row
     class Container(HTMLWidgets.ContainerWrapper): base = Bootstrap5.Container
