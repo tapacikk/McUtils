@@ -328,6 +328,7 @@ class Logger:
 
             if log_level <= self.verbosity:
                 log = self.log_file
+                msg = self.format_message(message, meta=self.format_metainfo(metainfo), preformatter=preformatter , **kwargs)
                 if isinstance(log, str):
                     if not os.path.isdir(os.path.dirname(log)):
                         try:
@@ -336,11 +337,11 @@ class Logger:
                             pass
                     #O_NONBLOCK is *nix only
                     with open(log, mode="a", buffering=1 if print_options['flush'] else -1) as lf: # this is potentially quite slow but I am also quite lazy
-                        print_function(self.format_message(message, meta=self.format_metainfo(metainfo), **kwargs), file=lf, **print_options)
+                        print_function(msg, file=lf, **print_options)
                 elif log is None:
-                    print_function(self.format_message(message, meta=self.format_metainfo(metainfo), preformatter=preformatter, **kwargs), **print_options)
+                    print_function(msg, **print_options)
                 else:
-                    print_function(self.format_message(message, meta=self.format_metainfo(metainfo), preformatter=preformatter, **kwargs), file=log, **print_options)
+                    print_function(msg, file=log, **print_options)
 
     def __repr__(self):
         return "{}({}, {})".format(

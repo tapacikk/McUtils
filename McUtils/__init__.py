@@ -30,5 +30,6 @@ __all__ = [
     "GaussianInterface",
     "Numputils",
     "Scaffolding",
-    "Parallelizers"
+    "Parallelizers",
+    "Jupyter"
 ]

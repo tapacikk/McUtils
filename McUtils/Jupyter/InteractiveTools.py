@@ -1,7 +1,7 @@
 """
 Miscellaneous tools for interactive messing around in Jupyter environments
 """
-import sys, os, types, importlib, inspect
+import sys, os, types, importlib, inspect, numpy as np
 
 __all__ = [
     "ModuleReloader",
@@ -202,7 +202,6 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             raise ImportError("{} requires `nglview`".format(type(self).__name__))
 else:
-    import numpy as np
     class MoleculeGraphics(nglview.Structure, nglview.Trajectory):
         misc_useless_structural_data_header = " 0     0  0  0  0  0  0999 V2000"
         def __init__(self,
@@ -288,11 +287,14 @@ $$$$
             ).strip()
 
         def get_coordinates(self, index):
-            if self.dips is None and not isinstance(index, (int, np.integer)) and not index == 0:
-                raise ValueError("no Cartesian displacements passed...")
-            scales = self.scales[index]
-            arr = self.coords + self.dips * scales
-            return arr
+            if self.coords.ndim == 3:
+                return self.coords[index]
+            else:
+                if self.dips is None and not isinstance(index, (int, np.integer)) and not index == 0:
+                    raise ValueError("no Cartesian displacements passed...")
+                scales = self.scales[index]
+                arr = self.coords + self.dips * scales
+                return arr
 
         def get_substructure(self, idx):
             import copy
@@ -312,7 +314,7 @@ $$$$
                 yield self.get_substructure(i)
 
         def get_structure_string(self):
-            if self.dips is None:
+            if self.dips is None and self.coords.ndim == 2:
                 return self.get_single_structure_string(self.coords)
             else:
                 return "\n".join(
@@ -321,7 +323,10 @@ $$$$
 
         @property
         def n_frames(self):
-            return len(self.scales)
+            if self.coords.ndim == 2:
+                return len(self.scales)
+            else:
+                return len(self.coords)
 
         # basically arguments to "add representation"
         default_theme = [
@@ -357,3 +362,4 @@ $$$$
             if scale is not None:
                 viewer[0].set_scale(scale)
             return viewer
+
