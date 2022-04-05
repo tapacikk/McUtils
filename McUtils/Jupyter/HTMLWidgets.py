@@ -1,10 +1,9 @@
 
-from .HTML import CSS, HTML, Bootstrap
+from .HTML import CSS, HTML
 
 __all__ = [
     "JupyterHTMLWrapper",
-    "HTMLWidgets",
-    "BootstrapWidgets"
+    "HTMLWidgets"
 ]
 
 __reload_hook__ = [".HTML"]
@@ -419,7 +418,6 @@ for (const sibling of {id}siblings) {{
     def base_map(self):
         return self.load_base_map()
 
-
 class HTMLWidgets:
     """
     Provides convenience constructors for HTML components
@@ -520,48 +518,3 @@ class HTMLWidgets:
     class TableItem(WrappedElement): base=HTML.TableItem
     class Table(WrappedElement): base=HTML.Table
 JupyterHTMLWrapper._widget_sources.append(HTMLWidgets)
-
-class BootstrapWidgets:
-    """
-    Provides convenience wrappers for Bootstrap widget contexts
-    """
-    _css = None
-    @classmethod
-    def load_bs_css(cls):
-        from urllib.request import urlopen
-        if cls._css is None:
-            cls._css = urlopen('https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css').read().decode()
-        return cls._css
-    @classmethod
-    def load(cls):
-        """
-        Embeds Bootstrap style definitions into the active notebook
-
-        :return:
-        :rtype:
-        """
-        from IPython.core.display import HTML as IPyHTML
-        return IPyHTML("<style>" + cls.load_bs_css() + "</style>")
-
-    class Alert(HTMLWidgets.WrappedElement): base = Bootstrap.Alert
-    class Badge(HTMLWidgets.WrappedElement): base = Bootstrap.Badge
-    # class PanelBody(HTMLWidgets.WrappedElement): base = Bootstrap.PanelBody
-    # class PanelHeader(HTMLWidgets.WrappedElement): base = Bootstrap.PanelHeader
-    # class Panel(HTMLWidgets.WrappedElement): base = Bootstrap.Panel
-    class CardBody(HTMLWidgets.WrappedElement): base = Bootstrap.CardBody
-    class CardHeader(HTMLWidgets.WrappedElement): base = Bootstrap.CardHeader
-    class CardFooter(HTMLWidgets.WrappedElement): base = Bootstrap.CardFooter
-    class CardImage(HTMLWidgets.WrappedElement): base = Bootstrap.CardImage
-    class Card(HTMLWidgets.WrappedElement): base = Bootstrap.Card
-    class Jumbotron(HTMLWidgets.WrappedElement): base = Bootstrap.Jumbotron
-    class Col(HTMLWidgets.ContainerWrapper): base = Bootstrap.Col
-    class Row(HTMLWidgets.ContainerWrapper): base = Bootstrap.Row
-    class Container(HTMLWidgets.ContainerWrapper): base = Bootstrap.Container
-    @staticmethod
-    def Grid(rows, row_attributes=None, item_attributes=None, auto_size=True, **attrs):
-        return HTMLWidgets.WrappedElement(rows, base=Bootstrap.Grid, row_attributes=row_attributes, item_attributes=item_attributes, auto_size=auto_size, **attrs)
-
-    class Button(HTMLWidgets.WrappedElement): base = Bootstrap.Button
-    class LinkButton(HTML.Anchor): base = Bootstrap.LinkButton
-    class Table(HTMLWidgets.WrappedElement): base = Bootstrap.Table
-JupyterHTMLWrapper._widget_sources.append(BootstrapWidgets)

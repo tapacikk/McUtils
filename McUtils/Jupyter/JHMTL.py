@@ -1,12 +1,13 @@
 
-from .HTML import HTML, Bootstrap, CSS
-from .HTMLWidgets import JupyterHTMLWrapper, BootstrapWidgets, HTMLWidgets
+from .HTML import HTML, CSS
+from .Bootstrap import Bootstrap
+from .HTMLWidgets import JupyterHTMLWrapper, HTMLWidgets
+from .BootstrapWidgets import BootstrapWidgets
 
-__reload_hook__ = [".HTML", ".HTMLWidgets"]
+import functools
 
-__all__ = [
-    "JHTML"
-]
+__all__ = [ "JHTML" ]
+__reload_hook__ = [".HTML", ".HTMLWidgets", ".Bootstrap", ".BootstrapWidgets"]
 
 class JHTML:
     """
@@ -180,96 +181,114 @@ class JHTML:
         Class = Bootstrap.Class
         Variant = Bootstrap.Variant
 
+        def Dispatcher(name, plain, widget):
+            def dispatch(*elems, **attrs):
+                return JHTML._dispatch(plain, widget, *elems, **attrs)
+            dispatch.__name__ = plain.__name__
+            return dispatch
         @classmethod
         def _dispatch(jhtml, *elems, **attrs):
             return JHTML._dispatch(*elems, **attrs)
+        def dispatcher(fn):
+            name = fn.__name__
+            @functools.wraps(fn)
+            def dispatcher(boots, *elements, **attrs):
+                return boots._dispatch(getattr(Bootstrap, name), getattr(BootstrapWidgets, name), *elements, **attrs)
+            return dispatcher
 
         @classmethod
-        def Icon(boots, *elements, **styles):
-            plain, widget = Bootstrap.Icon, BootstrapWidgets.Icon
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Icon(boots, *elements, **styles): ...
         @classmethod
-        def Label(boots, *elements, **styles):
-            plain, widget = Bootstrap.Label, BootstrapWidgets.Label
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Alert(boots, *elements, **styles): ...
         @classmethod
-        def Badge(boots, *elements, **styles):
-            plain, widget = Bootstrap.Badge, BootstrapWidgets.Badge
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Badge(boots, *elements, **styles): ...
         @classmethod
-        def Pill(boots, *elements, **styles):
-            plain, widget = Bootstrap.Pill, BootstrapWidgets.Pill
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def PanelBody(boots, *elements, **styles): ...
         @classmethod
-        def Breadcrumb(boots, *elements, **styles):
-            plain, widget = Bootstrap.Breadcrumb, BootstrapWidgets.Breadcrumb
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def PanelHeader(boots, *elements, **styles): ...
         @classmethod
-        def BreadcrumbItem(boots, *elements, **styles):
-            plain, widget = Bootstrap.BreadcrumbItem, BootstrapWidgets.BreadcrumbItem
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Panel(boots, *elements, **styles): ...
         @classmethod
-        def ListGroup(boots, *elements, **styles):
-            plain, widget = Bootstrap.ListGroup, BootstrapWidgets.ListGroup
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def CardBody(boots, *elements, **styles): ...
         @classmethod
-        def ListGroupItem(boots, *elements, **styles):
-            plain, widget = Bootstrap.ListGroupItem, BootstrapWidgets.ListGroupItem
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def CardHeader(boots, *elements, **styles): ...
         @classmethod
-        def Alert(boots, *elements, **styles):
-            plain, widget = Bootstrap.Alert, BootstrapWidgets.Alert
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def CardFooter(boots, *elements, **styles): ...
         @classmethod
-        def CardBody(boots, *elements, **styles):
-            plain, widget = Bootstrap.CardBody, BootstrapWidgets.CardBody
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def CardImage(boots, *elements, **styles): ...
         @classmethod
-        def CardHeader(boots, *elements, **styles):
-            plain, widget = Bootstrap.CardHeader, BootstrapWidgets.CardHeader
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Card(boots, *elements, **styles): ...
         @classmethod
-        def CardFooter(boots, *elements, **styles):
-            plain, widget = Bootstrap.CardFooter, BootstrapWidgets.CardFooter
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Jumbotron(boots, *elements, **styles): ...
         @classmethod
-        def CardImage(boots, *elements, **styles):
-            plain, widget = Bootstrap.CardImage, BootstrapWidgets.CardImage
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Col(boots, *elements, **styles): ...
         @classmethod
-        def Card(boots, *elements, **styles):
-            plain, widget = Bootstrap.Card, BootstrapWidgets.Card
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Row(boots, *elements, **styles): ...
         @classmethod
-        def Jumbotron(boots, *elements, **styles):
-            plain, widget = Bootstrap.Jumbotron, BootstrapWidgets.Jumbotron
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Container(boots, *elements, **styles): ...
         @classmethod
-        def Col(boots, *elements, **styles):
-            plain, widget = Bootstrap.Col, BootstrapWidgets.Col
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Button(boots, *elements, **styles): ...
         @classmethod
-        def Row(boots, *elements, **styles):
-            plain, widget = Bootstrap.Row, BootstrapWidgets.Row
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def LinkButton(boots, *elements, **styles): ...
         @classmethod
-        def Container(boots, *elements, **styles):
-            plain, widget = Bootstrap.Container, BootstrapWidgets.Container
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def Table(boots, *elements, **styles): ...
         @classmethod
-        def Grid(boots, *elements, **styles):
-            plain, widget = Bootstrap.Grid, BootstrapWidgets.Grid
-            return boots._dispatch(plain, widget, *elements, **styles)
-
+        @dispatcher
+        def ListGroup(boots, *elements, **styles): ...
         @classmethod
-        def Button(boots, *elements, **styles):
-            plain, widget = Bootstrap.Button, BootstrapWidgets.Button
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def ListGroupItem(boots, *elements, **styles): ...
         @classmethod
-        def LinkButton(boots, *elements, **styles):
-            plain, widget = Bootstrap.LinkButton, BootstrapWidgets.LinkButton
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def FontAwesomeIcon(boots, *elements, **styles): ...
         @classmethod
-        def Table(boots, *elements, **styles):
-            plain, widget = Bootstrap.Table, BootstrapWidgets.Table
-            return boots._dispatch(plain, widget, *elements, **styles)
+        @dispatcher
+        def GlyphIcon(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def Label(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def Pill(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def ListComponent(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def ListItemComponent(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def Breadcrumb(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def BreadcrumbItem(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def DivComponent(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def PanelBody(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def PanelHeader(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def Panel(boots, *elements, **styles): ...
