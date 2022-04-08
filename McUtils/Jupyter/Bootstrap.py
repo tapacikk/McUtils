@@ -38,14 +38,12 @@ class BootstrapBase(HTML):
                 variant = [variant]
             added_cls = [obj.cls, *(obj.cls + "-" + str(v) for v in variant)]
         return BootstrapBase._add_cls(cls, added_cls)
-
     class DivComponent(HTML.Div):
         cls = None
         base_style = None
         def __init__(self, *elems, variant=None, cls=None, **attrs):
             cls = BootstrapBase._manage_cls(self, cls, variant)
             super().__init__(*elems, cls=cls, **attrs)
-
     class SpanComponent(HTML.Span):
         cls = None
         base_style = None
@@ -152,6 +150,8 @@ class BootstrapBase(HTML):
     class ListGroup(ListComponent): cls='list-group'
     class ListGroupItem(ListItemComponent): cls='list-group-item'
 
+    class ButtonGroup(DivComponent):
+        cls = 'btn-group'
     class Button(ButtonComponent):
         cls = 'btn'
         base_style = 'primary'

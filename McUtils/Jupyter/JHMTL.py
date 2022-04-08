@@ -8,7 +8,8 @@ from .WidgetTools import JupyterAPIs
 import functools
 
 __all__ = [ "JHTML" ]
-__reload_hook__ = [".HTML", ".HTMLWidgets", ".Bootstrap", ".BootstrapWidgets"]
+__reload_hook__ = [".HTML", ".HTMLWidgets", ".Bootstrap", ".BootstrapWidgets", ".WidgetTools"]
+
 
 class JHTML:
     """
@@ -19,7 +20,7 @@ class JHTML:
     def load(cls):
         from IPython.core.display import display
         display(
-            BootstrapWidgets.load()
+            BootstrapWidgets.load(),
             # JupyterHTMLWrapper.load_styles()
         )
 
@@ -69,8 +70,12 @@ class JHTML:
         return HTML.parse(src)
 
     @classmethod
-    def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, extra_classes=None, **attrs):
-        if event_handlers is not None or extra_classes is not None:
+    def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, extra_classes=None, container=None, **attrs):
+        if (
+            event_handlers is not None
+            or extra_classes is not None
+            or container is True
+        ):
             return widget
         else:
             Widget = JupyterAPIs.get_widgets_api().Widget
@@ -511,6 +516,9 @@ class JHTML:
         @classmethod
         @dispatcher
         def Button(boots, *elements, **styles): ...
+        @classmethod
+        @dispatcher
+        def ButtonGroup(boots, *elements, **styles): ...
         @classmethod
         @dispatcher
         def LinkButton(boots, *elements, **styles): ...

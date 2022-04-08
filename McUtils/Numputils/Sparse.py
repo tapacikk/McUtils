@@ -1,6 +1,6 @@
 import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc, gc
 from ..Scaffolding import MaxSizeCache, Logger
-from .SetOps import contained, unique as nput_unique
+from .SetOps import contained, unique as nput_unique, find
 from .Misc import infer_inds_dtype, downcast_index_array
 
 __all__ = [
@@ -2040,9 +2040,16 @@ class ScipySparseArray(SparseArray):
         inds = list(inds)
         for i, b, s in zip(range(len(blocks)), blocks, self.shape):
             if b is not None:
+                # need to sort the block bits it turns out...
                 ixs = inds[i]
+                b2, sorting = nput_unique(b)
+                if len(b2) < len(b):
+                    raise ValueError("sparse array slicing can't duplicate indices")
+                b = b2
                 filter, mapping = self._find_block_alignment(ixs, b, s)
-                # print(ixs, b, s, filter)
+                # now how do we invert this transformation? #TODO: formally provide that I don't need to
+                # resort = np.argsort(sorting)
+
                 inds = [ix[filter] for ix in inds]
                 data = data[filter]
                 inds[i] = mapping[inds[i]]
@@ -2106,6 +2113,7 @@ class ScipySparseArray(SparseArray):
             # now we iterate over each block and use it as a successive filter on our non-zero positions
             data, inds = self.block_data
             data, inds = self._get_filtered_elements(blocks, data, inds)
+            # print(blocks, inds, old_inds)
 
             # now that we've filtered our data, we filter out axes of size 1
             # print(inds, new_shape)
@@ -2147,9 +2155,8 @@ class ScipySparseArray(SparseArray):
                 ))
 
             new = type(self)(data, shape=new_shape, layout=self.fmt)
-            if flat is None: # TODO: "inds" can be messed up...
-                pass
-                # new.block_inds = inds
+            if flat is None:
+                new.block_inds = inds
             else:
                 new.block_inds = flat, inds
             new._block_data_sorted = True

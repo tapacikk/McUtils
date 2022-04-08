@@ -1,14 +1,14 @@
 
 import weakref
 from .HTML import CSS, HTML
-from .WidgetTools import JupyterAPIs
+from .WidgetTools import JupyterAPIs, DefaultOutputArea
 
 __all__ = [
     "JupyterHTMLWrapper",
     "HTMLWidgets"
 ]
 
-__reload_hook__ = [".HTML"]
+__reload_hook__ = [".HTML", ".WidgetTools"]
 
 class JHTMLShadowDOMElement:
     """
@@ -126,53 +126,11 @@ class JupyterHTMLWrapper:
     """
 
     reset_attrs = [
-        # 'align-items',
         'background',
-        # 'border',
-        # 'border-bottom',
-        # 'box-sizing',
         'color',
-        # 'content',
-        # 'display',
-        # 'flex',
-        # 'flex-direction',
-        # 'flex-grow',
         'font',
         'font-family'
-        # 'height',
-        # 'left',
-        # 'line-height',
-        # 'margin-left',
-        # 'min-height',
-        # 'min-width',
-        # 'overflow',
-        # 'overflow-x',
-        # 'overflow-y',
-        # 'padding',
-        # 'position',
-        # 'top',
-        # 'transform',
-        # 'width'
     ]
-    reset_box_attrs = [
-        'display',
-        'margin'
-        # 'align-self',
-        # 'flex-grow',
-        # 'flex-shrink',
-        # 'line-height',
-        # 'position'
-    ]
-    reset_html_attrs = [
-        # 'margin'
-        # 'display'
-        # , 'margin'
-        # 'align-self',
-        # 'flex-grow',
-        # 'flex-shrink',
-        # 'line-height',
-        # 'position'
-        ]
     @classmethod
     def load_styles(cls):
         """
@@ -182,58 +140,74 @@ class JupyterHTMLWrapper:
         :rtype:
         """
         from IPython.core.display import HTML as IPyHTML
-        reset_styles = [
+        custom_styles = [
             CSS.construct(
-                '.jupyter-widgets.jupyter-widgets-reset',
-                '.jupyter-widgets-reset.jupyter-widgets',
-                **{
-                    k:'inherit' for k in cls.reset_attrs
-                }
-            ),
-            CSS.construct(
-                '.jupyter-widgets.widget-html',
-                '.widget-html.jupyter-widgets',
-                margin=0
-            ),
-            CSS.construct(
-                '.jupyter-widgets-reset .widget-html-content',
-                **{
-                    k: 'inherit' for k in cls.reset_html_attrs
-                }
+                '.jhtml-reset .jhtml-html',
+                '.jhtml-reset .jhtml-parent',
+                display='inline-block'
             )
         ]
-        return IPyHTML(HTML.Style("\n".join(s.tostring() for s in reset_styles)).tostring())
-    stripped_classes = ['lm-Widget', 'p-Widget', 'lm-Panel', 'p-Panel', 'jupyter-widgets', 'widget-container', 'widget-inline-hbox', 'widget-box', 'widget-html']
+        return IPyHTML(HTML.Style("\n".join(s.tostring() for s in custom_styles)).tostring())
+    stripped_classes = ['lm-Widget', 'p-Widget', 'lm-Panel', 'p-Panel', 'jupyter-widgets', 'widget-container', 'widget-box', 'widget-html']
+    protecting_classes = ['widget-slider']
+    stripped_unprotected = ['widget-inline-hbox']
     @classmethod
-    def get_class_stripper(cls):
+    def get_class_stripper_js(cls):
         import uuid
         this = "stripper"+str(uuid.uuid1()).replace("-", "")[:8]
-        return JupyterAPIs.get_display_api().HTML(HTML.Script(
-            """
-var {id} = document.getElementById('{id}');
-var {id}siblings = {id}.parentNode.parentNode.parentNode.childNodes;
-function {id}strip(node) {{
-   if (typeof node.classList != 'undefined') {{
-       node.classList.remove({stripped_classes});
-   }}
-   if (typeof node.classList != 'undefined') {{
-       for (const child of node.childNodes) {{
-         {id}strip(child);
-       }}
-   }}
-}}
-for (const sibling of {id}siblings) {{
-    {id}strip(sibling);
-}}
-{id}.parentNode.parentNode.remove();
-            """.format(id=this, stripped_classes=", ".join("'{}'".format(s) for s in cls.stripped_classes)).strip(),
-            id=this
-        ).tostring())
+        script = """
+        var {id} = document.getElementById('{id}');
+        var {id}siblings = {id}.parentNode.parentNode.parentNode.childNodes;
+        function {id}strip(node) {{
+           if (typeof node.classList != 'undefined') {{
+               node.classList.remove({stripped_classes});
+               // ipython
+               if (!{protecting_classes}.some(e=>node.classList.contains(e))) {{
+                 node.classList.remove({stripped_unprotected});
+               }}
+           }}
+           if (typeof node.classList != 'undefined') {{
+               for (const child of node.childNodes) {{
+                 {id}strip(child);
+               }}
+           }}
+           // if (node.tagName === 'DIV') {{ 
+           //    // something about chained conditions is giving as syntax error...
+           //    if (node.classList.length == 1) {{
+           //       if (node.classList[0] == 'jhtml-reset') {{
+           //          node.replaceWith(...node.childNodes);
+           //       }}
+           //    }}
+           // }}
+        }}
+        for (const sibling of {id}siblings) {{
+            {id}strip(sibling);
+        }}
+        {id}.parentNode.parentNode.remove();
+                    """.format(id=this,
+                               stripped_classes=", ".join("'{}'".format(s) for s in cls.stripped_classes),
+                               protecting_classes="[" +", ".join("'{}'".format(s) for s in cls.protecting_classes)+"]",
+                               stripped_unprotected=", ".join("'{}'".format(s) for s in cls.stripped_unprotected)
+                               )
+        return script, this
+    @classmethod
+    def get_class_stripper(cls):
+        stripper, this = cls.get_class_stripper_js()
+        return JupyterAPIs.get_display_api().HTML('<script id="{this}">{script}</script>'.format(script=stripper, this=this))
 
     cls = None #for easy overloads later
     tag = None
     layout = None
-    def __init__(self, *elements, tag=None, event_handlers=None, layout=None, extra_classes=None, cls=None, **styles):
+    container = False # overloaded later
+    def __init__(self, *elements,
+                 tag=None,
+                 event_handlers=None,
+                 layout=None,
+                 extra_classes=None,
+                 cls=None,
+                 debug_pane=None,
+                 **styles
+                 ):
         if len(elements) == 1 and isinstance(elements[0], (list, tuple)):
             elements = elements[0]
         self.elements = elements
@@ -275,6 +249,9 @@ for (const sibling of {id}siblings) {{
 
         self._parents = weakref.WeakSet()
         self._widget_cache = None
+        if debug_pane is None:
+            debug_pane = DefaultOutputArea.get_default()
+        self.debug_pane = debug_pane
 
     @staticmethod
     def _handle_event(e, event_handlers, self, widg):
@@ -285,11 +262,22 @@ for (const sibling of {id}siblings) {{
         else:
             handler(e, self, widg)
     def _event_handler(self, widg):
-        def handler(e):
-            return self._handle_event(e, self.event_handlers, self, widg)
+        def handler(e, output=self.debug_pane):
+            with output:
+                return self._handle_event(e, self.event_handlers, self, widg)
         return handler
 
-    def _convert(self, x):
+
+    inherited_classes = ['d-inline', 'd-flex', 'd-inline-block', 'd-block', 'd-none'] # explicitly Bootstrap oriented for now...
+    inherited_class_tag_map = { # this is _unlikely_ to be overwritten...
+        'span':['d-inline-block'],
+        None:['d-inline-block']
+    }
+    inherited_class_cls_map = { # again _unlikely_ to be overwritten
+        'btn': ['d-inline-block']
+    }
+    def _convert(self, x, parent=None):
+        widget_classes = ['jhtml-reset', 'jhtml-html']
         if isinstance(x, (HTML.XMLElement, HTML.ElementModifier)):
             # to get widget formatting right for container classes...
             try:
@@ -306,22 +294,59 @@ for (const sibling of {id}siblings) {{
                     mapped_widget = type(x)
                 if needs_mods:
                     x = x.remove_class(mapped_widget.cls)
+
+            # now we propagate up inherited classes
+            try:
+                cls = x.attrs['class']
+            except (AttributeError, KeyError):
+                cls = None
+            if cls is None:
+                cls = []
+            elif isinstance(cls, str):
+                cls = cls.split()
+            cls = list(cls)
+
+            tag = x.tag.lower()
+            if tag in self.inherited_class_tag_map:
+                cls = list(self.inherited_class_tag_map[tag]) + cls
+            for c in cls:
+                if c in self.inherited_class_cls_map:
+                    cls = list(self.inherited_class_cls_map[c]) + cls
+
+            extras = [e for e in cls if e in self.inherited_classes]
+            if len(extras) > 0:
+                for e in extras:
+                    widget_classes.append(e)
+                x = x.remove_class(*extras)
+
             x = x.tostring()
         else:
+            if isinstance(x, str):
+                cls = list(self.inherited_class_tag_map[None])
+                extras = [e for e in cls if e in self.inherited_classes]
+                if len(extras) > 0:
+                    for e in extras:
+                        widget_classes.append(e)
             mapped_widget = None
             needs_mods = False
 
         if isinstance(x, str):
             w = JupyterAPIs().widgets_api.HTML(x)
             if needs_mods:
-                extra_classes = (
-                    [mapped_widget.cls]
-                    if isinstance(mapped_widget.cls, str) or hasattr(mapped_widget.cls, 'tostring')
-                    else list(mapped_widget.cls)
-                )
+                cls = mapped_widget.cls
+                if cls is None:
+                    cls = []
+                elif hasattr(cls, 'tostring'):
+                    cls = cls.tostring
+                if isinstance(cls, str):
+                    cls = cls.split()
+                extra_classes = list(cls)
                 for c in extra_classes:
-                    w = w.add_class(str(c))
-            w.add_class('jupyter-widgets-reset')
+                    if parent.extra_classes is None or c not in parent.extra_classes:
+                        # print(c, parent.extra_classes)
+                        w.add_class(str(c))
+            for c in widget_classes:
+                w.add_class(c)
         elif isinstance(x, JupyterHTMLWrapper):
             w = x.to_widget(parent=self)
         else:
@@ -396,11 +421,11 @@ for (const sibling of {id}siblings) {{
             layout = self.layout
             if isinstance(self.elements[0], (list, tuple)):
                 widgets = [
-                    [ self._convert(x) for x in y ]
+                    [ self._convert(x, parent=self) for x in y ]
                     for y in self.elements
                 ]
             else:
-                widgets = [self._convert(x) for x in self.elements]
+                widgets = [self._convert(x, parent=self) for x in self.elements]
 
             if 'style' in self.styles:
                 props = self.manage_styles(self.styles['style'])
@@ -427,7 +452,8 @@ for (const sibling of {id}siblings) {{
                 new = []; flatten(widgets, new)
                 widg = JupyterAPIs().widgets_api.Box(new, **props)
 
-            widg.add_class('jupyter-widgets-reset')
+            widg.add_class('jhtml-reset')
+            widg.add_class('jhtml-wrapper')
             if self.extra_classes is not None:
                 for c in self.extra_classes:
                     widg.add_class(c)
@@ -435,6 +461,24 @@ for (const sibling of {id}siblings) {{
                 listener = JupyterAPIs().events_api.Event(source=widg, watched_events=list(self.event_handlers.keys()))
                 listener.on_dom_event(self._event_handler(widg))
                 widg.listener = listener
+                widg.add_class('jhtml-event-handler')
+                # if self.extra_classes is None or len(self.extra_classes) == 0:
+                #     for child in widg.children:
+                #         if not hasattr(child, 'listener'):
+                #             listener = JupyterAPIs().events_api.Event(source=child,
+                #                                                       watched_events=list(self.event_handlers.keys()))
+                #             listener.on_dom_event(self._event_handler(child))
+                #             child.listener = listener
+                #             child.add_class('jhtml-event-listener')
+            html_widget = JupyterAPIs.get_widgets_api().HTML
+            if (
+                    len(widg.children)==1
+                    and isinstance(widg.children[0], html_widget)
+            ):
+                widg.add_class('jhtml-parent')
+                for c in widg.children[0]._dom_classes:
+                    if c in self.inherited_classes:
+                        widg.add_class(c)
 
             # for discoverability in callbacks
             widg.dom = JHTMLShadowDOMElement(widg, wrapper=self)
@@ -499,25 +543,37 @@ class HTMLWidgets:
             if any(isinstance(e, (JupyterHTMLWrapper, Widget)) for e in elems):
                 elem = elems
                 if hasattr(base, 'cls'):
+                    cls = base.cls
+                    if cls is None:
+                        cls = []
+                    elif isinstance(cls, str):
+                        cls = cls.split()
+                    extras = list(cls)
+
                     if extra_classes is None:
-                        extra_classes = base.cls
-                    else:
-                        extra_classes = list(extra_classes) + (
-                            [base.cls] if isinstance(base.cls, str) else list(base.cls)
-                        )
-                if hasattr(base, 'tag') and base.tag != "div":
+                        extra_classes = []
+                    elif isinstance(extra_classes, str):
+                        extra_classes = extra_classes.split()
+                    extra_classes = list(extra_classes) + extras
+
+                if not hasattr(base, 'tag') or base.tag != "div":
                     raise ValueError("{} can't be a proper widget base as JupyterLab is designed (i.e. it can't have widgets as children)".format(base))
             else:
                 elem = base(*elems, **attrs)
                 if self.container and hasattr(base, 'cls'):
-                    extras = (
-                            [base.cls] if isinstance(base.cls, str) else list(base.cls)
-                        )
+                    cls = base.cls
+                    if cls is None:
+                        cls = []
+                    elif isinstance(cls, str):
+                        cls = cls.split()
+                    extras = list(cls)
+
                     if extra_classes is None:
-                        extra_classes = extras
-                    else:
-                        extra_classes = list(extra_classes) + extras
-                    elem.remove_class(*extras)
+                        extra_classes = []
+                    elif isinstance(extra_classes, str):
+                        extra_classes = extra_classes.split()
+                    extra_classes = list(extra_classes) + extras
+                    elem = elem.remove_class(*extras)
                 attrs = {}
             super().__init__(elem, event_handlers=event_handlers, layout=layout, extra_classes=extra_classes, **attrs)
         def copy(self):
@@ -706,14 +762,14 @@ class HTMLWidgets:
             self.output = JupyterAPIs.get_widgets_api().Output()
             elements = list(elements) + [self.output]
             super().__init__(*elements, tag='div', event_handlers=event_handlers, layout=layout, extra_classes=extra_classes, cls=cls, **styles)
-
         def print(self, *args, **kwargs):
             with self:
                 print(*args, **kwargs)
         def display(self, *args):
             with self:
                 JupyterAPIs().display_api.display(*args)
-
+        def clear(self):
+            self.output.clear_output()
         def __enter__(self):
             if self.autoclear:
                 self.output.clear_output()

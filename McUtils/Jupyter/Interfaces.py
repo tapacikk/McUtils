@@ -1,15 +1,18 @@
 
 import abc, numpy as np, weakref, uuid
 from .JHMTL import JHTML
-from .WidgetTools import JupyterAPIs
+from .WidgetTools import JupyterAPIs, DefaultOutputArea
 
 __all__ = [
     "Var",
+    "VariableSynchronizer",
     "Control",
     "Manipulator",
     "Sidebar",
-    "SidebarSetter"
+    "SidebarSetter",
+    "CardManipulator"
 ]
+__reload_hook__ = [".JHTML", ".WidgetTools"]
 
 # class OutputPane(InterfaceElement):
 #
@@ -117,8 +120,7 @@ class OutputWidget:
     def to_widget(self):
         return self.output
 
-class Var:
-    _var_cache = weakref.WeakValueDictionary()
+class VariableSynchronizer:
     def __init__(self, name, value=None, callbacks=()):
         self._name = name
         self._value = value
@@ -130,13 +132,14 @@ class Var:
             self._name,
             self._value
         )
+    _var_cache = weakref.WeakValueDictionary()
     @classmethod
     def create_var(cls, var):
-        if isinstance(var, Var):
+        if isinstance(var, VariableSynchronizer):
             return var
         else:
             if var not in cls._var_cache:
-                this_var = Var(var)
+                this_var = VariableSynchronizer(var)
                 cls._var_cache[var] = this_var # hold a reference...
             return cls._var_cache[var]
     @property
@@ -160,10 +163,12 @@ class Var:
         self.set_value(widget.value, caller=widget)
         widget.observe(lambda d: self.set_value(widget.value, caller=widget))
         self._watchers.add(widget)
+def Var(name):
+    return VariableSynchronizer.create_var(name)
 
 class Control:
     def __init__(self, var, control_type=None, widget=None, **settings):
-        self.var = Var.create_var(var)
+        self.var = VariableSynchronizer.create_var(var)
         self.settings = settings
         if widget is None:
             widget = self._build_widget(control_type, settings)
@@ -202,14 +207,27 @@ class FunctionDisplay:
             v.callbacks.add(self.update)
         return self.output
 
-class Manipulator:
+class WidgetInterface(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def to_widget(self):
+        ...
+    @abc.abstractmethod
+    def initialize(self):
+        ...
+    def _ipython_display_(self):
+        JupyterAPIs.get_display_api().display(self.to_widget())
+        self.initialize()
+    def display(self):
+        self._ipython_display_()
+
+class Manipulator(WidgetInterface):
     def __init__(self, func, *controls):
         self.controls = [self.canonicalize_control(c) for c in controls]
         vars = [c.var for c in self.controls]
         self.output = FunctionDisplay(func, vars)
     @classmethod
     def canonicalize_control(cls, settings):
-        if isinstance(settings, Control):
+        if isinstance(settings, (Control, WidgetControl)):
             return settings
         else:
             return Control(settings[0], **settings[1])
@@ -218,14 +236,8 @@ class Manipulator:
         elems = [c.to_widget() for c in self.controls] + [self.output.to_widget()]
         # print(elems)
         return widgets.VBox(elems)
-    def _ipython_display_(self):
-        JupyterAPIs.get_display_api().display(self.to_widget())
-        # with self.output.output:
-        #     print("????")
+    def initialize(self):
         self.output.update()
-    def display(self):
-        self._ipython_display_()
-
 
 class InterfaceElement(metaclass=abc.ABCMeta):
     """
@@ -271,7 +283,7 @@ class Sidebar(InterfaceElement):
         )
 class WidgetControl:
     def __init__(self, var):
-        self.var = Var.create_var(var)
+        self.var = VariableSynchronizer.create_var(var)
         self._widget_cache = None
         self._parents = weakref.WeakSet()
     @property
@@ -291,14 +303,14 @@ class WidgetControl:
         ...
 
 class SidebarSetter(WidgetControl):
-    def __init__(self, var, options, item_attrs=None, logger_pane=None, **attrs):
+    def __init__(self, var, options, item_attrs=None, debug_pane=None, **attrs):
         super().__init__(var)
         self.options = options
         self.item_attrs = {} if item_attrs is None else item_attrs
         self.attrs = attrs
         self._item_map = {}
         self._active_item = None
-        self.logger_pane = logger_pane
+        self.logger_pane = DefaultOutputArea() if debug_pane is None else debug_pane
         val = self.options[0]['value']
         self.var.value = val
     def update(self, e):
@@ -325,9 +337,8 @@ class SidebarSetter(WidgetControl):
                     new.add_class('active', copy=False)
     def onclick(self, e, i, v):
         self.var.set_value(v, caller=self)
-        if self.logger_pane is not None:
-            with self.logger_pane:
-                self.set_active(v)
+        with self.logger_pane:
+            self.set_active(v)
         # e, html, widg = e
         # widg.dom.tree[0].add_class('active', copy=False)
         # cur = widg.dom.get_parent(2).find_by_id(self._active_item)
@@ -373,3 +384,47 @@ class SidebarSetter(WidgetControl):
             item_attrs=self.item_attrs,
             **self.attrs
         ).to_jhtml()
+
+class CardManipulator(WidgetInterface):
+    def __init__(self, func, *controls, title=None, output_pane=None, **opts):
+        self.controls = [Manipulator.canonicalize_control(c) for c in controls]
+        vars = [c.var for c in self.controls]
+        self.output = FunctionDisplay(func, vars)
+        # really I want to do this by layout but this works for now...
+        self.toolbar_controls = [x for x in self.controls if not isinstance(x, WidgetControl)]
+        self.column_controls = [x for x in self.controls if isinstance(x, WidgetControl)]
+        self.title = title
+        self.output_pane = output_pane
+
+    def to_widget(self):
+        interface = JHTML.Bootstrap.Card(
+            JHTML.Bootstrap.CardHeader(
+                "" if self.title is None else self.title
+                # JHTML.SubsubHeading("A Pane with Output", JHTML.Small(" with a slider for fun", cls='text-muted')),
+            ),
+            JHTML.Bootstrap.CardBody(
+                JHTML.Div(
+                    JHTML.Bootstrap.Row(
+                        *(JHTML.Bootstrap.Col(c.to_widget(), cls=["col-1", 'bg-light', 'border-end', 'p-0', 'm-0'])
+                          for c in self.column_controls),
+                        JHTML.Bootstrap.Col(
+                            JHTML.Div(
+                                *[t.to_widget() for t in self.toolbar_controls],
+                                cls=['bg-light', 'border-bottom', 'd-inline-block', 'w-100', "p-2"]
+                                # , style=dict(min_height="80px")#, flex="1")
+                            ),
+                            self.output.to_widget()
+                        ),
+                        cls=['g-0', "flex-grow-1"]
+                    ),
+                    style=dict(min_height='500px', flex="1"),
+                    cls=["p-0", "d-flex", "flex-column", 'max-width-auto', 'w-100']
+                ),
+                cls=["p-0"]
+            ),
+            JHTML.Bootstrap.CardFooter("" if self.output_pane is None else self.output_pane)
+        )
+
+        return interface
+    def initialize(self):
+        self.output.update()

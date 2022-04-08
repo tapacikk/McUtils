@@ -444,6 +444,8 @@ class HTML:
                             attrs['class'] = str(attrs['class'])
                         else:
                             attrs['class'] = " ".join(str(c) for c in attrs['class'])
+                        if len(attrs['class']) == 0:
+                            del attrs['class']
                 my_el = ElementTree.SubElement(root, self.tag, attrs)
                 if all(isinstance(e, str) for e in self.elems):
                     my_el.text = "\n".join(self.elems)
@@ -537,8 +539,8 @@ class HTML:
         def _repr_html_(self):
             return self.tostring()
         def display(self):
-            from .HTMLWidgets import JupyterHTMLWrapper
-            return JupyterHTMLWrapper.get_display_api().display(JupyterHTMLWrapper.get_display_api().HTML(self.tostring()))
+            from .WidgetTools import JupyterAPIs
+            return JupyterAPIs.get_display_api().display(JupyterAPIs.get_display_api().HTML(self.tostring()))
         def make_class_list(self):
             self._attrs['class'] = self._attrs['class'].split()
         def add_class(self, *cls, copy=True):
