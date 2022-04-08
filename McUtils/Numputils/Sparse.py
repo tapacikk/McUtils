@@ -1273,6 +1273,10 @@ class ScipySparseArray(SparseArray):
     @classmethod
     def _ravel_indices(cls, mult, dims):
         # we're hoping that we call with `n` often enough that we get a performance benefit
+        # # need to make sure all mult objects have same dtype...
+        # dtypes = {m.dtype for m in mult}
+        # max_dtype = max(dtypes)
+        # mult = tuple(m.astype(max_dtype) for m in mult)
         if not cls.caching_enabled:
             return np.ravel_multi_index(mult, dims)
         if isinstance(dims, list):
@@ -1292,7 +1296,10 @@ class ScipySparseArray(SparseArray):
         if n_hash in cache:
             res = cache[n_hash]
         else:
-            res = np.ravel_multi_index(mult, dims)
+            try:
+                res = np.ravel_multi_index(mult, dims)
+            except:
+                raise Exception(mult, dims)
             cache[n_hash] = res
         return res
 
@@ -2140,8 +2147,9 @@ class ScipySparseArray(SparseArray):
                 ))
 
             new = type(self)(data, shape=new_shape, layout=self.fmt)
-            if flat is None:
-                new.block_inds = inds
+            if flat is None: # TODO: "inds" can be messed up...
+                pass
+                # new.block_inds = inds
             else:
                 new.block_inds = flat, inds
             new._block_data_sorted = True

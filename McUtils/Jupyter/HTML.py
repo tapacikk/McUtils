@@ -476,6 +476,62 @@ class HTML:
             return self._tree_cache
         def tostring(self):
             return "\n".join(s.decode() for s in ElementTree.tostringlist(self.to_tree()))
+        def format(self, padding="", prefix=""):
+            inner_comps = [
+                (x.format(padding=padding+"  ", prefix=prefix) if isinstance(x, HTML.XMLElement) else repr(x))
+                for x in self.elems if not (isinstance(x, str) and x.strip() == "")
+            ]
+            test = repr(inner_comps)
+            if len(test) > 100 or ("\\n" in test):
+                inner = ",\n".join(padding + "  " + x for x in inner_comps)
+            else:
+                inner = padding + "  " + ", ".join(inner_comps)
+
+            template_header = "{name}("
+            template_footer = "{padding}  )"
+            template_pieces = []
+            args_joiner = ", "
+            full_joiner = "\n"
+            if not isinstance(self, HTML.TagElement):
+                template_pieces.append("{tag}")
+            if len(self.attrs) > 0:
+                attrs = (",\n").join(
+                    padding + "  " + "{} = {!r}".format(k.replace("-", "_").replace("class", "cls"), v) for k,v in self.attrs.items()
+                )
+                if len(inner.strip()) > 0:
+                    template_pieces.append("{inner}")
+                    template_pieces.append("{attrs}")
+                    args_joiner=",\n"
+                elif len(self.attrs) > 1:
+                    template_pieces.append("{attrs}")
+                    args_joiner = ",\n"
+                else:
+                    attrs = attrs.strip()
+                    template_pieces.append("{attrs}")
+                    full_joiner = ""
+                    template_footer = ")"
+            else:
+                attrs = ""
+                template_pieces.append("{inner}")
+                if "\n" not in inner:
+                    inner = inner.strip()
+                    full_joiner = ""
+                    template_footer = ")"
+            template = full_joiner.join([
+                template_header,
+                args_joiner.join(template_pieces),
+                template_footer
+            ])
+
+            return template.format(
+                padding=padding,
+                tag=padding + "  " + repr(self.tag) if len(template_pieces) > 1 else repr(self.tag),
+                name=prefix+type(self).__name__,
+                inner=inner,
+                attrs=attrs
+            )
+        def dump(self, prefix=""):
+            print(self.format(prefix=prefix))
         def __repr__(self):
             return "{}({}, {})".format(type(self).__name__, self.elems, self.attrs)
         def _repr_html_(self):
@@ -484,7 +540,7 @@ class HTML:
             from .HTMLWidgets import JupyterHTMLWrapper
             return JupyterHTMLWrapper.get_display_api().display(JupyterHTMLWrapper.get_display_api().HTML(self.tostring()))
         def make_class_list(self):
-            self.attrs['class'] = self.attrs['class'].split()
+            self._attrs['class'] = self._attrs['class'].split()
         def add_class(self, *cls, copy=True):
             return HTML.ClassAdder(self, cls, copy=copy).modify()
         def remove_class(self, *cls, copy=True):
@@ -683,6 +739,8 @@ class HTML:
     class SubHeading(TagElement): tag='h2'
     class SubsubHeading(TagElement): tag='h3'
     class SubsubsubHeading(TagElement): tag='h4'
+    class SubHeading5(TagElement): tag='h5'
+    class SubHeading6(TagElement): tag='h6'
     class Small(TagElement): tag='small'
     class Bold(TagElement): tag='b'
     class Italic(TagElement): tag='i'
@@ -692,7 +750,7 @@ class HTML:
         def __init__(self, *elems, item_attributes=None, **attrs):
             if item_attributes is None:
                 item_attributes = {}
-            elems = [HTML.ListItem(x, **item_attributes) if not isinstance(x, HTML.ListItem) else x for x in elems]
+            # elems = [HTML.ListItem(x, **item_attributes) if not isinstance(x, HTML.ListItem) else x for x in elems]
             super().__init__(*elems, **attrs)
     class List(BaseList): tag='ul'
     class NumberedList(BaseList): tag='ol'
@@ -830,18 +888,30 @@ class HTML:
         return cls._cls_map
 
     @classmethod
-    def convert(cls, etree:ElementTree.Element):
-        children = [cls.convert(x) for x in etree]
+    def convert(cls, etree:ElementTree.Element, strip=True):
+        children = [cls.convert(x, strip=strip) for x in etree]
         text = etree.text
+        if text is not None:
+            if isinstance(text, str):
+                text = [text]
+        else:
+            text = []
         tail = etree.tail
+        if tail is not None:
+            if isinstance(tail, str):
+                tail = [tail]
+        else:
+            tail = []
+        tag = etree.tag
 
         elems = (
-                ([text] if text is not None else [])
+                [t.strip() if strip else t for t in text]
                 + children
-                + (list(tail) if tail is not None else [])
+                + [t.strip() if strip else t for t in tail]
         )
+        if strip:
+            elems = [e for e in elems if not isinstance(e, str) or len(e) > 0]
 
-        tag = etree.tag
         map = cls.get_class_map()
         try:
             tag_class = map[tag]

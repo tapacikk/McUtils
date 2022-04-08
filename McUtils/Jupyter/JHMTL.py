@@ -3,6 +3,7 @@ from .HTML import HTML, CSS
 from .Bootstrap import Bootstrap
 from .HTMLWidgets import JupyterHTMLWrapper, HTMLWidgets
 from .BootstrapWidgets import BootstrapWidgets
+from .WidgetTools import JupyterAPIs
 
 import functools
 
@@ -29,7 +30,9 @@ class JHTML:
     def _get_frame_vars(self):
         import inspect
         frame = inspect.currentframe()
-        return frame.f_back.f_locals
+        parent = frame.f_back.f_back
+        # print(parent.f_locals)
+        return parent.f_locals
     def __enter__(self):
         """
         To make writing HTML interactively a bit nicer
@@ -62,11 +65,15 @@ class JHTML:
                 pass
 
     @classmethod
+    def parse(cls, src):
+        return HTML.parse(src)
+
+    @classmethod
     def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, extra_classes=None, **attrs):
         if event_handlers is not None or extra_classes is not None:
             return widget
         else:
-            Widget = JupyterHTMLWrapper.get_widgets_api().Widget
+            Widget = JupyterAPIs.get_widgets_api().Widget
             if len(elems) > 0 and any(isinstance(e, (JupyterHTMLWrapper, Widget)) for e in elems):
                 return widget
             else:
@@ -363,6 +370,12 @@ class JHTML:
     def SubsubsubHeading(jhtml, *elements, **styles): ...
     @classmethod
     @dispatcher
+    def SubHeading5(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
+    def SubHeading6(jhtml, *elements, **styles): ...
+    @classmethod
+    @dispatcher
     def Summary(jhtml, *elements, **styles): ...
     @classmethod
     @dispatcher
@@ -428,6 +441,10 @@ class JHTML:
     @classmethod
     @dispatcher
     def Wbr(jhtml, *elements, **styles): ...
+
+    @classmethod
+    def OutputArea(jhtml, *elements, **styles):
+        return HTMLWidgets.OutputArea(*elements, **styles)
 
     del dispatcher
 

@@ -1,5 +1,7 @@
 
+import weakref
 from .HTML import CSS, HTML
+from .WidgetTools import JupyterAPIs
 
 __all__ = [
     "JupyterHTMLWrapper",
@@ -123,28 +125,6 @@ class JupyterHTMLWrapper:
     Provides simple access to Jupyter display utilities
     """
 
-    _apis = None
-    @classmethod
-    def load_api(cls):
-        try:
-            import IPython.core.display as display
-        except ImportError:
-            display = None
-        try:
-            import ipywidgets as widgets
-        except ImportError:
-            widgets = None
-        try:
-            import ipyevents as events
-        except ImportError:
-            events = None
-
-        cls._apis = (
-            display,
-            widgets,
-            events
-        )
-
     reset_attrs = [
         # 'align-items',
         'background',
@@ -228,7 +208,7 @@ class JupyterHTMLWrapper:
     def get_class_stripper(cls):
         import uuid
         this = "stripper"+str(uuid.uuid1()).replace("-", "")[:8]
-        return cls.get_display_api().HTML(HTML.Script(
+        return JupyterAPIs.get_display_api().HTML(HTML.Script(
             """
 var {id} = document.getElementById('{id}');
 var {id}siblings = {id}.parentNode.parentNode.parentNode.childNodes;
@@ -253,7 +233,7 @@ for (const sibling of {id}siblings) {{
     cls = None #for easy overloads later
     tag = None
     layout = None
-    def __init__(self, *elements, tag=None, event_handlers=None, layout=None, extra_classes=None, **styles):
+    def __init__(self, *elements, tag=None, event_handlers=None, layout=None, extra_classes=None, cls=None, **styles):
         if len(elements) == 1 and isinstance(elements[0], (list, tuple)):
             elements = elements[0]
         self.elements = elements
@@ -269,9 +249,32 @@ for (const sibling of {id}siblings) {{
         self.tag = tag if tag is not None else self.tag
         self.layout = self.layout if layout is None else layout
         self.styles = styles
-        self.extra_classes = extra_classes if extra_classes is not None else self.cls
-        if isinstance(self.extra_classes, str):
-            self.extra_classes = [self.extra_classes]
+        if extra_classes is None:
+            extra_classes = self.cls
+        if cls is not None:
+            if hasattr(cls, 'value'):
+                cls = cls.value
+            if isinstance(cls, str):
+                cls = cls.split()
+
+            if extra_classes is None:
+                extra_classes = cls
+            else:
+                if hasattr(extra_classes, 'value'):
+                    extra_classes = extra_classes.value
+                if isinstance(extra_classes, str):
+                    extra_classes = extra_classes.split()
+                extra_classes = list(extra_classes) + list(cls)
+        if hasattr(extra_classes, 'value'):
+            extra_classes = extra_classes.value
+        if isinstance(extra_classes, str):
+            extra_classes = extra_classes.split()
+        if extra_classes is not None:
+            extra_classes = [e.value if hasattr(e, 'value') else e for e in extra_classes]
+        self.extra_classes = extra_classes
+
+        self._parents = weakref.WeakSet()
+        self._widget_cache = None
 
     @staticmethod
     def _handle_event(e, event_handlers, self, widg):
@@ -285,31 +288,6 @@ for (const sibling of {id}siblings) {{
         def handler(e):
             return self._handle_event(e, self.event_handlers, self, widg)
         return handler
-
-    @classmethod
-    def get_display_api(cls):
-        if cls._apis is None:
-            cls.load_api()
-        return cls._apis[0]
-    @property
-    def display_api(self):
-        return self.get_display_api()
-    @classmethod
-    def get_widgets_api(self):
-        if self._apis is None:
-            self.load_api()
-        return self._apis[1]
-    @property
-    def widgets_api(self):
-        return self.get_widgets_api()
-    @classmethod
-    def get_events_api(self):
-        if self._apis is None:
-            self.load_api()
-        return self._apis[2]
-    @property
-    def events_api(self):
-        return self.get_events_api()
 
     def _convert(self, x):
         if isinstance(x, (HTML.XMLElement, HTML.ElementModifier)):
@@ -333,9 +311,8 @@ for (const sibling of {id}siblings) {{
             mapped_widget = None
             needs_mods = False
 
-
         if isinstance(x, str):
-            w = self.widgets_api.HTML(x)
+            w = JupyterAPIs().widgets_api.HTML(x)
             if needs_mods:
                 extra_classes = (
                     [mapped_widget.cls]
@@ -351,60 +328,141 @@ for (const sibling of {id}siblings) {{
             w = x
         return w
 
+    @classmethod
+    def manage_styles(cls, styles, validate=True):
+        layout_props = {
+            'height',
+            'width',
+            'max_height',
+            'max_width',
+            'min_height',
+            'min_width',
+            'visibility',
+            'display',
+            'overflow',
+            'model',
+            'border',
+            'margin',
+            'padding',
+            'top',
+            'left',
+            'bottom',
+            'right',
+            'order',
+            'flex_flow',
+            'align_items',
+            'flex',
+            'align_self',
+            'align_content',
+            'justify_content',
+            'grid_auto_columns',
+            'grid_auto_flow',
+            'grid_auto_rows',
+            'grid_gap',
+            'grid_template',
+            'grid_row',
+            'grid_column'
+        }
+        style_props = {
+            "color"
+        }
+
+        if styles is None:
+            styles = {}
+
+        layout_map = {}
+        style_map = {}
+        for k in styles:
+            if k in layout_props:
+                layout_map[k] = styles[k]
+            elif k in style_props:
+                style_map[k] = styles[k]
+            elif validate:
+                raise ValueError("as designed JupyterLab doesn't support the {} attribute".format(
+                    k
+                ))
+        return {'style':style_map, 'layout':layout_map}
+
+    def _invalidate_cache(self):
+        if self._widget_cache is not None:
+            self._widget_cache = None
+            for p in tuple(self._parents):
+                p._invalidate_cache()
+                self._parents.remove(p)
     def to_widget(self, parent=None):
-        layout = self.layout
-        if isinstance(self.elements[0], (list, tuple)):
-            widgets = [
-                [ self._convert(x) for x in y ]
-                for y in self.elements
-            ]
-        else:
-            widgets = [self._convert(x) for x in self.elements]
-        if layout is None:
-            layout = 'box'
-        if layout == 'grid':
-            widg = self.widgets_api.GridBox(widgets, style=self.styles)
-        elif layout == 'row':
-            widg = self.widgets_api.HBox(widgets, style=self.styles)
-        elif layout == 'column':
-            widg = self.widgets_api.VBox(widgets, style=self.styles)
-        else:
-            def flatten(x, base):
-                if not isinstance(x, self.widgets_api.Widget):
-                    for y in x:
-                        flatten(y, base)
-                else:
-                    base.append(x)
-            new = []; flatten(widgets, new)
-            widg = self.widgets_api.Box(new, style=self.styles)
+        if parent is not None:
+            self._parents.add(parent)
+        if self._widget_cache is None:
+            layout = self.layout
+            if isinstance(self.elements[0], (list, tuple)):
+                widgets = [
+                    [ self._convert(x) for x in y ]
+                    for y in self.elements
+                ]
+            else:
+                widgets = [self._convert(x) for x in self.elements]
 
-        widg.add_class('jupyter-widgets-reset')
-        if self.extra_classes is not None:
-            for c in self.extra_classes:
-                widg.add_class(c)
-        if self.event_handlers is not None:
-            listener = self.events_api.Event(source=widg, watched_events=list(self.event_handlers.keys()))
-            listener.on_dom_event(self._event_handler(widg))
-            widg.listener = listener
+            if 'style' in self.styles:
+                props = self.manage_styles(self.styles['style'])
+            elif len(self.styles) > 0:
+                raise ValueError("JupyterLab doesn't support {} attributes on widgets".format(list(self.styles.keys())))
+            else:
+                props = {}
 
-        # for discoverability in callbacks
-        widg.dom = JHTMLShadowDOMElement(widg, wrapper=self)
-        if hasattr(widg, 'children'):
-            for x in widg.children:
-                if not hasattr(x, 'dom'):
-                    x.dom = JHTMLShadowDOMElement(x, wrapper=None, parent=widg.dom)
-                else:
-                    x.dom.parent = widg.dom
-        widg.display = lambda w=widg:self.display_widget(w)
-        return widg
+            if layout is None:
+                layout = 'box'
+            if layout == 'grid':
+                widg = JupyterAPIs().widgets_api.GridBox(widgets, **props)
+            elif layout == 'row':
+                widg = JupyterAPIs().widgets_api.HBox(widgets, **props)
+            elif layout == 'column':
+                widg = JupyterAPIs().widgets_api.VBox(widgets, **props)
+            else:
+                def flatten(x, base):
+                    if not isinstance(x, JupyterAPIs().widgets_api.Widget):
+                        for y in x:
+                            flatten(y, base)
+                    else:
+                        base.append(x)
+                new = []; flatten(widgets, new)
+                widg = JupyterAPIs().widgets_api.Box(new, **props)
+
+            widg.add_class('jupyter-widgets-reset')
+            if self.extra_classes is not None:
+                for c in self.extra_classes:
+                    widg.add_class(c)
+            if self.event_handlers is not None:
+                listener = JupyterAPIs().events_api.Event(source=widg, watched_events=list(self.event_handlers.keys()))
+                listener.on_dom_event(self._event_handler(widg))
+                widg.listener = listener
+
+            # for discoverability in callbacks
+            widg.dom = JHTMLShadowDOMElement(widg, wrapper=self)
+            if hasattr(widg, 'children'):
+                for x in widg.children:
+                    if not hasattr(x, 'dom'):
+                        x.dom = JHTMLShadowDOMElement(x, wrapper=None, parent=widg.dom)
+                    else:
+                        x.dom.parent = widg.dom
+            widg.display = lambda w=widg:self.display_widget(w)
+            self._widget_cache = widg
+        return self._widget_cache
     @classmethod
     def display_widget(cls, w):
-        return cls.get_display_api().display(w, cls.get_class_stripper())
+        return JupyterAPIs.get_display_api().display(w, cls.get_class_stripper())
     def display(self):
-        return self.display_api.display(self.to_widget(), self.get_class_stripper())
-
+        return JupyterAPIs.get_display_api().display(self.to_widget(), self.get_class_stripper())
     def _ipython_display_(self):
         return self.display()
+
+    def find(self, path, find_element=True):
+        return self.to_widget().dom.find(path, find_element=find_element)
+    def findall(self, path, find_element=True):
+        return self.to_widget().dom.findall(path, find_element=find_element)
+    def iterfind(self, path, find_element=True):
+        return self.to_widget().dom.iterfind(path, find_element=find_element)
+    def find_by_id(self, id, mode='first', parent=None, find_element=True):
+        return self.to_widget().dom.find_by_id(id, mode=mode, parent=parent, find_element=find_element)
 
     _widget_sources = []
     _base_map = None
@@ -437,7 +495,7 @@ class HTMLWidgets:
                 base = self.base
             self.base = base
             self.container = self.container if container is None else container
-            Widget = self.get_widgets_api().Widget
+            Widget = JupyterAPIs.get_widgets_api().Widget
             if any(isinstance(e, (JupyterHTMLWrapper, Widget)) for e in elems):
                 elem = elems
                 if hasattr(base, 'cls'):
@@ -466,35 +524,52 @@ class HTMLWidgets:
             import copy
             new = copy.copy(self)
             new.elements = [(x.copy() if hasattr(x, 'copy') else x) for x in new.elements]
+            new._widget_cache = None
+            new._parents = weakref.WeakSet()
             return new
-        def add_child_class(self, *cls):
-            new = self.copy()
-            new.elements = [x.add_class(*cls) for x in self.elements]
-            return new
-        def add_class(self, *cls):
-            new = self.copy()
-            if new.extra_classes is None:
-                new.extra_classes = [str(x) for x in cls]
+        def add_child_class(self, *cls, copy=True):
+            if copy:
+                new = self.copy()
+                return new.add_child_class(*cls, copy=False)
             else:
-                new.extra_classes = [str(x) for x in new.extra_classes]
-            for c in cls:
-                if c not in new.extra_classes:
-                    new.extra_classes.append(str(c))
-            return new
-        def remove_class(self, *cls):
-            new = self.copy()
-            if new.extra_classes is not None:
-                new.extra_classes = [str(x) for x in new.extra_classes]
-            for c in cls:
-                try:
-                    new.extra_classes.remove(str(c))
-                except ValueError:
-                    pass
-            return new
-        def add_styles(self, **sty):
-            new = self.copy()
-            new.elements = [x.add_styles(**sty) for x in self.elements]
-            return new
+                self.elements = [x.add_class(*cls) for x in self.elements]
+                return self
+        def add_class(self, *cls, copy=True):
+            if copy:
+                new = self.copy()
+                return new.add_class(*cls, copy=False)
+            else:
+                if self.extra_classes is None:
+                    self.extra_classes = [str(x) for x in cls]
+                else:
+                    self.extra_classes = [str(x) for x in self.extra_classes]
+                for c in cls:
+                    if c not in self.extra_classes:
+                        self.extra_classes.append(str(c))
+                self._invalidate_cache()
+                return self
+        def remove_class(self, *cls, copy=True):
+            if copy:
+                new = self.copy()
+                return new.remove_class(*cls, copy=False)
+            else:
+                if self.extra_classes is not None:
+                    self.extra_classes = [str(x) for x in self.extra_classes]
+                for c in cls:
+                    try:
+                        self.extra_classes.remove(str(c))
+                    except ValueError:
+                        pass
+                self._invalidate_cache()
+                return self
+        def add_styles(self, copy=True, **sty):
+            if copy:
+                new = self.copy()
+                return new.add_styles(copy=False, **sty)
+            else:
+                self.elements = [x.add_styles(**sty) for x in self.elements]
+                self._invalidate_cache()
+                return self
     class ContainerWrapper(WrappedElement): container = True
     class Abbr(WrappedElement): base=HTML.Abbr
     class Address(WrappedElement): base=HTML.Address
@@ -594,6 +669,8 @@ class HTMLWidgets:
     class SubHeading(WrappedElement): base=HTML.SubHeading
     class SubsubHeading(WrappedElement): base=HTML.SubsubHeading
     class SubsubsubHeading(WrappedElement): base=HTML.SubsubsubHeading
+    class SubHeading5(WrappedElement): base=HTML.SubHeading5
+    class SubHeading6(WrappedElement): base=HTML.SubHeading6
     class Summary(WrappedElement): base=HTML.Summary
     class Sup(WrappedElement): base=HTML.Sup
     class Svg(WrappedElement): base=HTML.Svg
@@ -620,4 +697,29 @@ class HTMLWidgets:
     class Var(WrappedElement): base=HTML.Var
     class Video(WrappedElement): base=HTML.Video
     class Wbr(WrappedElement): base=HTML.Wbr
+
+    class OutputArea(JupyterHTMLWrapper):
+        def __init__(self, *elements, autoclear=False, event_handlers=None, layout=None, extra_classes=None, cls=None, **styles):
+            if len(elements) == 1 and isinstance(elements, (list, tuple)):
+                elements = elements[0]
+            self.autoclear = autoclear
+            self.output = JupyterAPIs.get_widgets_api().Output()
+            elements = list(elements) + [self.output]
+            super().__init__(*elements, tag='div', event_handlers=event_handlers, layout=layout, extra_classes=extra_classes, cls=cls, **styles)
+
+        def print(self, *args, **kwargs):
+            with self:
+                print(*args, **kwargs)
+        def display(self, *args):
+            with self:
+                JupyterAPIs().display_api.display(*args)
+
+        def __enter__(self):
+            if self.autoclear:
+                self.output.clear_output()
+            return self.output.__enter__()
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            return self.output.__exit__(exc_type, exc_val, exc_tb)
+
+
 JupyterHTMLWrapper._widget_sources.append(HTMLWidgets)

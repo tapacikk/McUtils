@@ -373,14 +373,14 @@ class GraphicsBase(metaclass=ABCMeta):
         if self.tighten:
             self.figure.tight_layout()
         self._shown = True
-    def show(self, reshow = True):
+    def show(self, reshow=True):
+
         from .VTKInterface import VTKWindow
 
         if isinstance(self.figure, VTKWindow):
             self.figure.show()
         else:
             self.load_mpl()
-
             if not self.managed:
                 if self.non_interactive:
                     self.pyplot.ioff()
@@ -410,6 +410,8 @@ class GraphicsBase(metaclass=ABCMeta):
         for a in all_things:
             a.remove()
 
+    def _ipython_display_(self):
+        self.show()
     def _repr_html_(self):
         # hacky, but hopefully enough to make it work?
         return self.figure._repr_html_()
