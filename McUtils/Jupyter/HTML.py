@@ -377,13 +377,15 @@ class HTML:
         Convenience API for ElementTree
         """
 
-        def __init__(self, tag, *elems, on_update=None, **attrs):
+        def __init__(self, tag, *elems, on_update=None, style=None, **attrs):
             self.tag = tag
             self._elems = list(elems[0] if len(elems) == 1 and isinstance(elems[0], (list, tuple)) else elems)
             self._elem_view = None
             if 'cls' in attrs:
                 attrs['class'] = attrs['cls']
                 del attrs['cls']
+            if style is not None:
+                attrs['style'] = HTML.manage_styles(style)
             self._attrs = {k.replace("_", "-"):v for k,v in attrs.items()}
             self._attr_view = None
             self._parents = weakref.WeakSet()

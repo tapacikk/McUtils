@@ -4,13 +4,13 @@ from .HTML import CSS, HTML
 from .WidgetTools import JupyterAPIs, DefaultOutputArea
 
 __all__ = [
-    "JupyterHTMLWrapper",
     "HTMLWidgets",
     "ActiveHTMLWrapper"
 ]
 
 __reload_hook__ = [".HTML", ".WidgetTools"]
 
+# OLD AND DEPRECATED
 class JHTMLShadowDOMElement:
     """
     Provides a shadow DOM tree that can makes it easier to update
@@ -133,7 +133,6 @@ class JHTMLShadowDOMElement:
         return self.tree.find_by_id(id, mode=mode, parent=parent, find_element=find_element)
     def __getitem__(self, item):
         return self.to_tree()[item]
-
 class JupyterHTMLWrapper:
     """
     Provides simple access to Jupyter display utilities
@@ -545,7 +544,6 @@ class JupyterHTMLWrapper:
     @property
     def base_map(self):
         return self.load_base_map()
-
 class JupyterHTMLWidgets:
     """
     Provides convenience constructors for HTML components
@@ -803,6 +801,8 @@ JupyterHTMLWrapper._widget_sources.append(JupyterHTMLWidgets)
 
 class ActiveHTMLWrapper:
     base=None
+    _subwrappers = weakref.WeakKeyDictionary()
+    # to keep anonymous wrappers alive until their elements go out of scope
     def __init__(self,
                  *elements,
                  tag=None,
@@ -813,14 +813,17 @@ class ActiveHTMLWrapper:
                  event_handlers=None,
                  debug_pane=None,
                  track_value=None,
+                 continuous_update=None,
                  **attributes
                  ):
         from .ActiveHTMLWidget import HTMLElement
+        self.HTMLElement = HTMLElement
+
         if len(elements) == 1 and isinstance(elements[0], (list, tuple)):
             elements = elements[0]
         attrs = {}
         if self.base is not None:
-            shadow_el = self.base(cls=cls, style=style)
+            shadow_el = self.base(cls=cls, style=style, **attributes)
         else:
             shadow_el = None
         if tag is None and hasattr(shadow_el, 'tag'):
@@ -875,6 +878,12 @@ class ActiveHTMLWrapper:
             del attributes['trackInput']
         if track_value is not None:
             attrs['trackInput'] = track_value
+        if 'continuousUpdate' in attributes:
+            if continuous_update is None:
+                continuous_update = attributes['continuousUpdate']
+            del attributes['continuousUpdate']
+        if continuous_update is not None:
+            attrs['continuousUpdate'] = continuous_update
 
         if len(attributes) > 0:
             attrs['elementAttributes'] = attributes
@@ -892,27 +901,30 @@ class ActiveHTMLWrapper:
         if debug_pane is None:
             debug_pane = DefaultOutputArea.get_default()
         self.debug_pane = debug_pane
-
     @classmethod
     def canonicalize_widget(cls, x):
         Widget = JupyterAPIs.get_widgets_api().Widget
         if isinstance(x, Widget):
             return x
         elif isinstance(x, ActiveHTMLWrapper):
-            return x.elem
+            elem = x.elem
+            cls._subwrappers[elem] = x
+            return elem
         elif isinstance(x, str):
             x = HTML.parse(x)
-            return ActiveHTMLWrapper.from_HTML(x).elem
+            subwrapper = ActiveHTMLWrapper.from_HTML(x)
+            elem = subwrapper.elem
+            cls._subwrappers[elem] = subwrapper
+            return elem
         elif isinstance(x, HTML.XMLElement):
-            # print("==>", x)
-            new = ActiveHTMLWrapper.from_HTML(x)
-            # print("???", new)
-            return new.elem
+            subwrapper = ActiveHTMLWrapper.from_HTML(x)
+            elem = subwrapper.elem
+            cls._subwrappers[elem] = subwrapper
+            return elem
         else:
             raise NotImplementedError("don't know what to do with object {} of type {}".format(
                 x, type(x)
             ))
-
     @classmethod
     def from_HTML(cls, x:HTML.XMLElement, event_handlers=None, debug_pane=None):
         attrs = x.attrs
@@ -928,6 +940,23 @@ class ActiveHTMLWrapper:
         # print(body, props)
         return cls(*body, tag=x.tag, **props)
 
+    def to_widget(self, parent=None):
+        return self.elem
+    def __repr__(self):
+        body = (
+            self.children if len(self.children) > 0
+            else self.html_string if self.html_string is not None
+            else self.text if self.text is not None
+            else ""
+        )
+        return "{}({}, {!r}, cls={}, style={}, id={})".format(
+            type(self).__name__,
+            self.tag,
+            body,
+            self.class_list,
+            self.style,
+            self.id
+        )
     def display(self):
         return JupyterAPIs.get_display_api().display(self.elem)
     def _ipython_display_(self):
@@ -946,11 +975,14 @@ class ActiveHTMLWrapper:
             return self._handle_event(e, self.event_handlers, self)
 
     def link(self, elem):
-        if not hasattr(elem, 'wrappers'): # ok
+        if not hasattr(elem, 'wrappers'):
             elem.wrappers = weakref.WeakSet()
         elem.wrappers.add(self)
 
     # add an API to make the elem look more like regular HTML
+    @property
+    def tag(self):
+        return 'div' if self.elem.tagName == '' else self.elem.tagName
     @property
     def id(self):
         eid = self.elem.id
@@ -1052,15 +1084,19 @@ class ActiveHTMLWrapper:
         else:
             del self.elem.elementAttributes[key]
             self.elem.send_state('elementAttributes')
-    def get_child(self, position):
+    def get_child(self, position, wrapper=False):
         kids = self.elem.children
         if len(kids) == 0:
             body = self.html
             if body is None:
                 raise IndexError("element {} has no body to index")
-            return body[position]
+            val = body[position]
         else:
-            return kids[position]
+            val = kids[position]
+        if wrapper and hasattr(val, 'wrappers'):
+            return next(iter(val.wrappers))
+        else:
+            return val
     def set_child(self, position, value):
         kids = self.elem.children
         if len(kids) == 0:
@@ -1070,8 +1106,9 @@ class ActiveHTMLWrapper:
             body[position] = value
         else:
             kids[position] = self.canonicalize_widget(value)
-            self.elem.children = kids
-            self.elem.send_state('children')
+            self.children = kids
+            # self.elem.children = kids
+            # self.elem.send_state('children')
     def del_child(self, position):
         kids = self.elem.children
         if len(kids) == 0:
@@ -1081,9 +1118,17 @@ class ActiveHTMLWrapper:
             del body[position]
         else:
             del kids[position]
-            self.elem.children = kids
-            self.elem.send_state('children')
+            self.children = kids
+            # self.elem.children = kids
+            # self.elem.send_state('children')
 
+    @property
+    def children(self):
+        return self.elem.children
+    @children.setter
+    def children(self, kids):
+        self.elem.children = kids
+        self.elem.send_state('children')
     @property
     def html_string(self):
         eid = self.elem.innerHTML
@@ -1115,6 +1160,14 @@ class ActiveHTMLWrapper:
             html_base.on_update = self._track_html_change
         return html_base
 
+
+    @property
+    def class_list(self):
+        return self.elem.classList
+    @class_list.setter
+    def class_list(self, cls):
+        self.elem.classList = HTML.manage_class(cls)
+        self.elem.send_state('classList')
     def add_class(self, *cls):
         cl = self.elem.classList
         cur_len = len(cl)
@@ -1141,6 +1194,14 @@ class ActiveHTMLWrapper:
             self.elem.classList = cl
             self.elem.send_state('classList')
         return self
+
+    @property
+    def style(self):
+        return self.elem.styleDict
+    @style.setter
+    def style(self, style):
+        self.elem.classList = HTML.manage_styles(style).props
+        self.elem.send_state('styleDict')
     def add_styles(self, **sty):
         sd = self.elem.styleDict
         for c,v in sty.items():
@@ -1175,6 +1236,7 @@ class ActiveHTMLWrapper:
         self.elem.send_state('eventPropertiesDict')
         if len(self.elem.eventPropertiesDict) == 0:
             self.elem.reset_callbacks()
+
 
 class HTMLWidgets:
     @classmethod
@@ -1308,3 +1370,26 @@ class HTMLWidgets:
     class Var(ActiveHTMLWrapper): base=HTML.Var
     class Video(ActiveHTMLWrapper): base=HTML.Video
     class Wbr(ActiveHTMLWrapper): base=HTML.Wbr
+
+    class OutputArea(ActiveHTMLWrapper):
+        def __init__(self, *elements, autoclear=False, event_handlers=None, cls=None, **styles):
+            if len(elements) == 1 and isinstance(elements, (list, tuple)):
+                elements = elements[0]
+            self.autoclear = autoclear
+            self.output = JupyterAPIs.get_widgets_api().Output()
+            elements = list(elements) + [self.output]
+            super().__init__(*elements, event_handlers=event_handlers, cls=cls, **styles)
+        def print(self, *args, **kwargs):
+            with self:
+                print(*args, **kwargs)
+        def display(self, *args):
+            with self:
+                JupyterAPIs().display_api.display(*args)
+        def clear(self):
+            self.output.clear_output()
+        def __enter__(self):
+            if self.autoclear:
+                self.output.clear_output()
+            return self.output.__enter__()
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            return self.output.__exit__(exc_type, exc_val, exc_tb)

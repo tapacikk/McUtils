@@ -10,7 +10,12 @@ __all__ = [
     "Manipulator",
     "Sidebar",
     "SidebarSetter",
-    "CardManipulator"
+    "CardManipulator",
+    "InputField",
+    "Text",
+    "Checkbox",
+    "Slider",
+    "RadioButton"
 ]
 __reload_hook__ = [".JHTML", ".WidgetTools"]
 
@@ -161,7 +166,7 @@ class VariableSynchronizer:
                 w.value = self._value
     def link(self, widget):
         self.set_value(widget.value, caller=widget)
-        widget.observe(lambda d: self.set_value(widget.value, caller=widget))
+        widget.observe(lambda d: self.set_value(widget.value, caller=widget), names=['value'])
         self._watchers.add(widget)
 def Var(name):
     return VariableSynchronizer.create_var(name)
@@ -281,38 +286,58 @@ class Sidebar(InterfaceElement):
             cls=['d-flex', 'flex-column', 'align-items-stretch', 'flex-shrink-0'],
             **self.attrs
         )
-class WidgetControl:
+class WidgetControl(metaclass=abc.ABCMeta):
+    layout_orientation = 'row'
     def __init__(self, var):
         self.var = VariableSynchronizer.create_var(var)
         self._widget_cache = None
         self._parents = weakref.WeakSet()
+    @abc.abstractmethod
+    def set_value(self):
+        ...
+    @abc.abstractmethod
+    def get_value(self):
+        ...
     @property
     def value(self):
-        return self.var.value
+        return self.get_value()
     @value.setter
     def value(self, v):
         self.var.set_value(v, caller=self)
+        self.set_value()
+    def observe(self, fn, names=None):
+        if self._widget_cache is None:
+            raise ValueError("not initialized")
+        return self._widget_cache.to_widget().observe(fn, names=names)
     def to_widget(self, parent=None):
         if parent is not None:
             self._parents.add(parent)
         if self._widget_cache is None:
             self._widget_cache = self.to_jhtml()
+            # self._widget_cache.to_widget.observe(self.set_value, )
+            self.var.link(self)
         return self._widget_cache
     @abc.abstractmethod
     def to_jhtml(self):
         ...
 
 class SidebarSetter(WidgetControl):
+    layout_orientation = 'column'
     def __init__(self, var, options, item_attrs=None, debug_pane=None, **attrs):
         super().__init__(var)
         self.options = options
         self.item_attrs = {} if item_attrs is None else item_attrs
         self.attrs = attrs
+        self._element_map = {}
         self._item_map = {}
         self._active_item = None
         self.logger_pane = DefaultOutputArea() if debug_pane is None else debug_pane
         val = self.options[0]['value']
         self.var.value = val
+    def get_value(self):
+        return self._item_map[self._active_item]
+    def set_value(self):
+        self.set_active(self.var.value)
     def update(self, e):
         self.set_active(self.value)
     def set_active(self, v):
@@ -321,42 +346,35 @@ class SidebarSetter(WidgetControl):
                 break
         else:
             k = None
+
         if k is not None:
             if (
-                    self._widget_cache is not None
-                    and self._active_item is not None
-                    and k!=self._active_item
+                self._active_item is not None
+                and k != self._active_item
+                and len(self._element_map) > 0
             ):
-                tree = self._widget_cache
-                cur = tree.find_by_id(self._active_item)
+                cur = self._element_map[self._active_item]
                 if cur is not None:
-                    cur.remove_class('active', copy=False)
+                    cur.remove_class('active')
                 self._active_item = k
-                new = tree.find_by_id(self._active_item)
+                new = self._element_map[k]
                 if new is not None:
-                    new.add_class('active', copy=False)
+                    new.add_class('active')
     def onclick(self, e, i, v):
         self.var.set_value(v, caller=self)
         with self.logger_pane:
             self.set_active(v)
-        # e, html, widg = e
-        # widg.dom.tree[0].add_class('active', copy=False)
-        # cur = widg.dom.get_parent(2).find_by_id(self._active_item)
-        # if cur is not None:
-        #     cur.remove_class('active', copy=False)
-        # self._active_item = i
-        # self.value = v
     def create_link_dict(self, o, which=-1):
-        id = str(uuid.uuid1()).replace("-", "")
+        uid = str(uuid.uuid1()).replace("-", "")
         o = o.copy()
         label = o['label'] if 'label' in o else o['value']
         if 'label' in o:
             del o['label']
         value = o['value']
-        self._item_map[id] = value
+        self._item_map[uid] = value
         del o['value']
         if which == 0:
-            self._active_item = id
+            self._active_item = uid
             if 'cls' in o:
                 cls = o['cls']
             elif 'cls' in self.item_attrs:
@@ -366,7 +384,7 @@ class SidebarSetter(WidgetControl):
             if isinstance(cls, str):
                 cls = cls.split()
             o['cls'] = list(cls) + ['active']
-        o['id'] = id
+        o['id'] = uid
         return dict(
             body=label,
             event_handlers=dict(
@@ -375,8 +393,7 @@ class SidebarSetter(WidgetControl):
             **o
         )
     def to_jhtml(self):
-        self.var.callbacks.add(self.update)
-        return Sidebar(
+        bar = Sidebar(
             *[
                 self.create_link_dict(o, which=n)
                 for n,o in enumerate(self.options)
@@ -385,14 +402,56 @@ class SidebarSetter(WidgetControl):
             **self.attrs
         ).to_jhtml()
 
+        col_wrapper = bar.get_child(0, wrapper=True)
+        for i in range(len(col_wrapper.children)):
+            wrapper = col_wrapper.get_child(i, wrapper=True)
+            self._element_map[wrapper['id']] = wrapper
+
+        return bar
+class InputField(WidgetControl):
+    def __init__(self, var, default=None, tag='input', track_value=True, **attrs):
+        super().__init__(var)
+        if default is not None:
+            self.var.value = default
+        if self.var.value is None:
+            self.var.value = ""
+        attrs['tag'] = tag
+        attrs['track_value'] = track_value
+        self.attrs = attrs
+    def get_value(self):
+        if self._widget_cache is not None:
+            return self._widget_cache.value
+    def set_value(self):
+        if self._widget_cache is not None:
+            self._widget_cache.value = self.var.value
+    def update(self, e):
+        if self._widget_cache is not None:
+            self.var.value = self._widget_cache.value
+    def to_jhtml(self):
+        field = JHTML.Input(**self.attrs)
+        return field
+class Text(InputField):
+    def __init__(self, var, type='text', **attrs):
+        super().__init__(var, type=type, **attrs)
+class Slider(InputField):
+    def __init__(self, var, type='range', **attrs):
+        super().__init__(var, type=type, **attrs)
+class Checkbox(InputField):
+    def __init__(self, var, type='checkbox', **attrs):
+        super().__init__(var, type=type, **attrs)
+class RadioButton(InputField):
+    def __init__(self, var, type='radio', **attrs):
+        super().__init__(var, type=type, **attrs)
+
+
 class CardManipulator(WidgetInterface):
     def __init__(self, func, *controls, title=None, output_pane=None, **opts):
         self.controls = [Manipulator.canonicalize_control(c) for c in controls]
         vars = [c.var for c in self.controls]
         self.output = FunctionDisplay(func, vars)
         # really I want to do this by layout but this works for now...
-        self.toolbar_controls = [x for x in self.controls if not isinstance(x, WidgetControl)]
-        self.column_controls = [x for x in self.controls if isinstance(x, WidgetControl)]
+        self.toolbar_controls = [x for x in self.controls if not hasattr(x, 'layout_orientation') or x.layout_orientation != 'column']
+        self.column_controls = [x for x in self.controls if hasattr(x, 'layout_orientation') and x.layout_orientation == 'column']
         self.title = title
         self.output_pane = output_pane
 
@@ -413,11 +472,12 @@ class CardManipulator(WidgetInterface):
                                 cls=['bg-light', 'border-bottom', 'd-inline-block', 'w-100', "p-2"]
                                 # , style=dict(min_height="80px")#, flex="1")
                             ),
-                            self.output.to_widget()
+                            self.output.to_widget(),
+                            style=dict(min_height='500px')
                         ),
                         cls=['g-0', "flex-grow-1"]
                     ),
-                    style=dict(min_height='500px', flex="1"),
+                    style=dict(flex="1"),
                     cls=["p-0", "d-flex", "flex-column", 'max-width-auto', 'w-100']
                 ),
                 cls=["p-0"]

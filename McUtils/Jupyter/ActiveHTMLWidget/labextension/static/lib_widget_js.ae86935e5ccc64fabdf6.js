@@ -166,9 +166,6 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                     this._currentStyles.add(prop);
                 }
             }
-            if (this.model.get("_debugPrint")) {
-                console.log(this.el, "final styles:", this.el.style);
-            }
         }
     }
     updateStyles() {
@@ -177,13 +174,11 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     }
     // Manage classes
     updateClassList() {
-        // @ts-ignore
         if (this.model.get("_debugPrint")) {
             console.log(this.el, "Element Classes:", this.model.get("classList"));
         }
-        for (let cls in this.el.classList) {
-            this.el.classList.remove(cls);
-        }
+        //@ts-ignore
+        this.el.classList.remove(...this.el.classList);
         for (let cls of this.model.get("classList")) {
             this.el.classList.add(cls);
         }
@@ -560,4 +555,4 @@ module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","descr
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.4e4206282cbdd8094a3f.js.map
+//# sourceMappingURL=lib_widget_js.ae86935e5ccc64fabdf6.js.map
