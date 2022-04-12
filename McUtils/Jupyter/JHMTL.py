@@ -1,7 +1,7 @@
 
 from .HTML import HTML, CSS
 from .Bootstrap import Bootstrap
-from .HTMLWidgets import JupyterHTMLWrapper, HTMLWidgets
+from .HTMLWidgets import ActiveHTMLWrapper, HTMLWidgets
 from .BootstrapWidgets import BootstrapWidgets
 from .WidgetTools import JupyterAPIs
 
@@ -70,26 +70,26 @@ class JHTML:
         return HTML.parse(src)
 
     @classmethod
-    def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, extra_classes=None, container=None, **attrs):
+    def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, dynamic=None, _debugPrint=None, **attrs):
         if (
             event_handlers is not None
-            or extra_classes is not None
-            or container is True
+            or _debugPrint is True
+            or dynamic is True
         ):
             return widget
         else:
             Widget = JupyterAPIs.get_widgets_api().Widget
-            if len(elems) > 0 and any(isinstance(e, (JupyterHTMLWrapper, Widget)) for e in elems):
+            if len(elems) > 0 and any(isinstance(e, (ActiveHTMLWrapper, Widget)) for e in elems):
                 return widget
             else:
                 return plain
     @classmethod
-    def _dispatch(jhtml, plain, widget, *elements, event_handlers=None, extra_classes=None, **styles):
-        src = jhtml._resolve_source(plain, widget, *elements, event_handlers=event_handlers, extra_classes=extra_classes, **styles)
+    def _dispatch(jhtml, plain, widget, *elements, event_handlers=None, dynamic=None, **styles):
+        src = jhtml._resolve_source(plain, widget, *elements, event_handlers=event_handlers, dynamic=dynamic, **styles)
         if src is plain:
             return src(*elements, **styles)
         else:
-            return src(*elements, event_handlers=event_handlers, extra_classes=extra_classes, **styles)
+            return src(*elements, event_handlers=event_handlers, **styles)
 
     def dispatcher(fn):
         name = fn.__name__

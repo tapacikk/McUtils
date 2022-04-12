@@ -351,6 +351,15 @@ class HTML:
         for x in cls.__dict__:
             if isinstance(x, type):
                 g[x.__name__] = x
+    @classmethod
+    def manage_class(kls, cls):
+        if cls is None:
+            cls = []
+        elif hasattr(cls, 'tostring'):
+            cls = cls.tostring
+        if isinstance(cls, str):
+            cls = cls.split()
+        return list(cls)
     class XMLElement:
         """
         Convenience API for ElementTree
@@ -363,7 +372,7 @@ class HTML:
             if 'cls' in attrs:
                 attrs['class'] = attrs['cls']
                 del attrs['cls']
-            self._attrs = attrs
+            self._attrs = {k.replace("_", "-"):v for k,v in attrs.items()}
             self._attr_view = None
             self._parents = weakref.WeakSet()
             self._tree_cache = None

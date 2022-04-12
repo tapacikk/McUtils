@@ -5,7 +5,8 @@ from .WidgetTools import JupyterAPIs, DefaultOutputArea
 
 __all__ = [
     "JupyterHTMLWrapper",
-    "HTMLWidgets"
+    "HTMLWidgets",
+    "ActiveHTMLWrapper"
 ]
 
 __reload_hook__ = [".HTML", ".WidgetTools"]
@@ -21,10 +22,19 @@ class JHTMLShadowDOMElement:
         self.parent = parent.dom if hasattr(parent, 'dom') else parent
         self._tree_cache = None
 
+    def link(self, dom_el, recursive=False):
+        dom_el.on_update = self.Refresher(self)
+        dom_el.shadow = self
+        if recursive:
+            for c in dom_el:
+                if isinstance(c, HTML.XMLElement):
+                    self.link(c, recursive=True)
     @property
     def tree(self):
         return self.to_tree()
-    def to_tree(self):
+    def to_tree(self, refresh=False):
+        if refresh:
+            self._invalidate_cache()
         if self._tree_cache is None:
             if hasattr(self.widg, 'children'):
                 children = []
@@ -34,23 +44,27 @@ class JHTMLShadowDOMElement:
                         if el is not None:
                             children.append(el)
                     elif hasattr(c, 'value'):
-                        elem = HTML.parse(c.value)
-                        elem.shadow = self
-                        elem.on_update = self.Refresher(self, which=len(children))
-                        children.append(HTML.parse(c.value))
+                        shadow = type(self)(c, wrapper=None, parent=self)
+                        # self.link(elem)
+                        # elem.shadow = self
+                        # elem.on_update = self.Refresher(self, which=len(children))
+                        el = shadow.to_tree()
+                        if el is not None:
+                            children.append(el)
                 attrs = {}
                 if len(self.widg._dom_classes) > 0:
                     attrs['cls'] = self.widg._dom_classes
                 dom_el = HTML.Div(children, **attrs)
             elif hasattr(self.widg, 'value'):
                 dom_el = HTML.parse(self.widg.value)
-                dom_el.on_update = self.Refresher(self)
+                self.link(dom_el, recursive=True)
             else:
                 dom_el = None
             self._tree_cache = dom_el
             if dom_el is not None:
-                dom_el.shadow = self
-                dom_el.on_update = self.Refresher(self)
+                self.link(dom_el, recursive=False)
+                # dom_el.shadow = self
+                # dom_el.on_update = self.Refresher(self)
         return self._tree_cache
     def _invalidate_cache(self):
         self._tree_cache = None
@@ -389,7 +403,15 @@ class JupyterHTMLWrapper:
             'grid_column'
         }
         style_props = {
-            "color"
+            "color",
+            "background",
+            'font_family',
+            'font_size',
+            'font_style',
+            'font_variant',
+            'font_weight',
+            'text_color',
+            'text_decoration'
         }
 
         if styles is None:
@@ -452,6 +474,7 @@ class JupyterHTMLWrapper:
                 new = []; flatten(widgets, new)
                 widg = JupyterAPIs().widgets_api.Box(new, **props)
 
+            from IPython.core.display import display as IPyDisplay
             widg.add_class('jhtml-reset')
             widg.add_class('jhtml-wrapper')
             if self.extra_classes is not None:
@@ -463,13 +486,13 @@ class JupyterHTMLWrapper:
                 widg.listener = listener
                 widg.add_class('jhtml-event-handler')
                 # if self.extra_classes is None or len(self.extra_classes) == 0:
-                #     for child in widg.children:
-                #         if not hasattr(child, 'listener'):
-                #             listener = JupyterAPIs().events_api.Event(source=child,
-                #                                                       watched_events=list(self.event_handlers.keys()))
-                #             listener.on_dom_event(self._event_handler(child))
-                #             child.listener = listener
-                #             child.add_class('jhtml-event-listener')
+                for child in widg.children:
+                    if not hasattr(child, 'listener'):
+                        listener = JupyterAPIs().events_api.Event(source=child,
+                                                                  watched_events=list(self.event_handlers.keys()))
+                        listener.on_dom_event(self._event_handler(child))
+                        child.listener = listener
+                        child.add_class('jhtml-event-handler')
             html_widget = JupyterAPIs.get_widgets_api().HTML
             if (
                     len(widg.children)==1
@@ -523,7 +546,7 @@ class JupyterHTMLWrapper:
     def base_map(self):
         return self.load_base_map()
 
-class HTMLWidgets:
+class JupyterHTMLWidgets:
     """
     Provides convenience constructors for HTML components
     """
@@ -776,6 +799,270 @@ class HTMLWidgets:
             return self.output.__enter__()
         def __exit__(self, exc_type, exc_val, exc_tb):
             return self.output.__exit__(exc_type, exc_val, exc_tb)
+JupyterHTMLWrapper._widget_sources.append(JupyterHTMLWidgets)
 
+class ActiveHTMLWrapper:
+    base=None
+    def __init__(self,
+                 *elements,
+                 tag=None,
+                 cls=None,
+                 id=None,
+                 value=None,
+                 style=None,
+                 event_handlers=None,
+                 debug_pane=None,
+                 **attributes
+                 ):
+        from ActiveHTMLWidget import HTMLElement
+        if len(elements) == 1 and isinstance(elements[0], (list, tuple)):
+            elements = elements[0]
+        attrs = {}
+        if tag is None and hasattr(self.base, 'tag'):
+            tag = self.base.tag
+        if tag is not None:
+            attrs['tagName'] = tag
 
-JupyterHTMLWrapper._widget_sources.append(HTMLWidgets)
+        if cls is None and hasattr(self.base, 'cls'):
+            cls = self.base.cls
+        if cls is not None:
+            classList = HTML.manage_class(cls)
+            attrs['classList'] = classList
+        eventPropertiesDict = {}
+        if event_handlers is not None:
+            for e in event_handlers:
+                eventPropertiesDict[e] = None
+        if len(eventPropertiesDict) > 0:
+            attrs['eventPropertiesDict'] = eventPropertiesDict
+
+        if len(elements) == 1:
+            val = elements[0]
+            if isinstance(val, str):
+                attrs['innerHTML'] = val
+            elif isinstance(val, HTML.XMLElement):
+                attrs['innerHTML'] = val.tostring()
+            else:
+                attrs['children'] = [self.canonicalize_widget(val)]
+        else:
+            elements = [self.canonicalize_widget(x) for x in elements]
+            attrs['children'] = elements
+        if id is not None:
+            attrs['id'] = id
+        if value is not None:
+            attrs['value'] = value
+        if style is not None:
+            if isinstance(style, str):
+                style = CSS.parse(style).props
+            elif isinstance(style, CSS):
+                style = style.props
+            attrs['style'] = style
+        if '_debugPrint' in attributes:
+            attrs['_debugPrint'] = attributes['_debugPrint']
+            del attributes['_debugPrint']
+
+        if len(attributes) > 0:
+            attrs['elementAttributes'] = attributes
+        self.elem = HTMLElement(**attrs)
+        self.link(self.elem)
+
+        self.event_handlers = event_handlers
+        if len(eventPropertiesDict) > 0:
+            self.elem.bind_callback(self.handle_event)
+        # if eventPropertiesDict
+        # for e in event_handlers:
+        #     eventPropertiesDict[e] = None
+
+        if debug_pane is None:
+            debug_pane = DefaultOutputArea.get_default()
+        self.debug_pane = debug_pane
+
+    @property
+    def attrs(self):
+        return self.elem.elementAttributes
+    @attrs.setter
+    def attrs(self, val):
+        self.elem.elementAttributes = val
+
+    @classmethod
+    def canonicalize_widget(cls, x):
+        Widget = JupyterAPIs.get_widgets_api().Widget
+        if isinstance(x, Widget):
+            return x
+        elif isinstance(x, ActiveHTMLWrapper):
+            return x.elem
+        elif isinstance(x, str):
+            x = HTML.parse(x)
+            return cls.from_HTML(x).elem
+        elif isinstance(x, HTML.XMLElement):
+            return cls.from_HTML(x).elem
+        else:
+            raise NotImplementedError("don't know what to do with object {} of type {}".format(
+                x, type(x)
+            ))
+
+    @classmethod
+    def from_HTML(cls, x:HTML.XMLElement, event_handlers=None, debug_pane=None):
+        attrs = x.attrs
+        props = {"event_handlers":event_handlers, 'debug_pane':debug_pane}
+        for key, target in [
+            ("cls", "class")
+            ]:
+            if target in attrs:
+                props[key] = attrs[target]
+                del attrs[target]
+        props = dict(props, **attrs)
+        return cls(
+            *[x.tostring() if not isinstance(x, str) else x for x in x.elems],
+            tag=x.tag,
+            **props
+        )
+
+    def display(self):
+        return JupyterAPIs.get_display_api().display(self.elem)
+    def _ipython_display_(self):
+        return self.display()
+
+    @staticmethod
+    def _handle_event(e, event_handlers, self):
+        try:
+            handler = event_handlers[e['type']]
+        except KeyError:
+            pass
+        else:
+            handler(e, self)
+    def handle_event(self, e):
+        with self.debug_pane:
+            return self._handle_event(e, self.event_handlers, self)
+
+    def link(self, elem):
+        if not hasattr(elem, 'wrappers'): # ok
+            elem.wrappers = weakref.WeakSet()
+        elem.wrappers.add(self)
+
+class HTMLWidgets:
+    class Abbr(ActiveHTMLWrapper): base=HTML.Abbr
+    class Address(ActiveHTMLWrapper): base=HTML.Address
+    class Anchor(ActiveHTMLWrapper): base=HTML.Anchor
+    A = Anchor
+    class Area(ActiveHTMLWrapper): base=HTML.Area
+    class Article(ActiveHTMLWrapper): base=HTML.Article
+    class Aside(ActiveHTMLWrapper): base=HTML.Aside
+    class Audio(ActiveHTMLWrapper): base=HTML.Audio
+    class B(ActiveHTMLWrapper): base=HTML.B
+    class Base(ActiveHTMLWrapper): base=HTML.Base
+    class BaseList(ActiveHTMLWrapper): base=HTML.BaseList
+    class Bdi(ActiveHTMLWrapper): base=HTML.Bdi
+    class Bdo(ActiveHTMLWrapper): base=HTML.Bdo
+    class Blockquote(ActiveHTMLWrapper): base=HTML.Blockquote
+    class Body(ActiveHTMLWrapper): base=HTML.Body
+    class Bold(ActiveHTMLWrapper): base=HTML.Bold
+    class Br(ActiveHTMLWrapper): base=HTML.Br
+    class Button(ActiveHTMLWrapper): base=HTML.Button
+    class Canvas(ActiveHTMLWrapper): base=HTML.Canvas
+    class Caption(ActiveHTMLWrapper): base=HTML.Caption
+    class Cite(ActiveHTMLWrapper): base=HTML.Cite
+    class ClassAdder(ActiveHTMLWrapper): base=HTML.ClassAdder
+    class ClassRemover(ActiveHTMLWrapper): base=HTML.ClassRemover
+    class Code(ActiveHTMLWrapper): base=HTML.Code
+    class Col(ActiveHTMLWrapper): base=HTML.Col
+    class Colgroup(ActiveHTMLWrapper): base=HTML.Colgroup
+    class Data(ActiveHTMLWrapper): base=HTML.Data
+    class Datalist(ActiveHTMLWrapper): base=HTML.Datalist
+    class Dd(ActiveHTMLWrapper): base=HTML.Dd
+    class Del(ActiveHTMLWrapper): base=HTML.Del
+    class Details(ActiveHTMLWrapper): base=HTML.Details
+    class Dfn(ActiveHTMLWrapper): base=HTML.Dfn
+    class Dialog(ActiveHTMLWrapper): base=HTML.Dialog
+    class Div(ActiveHTMLWrapper): base=HTML.Div
+    class Dl(ActiveHTMLWrapper): base=HTML.Dl
+    class Dt(ActiveHTMLWrapper): base=HTML.Dt
+    class ElementModifier(ActiveHTMLWrapper): base=HTML.ElementModifier
+    class Em(ActiveHTMLWrapper): base=HTML.Em
+    class Embed(ActiveHTMLWrapper): base=HTML.Embed
+    class Fieldset(ActiveHTMLWrapper): base=HTML.Fieldset
+    class Figcaption(ActiveHTMLWrapper): base=HTML.Figcaption
+    class Figure(ActiveHTMLWrapper): base=HTML.Figure
+    class Footer(ActiveHTMLWrapper): base=HTML.Footer
+    class Form(ActiveHTMLWrapper): base=HTML.Form
+    class Head(ActiveHTMLWrapper): base=HTML.Head
+    class Header(ActiveHTMLWrapper): base=HTML.Header
+    class Heading(ActiveHTMLWrapper): base=HTML.Heading
+    class Hr(ActiveHTMLWrapper): base=HTML.Hr
+    class Iframe(ActiveHTMLWrapper): base=HTML.Iframe
+    class Image(ActiveHTMLWrapper): base=HTML.Image
+    class Img(ActiveHTMLWrapper): base=HTML.Img
+    class Input(ActiveHTMLWrapper): base=HTML.Input
+    class Ins(ActiveHTMLWrapper): base=HTML.Ins
+    class Italic(ActiveHTMLWrapper): base=HTML.Italic
+    class Kbd(ActiveHTMLWrapper): base=HTML.Kbd
+    class Label(ActiveHTMLWrapper): base=HTML.Label
+    class Legend(ActiveHTMLWrapper): base=HTML.Legend
+    class Li(ActiveHTMLWrapper): base=HTML.Li
+    class Link(ActiveHTMLWrapper): base=HTML.Link
+    class List(ActiveHTMLWrapper): base=HTML.List
+    class ListItem(ActiveHTMLWrapper): base=HTML.ListItem
+    class Main(ActiveHTMLWrapper): base=HTML.Main
+    class Map(ActiveHTMLWrapper): base=HTML.Map
+    class Mark(ActiveHTMLWrapper): base=HTML.Mark
+    class Meta(ActiveHTMLWrapper): base=HTML.Meta
+    class Meter(ActiveHTMLWrapper): base=HTML.Meter
+    class Nav(ActiveHTMLWrapper): base=HTML.Nav
+    class Noscript(ActiveHTMLWrapper): base=HTML.Noscript
+    class NumberedList(ActiveHTMLWrapper): base=HTML.NumberedList
+    class Object(ActiveHTMLWrapper): base=HTML.Object
+    class Ol(ActiveHTMLWrapper): base=HTML.Ol
+    class Optgroup(ActiveHTMLWrapper): base=HTML.Optgroup
+    class Option(ActiveHTMLWrapper): base=HTML.Option
+    class Output(ActiveHTMLWrapper): base=HTML.Output
+    class P(ActiveHTMLWrapper): base=HTML.P
+    class Param(ActiveHTMLWrapper): base=HTML.Param
+    class Picture(ActiveHTMLWrapper): base=HTML.Picture
+    class Pre(ActiveHTMLWrapper): base=HTML.Pre
+    class Progress(ActiveHTMLWrapper): base=HTML.Progress
+    class Q(ActiveHTMLWrapper): base=HTML.Q
+    class Rp(ActiveHTMLWrapper): base=HTML.Rp
+    class Rt(ActiveHTMLWrapper): base=HTML.Rt
+    class Ruby(ActiveHTMLWrapper): base=HTML.Ruby
+    class S(ActiveHTMLWrapper): base=HTML.S
+    class Samp(ActiveHTMLWrapper): base=HTML.Samp
+    class Script(ActiveHTMLWrapper): base=HTML.Script
+    class Section(ActiveHTMLWrapper): base=HTML.Section
+    class Select(ActiveHTMLWrapper): base=HTML.Select
+    class Small(ActiveHTMLWrapper): base=HTML.Small
+    class Source(ActiveHTMLWrapper): base=HTML.Source
+    class Span(ActiveHTMLWrapper): base=HTML.Span
+    class Strong(ActiveHTMLWrapper): base=HTML.Strong
+    class Style(ActiveHTMLWrapper): base=HTML.Style
+    class StyleAdder(ActiveHTMLWrapper): base=HTML.StyleAdder
+    class Sub(ActiveHTMLWrapper): base=HTML.Sub
+    class SubHeading(ActiveHTMLWrapper): base=HTML.SubHeading
+    class SubsubHeading(ActiveHTMLWrapper): base=HTML.SubsubHeading
+    class SubsubsubHeading(ActiveHTMLWrapper): base=HTML.SubsubsubHeading
+    class SubHeading5(ActiveHTMLWrapper): base=HTML.SubHeading5
+    class SubHeading6(ActiveHTMLWrapper): base=HTML.SubHeading6
+    class Summary(ActiveHTMLWrapper): base=HTML.Summary
+    class Sup(ActiveHTMLWrapper): base=HTML.Sup
+    class Svg(ActiveHTMLWrapper): base=HTML.Svg
+    class Table(ActiveHTMLWrapper): base=HTML.Table
+    class TableBody(ActiveHTMLWrapper): base=HTML.TableBody
+    class TableHeading(ActiveHTMLWrapper): base=HTML.TableHeading
+    class TableItem(ActiveHTMLWrapper): base=HTML.TableItem
+    class TableRow(ActiveHTMLWrapper): base=HTML.TableRow
+    class TagElement(ActiveHTMLWrapper): base=HTML.TagElement
+    class Tbody(ActiveHTMLWrapper): base=HTML.Tbody
+    class Td(ActiveHTMLWrapper): base=HTML.Td
+    class Template(ActiveHTMLWrapper): base=HTML.Template
+    class Text(ActiveHTMLWrapper): base=HTML.Text
+    class Textarea(ActiveHTMLWrapper): base=HTML.Textarea
+    class Tfoot(ActiveHTMLWrapper): base=HTML.Tfoot
+    class Th(ActiveHTMLWrapper): base=HTML.Th
+    class Thead(ActiveHTMLWrapper): base=HTML.Thead
+    class Time(ActiveHTMLWrapper): base=HTML.Time
+    class Title(ActiveHTMLWrapper): base=HTML.Title
+    class Tr(ActiveHTMLWrapper): base=HTML.Tr
+    class Track(ActiveHTMLWrapper): base=HTML.Track
+    class U(ActiveHTMLWrapper): base=HTML.U
+    class Ul(ActiveHTMLWrapper): base=HTML.Ul
+    class Var(ActiveHTMLWrapper): base=HTML.Var
+    class Video(ActiveHTMLWrapper): base=HTML.Video
+    class Wbr(ActiveHTMLWrapper): base=HTML.Wbr

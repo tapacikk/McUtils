@@ -88,15 +88,15 @@ class BootstrapBase(HTML):
         cls='bi'
         def __init__(self, icon_name, cls=None, **attrs):
             # cls = BootstrapBase._manage_cls(self, cls, icon_name)
-            super().__init__(variant=icon_name, cls=cls, **attrs)
+            super().__init__(" ", variant=icon_name, cls=cls, **attrs)
     class FontAwesomeIcon(SpanComponent):
         cls='fa'
         def __init__(self, icon_name, **attrs):
-            super().__init__(variant=icon_name, **attrs)
+            super().__init__(" ", variant=icon_name, **attrs)
     class GlyphIcon(SpanComponent):
         cls='glyphicon'
         def __init__(self, icon_name, **attrs):
-            super().__init__(variant=icon_name, **attrs)
+            super().__init__(" ", variant=icon_name, **attrs)
 
     class Col(HTML.Div):
         cls='col'
