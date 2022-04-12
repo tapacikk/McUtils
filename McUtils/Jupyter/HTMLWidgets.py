@@ -56,7 +56,7 @@ class JHTMLShadowDOMElement:
                     attrs['cls'] = self.widg._dom_classes
                 dom_el = HTML.Div(children, **attrs)
             elif hasattr(self.widg, 'value'):
-                dom_el = HTML.parse(self.widg.value)
+                dom_el = HTML.parse(self.widg.value, strict=False)
                 self.link(dom_el, recursive=True)
             else:
                 dom_el = None
@@ -821,6 +821,7 @@ class ActiveHTMLWrapper:
 
         if len(elements) == 1 and isinstance(elements[0], (list, tuple)):
             elements = elements[0]
+
         attrs = {}
         if self.base is not None:
             shadow_el = self.base(cls=cls, style=style, **attributes)
@@ -911,16 +912,14 @@ class ActiveHTMLWrapper:
             cls._subwrappers[elem] = x
             return elem
         elif isinstance(x, str):
-            x = HTML.parse(x)
-            subwrapper = ActiveHTMLWrapper.from_HTML(x)
-            elem = subwrapper.elem
-            cls._subwrappers[elem] = subwrapper
-            return elem
+            return cls.canonicalize_widget(HTML.parse(x, strict=False))
         elif isinstance(x, HTML.XMLElement):
             subwrapper = ActiveHTMLWrapper.from_HTML(x)
             elem = subwrapper.elem
             cls._subwrappers[elem] = subwrapper
             return elem
+        elif hasattr(x, 'to_widget'):
+            return cls.canonicalize_widget(x.to_widget())
         else:
             raise NotImplementedError("don't know what to do with object {} of type {}".format(
                 x, type(x)
@@ -936,7 +935,16 @@ class ActiveHTMLWrapper:
                 props[key] = attrs[target]
                 del attrs[target]
         props = dict(props, **attrs)
-        body = [y.tostring() if not isinstance(y, str) else y for y in x.elems]
+        body = []
+        for y in x.elems:
+            if not isinstance(y, str):
+                # if hasattr(y, 'to_widget'):
+                #     raise ValueError(y)
+                # try:
+                y = y.tostring()
+                # except:
+                #     raise Exception(y)
+            body.append(y)
         # print(body, props)
         return cls(*body, tag=x.tag, **props)
 
@@ -1156,7 +1164,7 @@ class ActiveHTMLWrapper:
     def load_HTML(self):
         html_base = self.html_string
         if html_base is not None:
-            html_base = HTML.parse(html_base)
+            html_base = HTML.parse(html_base, strict=False)
             html_base.on_update = self._track_html_change
         return html_base
 
@@ -1372,10 +1380,11 @@ class HTMLWidgets:
     class Wbr(ActiveHTMLWrapper): base=HTML.Wbr
 
     class OutputArea(ActiveHTMLWrapper):
-        def __init__(self, *elements, autoclear=False, event_handlers=None, cls=None, **styles):
+        def __init__(self, *elements, max_messages=None, autoclear=False, event_handlers=None, cls=None, **styles):
             if len(elements) == 1 and isinstance(elements, (list, tuple)):
                 elements = elements[0]
             self.autoclear = autoclear
+            self.max_messages = max_messages
             self.output = JupyterAPIs.get_widgets_api().Output()
             elements = list(elements) + [self.output]
             super().__init__(*elements, event_handlers=event_handlers, cls=cls, **styles)
@@ -1392,4 +1401,15 @@ class HTMLWidgets:
                 self.output.clear_output()
             return self.output.__enter__()
         def __exit__(self, exc_type, exc_val, exc_tb):
+            if self.max_messages is not None:
+                n = self.max_messages
+                if len(self.output.outputs) > n:
+                    self.output.outputs = self.output.outputs[-n:]
+                elif len(self.output.outputs) == 1:  # and isinstance(self.output.outputs[0], str):
+                    out_dict = self.output.outputs[0].copy()
+                    msg = out_dict['text']
+                    if msg.count('\n') > n:
+                        msg = "\n".join(msg.splitlines()[-n:]) + "\n"
+                        out_dict['text'] = msg
+                    self.output.outputs = (out_dict,)
             return self.output.__exit__(exc_type, exc_val, exc_tb)

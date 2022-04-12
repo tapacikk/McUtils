@@ -15,7 +15,9 @@ __all__ = [
     "Text",
     "Checkbox",
     "Slider",
-    "RadioButton"
+    "RadioButton",
+    "TextArea",
+    "Select"
 ]
 __reload_hook__ = [".JHTML", ".WidgetTools"]
 
@@ -104,35 +106,36 @@ class FloatRangeChecker(SettingChecker):
         )
 SettingChecker.checkers.append(FloatRangeChecker)
 
-class OutputWidget:
-    def __init__(self, var, **ignored):
-        self.var = var
-        self.output = JupyterAPIs.get_display_api().Output()
-        self.display(self.var.value)
-    def on_change(self):
-        self.display(self.var.value)
-    def print(self, *args, **kwargs):
-        with self:
-            print(*args, **kwargs)
-    def display(self, *args):
-        with self:
-            JupyterAPIs.get_display_api().display_api.display(*args)
-    def __enter__(self):
-        self.output.clear_output()
-        return self.output.__enter__()
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return self.output.__exit__(exc_type, exc_val, exc_tb)
-    def to_widget(self):
-        return self.output
+# class OutputWidget:
+#     def __init__(self, var, **ignored):
+#         self.var = var
+#         self.output = JupyterAPIs.get_display_api().Output()
+#         self.display(self.var.value)
+#     def on_change(self):
+#         self.display(self.var.value)
+#     def print(self, *args, **kwargs):
+#         with self:
+#             print(*args, **kwargs)
+#     def display(self, *args):
+#         with self:
+#             JupyterAPIs.get_display_api().display_api.display(*args)
+#     def __enter__(self):
+#         self.output.clear_output()
+#         return self.output.__enter__()
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         return self.output.__exit__(exc_type, exc_val, exc_tb)
+#     def to_widget(self):
+#         return self.output
 
 class VariableSynchronizer:
-    def __init__(self, name, value=None, callbacks=()):
+    def __init__(self, name, value=None, callbacks=(), output_pane=None):
         self._name = name
         self._value = value
         self.callbacks = weakref.WeakSet(callbacks)
+        self.output_pane = DefaultOutputArea.get_default() if output_pane is None else output_pane
         self._watchers = weakref.WeakSet()
     def __repr__(self):
-        return "{}({}, {})".format(
+        return "{}({}, {!r})".format(
             type(self).__name__,
             self._name,
             self._value
@@ -157,13 +160,19 @@ class VariableSynchronizer:
     def value(self, v):
         self.set_value(v)
     def set_value(self, v, caller=None):
-        old = self._value
-        self._value = v
-        for c in self.callbacks:
-            c({'var': self, 'old': old, 'new': self._value})
-        for w in self._watchers:
-            if w is not caller:
-                w.value = self._value
+        with self.output_pane:
+            old = self._value
+            try:
+                check = old != v
+            except TypeError:
+                check = old is not v
+            if check:
+                self._value = v
+                for c in self.callbacks:
+                    c({'var': self, 'old': old, 'new': self._value})
+                for w in self._watchers:
+                    if w is not caller:
+                        w.value = self._value
     def link(self, widget):
         self.set_value(widget.value, caller=widget)
         widget.observe(lambda d: self.set_value(widget.value, caller=widget), names=['value'])
@@ -186,7 +195,7 @@ class Control:
                     control_type = getattr(JupyterAPIs.get_widgets_api(), checker.control_type)
                     break
             else:
-                control_type = OutputWidget
+                control_type = JHTML.OutputArea
         return control_type(**settings)
 
     def to_widget(self):
@@ -320,6 +329,10 @@ class WidgetControl(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def to_jhtml(self):
         ...
+    def display(self):
+        JupyterAPIs.get_display_api().display(self.to_widget())
+    def _ipython_display_(self):
+        self.display()
 
 class SidebarSetter(WidgetControl):
     layout_orientation = 'column'
@@ -408,25 +421,30 @@ class SidebarSetter(WidgetControl):
             self._element_map[wrapper['id']] = wrapper
 
         return bar
-class InputField(WidgetControl):
-    def __init__(self, var, default=None, tag='input', track_value=True, **attrs):
+class ValueWidget(WidgetControl):
+    def __init__(self, var, default=None):
         super().__init__(var)
         if default is not None:
             self.var.value = default
         if self.var.value is None:
             self.var.value = ""
-        attrs['tag'] = tag
-        attrs['track_value'] = track_value
-        self.attrs = attrs
     def get_value(self):
         if self._widget_cache is not None:
-            return self._widget_cache.value
+            val = self._widget_cache.value
+            return "" if val is None else val
     def set_value(self):
         if self._widget_cache is not None:
             self._widget_cache.value = self.var.value
     def update(self, e):
         if self._widget_cache is not None:
             self.var.value = self._widget_cache.value
+class InputField(ValueWidget):
+    def __init__(self, var, default=None, tag='input', track_value=True, continuous_update=False, **attrs):
+        super().__init__(var, default=default)
+        attrs['tag'] = tag
+        attrs['track_value'] = track_value
+        attrs['continuous_update'] = continuous_update
+        self.attrs = attrs
     def to_jhtml(self):
         field = JHTML.Input(**self.attrs)
         return field
@@ -442,7 +460,45 @@ class Checkbox(InputField):
 class RadioButton(InputField):
     def __init__(self, var, type='radio', **attrs):
         super().__init__(var, type=type, **attrs)
-
+class TextArea(InputField):
+    def __init__(self, var, tag='textarea', **attrs):
+        super().__init__(var, tag=tag, **attrs)
+    def to_jhtml(self):
+        field = JHTML.Textarea(**self.attrs)
+        return field
+class ChangeTracker(ValueWidget):
+    base = None
+    def __init__(self, var, base=None, default=None, track_value=True, continuous_update=False, **attrs):
+        super().__init__(var, default=default)
+        if self.var.value is None:
+            self.var.value = ""
+        base = self.base if base is None else base
+        self.base = getattr(JHTML, base) if isinstance(base, str) else base
+        attrs['track_value'] = track_value
+        attrs['continuous_update'] = continuous_update
+        self.attrs = attrs
+class Select(ChangeTracker):
+    base='Select'
+    def __init__(self, var, options, default=None, **attrs):
+        self._options = self.canonicalize_options(options)
+        if default is None and len(self._options) > 0:
+            default = self._options[0][1]
+        super().__init__(var, default=default, **attrs)
+    @classmethod
+    def canonicalize_options(cls, options):
+        ops = []
+        for k in options:
+            try:
+                k, v = k
+            except ValueError:
+                v = k
+            ops.append((k,v))
+        return tuple(ops)
+    def _build_options_list(self):
+        return [JHTML.Option(k, value=v) for k,v in self._options]
+    def to_jhtml(self):
+        field = self.base(*self._build_options_list(), **self.attrs)
+        return field
 
 class CardManipulator(WidgetInterface):
     def __init__(self, func, *controls, title=None, output_pane=None, **opts):
