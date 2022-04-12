@@ -814,7 +814,7 @@ class ActiveHTMLWrapper:
                  debug_pane=None,
                  **attributes
                  ):
-        from ActiveHTMLWidget import HTMLElement
+        from .ActiveHTMLWidget import HTMLElement
         if len(elements) == 1 and isinstance(elements[0], (list, tuple)):
             elements = elements[0]
         attrs = {}
