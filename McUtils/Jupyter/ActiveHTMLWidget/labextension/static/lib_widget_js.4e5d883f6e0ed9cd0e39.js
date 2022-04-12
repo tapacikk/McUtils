@@ -326,11 +326,24 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     updateValue() {
         let el = this.el;
         if (el !== undefined) {
-            let val = el.value;
-            if (val !== undefined) {
-                let newVal = this.model.get('value');
-                if (newVal !== val) {
-                    el.value = newVal;
+            let is_checkbox = el.getAttribute('type') === 'checkbox';
+            if (is_checkbox) {
+                let checked = el.checked;
+                if (checked !== undefined) {
+                    let newVal = this.model.get('value');
+                    let checkVal = newVal.length > 0 && newVal != "false" && newVal != "0";
+                    if (checkVal !== checked) {
+                        el.checked = newVal;
+                    }
+                }
+            }
+            else {
+                let val = el.value;
+                if (val !== undefined) {
+                    let newVal = this.model.get('value');
+                    if (newVal !== val) {
+                        el.value = newVal;
+                    }
                 }
             }
         }
@@ -437,10 +450,20 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     }
     handleChanged(e) {
         let target = e.target;
-        let val = target.value;
-        if (val !== undefined) {
-            this.model.set('value', val, { updated_view: this });
-            this.touch();
+        let is_checkbox = this.el.getAttribute('type') === 'checkbox';
+        if (is_checkbox) {
+            let checked = target.checked;
+            if (checked !== undefined) {
+                this.model.set('value', checked ? "true" : "false", { updated_view: this });
+                this.touch();
+            }
+        }
+        else {
+            let val = target.value;
+            if (val !== undefined) {
+                this.model.set('value', val, { updated_view: this });
+                this.touch();
+            }
         }
     }
     constructEventListener(eventName, props) {
@@ -555,4 +578,4 @@ module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","descr
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.ae86935e5ccc64fabdf6.js.map
+//# sourceMappingURL=lib_widget_js.4e5d883f6e0ed9cd0e39.js.map

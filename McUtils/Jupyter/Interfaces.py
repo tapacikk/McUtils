@@ -5,6 +5,7 @@ from .WidgetTools import JupyterAPIs, DefaultOutputArea
 
 __all__ = [
     "Var",
+    "InterfaceVars",
     "VariableSynchronizer",
     "Control",
     "Manipulator",
@@ -127,6 +128,26 @@ SettingChecker.checkers.append(FloatRangeChecker)
 #     def to_widget(self):
 #         return self.output
 
+class InterfaceVars:
+    _cache_stack = []
+    def __init__(self):
+        self._var_set = set()
+        self.var_list = []
+    @classmethod
+    def active_vars(cls):
+        if len(cls._cache_stack) > 0:
+            return cls._cache_stack[-1]
+        else:
+            return None
+    def add(self, var):
+        if var not in self._var_set:
+            self.var_list.append(var)
+            self._var_set.add(var)
+    def __enter__(self):
+        self._cache_stack.append(self)
+        return self.var_list
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._cache_stack.pop()
 class VariableSynchronizer:
     def __init__(self, name, value=None, callbacks=(), output_pane=None):
         self._name = name
@@ -143,12 +164,17 @@ class VariableSynchronizer:
     _var_cache = weakref.WeakValueDictionary()
     @classmethod
     def create_var(cls, var):
+        var_cache = InterfaceVars.active_vars()
         if isinstance(var, VariableSynchronizer):
+            if var_cache is not None:
+                var_cache.add(var)
             return var
         else:
             if var not in cls._var_cache:
                 this_var = VariableSynchronizer(var)
                 cls._var_cache[var] = this_var # hold a reference...
+            if var_cache is not None:
+                var_cache.add(cls._var_cache[var])
             return cls._var_cache[var]
     @property
     def name(self):
@@ -422,10 +448,10 @@ class SidebarSetter(WidgetControl):
 
         return bar
 class ValueWidget(WidgetControl):
-    def __init__(self, var, default=None):
+    def __init__(self, var, value=None):
         super().__init__(var)
-        if default is not None:
-            self.var.value = default
+        if value is not None:
+            self.var.value = value
         if self.var.value is None:
             self.var.value = ""
     def get_value(self):
@@ -439,9 +465,10 @@ class ValueWidget(WidgetControl):
         if self._widget_cache is not None:
             self.var.value = self._widget_cache.value
 class InputField(ValueWidget):
-    def __init__(self, var, default=None, tag='input', track_value=True, continuous_update=False, **attrs):
-        super().__init__(var, default=default)
+    def __init__(self, var, value=None, tag='input', track_value=True, continuous_update=False, **attrs):
+        super().__init__(var, value=value)
         attrs['tag'] = tag
+        attrs['value'] = value
         attrs['track_value'] = track_value
         attrs['continuous_update'] = continuous_update
         self.attrs = attrs
@@ -457,6 +484,16 @@ class Slider(InputField):
 class Checkbox(InputField):
     def __init__(self, var, type='checkbox', **attrs):
         super().__init__(var, type=type, **attrs)
+    def get_value(self):
+        if self._widget_cache is not None:
+            val = self._widget_cache.value
+            return isinstance(val, str) and val == "true"
+    def set_value(self):
+        if self._widget_cache is not None:
+            if self.var.value:
+                self._widget_cache.value = 'true'
+            else:
+                self._widget_cache.value = 'false'
 class RadioButton(InputField):
     def __init__(self, var, type='radio', **attrs):
         super().__init__(var, type=type, **attrs)
@@ -468,30 +505,32 @@ class TextArea(InputField):
         return field
 class ChangeTracker(ValueWidget):
     base = None
-    def __init__(self, var, base=None, default=None, track_value=True, continuous_update=False, **attrs):
-        super().__init__(var, default=default)
-        if self.var.value is None:
-            self.var.value = ""
+    def __init__(self, var, base=None, value=None, track_value=True, continuous_update=False, **attrs):
+        super().__init__(var, value=value)
         base = self.base if base is None else base
         self.base = getattr(JHTML, base) if isinstance(base, str) else base
+        attrs['value'] = value
         attrs['track_value'] = track_value
         attrs['continuous_update'] = continuous_update
         self.attrs = attrs
 class Select(ChangeTracker):
     base='Select'
-    def __init__(self, var, options, default=None, **attrs):
+    def __init__(self, var, options, value=None, **attrs):
         self._options = self.canonicalize_options(options)
-        if default is None and len(self._options) > 0:
-            default = self._options[0][1]
-        super().__init__(var, default=default, **attrs)
+        if value is None and len(self._options) > 0:
+            value = self._options[0][1]
+        super().__init__(var, value=value, **attrs)
     @classmethod
     def canonicalize_options(cls, options):
         ops = []
         for k in options:
-            try:
-                k, v = k
-            except ValueError:
+            if isinstance(k, str):
                 v = k
+            else:
+                try:
+                    k, v = k
+                except ValueError:
+                    v = k
             ops.append((k,v))
         return tuple(ops)
     def _build_options_list(self):
