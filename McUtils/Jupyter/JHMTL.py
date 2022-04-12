@@ -19,10 +19,12 @@ class JHTML:
     @classmethod
     def load(cls):
         from IPython.core.display import display
-        display(
-            BootstrapWidgets.load(),
-            # JupyterHTMLWrapper.load_styles()
-        )
+
+        elems = [
+            HTMLWidgets.load(),
+            BootstrapWidgets.load()
+        ]
+        display(*(e for e in elems if e is not None))
 
     def __init__(self, context=None, include_bootstrap=False):
         self._context = context
@@ -70,9 +72,11 @@ class JHTML:
         return HTML.parse(src)
 
     @classmethod
-    def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, dynamic=None, _debugPrint=None, **attrs):
+    def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, dynamic=None, track_value=None, trackInput=None, _debugPrint=None, **attrs):
         if (
             event_handlers is not None
+            or track_value is True
+            or trackInput is True
             or _debugPrint is True
             or dynamic is True
         ):

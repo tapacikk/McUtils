@@ -360,6 +360,13 @@ class HTML:
         if isinstance(cls, str):
             cls = cls.split()
         return list(cls)
+    @classmethod
+    def manage_styles(cls, styles):
+        if hasattr(styles, 'items'):
+            styles = CSS(**styles)
+        elif isinstance(styles, str):
+            styles = CSS.parse(styles)
+        return styles
     class XMLElement:
         """
         Convenience API for ElementTree
@@ -421,6 +428,18 @@ class HTML:
                 self._elem_view = None
             self._invalidate_cache()
             self.on_update(self, item, value)
+        def __delitem__(self, item):
+            if isinstance(item, str):
+                try:
+                    del self._attrs[item]
+                except KeyError:
+                    pass
+                self._attr_view = None
+            else:
+                del self._elems[item]
+                self._elem_view = None
+            self._invalidate_cache()
+            self.on_update(self, item, None)
 
         @property
         def tree(self):
@@ -557,6 +576,10 @@ class HTML:
         def remove_class(self, *cls, copy=True):
             return HTML.ClassRemover(self, cls, copy=copy).modify()
         def add_styles(self, copy=True, **sty):
+            return HTML.StyleAdder(self, copy=copy, **sty).modify()
+        def remove_styles(self, copy=True, **sty):
+            return HTML.StyleAdder(self, copy=copy, **sty).modify()
+        def remove_styles(self, copy=True, **sty):
             return HTML.StyleAdder(self, copy=copy, **sty).modify()
 
         def _find_child_node(self, etree):
