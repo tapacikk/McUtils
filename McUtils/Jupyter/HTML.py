@@ -351,6 +351,15 @@ class HTML:
         for x in cls.__dict__:
             if isinstance(x, type):
                 g[x.__name__] = x
+    @classmethod
+    def manage_class(kls, cls):
+        if cls is None:
+            cls = []
+        elif hasattr(cls, 'tostring'):
+            cls = cls.tostring
+        if isinstance(cls, str):
+            cls = cls.split()
+        return list(cls)
     class XMLElement:
         """
         Convenience API for ElementTree
@@ -363,7 +372,7 @@ class HTML:
             if 'cls' in attrs:
                 attrs['class'] = attrs['cls']
                 del attrs['cls']
-            self._attrs = attrs
+            self._attrs = {k.replace("_", "-"):v for k,v in attrs.items()}
             self._attr_view = None
             self._parents = weakref.WeakSet()
             self._tree_cache = None
@@ -444,6 +453,8 @@ class HTML:
                             attrs['class'] = str(attrs['class'])
                         else:
                             attrs['class'] = " ".join(str(c) for c in attrs['class'])
+                        if len(attrs['class']) == 0:
+                            del attrs['class']
                 my_el = ElementTree.SubElement(root, self.tag, attrs)
                 if all(isinstance(e, str) for e in self.elems):
                     my_el.text = "\n".join(self.elems)
@@ -476,15 +487,71 @@ class HTML:
             return self._tree_cache
         def tostring(self):
             return "\n".join(s.decode() for s in ElementTree.tostringlist(self.to_tree()))
+        def format(self, padding="", prefix=""):
+            inner_comps = [
+                (x.format(padding=padding+"  ", prefix=prefix) if isinstance(x, HTML.XMLElement) else repr(x))
+                for x in self.elems if not (isinstance(x, str) and x.strip() == "")
+            ]
+            test = repr(inner_comps)
+            if len(test) > 100 or ("\\n" in test):
+                inner = ",\n".join(padding + "  " + x for x in inner_comps)
+            else:
+                inner = padding + "  " + ", ".join(inner_comps)
+
+            template_header = "{name}("
+            template_footer = "{padding}  )"
+            template_pieces = []
+            args_joiner = ", "
+            full_joiner = "\n"
+            if not isinstance(self, HTML.TagElement):
+                template_pieces.append("{tag}")
+            if len(self.attrs) > 0:
+                attrs = (",\n").join(
+                    padding + "  " + "{} = {!r}".format(k.replace("-", "_").replace("class", "cls"), v) for k,v in self.attrs.items()
+                )
+                if len(inner.strip()) > 0:
+                    template_pieces.append("{inner}")
+                    template_pieces.append("{attrs}")
+                    args_joiner=",\n"
+                elif len(self.attrs) > 1:
+                    template_pieces.append("{attrs}")
+                    args_joiner = ",\n"
+                else:
+                    attrs = attrs.strip()
+                    template_pieces.append("{attrs}")
+                    full_joiner = ""
+                    template_footer = ")"
+            else:
+                attrs = ""
+                template_pieces.append("{inner}")
+                if "\n" not in inner:
+                    inner = inner.strip()
+                    full_joiner = ""
+                    template_footer = ")"
+            template = full_joiner.join([
+                template_header,
+                args_joiner.join(template_pieces),
+                template_footer
+            ])
+
+            return template.format(
+                padding=padding,
+                tag=padding + "  " + repr(self.tag) if len(template_pieces) > 1 else repr(self.tag),
+                name=prefix+type(self).__name__,
+                inner=inner,
+                attrs=attrs
+            )
+        def dump(self, prefix=""):
+            print(self.format(prefix=prefix))
         def __repr__(self):
             return "{}({}, {})".format(type(self).__name__, self.elems, self.attrs)
         def _repr_html_(self):
             return self.tostring()
         def display(self):
-            from .HTMLWidgets import JupyterHTMLWrapper
-            return JupyterHTMLWrapper.get_display_api().display(JupyterHTMLWrapper.get_display_api().HTML(self.tostring()))
+            from .WidgetTools import JupyterAPIs
+            return JupyterAPIs.get_display_api().display(JupyterAPIs.get_display_api().HTML(self.tostring()))
         def make_class_list(self):
-            self.attrs['class'] = self.attrs['class'].split()
+            self._attrs['class'] = self._attrs['class'].split()
         def add_class(self, *cls, copy=True):
             return HTML.ClassAdder(self, cls, copy=copy).modify()
         def remove_class(self, *cls, copy=True):
@@ -683,6 +750,8 @@ class HTML:
     class SubHeading(TagElement): tag='h2'
     class SubsubHeading(TagElement): tag='h3'
     class SubsubsubHeading(TagElement): tag='h4'
+    class SubHeading5(TagElement): tag='h5'
+    class SubHeading6(TagElement): tag='h6'
     class Small(TagElement): tag='small'
     class Bold(TagElement): tag='b'
     class Italic(TagElement): tag='i'
@@ -692,7 +761,7 @@ class HTML:
         def __init__(self, *elems, item_attributes=None, **attrs):
             if item_attributes is None:
                 item_attributes = {}
-            elems = [HTML.ListItem(x, **item_attributes) if not isinstance(x, HTML.ListItem) else x for x in elems]
+            # elems = [HTML.ListItem(x, **item_attributes) if not isinstance(x, HTML.ListItem) else x for x in elems]
             super().__init__(*elems, **attrs)
     class List(BaseList): tag='ul'
     class NumberedList(BaseList): tag='ol'
@@ -703,6 +772,9 @@ class HTML:
     class Button(TagElement): tag='button'
     class TableRow(TagElement): tag='tr'
     class TableHeading(TagElement): tag='th'
+    class TableHeader(TagElement): tag='thead'
+    class TableFooter(TagElement): tag='tfoot'
+    class TableBody(TagElement): tag='tbody'
     class TableItem(TagElement): tag='td'
     class Table(TagElement):
         tag = 'table'
@@ -722,6 +794,100 @@ class HTML:
 
     class Canvas(TagElement): tag='canvas'
 
+    A = Anchor
+    class Abbr(TagElement): tag= "abbr"
+    class Address(TagElement): tag= "address"
+    class Area(TagElement): tag= "area"
+    class Article(TagElement): tag= "article"
+    class Aside(TagElement): tag= "aside"
+    class Audio(TagElement): tag= "audio"
+    class B(TagElement): tag= "b"
+    class Base(TagElement): tag= "base"
+    class Bdi(TagElement): tag= "bdi"
+    class Bdo(TagElement): tag= "bdo"
+    class Blockquote(TagElement): tag= "blockquote"
+    class Body(TagElement): tag= "body"
+    class Br(TagElement): tag= "br"
+    class Caption(TagElement): tag= "caption"
+    class Cite(TagElement): tag= "cite"
+    class Code(TagElement): tag= "code"
+    class Col(TagElement): tag= "col"
+    class Colgroup(TagElement): tag= "colgroup"
+    class Data(TagElement): tag= "data"
+    class Datalist(TagElement): tag= "datalist"
+    class Dd(TagElement): tag= "dd"
+    class Del(TagElement): tag= "del"
+    class Details(TagElement): tag= "details"
+    class Dfn(TagElement): tag= "dfn"
+    class Dialog(TagElement): tag= "dialog"
+    class Dl(TagElement): tag= "dl"
+    class Dt(TagElement): tag= "dt"
+    class Em(TagElement): tag= "em"
+    class Embed(TagElement): tag= "embed"
+    class Fieldset(TagElement): tag= "fieldset"
+    class Figcaption(TagElement): tag= "figcaption"
+    class Figure(TagElement): tag= "figure"
+    class Footer(TagElement): tag= "footer"
+    class Form(TagElement): tag= "form"
+    class Head(TagElement): tag= "head"
+    class Header(TagElement): tag= "header"
+    class Hr(TagElement): tag= "hr"
+    i = Italic
+    class Iframe(TagElement): tag= "iframe"
+    Img = Image
+    class Input(TagElement): tag= "input"
+    class Ins(TagElement): tag= "ins"
+    class Kbd(TagElement): tag= "kbd"
+    class Label(TagElement): tag= "label"
+    class Legend(TagElement): tag= "legend"
+    Li = ListItem
+    class Link(TagElement): tag= "link"
+    class Main(TagElement): tag= "main"
+    class Map(TagElement): tag= "map"
+    class Mark(TagElement): tag= "mark"
+    class Meta(TagElement): tag= "meta"
+    class Meter(TagElement): tag= "meter"
+    class Noscript(TagElement): tag= "noscript"
+    class Object(TagElement): tag= "object"
+    Ol = NumberedList
+    P = Text
+    class Optgroup(TagElement): tag= "optgroup"
+    class Option(TagElement): tag= "option"
+    class Output(TagElement): tag= "output"
+    class Param(TagElement): tag= "param"
+    class Picture(TagElement): tag= "picture"
+    class Progress(TagElement): tag= "progress"
+    class Q(TagElement): tag= "q"
+    class Rp(TagElement): tag= "rp"
+    class Rt(TagElement): tag= "rt"
+    class Ruby(TagElement): tag= "ruby"
+    class S(TagElement): tag= "s"
+    class Samp(TagElement): tag= "samp"
+    class Section(TagElement): tag= "section"
+    class Select(TagElement): tag= "select"
+    class Source(TagElement): tag= "source"
+    class Strong(TagElement): tag= "strong"
+    class Sub(TagElement): tag= "sub"
+    class Summary(TagElement): tag= "summary"
+    class Sup(TagElement): tag= "sup"
+    class Svg(TagElement): tag= "svg"
+    Tbody = TableBody
+    Td = TableItem
+    class Template(TagElement): tag= "template"
+    class Textarea(TagElement): tag= "textarea"
+    Tfoot = TableFooter
+    Th = TableHeading
+    Thead = TableHeader
+    class Time(TagElement): tag= "time"
+    class Title(TagElement): tag= "title"
+    Tr = TableRow
+    class Track(TagElement): tag= "track"
+    class U(TagElement): tag= "u"
+    Ul = List
+    class Var(TagElement): tag= "var"
+    class Video(TagElement): tag= "video"
+    class Wbr(TagElement): tag= "wbr"
+
     _cls_map = None
     @classmethod
     def get_class_map(cls):
@@ -733,18 +899,30 @@ class HTML:
         return cls._cls_map
 
     @classmethod
-    def convert(cls, etree:ElementTree.Element):
-        children = [cls.convert(x) for x in etree]
+    def convert(cls, etree:ElementTree.Element, strip=True):
+        children = [cls.convert(x, strip=strip) for x in etree]
         text = etree.text
+        if text is not None:
+            if isinstance(text, str):
+                text = [text]
+        else:
+            text = []
         tail = etree.tail
+        if tail is not None:
+            if isinstance(tail, str):
+                tail = [tail]
+        else:
+            tail = []
+        tag = etree.tag
 
         elems = (
-                ([text] if text is not None else [])
+                [t.strip() if strip else t for t in text]
                 + children
-                + (list(tail) if tail is not None else [])
+                + [t.strip() if strip else t for t in tail]
         )
+        if strip:
+            elems = [e for e in elems if not isinstance(e, str) or len(e) > 0]
 
-        tag = etree.tag
         map = cls.get_class_map()
         try:
             tag_class = map[tag]

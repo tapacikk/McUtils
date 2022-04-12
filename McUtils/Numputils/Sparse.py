@@ -1,6 +1,6 @@
 import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc, gc
 from ..Scaffolding import MaxSizeCache, Logger
-from .SetOps import contained, unique as nput_unique
+from .SetOps import contained, unique as nput_unique, find
 from .Misc import infer_inds_dtype, downcast_index_array
 
 __all__ = [
@@ -1273,6 +1273,10 @@ class ScipySparseArray(SparseArray):
     @classmethod
     def _ravel_indices(cls, mult, dims):
         # we're hoping that we call with `n` often enough that we get a performance benefit
+        # # need to make sure all mult objects have same dtype...
+        # dtypes = {m.dtype for m in mult}
+        # max_dtype = max(dtypes)
+        # mult = tuple(m.astype(max_dtype) for m in mult)
         if not cls.caching_enabled:
             return np.ravel_multi_index(mult, dims)
         if isinstance(dims, list):
@@ -1292,7 +1296,10 @@ class ScipySparseArray(SparseArray):
         if n_hash in cache:
             res = cache[n_hash]
         else:
-            res = np.ravel_multi_index(mult, dims)
+            try:
+                res = np.ravel_multi_index(mult, dims)
+            except:
+                raise Exception(mult, dims)
             cache[n_hash] = res
         return res
 
@@ -2033,9 +2040,16 @@ class ScipySparseArray(SparseArray):
         inds = list(inds)
         for i, b, s in zip(range(len(blocks)), blocks, self.shape):
             if b is not None:
+                # need to sort the block bits it turns out...
                 ixs = inds[i]
+                b2, sorting = nput_unique(b)
+                if len(b2) < len(b):
+                    raise ValueError("sparse array slicing can't duplicate indices")
+                b = b2
                 filter, mapping = self._find_block_alignment(ixs, b, s)
-                # print(ixs, b, s, filter)
+                # now how do we invert this transformation? #TODO: formally provide that I don't need to
+                # resort = np.argsort(sorting)
+
                 inds = [ix[filter] for ix in inds]
                 data = data[filter]
                 inds[i] = mapping[inds[i]]
@@ -2099,6 +2113,7 @@ class ScipySparseArray(SparseArray):
             # now we iterate over each block and use it as a successive filter on our non-zero positions
             data, inds = self.block_data
             data, inds = self._get_filtered_elements(blocks, data, inds)
+            # print(blocks, inds, old_inds)
 
             # now that we've filtered our data, we filter out axes of size 1
             # print(inds, new_shape)
