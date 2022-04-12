@@ -359,6 +359,11 @@ class HTML:
             cls = cls.tostring
         if isinstance(cls, str):
             cls = cls.split()
+        else:
+            try:
+                iter(cls)
+            except TypeError:
+                cls = str(cls).split()
         return list(cls)
     @classmethod
     def manage_styles(cls, styles):
@@ -958,5 +963,9 @@ class HTML:
 
     @classmethod
     def parse(cls, str):
-        etree = ElementTree.fromstring(str)
-        return cls.convert(etree)
+        try:
+            etree = ElementTree.fromstring(str)
+        except ElementTree.ParseError:
+            return HTML.Span(str)
+        else:
+            return cls.convert(etree)

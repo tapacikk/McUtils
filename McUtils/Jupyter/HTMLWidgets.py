@@ -813,20 +813,24 @@ class ActiveHTMLWrapper:
                  event_handlers=None,
                  debug_pane=None,
                  track_value=None,
-                 trackInput=None,
                  **attributes
                  ):
         from .ActiveHTMLWidget import HTMLElement
         if len(elements) == 1 and isinstance(elements[0], (list, tuple)):
             elements = elements[0]
         attrs = {}
-        if tag is None and hasattr(self.base, 'tag'):
-            tag = self.base.tag
+        if self.base is not None:
+            shadow_el = self.base(cls=cls, style=style)
+        else:
+            shadow_el = None
+        if tag is None and hasattr(shadow_el, 'tag'):
+            tag = shadow_el.tag
         if tag is not None:
             attrs['tagName'] = tag
 
-        if cls is None and hasattr(self.base, 'cls'):
-            cls = self.base.cls
+        if shadow_el is not None:
+            if 'class' in shadow_el.attrs:
+                cls = shadow_el['class']
         if cls is not None:
             classList = HTML.manage_class(cls)
             attrs['classList'] = classList
@@ -852,12 +856,16 @@ class ActiveHTMLWrapper:
             attrs['id'] = id
         if value is not None:
             attrs['value'] = value
+
+        if shadow_el is not None:
+            if 'style' in shadow_el.attrs:
+                style = shadow_el['style']
         if style is not None:
             if isinstance(style, str):
                 style = CSS.parse(style).props
             elif isinstance(style, CSS):
                 style = style.props
-            attrs['style'] = style
+            attrs['styleDict'] = style
         if '_debugPrint' in attributes:
             attrs['_debugPrint'] = attributes['_debugPrint']
             del attributes['_debugPrint']
@@ -894,9 +902,12 @@ class ActiveHTMLWrapper:
             return x.elem
         elif isinstance(x, str):
             x = HTML.parse(x)
-            return cls.from_HTML(x).elem
+            return ActiveHTMLWrapper.from_HTML(x).elem
         elif isinstance(x, HTML.XMLElement):
-            return cls.from_HTML(x).elem
+            # print("==>", x)
+            new = ActiveHTMLWrapper.from_HTML(x)
+            # print("???", new)
+            return new.elem
         else:
             raise NotImplementedError("don't know what to do with object {} of type {}".format(
                 x, type(x)
@@ -913,11 +924,9 @@ class ActiveHTMLWrapper:
                 props[key] = attrs[target]
                 del attrs[target]
         props = dict(props, **attrs)
-        return cls(
-            *[x.tostring() if not isinstance(x, str) else x for x in x.elems],
-            tag=x.tag,
-            **props
-        )
+        body = [y.tostring() if not isinstance(y, str) else y for y in x.elems]
+        # print(body, props)
+        return cls(*body, tag=x.tag, **props)
 
     def display(self):
         return JupyterAPIs.get_display_api().display(self.elem)
@@ -1109,7 +1118,10 @@ class ActiveHTMLWrapper:
     def add_class(self, *cls):
         cl = self.elem.classList
         cur_len = len(cl)
+        proper_classes = []
         for c in cls:
+            proper_classes.extend(HTML.manage_class(c))
+        for c in proper_classes:
             if c not in cl:
                 cl.append(c)
         if len(cl) > cur_len:
@@ -1119,7 +1131,10 @@ class ActiveHTMLWrapper:
     def remove_class(self, *cls):
         cl = self.elem.classList
         cur_len = len(cl)
+        proper_classes = []
         for c in cls:
+            proper_classes.extend(HTML.manage_class(c))
+        for c in proper_classes:
             if c in cl:
                 cl.remove(c)
         if len(cl) < cur_len:

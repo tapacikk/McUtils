@@ -61,7 +61,7 @@ class LayoutManagerWidget extends widgets_1.Widget {
         options.tag = view.tagName;
         super(options);
         this._view = view;
-        this.layout = new widgets_1.PanelLayout();
+        this.layout = new widgets_1.PanelLayout({ fitPolicy: 'set-no-constraint' });
     }
     dispose() {
         if (this.isDisposed) {
@@ -146,6 +146,8 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
             }
         }
     }
+    setLayout(layout, oldLayout) { } // null override
+    setStyle(style, oldStyle) { } // null override
     setStyles() {
         let elementStyles = this.model.get("styleDict");
         if (elementStyles.length === 0) {
@@ -158,10 +160,14 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
             }
             for (let prop in elementStyles) {
                 if (elementStyles.hasOwnProperty(prop)) {
-                    // console.log(">", prop, elementStyles[prop]);
+                    // console.log(">>>", prop, elementStyles[prop], typeof prop);
                     this.el.style.setProperty(prop, elementStyles[prop]);
+                    // console.log("<<<", prop, this.el.style.getPropertyValue(prop));
                     this._currentStyles.add(prop);
                 }
+            }
+            if (this.model.get("_debugPrint")) {
+                console.log(this.el, "final styles:", this.el.style);
             }
         }
     }
@@ -382,6 +388,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     }
     render() {
         super.render();
+        this.el.classList.remove('lm-Widget', 'p-Widget');
         this.update();
     }
     update() {
@@ -553,4 +560,4 @@ module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","descr
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.7c4e2ccb669e9e00de8d.js.map
+//# sourceMappingURL=lib_widget_js.4e4206282cbdd8094a3f.js.map
