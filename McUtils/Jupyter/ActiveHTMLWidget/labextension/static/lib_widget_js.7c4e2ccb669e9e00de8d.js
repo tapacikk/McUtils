@@ -111,6 +111,16 @@ ActiveHTMLModel.view_name = 'ActiveHTMLView'; // Set to null if no view
 ActiveHTMLModel.view_module = version_1.MODULE_NAME; // Set to null if no view
 ActiveHTMLModel.view_module_version = version_1.MODULE_VERSION;
 class ActiveHTMLView extends base_1.DOMWidgetView {
+    // constructDict(listPair:any) {
+    //     let res = {};
+    //     let keys = listPair[0];
+    //     let vals = listPair[1];
+    //     for (let i = 0; i < keys.length; i++) {
+    //         //@ts-ignore
+    //         res[keys[i]] = vals[i];
+    //     }
+    //     return res;
+    // }
     initialize(parameters) {
         super.initialize(parameters);
         //@ts-ignore
@@ -118,6 +128,11 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         this.listenTo(this.model, 'change:children', this.updateBody);
         this.listenTo(this.model, 'change:innerHTML', this.updateBody);
         this.listenTo(this.model, 'change:textContent', this.updateBody);
+        this.listenTo(this.model, 'change:styleDict', this.updateStyles);
+        this.listenTo(this.model, 'change:classList', this.updateClassList);
+        this.listenTo(this.model, 'change:value', this.updateValue);
+        this.listenTo(this.model, 'change:elementAttributes', this.updateAttributes);
+        this.listenTo(this.model, 'change:eventPropertiesDict', this.updateEvents);
         this._currentEvents = {};
         this._currentStyles = new Set();
     }
@@ -150,14 +165,17 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
             }
         }
     }
-    updateStyles(model, value, options) {
+    updateStyles() {
         this.setStyles();
         this.removeStyles();
     }
     // Manage classes
     updateClassList() {
         // @ts-ignore
-        for (let cls of this.el.classList) {
+        if (this.model.get("_debugPrint")) {
+            console.log(this.el, "Element Classes:", this.model.get("classList"));
+        }
+        for (let cls in this.el.classList) {
             this.el.classList.remove(cls);
         }
         for (let cls of this.model.get("classList")) {
@@ -215,8 +233,6 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                 console.log(this.el, "Updating Children...");
             }
             this.update_children();
-            // console.log('for the future...');
-            // this.updateChildren();
         }
         else {
             let html = this.model.get("innerHTML");
@@ -293,11 +309,11 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     updateAttributes() {
         let attrs = this.model.get('elementAttributes');
         let debug = this.model.get("_debugPrint");
+        if (debug) {
+            console.log(this.el, "Element Properties:", attrs);
+        }
         for (let prop in attrs) {
             let val = attrs[prop];
-            if (debug) {
-                console.log(this.el, "Adding Property:", prop);
-            }
             if (val === "") {
                 this.el.removeAttribute(prop);
             }
@@ -321,13 +337,26 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     setEvents() {
         let listeners = this.model.get('eventPropertiesDict');
         let debug = this.model.get("_debugPrint");
+        if (debug) {
+            console.log(this.el, "Adding Events:", listeners);
+        }
         for (let key in listeners) {
             if (listeners.hasOwnProperty(key)) {
-                if (debug) {
-                    console.log(this.el, "Adding Event:", key);
+                if (!this._currentEvents.hasOwnProperty(key)) {
+                    this._currentEvents[key] = [
+                        listeners[key],
+                        this.constructEventListener(key, listeners[key])
+                    ];
+                    this.el.addEventListener(key, this._currentEvents[key][1]);
                 }
-                this._currentEvents[key] = this.constructEventListener(key, listeners[key]);
-                this.el.addEventListener(key, this._currentEvents[key]);
+                else if (this._currentEvents[key][0] !== listeners[key]) {
+                    this.el.removeEventListener(key, this._currentEvents[key][1]);
+                    this._currentEvents[key] = [
+                        listeners[key],
+                        this.constructEventListener(key, listeners[key])
+                    ];
+                    this.el.addEventListener(key, this._currentEvents[key][1]);
+                }
             }
         }
     }
@@ -341,7 +370,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                     if (debug) {
                         console.log(this.el, "Removing Event:", prop);
                     }
-                    this.el.removeEventListener(prop, this._currentEvents[prop]);
+                    this.el.removeEventListener(prop, this._currentEvents[prop][1]);
                     this._currentEvents.delete(prop);
                 }
             }
@@ -351,23 +380,9 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         this.setEvents();
         this.removeEvents();
     }
-    // removeEvents() {
-    //     let listeners = this.model.get('eventPropertiesDict') as Record<string, string[]>;
-    //     for (let key in listeners) {
-    //         if (listeners.hasOwnProperty(key)) {
-    //             this.el.addEventListener(key, this.constructEventListener(key, listeners[key]));
-    //             this._currentEvents.add(key);
-    //         }
-    //     }
-    //     // console.log(events);
-    // }
     render() {
         super.render();
         this.update();
-        this.model.on('change:style', this.updateStyles, this);
-        this.model.on('change:classList', this.updateClassList, this);
-        this.model.on('change:value', this.updateValue, this);
-        this.model.on('change:eventPropertiesDict', this.updateEvents, this);
     }
     update() {
         this.updateBody();
@@ -538,4 +553,4 @@ module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","descr
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.5706047008f00efaa2b2.js.map
+//# sourceMappingURL=lib_widget_js.7c4e2ccb669e9e00de8d.js.map

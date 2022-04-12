@@ -812,6 +812,8 @@ class ActiveHTMLWrapper:
                  style=None,
                  event_handlers=None,
                  debug_pane=None,
+                 track_value=None,
+                 trackInput=None,
                  **attributes
                  ):
         from .ActiveHTMLWidget import HTMLElement
@@ -859,13 +861,20 @@ class ActiveHTMLWrapper:
         if '_debugPrint' in attributes:
             attrs['_debugPrint'] = attributes['_debugPrint']
             del attributes['_debugPrint']
+        if 'trackInput' in attributes:
+            if track_value is None:
+                track_value = attributes['trackInput']
+            del attributes['trackInput']
+        if track_value is not None:
+            attrs['trackInput'] = track_value
 
         if len(attributes) > 0:
             attrs['elementAttributes'] = attributes
         self.elem = HTMLElement(**attrs)
         self.link(self.elem)
+        self._html_cache = None
 
-        self.event_handlers = event_handlers
+        self.event_handlers = {} if event_handlers is None else event_handlers
         if len(eventPropertiesDict) > 0:
             self.elem.bind_callback(self.handle_event)
         # if eventPropertiesDict
@@ -875,13 +884,6 @@ class ActiveHTMLWrapper:
         if debug_pane is None:
             debug_pane = DefaultOutputArea.get_default()
         self.debug_pane = debug_pane
-
-    @property
-    def attrs(self):
-        return self.elem.elementAttributes
-    @attrs.setter
-    def attrs(self, val):
-        self.elem.elementAttributes = val
 
     @classmethod
     def canonicalize_widget(cls, x):
@@ -939,7 +941,232 @@ class ActiveHTMLWrapper:
             elem.wrappers = weakref.WeakSet()
         elem.wrappers.add(self)
 
+    # add an API to make the elem look more like regular HTML
+    @property
+    def id(self):
+        eid = self.elem.id
+        return None if eid == "" else eid
+    @id.setter
+    def id(self, val):
+        if val is None:
+            val = ""
+        self.elem.id = val
+    @property
+    def text(self):
+        eid = self.elem.textContent
+        return None if eid == "" else eid
+    @text.setter
+    def text(self, val):
+        self.elem.children = []
+        self.html_string = ""
+        self.elem.textContent = val
+        self.elem.send_state('children')
+    @property
+    def value(self):
+        eid = self.elem.value
+        return None if eid == "" else eid
+    @value.setter
+    def value(self, val):
+        if val is None:
+            val = ""
+        self.elem.value = val
+    @property
+    def attrs(self):
+        return self.elem.elementAttributes
+    @attrs.setter
+    def attrs(self, val):
+        if "id" in val:
+            self.elem.id = val['id']
+            del val['id']
+        if "value" in val:
+            self.elem.value = val['value']
+            del val['value']
+        if "class" in val:
+            self.elem.classList = HTML.manage_class(val['class'])
+            self.elem.send_state('classList')
+            del val['class']
+        if "style" in val:
+            self.elem.styleDict = HTML.manage_styles(val["style"]).props
+            del val['style']
+            self.elem.send_state('styleDict')
+        self.elem.elementAttributes = val
+
+    def __getitem__(self, item):
+        if isinstance(item, str):
+            return self.get_attribute(item)
+        else:
+            return self.get_child(item)
+    def __setitem__(self, item, value):
+        if isinstance(item, str):
+            self.set_attribute(item, value)
+        else:
+            self.set_child(item, value)
+    def get_attribute(self, key):
+        if key == "id":
+            return self.id
+        elif key == "value":
+            return self.value
+        elif key == "class":
+            return self.elem.classList
+        elif key == "style":
+            return self.elem.styleDict
+        else:
+            return self.elem.elementAttributes[key]
+    def set_attribute(self, key, value):
+        if key == "id":
+            self.id = value
+        elif key == "value":
+            self.value = value
+        elif key == "class":
+            self.elem.classList = HTML.manage_class(value)
+            self.elem.send_state('classList')
+        elif key == "style":
+            self.elem.styleDict = HTML.manage_styles(value)
+            self.elem.send_state('styleDict')
+        else:
+            attrs = self.elem.elementAttributes
+            attrs[key] = value
+            # print(attrs)
+            self.elem.elementAttributes = attrs
+            self.elem.send_state('elementAttributes')
+    def del_attribute(self, key):
+        if key == "id":
+            self.id = None
+        elif key == "value":
+            self.value = None
+        elif key == "class":
+            self.elem.classList = []
+            self.elem.send_state('classList')
+        elif key == "style":
+            self.elem.styleDict = {}
+            self.elem.send_state('styleDict')
+        else:
+            del self.elem.elementAttributes[key]
+            self.elem.send_state('elementAttributes')
+    def get_child(self, position):
+        kids = self.elem.children
+        if len(kids) == 0:
+            body = self.html
+            if body is None:
+                raise IndexError("element {} has no body to index")
+            return body[position]
+        else:
+            return kids[position]
+    def set_child(self, position, value):
+        kids = self.elem.children
+        if len(kids) == 0:
+            body = self.html
+            if body is None:
+                raise IndexError("element {} has no body to index")
+            body[position] = value
+        else:
+            kids[position] = self.canonicalize_widget(value)
+            self.elem.children = kids
+            self.elem.send_state('children')
+    def del_child(self, position):
+        kids = self.elem.children
+        if len(kids) == 0:
+            body = self.html
+            if body is None:
+                raise IndexError("element {} has no body to index")
+            del body[position]
+        else:
+            del kids[position]
+            self.elem.children = kids
+            self.elem.send_state('children')
+
+    @property
+    def html_string(self):
+        eid = self.elem.innerHTML
+        return None if eid == "" else eid
+    @html_string.setter
+    def html_string(self, val):
+        if len(self.elem.children) > 0:
+            self.elem.children = []
+        self.elem.innerHTML = val
+        self._html_cache = None
+    @property
+    def html(self):
+        if self._html_cache is None:
+            self.load_HTML()
+        return self._html_cache
+    @html.setter
+    def html(self, html):
+        self._html_cache = html
+        self.html_string = html.tostring()
+        self._html_cache = html
+    def _track_html_change(self, *_):
+        html = self._html_cache
+        self.html_string = html.tostring()
+        self._html_cache = html
+    def load_HTML(self):
+        html_base = self.html_string
+        if html_base is not None:
+            html_base = HTML.parse(html_base)
+            html_base.on_update = self._track_html_change
+        return html_base
+
+    def add_class(self, *cls):
+        cl = self.elem.classList
+        cur_len = len(cl)
+        for c in cls:
+            if c not in cl:
+                cl.append(c)
+        if len(cl) > cur_len:
+            self.elem.classList = cl
+            self.elem.send_state('classList')
+        return self
+    def remove_class(self, *cls):
+        cl = self.elem.classList
+        cur_len = len(cl)
+        for c in cls:
+            if c in cl:
+                cl.remove(c)
+        if len(cl) < cur_len:
+            self.elem.classList = cl
+            self.elem.send_state('classList')
+        return self
+    def add_styles(self, **sty):
+        sd = self.elem.styleDict
+        for c,v in sty.items():
+            sd[c] = v
+        self.elem.styleDict = sd
+        self.elem.send_state('styleDict')
+    def remove_styles(self, *sty):
+        sd = self.elem.styleDict
+        for c in sty:
+            if c in sd:
+                del sd[c]
+        self.elem.styleDict = sd
+        self.elem.send_state('styleDict')
+    def add_event(self, **events):
+        ed = self.elem.eventPropertiesDict
+        for c,v in events.items():
+            ed[c] = None
+            self.event_handlers[c] = v
+        self.elem.eventPropertiesDict = ed
+        self.elem.send_state('eventPropertiesDict')
+        if len(self.elem.eventPropertiesDict) > 0:
+            self.elem.bind_callback(self.handle_event)
+        return self
+    def remove_event(self, *events):
+        ed = self.elem.eventPropertiesDict
+        for c in events:
+            if c in ed:
+                del ed[c]
+            if c in self.event_handlers:
+                del ed[c]
+        self.elem.eventPropertiesDict = ed
+        self.elem.send_state('eventPropertiesDict')
+        if len(self.elem.eventPropertiesDict) == 0:
+            self.elem.reset_callbacks()
+
 class HTMLWidgets:
+    @classmethod
+    def load(cls):
+        from .ActiveHTMLWidget import HTMLElement
+        return HTMLElement.jupyterlab_install()
+
     class Abbr(ActiveHTMLWrapper): base=HTML.Abbr
     class Address(ActiveHTMLWrapper): base=HTML.Address
     class Anchor(ActiveHTMLWrapper): base=HTML.Anchor
