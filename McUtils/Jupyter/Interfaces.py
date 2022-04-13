@@ -5,12 +5,20 @@ from .WidgetTools import JupyterAPIs, DefaultOutputArea
 
 __all__ = [
     "Var",
+    "InterfaceVars",
     "VariableSynchronizer",
     "Control",
     "Manipulator",
     "Sidebar",
     "SidebarSetter",
-    "CardManipulator"
+    "CardManipulator",
+    "InputField",
+    "StringField",
+    "Checkbox",
+    "Slider",
+    "RadioButton",
+    "TextArea",
+    "Select"
 ]
 __reload_hook__ = [".JHTML", ".WidgetTools"]
 
@@ -99,35 +107,56 @@ class FloatRangeChecker(SettingChecker):
         )
 SettingChecker.checkers.append(FloatRangeChecker)
 
-class OutputWidget:
-    def __init__(self, var, **ignored):
-        self.var = var
-        self.output = JupyterAPIs.get_display_api().Output()
-        self.display(self.var.value)
-    def on_change(self):
-        self.display(self.var.value)
-    def print(self, *args, **kwargs):
-        with self:
-            print(*args, **kwargs)
-    def display(self, *args):
-        with self:
-            JupyterAPIs.get_display_api().display_api.display(*args)
-    def __enter__(self):
-        self.output.clear_output()
-        return self.output.__enter__()
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return self.output.__exit__(exc_type, exc_val, exc_tb)
-    def to_widget(self):
-        return self.output
+# class OutputWidget:
+#     def __init__(self, var, **ignored):
+#         self.var = var
+#         self.output = JupyterAPIs.get_display_api().Output()
+#         self.display(self.var.value)
+#     def on_change(self):
+#         self.display(self.var.value)
+#     def print(self, *args, **kwargs):
+#         with self:
+#             print(*args, **kwargs)
+#     def display(self, *args):
+#         with self:
+#             JupyterAPIs.get_display_api().display_api.display(*args)
+#     def __enter__(self):
+#         self.output.clear_output()
+#         return self.output.__enter__()
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         return self.output.__exit__(exc_type, exc_val, exc_tb)
+#     def to_widget(self):
+#         return self.output
 
+class InterfaceVars:
+    _cache_stack = []
+    def __init__(self):
+        self._var_set = set()
+        self.var_list = []
+    @classmethod
+    def active_vars(cls):
+        if len(cls._cache_stack) > 0:
+            return cls._cache_stack[-1]
+        else:
+            return None
+    def add(self, var):
+        if var not in self._var_set:
+            self.var_list.append(var)
+            self._var_set.add(var)
+    def __enter__(self):
+        self._cache_stack.append(self)
+        return self.var_list
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._cache_stack.pop()
 class VariableSynchronizer:
-    def __init__(self, name, value=None, callbacks=()):
+    def __init__(self, name, value=None, callbacks=(), output_pane=None):
         self._name = name
         self._value = value
         self.callbacks = weakref.WeakSet(callbacks)
+        self.output_pane = DefaultOutputArea.get_default() if output_pane is None else output_pane
         self._watchers = weakref.WeakSet()
     def __repr__(self):
-        return "{}({}, {})".format(
+        return "{}({}, {!r})".format(
             type(self).__name__,
             self._name,
             self._value
@@ -135,12 +164,17 @@ class VariableSynchronizer:
     _var_cache = weakref.WeakValueDictionary()
     @classmethod
     def create_var(cls, var):
+        var_cache = InterfaceVars.active_vars()
         if isinstance(var, VariableSynchronizer):
+            if var_cache is not None:
+                var_cache.add(var)
             return var
         else:
             if var not in cls._var_cache:
                 this_var = VariableSynchronizer(var)
                 cls._var_cache[var] = this_var # hold a reference...
+            if var_cache is not None:
+                var_cache.add(cls._var_cache[var])
             return cls._var_cache[var]
     @property
     def name(self):
@@ -152,16 +186,22 @@ class VariableSynchronizer:
     def value(self, v):
         self.set_value(v)
     def set_value(self, v, caller=None):
-        old = self._value
-        self._value = v
-        for c in self.callbacks:
-            c({'var': self, 'old': old, 'new': self._value})
-        for w in self._watchers:
-            if w is not caller:
-                w.value = self._value
+        with self.output_pane:
+            old = self._value
+            try:
+                check = old != v
+            except TypeError:
+                check = old is not v
+            if check:
+                self._value = v
+                for c in self.callbacks:
+                    c({'var': self, 'old': old, 'new': self._value})
+                for w in self._watchers:
+                    if w is not caller:
+                        w.value = self._value
     def link(self, widget):
         self.set_value(widget.value, caller=widget)
-        widget.observe(lambda d: self.set_value(widget.value, caller=widget))
+        widget.observe(lambda d: self.set_value(widget.value, caller=widget), names=['value'])
         self._watchers.add(widget)
 def Var(name):
     return VariableSynchronizer.create_var(name)
@@ -181,7 +221,7 @@ class Control:
                     control_type = getattr(JupyterAPIs.get_widgets_api(), checker.control_type)
                     break
             else:
-                control_type = OutputWidget
+                control_type = JHTML.OutputArea
         return control_type(**settings)
 
     def to_widget(self):
@@ -281,38 +321,62 @@ class Sidebar(InterfaceElement):
             cls=['d-flex', 'flex-column', 'align-items-stretch', 'flex-shrink-0'],
             **self.attrs
         )
-class WidgetControl:
+class WidgetControl(metaclass=abc.ABCMeta):
+    layout_orientation = 'row'
     def __init__(self, var):
         self.var = VariableSynchronizer.create_var(var)
         self._widget_cache = None
         self._parents = weakref.WeakSet()
+    @abc.abstractmethod
+    def set_value(self):
+        ...
+    @abc.abstractmethod
+    def get_value(self):
+        ...
     @property
     def value(self):
-        return self.var.value
+        return self.get_value()
     @value.setter
     def value(self, v):
         self.var.set_value(v, caller=self)
+        self.set_value()
+    def observe(self, fn, names=None):
+        if self._widget_cache is None:
+            raise ValueError("not initialized")
+        return self._widget_cache.to_widget().observe(fn, names=names)
     def to_widget(self, parent=None):
         if parent is not None:
             self._parents.add(parent)
         if self._widget_cache is None:
             self._widget_cache = self.to_jhtml()
+            # self._widget_cache.to_widget.observe(self.set_value, )
+            self.var.link(self)
         return self._widget_cache
     @abc.abstractmethod
     def to_jhtml(self):
         ...
+    def display(self):
+        JupyterAPIs.get_display_api().display(self.to_widget())
+    def _ipython_display_(self):
+        self.display()
 
 class SidebarSetter(WidgetControl):
+    layout_orientation = 'column'
     def __init__(self, var, options, item_attrs=None, debug_pane=None, **attrs):
         super().__init__(var)
         self.options = options
         self.item_attrs = {} if item_attrs is None else item_attrs
         self.attrs = attrs
+        self._element_map = {}
         self._item_map = {}
         self._active_item = None
         self.logger_pane = DefaultOutputArea() if debug_pane is None else debug_pane
         val = self.options[0]['value']
         self.var.value = val
+    def get_value(self):
+        return self._item_map[self._active_item]
+    def set_value(self):
+        self.set_active(self.var.value)
     def update(self, e):
         self.set_active(self.value)
     def set_active(self, v):
@@ -321,42 +385,35 @@ class SidebarSetter(WidgetControl):
                 break
         else:
             k = None
+
         if k is not None:
             if (
-                    self._widget_cache is not None
-                    and self._active_item is not None
-                    and k!=self._active_item
+                self._active_item is not None
+                and k != self._active_item
+                and len(self._element_map) > 0
             ):
-                tree = self._widget_cache
-                cur = tree.find_by_id(self._active_item)
+                cur = self._element_map[self._active_item]
                 if cur is not None:
-                    cur.remove_class('active', copy=False)
+                    cur.remove_class('active')
                 self._active_item = k
-                new = tree.find_by_id(self._active_item)
+                new = self._element_map[k]
                 if new is not None:
-                    new.add_class('active', copy=False)
+                    new.add_class('active')
     def onclick(self, e, i, v):
         self.var.set_value(v, caller=self)
         with self.logger_pane:
             self.set_active(v)
-        # e, html, widg = e
-        # widg.dom.tree[0].add_class('active', copy=False)
-        # cur = widg.dom.get_parent(2).find_by_id(self._active_item)
-        # if cur is not None:
-        #     cur.remove_class('active', copy=False)
-        # self._active_item = i
-        # self.value = v
     def create_link_dict(self, o, which=-1):
-        id = str(uuid.uuid1()).replace("-", "")
+        uid = str(uuid.uuid1()).replace("-", "")
         o = o.copy()
         label = o['label'] if 'label' in o else o['value']
         if 'label' in o:
             del o['label']
         value = o['value']
-        self._item_map[id] = value
+        self._item_map[uid] = value
         del o['value']
         if which == 0:
-            self._active_item = id
+            self._active_item = uid
             if 'cls' in o:
                 cls = o['cls']
             elif 'cls' in self.item_attrs:
@@ -366,7 +423,7 @@ class SidebarSetter(WidgetControl):
             if isinstance(cls, str):
                 cls = cls.split()
             o['cls'] = list(cls) + ['active']
-        o['id'] = id
+        o['id'] = uid
         return dict(
             body=label,
             event_handlers=dict(
@@ -375,8 +432,7 @@ class SidebarSetter(WidgetControl):
             **o
         )
     def to_jhtml(self):
-        self.var.callbacks.add(self.update)
-        return Sidebar(
+        bar = Sidebar(
             *[
                 self.create_link_dict(o, which=n)
                 for n,o in enumerate(self.options)
@@ -385,14 +441,112 @@ class SidebarSetter(WidgetControl):
             **self.attrs
         ).to_jhtml()
 
+        col_wrapper = bar.get_child(0, wrapper=True)
+        for i in range(len(col_wrapper.children)):
+            wrapper = col_wrapper.get_child(i, wrapper=True)
+            self._element_map[wrapper['id']] = wrapper
+
+        return bar
+class ValueWidget(WidgetControl):
+    def __init__(self, var, value=None):
+        super().__init__(var)
+        if value is not None:
+            self.var.value = value
+        if self.var.value is None:
+            self.var.value = ""
+    def get_value(self):
+        if self._widget_cache is not None:
+            val = self._widget_cache.value
+            return "" if val is None else val
+    def set_value(self):
+        if self._widget_cache is not None:
+            self._widget_cache.value = self.var.value
+    def update(self, e):
+        if self._widget_cache is not None:
+            self.var.value = self._widget_cache.value
+class InputField(ValueWidget):
+    def __init__(self, var, value=None, tag='input', track_value=True, continuous_update=False, **attrs):
+        super().__init__(var, value=value)
+        attrs['tag'] = tag
+        attrs['value'] = value
+        attrs['track_value'] = track_value
+        attrs['continuous_update'] = continuous_update
+        self.attrs = attrs
+    def to_jhtml(self):
+        field = JHTML.Input(**self.attrs)
+        return field
+class StringField(InputField):
+    def __init__(self, var, type='text', **attrs):
+        super().__init__(var, type=type, **attrs)
+class Slider(InputField):
+    def __init__(self, var, type='range', **attrs):
+        super().__init__(var, type=type, **attrs)
+class Checkbox(InputField):
+    def __init__(self, var, type='checkbox', **attrs):
+        super().__init__(var, type=type, **attrs)
+    def get_value(self):
+        if self._widget_cache is not None:
+            val = self._widget_cache.value
+            return isinstance(val, str) and val == "true"
+    def set_value(self):
+        if self._widget_cache is not None:
+            if self.var.value:
+                self._widget_cache.value = 'true'
+            else:
+                self._widget_cache.value = 'false'
+class RadioButton(InputField):
+    def __init__(self, var, type='radio', **attrs):
+        super().__init__(var, type=type, **attrs)
+class TextArea(InputField):
+    def __init__(self, var, tag='textarea', **attrs):
+        super().__init__(var, tag=tag, **attrs)
+    def to_jhtml(self):
+        field = JHTML.Textarea(**self.attrs)
+        return field
+class ChangeTracker(ValueWidget):
+    base = None
+    def __init__(self, var, base=None, value=None, track_value=True, continuous_update=False, **attrs):
+        super().__init__(var, value=value)
+        base = self.base if base is None else base
+        self.base = getattr(JHTML, base) if isinstance(base, str) else base
+        attrs['value'] = value
+        attrs['track_value'] = track_value
+        attrs['continuous_update'] = continuous_update
+        self.attrs = attrs
+class Select(ChangeTracker):
+    base='Select'
+    def __init__(self, var, options, value=None, **attrs):
+        self._options = self.canonicalize_options(options)
+        if value is None and len(self._options) > 0:
+            value = self._options[0][1]
+        super().__init__(var, value=value, **attrs)
+    @classmethod
+    def canonicalize_options(cls, options):
+        ops = []
+        for k in options:
+            if isinstance(k, str):
+                v = k
+            else:
+                try:
+                    k, v = k
+                except ValueError:
+                    v = k
+            ops.append((k,v))
+        return tuple(ops)
+    def _build_options_list(self):
+        return [JHTML.Option(k, value=v) for k,v in self._options]
+    def to_jhtml(self):
+        field = self.base(*self._build_options_list(), **self.attrs)
+        return field
+
 class CardManipulator(WidgetInterface):
     def __init__(self, func, *controls, title=None, output_pane=None, **opts):
         self.controls = [Manipulator.canonicalize_control(c) for c in controls]
         vars = [c.var for c in self.controls]
         self.output = FunctionDisplay(func, vars)
         # really I want to do this by layout but this works for now...
-        self.toolbar_controls = [x for x in self.controls if not isinstance(x, WidgetControl)]
-        self.column_controls = [x for x in self.controls if isinstance(x, WidgetControl)]
+        self.toolbar_controls = [x for x in self.controls if not hasattr(x, 'layout_orientation') or x.layout_orientation != 'column']
+        self.column_controls = [x for x in self.controls if hasattr(x, 'layout_orientation') and x.layout_orientation == 'column']
         self.title = title
         self.output_pane = output_pane
 
@@ -413,11 +567,12 @@ class CardManipulator(WidgetInterface):
                                 cls=['bg-light', 'border-bottom', 'd-inline-block', 'w-100', "p-2"]
                                 # , style=dict(min_height="80px")#, flex="1")
                             ),
-                            self.output.to_widget()
+                            self.output.to_widget(),
+                            style=dict(min_height='500px')
                         ),
                         cls=['g-0', "flex-grow-1"]
                     ),
-                    style=dict(min_height='500px', flex="1"),
+                    style=dict(flex="1"),
                     cls=["p-0", "d-flex", "flex-column", 'max-width-auto', 'w-100']
                 ),
                 cls=["p-0"]

@@ -83,7 +83,10 @@ class JHTML:
             return widget
         else:
             Widget = JupyterAPIs.get_widgets_api().Widget
-            if len(elems) > 0 and any(isinstance(e, (ActiveHTMLWrapper, Widget)) for e in elems):
+            if (
+                    len(elems) > 0
+                    and any(isinstance(e, (ActiveHTMLWrapper, Widget)) or hasattr(e, 'to_widget') for e in elems)
+            ):
                 return widget
             else:
                 return plain

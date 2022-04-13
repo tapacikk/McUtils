@@ -61,7 +61,7 @@ class LayoutManagerWidget extends widgets_1.Widget {
         options.tag = view.tagName;
         super(options);
         this._view = view;
-        this.layout = new widgets_1.PanelLayout();
+        this.layout = new widgets_1.PanelLayout({ fitPolicy: 'set-no-constraint' });
     }
     dispose() {
         if (this.isDisposed) {
@@ -134,6 +134,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         this.listenTo(this.model, 'change:elementAttributes', this.updateAttributes);
         this.listenTo(this.model, 'change:eventPropertiesDict', this.updateEvents);
         this._currentEvents = {};
+        this._currentClasses = new Set();
         this._currentStyles = new Set();
     }
     removeStyles() {
@@ -146,6 +147,8 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
             }
         }
     }
+    setLayout(layout, oldLayout) { } // null override
+    setStyle(style, oldStyle) { } // null override
     setStyles() {
         let elementStyles = this.model.get("styleDict");
         if (elementStyles.length === 0) {
@@ -158,8 +161,9 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
             }
             for (let prop in elementStyles) {
                 if (elementStyles.hasOwnProperty(prop)) {
-                    // console.log(">", prop, elementStyles[prop]);
+                    // console.log(">>>", prop, elementStyles[prop], typeof prop);
                     this.el.style.setProperty(prop, elementStyles[prop]);
+                    // console.log("<<<", prop, this.el.style.getPropertyValue(prop));
                     this._currentStyles.add(prop);
                 }
             }
@@ -169,18 +173,32 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         this.setStyles();
         this.removeStyles();
     }
-    // Manage classes
-    updateClassList() {
-        // @ts-ignore
+    setClasses() {
         if (this.model.get("_debugPrint")) {
             console.log(this.el, "Element Classes:", this.model.get("classList"));
         }
-        for (let cls in this.el.classList) {
-            this.el.classList.remove(cls);
-        }
-        for (let cls of this.model.get("classList")) {
+        let classList = this.model.get("classList");
+        for (let cls of classList) {
             this.el.classList.add(cls);
+            this._currentClasses.add(cls);
         }
+    }
+    removeClasses() {
+        if (this.model.get("_debugPrint")) {
+            console.log(this.el, "Element Classes:", this.model.get("classList"));
+        }
+        let current = this._currentClasses;
+        let classes = this.model.get("classList");
+        for (let prop of current) {
+            if (!classes.includes(prop)) {
+                this.el.classList.remove(prop);
+                this._currentClasses.delete(prop);
+            }
+        }
+    }
+    updateClassList() {
+        this.setClasses();
+        this.removeClasses();
     }
     //manage body of element (borrowed from ipywidgets.Box)
     _createElement(tagName) {
@@ -325,11 +343,24 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     updateValue() {
         let el = this.el;
         if (el !== undefined) {
-            let val = el.value;
-            if (val !== undefined) {
-                let newVal = this.model.get('value');
-                if (newVal !== val) {
-                    el.value = newVal;
+            let is_checkbox = el.getAttribute('type') === 'checkbox';
+            if (is_checkbox) {
+                let checked = el.checked;
+                if (checked !== undefined) {
+                    let newVal = this.model.get('value');
+                    let checkVal = newVal.length > 0 && newVal != "false" && newVal != "0";
+                    if (checkVal !== checked) {
+                        el.checked = newVal;
+                    }
+                }
+            }
+            else {
+                let val = el.value;
+                if (val !== undefined) {
+                    let newVal = this.model.get('value');
+                    if (newVal !== val) {
+                        el.value = newVal;
+                    }
                 }
             }
         }
@@ -382,6 +413,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     }
     render() {
         super.render();
+        this.el.classList.remove('lm-Widget', 'p-Widget');
         this.update();
     }
     update() {
@@ -435,10 +467,20 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     }
     handleChanged(e) {
         let target = e.target;
-        let val = target.value;
-        if (val !== undefined) {
-            this.model.set('value', val, { updated_view: this });
-            this.touch();
+        let is_checkbox = this.el.getAttribute('type') === 'checkbox';
+        if (is_checkbox) {
+            let checked = target.checked;
+            if (checked !== undefined) {
+                this.model.set('value', checked ? "true" : "false", { updated_view: this });
+                this.touch();
+            }
+        }
+        else {
+            let val = target.value;
+            if (val !== undefined) {
+                this.model.set('value', val, { updated_view: this });
+                this.touch();
+            }
         }
     }
     constructEventListener(eventName, props) {
@@ -553,4 +595,4 @@ module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","descr
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.7c4e2ccb669e9e00de8d.js.map
+//# sourceMappingURL=lib_widget_js.ff5c8cdd553eb6995e90.js.map

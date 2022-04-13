@@ -359,6 +359,11 @@ class HTML:
             cls = cls.tostring
         if isinstance(cls, str):
             cls = cls.split()
+        else:
+            try:
+                iter(cls)
+            except TypeError:
+                cls = str(cls).split()
         return list(cls)
     @classmethod
     def manage_styles(cls, styles):
@@ -372,13 +377,20 @@ class HTML:
         Convenience API for ElementTree
         """
 
-        def __init__(self, tag, *elems, on_update=None, **attrs):
+        keyword_replacements = {
+            'cls':'class',
+            'use_for':'for'
+        }
+        def __init__(self, tag, *elems, on_update=None, style=None, **attrs):
             self.tag = tag
             self._elems = list(elems[0] if len(elems) == 1 and isinstance(elems[0], (list, tuple)) else elems)
             self._elem_view = None
-            if 'cls' in attrs:
-                attrs['class'] = attrs['cls']
-                del attrs['cls']
+            for k,v in self.keyword_replacements.items():
+                if k in attrs:
+                    attrs[v] = attrs[k]
+                    del attrs[k]
+            if style is not None:
+                attrs['style'] = HTML.manage_styles(style)
             self._attrs = {k.replace("_", "-"):v for k,v in attrs.items()}
             self._attr_view = None
             self._parents = weakref.WeakSet()
@@ -506,62 +518,80 @@ class HTML:
             return self._tree_cache
         def tostring(self):
             return "\n".join(s.decode() for s in ElementTree.tostringlist(self.to_tree()))
-        def format(self, padding="", prefix=""):
-            inner_comps = [
-                (x.format(padding=padding+"  ", prefix=prefix) if isinstance(x, HTML.XMLElement) else repr(x))
-                for x in self.elems if not (isinstance(x, str) and x.strip() == "")
-            ]
-            test = repr(inner_comps)
-            if len(test) > 100 or ("\\n" in test):
-                inner = ",\n".join(padding + "  " + x for x in inner_comps)
-            else:
-                inner = padding + "  " + ", ".join(inner_comps)
 
+        def sanitize_key(self, key):
+            key = key.replace("-", "_")
+            for safe, danger in self.keyword_replacements.items():
+                key = key.replace(danger, safe)
+            return key
+        def format(self, padding="", prefix="", linewidth=100):
             template_header = "{name}("
-            template_footer = "{padding}  )"
+            template_footer = ")"
             template_pieces = []
             args_joiner = ", "
-            full_joiner = "\n"
+            full_joiner = ""
+            elem_padding = ""
+            def use_lines():
+                nonlocal full_joiner, args_joiner, elem_padding, template_footer
+                full_joiner = "\n"
+                args_joiner = ",\n"
+                elem_padding = padding + "  "
+                template_footer = "{padding}  )"
+
+            name = type(self).__name__
+            tag = repr(self.tag) if len(template_pieces) > 1 else repr(self.tag)
+
+            inner_comps = [
+                (x.format(padding=padding+"  ", prefix=prefix, linewidth=linewidth) if isinstance(x, HTML.XMLElement) else repr(x))
+                for x in self.elems if not (isinstance(x, str) and x.strip() == "")
+            ]
+
             if not isinstance(self, HTML.TagElement):
                 template_pieces.append("{tag}")
             if len(self.attrs) > 0:
-                attrs = (",\n").join(
-                    padding + "  " + "{} = {!r}".format(k.replace("-", "_").replace("class", "cls"), v) for k,v in self.attrs.items()
-                )
-                if len(inner.strip()) > 0:
+                attr_pieces = ["{}={!r}".format(self.sanitize_key(k), v) for k,v in self.attrs.items()]
+                if len(inner_comps) > 0:
                     template_pieces.append("{inner}")
                     template_pieces.append("{attrs}")
-                    args_joiner=",\n"
-                elif len(self.attrs) > 1:
-                    template_pieces.append("{attrs}")
-                    args_joiner = ",\n"
                 else:
-                    attrs = attrs.strip()
                     template_pieces.append("{attrs}")
-                    full_joiner = ""
-                    template_footer = ")"
             else:
-                attrs = ""
+                attr_pieces = []
                 template_pieces.append("{inner}")
-                if "\n" not in inner:
-                    inner = inner.strip()
-                    full_joiner = ""
-                    template_footer = ")"
+                # if "\n" not in inner:
+                #     inner = inner.strip()
+                #     full_joiner = ""
+                #     template_footer = ")"
+
             template = full_joiner.join([
                 template_header,
                 args_joiner.join(template_pieces),
                 template_footer
             ])
-
-            return template.format(
+            out = template.format(
                 padding=padding,
-                tag=padding + "  " + repr(self.tag) if len(template_pieces) > 1 else repr(self.tag),
-                name=prefix+type(self).__name__,
-                inner=inner,
-                attrs=attrs
+                tag=padding + "  " + tag,
+                name=prefix+name,
+                inner=args_joiner.join(elem_padding+x for x in inner_comps),
+                attrs=args_joiner.join(elem_padding+x for x in attr_pieces),
             )
-        def dump(self, prefix=""):
-            print(self.format(prefix=prefix))
+            if len(out) > linewidth + len(prefix):
+                use_lines()
+                template = full_joiner.join([
+                    template_header,
+                    args_joiner.join(template_pieces),
+                    template_footer
+                ])
+                out = template.format(
+                    padding=padding,
+                    tag=padding + "  " + tag,
+                    name=prefix + name,
+                    inner=args_joiner.join(elem_padding + x for x in inner_comps),
+                    attrs=args_joiner.join(elem_padding + x for x in attr_pieces),
+                )
+            return out
+        def dump(self, prefix="", linewidth=80):
+            print(self.format(prefix=prefix, linewidth=linewidth))
         def __repr__(self):
             return "{}({}, {})".format(type(self).__name__, self.elems, self.attrs)
         def _repr_html_(self):
@@ -578,9 +608,9 @@ class HTML:
         def add_styles(self, copy=True, **sty):
             return HTML.StyleAdder(self, copy=copy, **sty).modify()
         def remove_styles(self, copy=True, **sty):
-            return HTML.StyleAdder(self, copy=copy, **sty).modify()
-        def remove_styles(self, copy=True, **sty):
-            return HTML.StyleAdder(self, copy=copy, **sty).modify()
+            return HTML.StyleRemove(self, copy=copy, **sty).modify()
+        # def remove_styles(self, copy=True, **sty):
+        #     return HTML.StyleAdder(self, copy=copy, **sty).modify()
 
         def _find_child_node(self, etree):
             from collections import deque
@@ -957,6 +987,12 @@ class HTML:
         return tag_class(*elems, **attrs)
 
     @classmethod
-    def parse(cls, str):
-        etree = ElementTree.fromstring(str)
+    def parse(cls, str, strict=True):
+        if strict:
+            etree = ElementTree.fromstring(str)
+        else:
+            try:
+                etree = ElementTree.fromstring(str)
+            except ElementTree.ParseError:
+                return HTML.Span(str)
         return cls.convert(etree)
