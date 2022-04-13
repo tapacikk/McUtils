@@ -13,7 +13,7 @@ __all__ = [
     "SidebarSetter",
     "CardManipulator",
     "InputField",
-    "Text",
+    "StringField",
     "Checkbox",
     "Slider",
     "RadioButton",
@@ -475,7 +475,7 @@ class InputField(ValueWidget):
     def to_jhtml(self):
         field = JHTML.Input(**self.attrs)
         return field
-class Text(InputField):
+class StringField(InputField):
     def __init__(self, var, type='text', **attrs):
         super().__init__(var, type=type, **attrs)
 class Slider(InputField):

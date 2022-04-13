@@ -134,6 +134,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         this.listenTo(this.model, 'change:elementAttributes', this.updateAttributes);
         this.listenTo(this.model, 'change:eventPropertiesDict', this.updateEvents);
         this._currentEvents = {};
+        this._currentClasses = new Set();
         this._currentStyles = new Set();
     }
     removeStyles() {
@@ -172,16 +173,32 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         this.setStyles();
         this.removeStyles();
     }
-    // Manage classes
-    updateClassList() {
+    setClasses() {
         if (this.model.get("_debugPrint")) {
             console.log(this.el, "Element Classes:", this.model.get("classList"));
         }
-        //@ts-ignore
-        this.el.classList.remove(...this.el.classList);
-        for (let cls of this.model.get("classList")) {
+        let classList = this.model.get("classList");
+        for (let cls of classList) {
             this.el.classList.add(cls);
+            this._currentClasses.add(cls);
         }
+    }
+    removeClasses() {
+        if (this.model.get("_debugPrint")) {
+            console.log(this.el, "Element Classes:", this.model.get("classList"));
+        }
+        let current = this._currentClasses;
+        let classes = this.model.get("classList");
+        for (let prop of current) {
+            if (!classes.includes(prop)) {
+                this.el.classList.remove(prop);
+                this._currentClasses.delete(prop);
+            }
+        }
+    }
+    updateClassList() {
+        this.setClasses();
+        this.removeClasses();
     }
     //manage body of element (borrowed from ipywidgets.Box)
     _createElement(tagName) {
@@ -578,4 +595,4 @@ module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","descr
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.4e5d883f6e0ed9cd0e39.js.map
+//# sourceMappingURL=lib_widget_js.ff5c8cdd553eb6995e90.js.map

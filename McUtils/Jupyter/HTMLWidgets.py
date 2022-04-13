@@ -1097,7 +1097,7 @@ class ActiveHTMLWrapper:
         if len(kids) == 0:
             body = self.html
             if body is None:
-                raise IndexError("element {} has no body to index")
+                raise IndexError("element {} has no body to index".format(self))
             val = body[position]
         else:
             val = kids[position]
@@ -1150,7 +1150,7 @@ class ActiveHTMLWrapper:
     @property
     def html(self):
         if self._html_cache is None:
-            self.load_HTML()
+            self._html_cache = self.load_HTML()
         return self._html_cache
     @html.setter
     def html(self, html):
