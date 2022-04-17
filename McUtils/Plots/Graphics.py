@@ -3,7 +3,7 @@ Provides Graphics base classes that can be extended upon
 """
 
 
-import platform
+import platform, os
 # import matplotlib.figure
 # import matplotlib.axes
 from .Properties import GraphicsPropertyManager, GraphicsPropertyManager3D
@@ -416,7 +416,7 @@ class GraphicsBase(metaclass=ABCMeta):
         # hacky, but hopefully enough to make it work?
         return self.figure._repr_html_()
 
-    def savefig(self, where, format='png', **kw):
+    def savefig(self, where, format=None, **kw):
         """
         Saves the image to file
         :param where:
@@ -430,6 +430,8 @@ class GraphicsBase(metaclass=ABCMeta):
         """
         if 'facecolor' not in kw:
             kw['facecolor'] = self.background# -_- stupid MPL
+        if format is None:
+            format = os.path.splitext(where)[1]
         return self.figure.savefig(where,
                     format=format,
                     **kw

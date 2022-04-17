@@ -987,7 +987,7 @@ class HTML:
         return tag_class(*elems, **attrs)
 
     @classmethod
-    def parse(cls, str, strict=True):
+    def parse(cls, str, strict=True, strip=False, validator=None):
         if strict:
             etree = ElementTree.fromstring(str)
         else:
@@ -995,4 +995,5 @@ class HTML:
                 etree = ElementTree.fromstring(str)
             except ElementTree.ParseError:
                 return HTML.Span(str)
-        return cls.convert(etree)
+
+        return cls.convert(etree, strip=strip)

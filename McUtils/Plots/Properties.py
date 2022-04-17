@@ -233,13 +233,16 @@ class GraphicsPropertyManager:
     @frame_style.setter
     def frame_style(self, f_style):
         if self._frame_style is None:
-            self._frame_style = ((None,) * 2)*2
+            self._frame_style = ((None, None), (None, None))
         if isinstance(f_style, dict):
             f_style = ((f_style, f_style), (f_style, f_style))
+
         try:
             x, y = f_style
         except ValueError:
             x, y = f_style = (f_style, f_style)
+        # else:
+        #     print(">", x, y)
         if isinstance(y, dict):
             y = (y, y)
         if isinstance(x, dict):
@@ -255,6 +258,7 @@ class GraphicsPropertyManager:
 
         self._ticks_label_style = ((l, r), (b, t))
         lax, rax, bax, tax = self.axes.spines.values()
+        # print(l, r, b, t)
         for a,o in zip((lax, rax, bax, tax), (l, r, b, t)):
             if o is not None:
                 a.set(**o)

@@ -16,6 +16,8 @@ class JHTML:
     Provides dispatchers to either pure HTML components or Widget components based on whether interactivity
     is required or not
     """
+    manage_cls = HTML.manage_class
+    manage_style = HTML.manage_styles
     @classmethod
     def load(cls):
         from IPython.core.display import display
@@ -68,8 +70,24 @@ class JHTML:
                 pass
 
     @classmethod
-    def parse(cls, src):
-        return HTML.parse(src)
+    def parse(cls, src, event_handlers=None, dynamic=None, track_value=None, strict=True, **attrs):
+        base = HTML.parse(src, strict=strict)
+        _debugPrint = False if '_debugPrint' not in attrs else attrs['_debugPrint']
+        trackInput = False if 'trackInput' not in attrs else attrs['trackInput']
+        if (
+                event_handlers is not None
+                or track_value is True
+                or trackInput is True
+                or _debugPrint is True
+                or dynamic is True
+        ):
+            base = ActiveHTMLWrapper.from_HTML(base,
+                                        event_handlers=event_handlers,
+                                        track_value=track_value,
+                                        _debugPrint=_debugPrint,
+                                        **attrs
+                                        )
+        return base
 
     @classmethod
     def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, dynamic=None, track_value=None, trackInput=None, _debugPrint=None, **attrs):

@@ -350,7 +350,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                     let newVal = this.model.get('value');
                     let checkVal = newVal.length > 0 && newVal != "false" && newVal != "0";
                     if (checkVal !== checked) {
-                        el.checked = newVal;
+                        el.checked = checkVal;
                     }
                 }
             }
@@ -595,4 +595,4 @@ module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","descr
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.ff5c8cdd553eb6995e90.js.map
+//# sourceMappingURL=lib_widget_js.890d3f8023a450f972cc.js.map

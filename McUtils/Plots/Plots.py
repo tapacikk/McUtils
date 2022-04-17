@@ -348,15 +348,36 @@ class StickPlot(Plot):
         """
         if insert_default_styles:
             plot_style = dict(self.plot_style, **plot_style)
-        plot_style = dict(self.plot_style, **plot_style)
+        # plot_style = dict(self.plot_style, **plot_style)
         if 'linewidth' in plot_style:
             lw = plot_style['linewidth']
             del plot_style['linewidth']
         else:
             lw = None
+        lc = None
+        if 'color' in plot_style:
+            if 'linefmt' in plot_style:
+                raise ValueError("modifying linefmt not currently supported")
+            lc = plot_style['color']
+            del plot_style['color']
+        linefmt = ''
+        if 'line_style' in plot_style:
+            ls = plot_style['line_style']
+            del plot_style['line_style']
+            if ls == 'dashed':
+                if 'linefmt' in plot_style:
+                    raise ValueError("modifying passed linefmt not currently supported")
+                linefmt+="--"
+            elif ls == 'dotted':
+                if 'linefmt' in plot_style:
+                    raise ValueError("modifying passed linefmt not currently supported")
+                linefmt+="-."
+            plot_style['linefmt'] = linefmt
         super().plot(*params, insert_default_styles=False, **plot_style)
         if lw is not None:
             self.set_graphics_properties(1, linewidth=lw)
+        if lc is not None:
+            self.set_graphics_properties(1, color=lc)
         return self.graphics
 
 

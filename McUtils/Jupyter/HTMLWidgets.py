@@ -925,12 +925,11 @@ class ActiveHTMLWrapper:
                 x, type(x)
             ))
     @classmethod
-    def from_HTML(cls, x:HTML.XMLElement, event_handlers=None, debug_pane=None):
+    def from_HTML(cls, x:HTML.XMLElement, event_handlers=None, debug_pane=None, **props):
         attrs = x.attrs
-        props = {"event_handlers":event_handlers, 'debug_pane':debug_pane}
-        for key, target in [
-            ("cls", "class")
-            ]:
+        props["event_handlers"] = event_handlers
+        props["debug_pane"] = debug_pane
+        for key, target in [("cls", "class")]:
             if target in attrs:
                 props[key] = attrs[target]
                 del attrs[target]
