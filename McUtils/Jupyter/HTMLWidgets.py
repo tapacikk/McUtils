@@ -936,7 +936,7 @@ class ActiveHTMLWrapper:
         props = dict(props, **attrs)
         body = []
         for y in x.elems:
-            if not isinstance(y, str):
+            if hasattr(y, 'tostring'):
                 # if hasattr(y, 'to_widget'):
                 #     raise ValueError(y)
                 # try:
@@ -944,6 +944,7 @@ class ActiveHTMLWrapper:
                 # except:
                 #     raise Exception(y)
             body.append(y)
+
         # print(body, props)
         return cls(*body, tag=x.tag, **props)
 
@@ -1250,6 +1251,27 @@ class HTMLWidgets:
     def load(cls):
         from .ActiveHTMLWidget import HTMLElement
         return HTMLElement.jupyterlab_install()
+
+    _cls_map = None
+    @classmethod
+    def get_class_map(cls):
+        if cls._cls_map is None:
+            cls._cls_map = {}
+            for v in cls.__dict__.values():
+                if isinstance(v, type) and hasattr(v, 'base') and hasattr(v.base, 'tag'):
+                    cls._cls_map[v.base.tag] = v
+        return cls._cls_map
+
+    @classmethod
+    def from_HTML(cls, html:HTML.XMLElement, event_handlers=None, debug_pane=None, **props):
+        tag = html.tag
+        map = cls.get_class_map()
+        try:
+            tag_class = map[tag]
+        except KeyError:
+            tag_class = ActiveHTMLWrapper#lambda *es,**ats:HTML.XMLElement(tag, *es, **ats)
+
+        return tag_class.from_HTML(html, event_handlers=event_handlers, debug_pane=debug_pane, **props)
 
     class Abbr(ActiveHTMLWrapper): base=HTML.Abbr
     class Address(ActiveHTMLWrapper): base=HTML.Address
