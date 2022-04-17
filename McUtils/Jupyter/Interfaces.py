@@ -107,27 +107,6 @@ class FloatRangeChecker(SettingChecker):
         )
 SettingChecker.checkers.append(FloatRangeChecker)
 
-# class OutputWidget:
-#     def __init__(self, var, **ignored):
-#         self.var = var
-#         self.output = JupyterAPIs.get_display_api().Output()
-#         self.display(self.var.value)
-#     def on_change(self):
-#         self.display(self.var.value)
-#     def print(self, *args, **kwargs):
-#         with self:
-#             print(*args, **kwargs)
-#     def display(self, *args):
-#         with self:
-#             JupyterAPIs.get_display_api().display_api.display(*args)
-#     def __enter__(self):
-#         self.output.clear_output()
-#         return self.output.__enter__()
-#     def __exit__(self, exc_type, exc_val, exc_tb):
-#         return self.output.__exit__(exc_type, exc_val, exc_tb)
-#     def to_widget(self):
-#         return self.output
-
 class InterfaceVars:
     _cache_stack = []
     def __init__(self):
@@ -205,7 +184,6 @@ class VariableSynchronizer:
         self._watchers.add(widget)
 def Var(name):
     return VariableSynchronizer.create_var(name)
-
 class Control:
     def __init__(self, var, control_type=None, widget=None, **settings):
         self.var = VariableSynchronizer.create_var(var)
@@ -228,6 +206,18 @@ class Control:
         self.var.link(self.widget)
         return self.widget
 
+class WidgetInterface(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def to_widget(self):
+        ...
+    # @abc.abstractmethod
+    def initialize(self):
+        ...
+    def _ipython_display_(self):
+        JupyterAPIs.get_display_api().display(self.to_widget())
+        self.initialize()
+    def display(self):
+        self._ipython_display_()
 class FunctionDisplay:
     def __init__(self, func, vars):
         self.func = func
@@ -246,20 +236,6 @@ class FunctionDisplay:
         for v in self.vars:
             v.callbacks.add(self.update)
         return self.output
-
-class WidgetInterface(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def to_widget(self):
-        ...
-    @abc.abstractmethod
-    def initialize(self):
-        ...
-    def _ipython_display_(self):
-        JupyterAPIs.get_display_api().display(self.to_widget())
-        self.initialize()
-    def display(self):
-        self._ipython_display_()
-
 class Manipulator(WidgetInterface):
     def __init__(self, func, *controls):
         self.controls = [self.canonicalize_control(c) for c in controls]
@@ -267,7 +243,7 @@ class Manipulator(WidgetInterface):
         self.output = FunctionDisplay(func, vars)
     @classmethod
     def canonicalize_control(cls, settings):
-        if isinstance(settings, (Control, WidgetControl)):
+        if isinstance(settings, (Control, JHTMLControl)):
             return settings
         else:
             return Control(settings[0], **settings[1])
@@ -279,54 +255,79 @@ class Manipulator(WidgetInterface):
     def initialize(self):
         self.output.update()
 
-class InterfaceElement(metaclass=abc.ABCMeta):
+class JHTMLInterface(WidgetInterface):
     """
     Provides an abstract base class for an interface element
     to allow for the easy construction of interesting interfaces
     """
+    def __init__(self):
+        self._parents = weakref.WeakSet()
 
     @abc.abstractmethod
     def to_jhtml(self):
         ...
+    def to_widget(self, parent=None):
+        if parent is not None:
+            self._parents.add(parent)
+        if self._widget_cache is None:
+            self._widget_cache = self.to_jhtml()
+            # self._widget_cache.to_widget.observe(self.set_value, )
+        return self._widget_cache
 
-    @staticmethod
-    def manage_cls(cls):
-        if isinstance(cls, str):
-            cls = cls.split()
-        elif cls is None:
-            cls = []
-        return list(cls)
-class Sidebar(InterfaceElement):
-    def __init__(self, *links, cls=None, item_attrs=None, **attrs):
+class Sidebar(JHTMLInterface):
+    item_classes = ['list-group-item', 'list-group-item-action']
+    wrapper_classes = ['list-group', 'list-group-flush']
+    base_classes = ['d-flex', 'flex-column', 'align-items-stretch', 'flex-shrink-0']
+    def __init__(self, *links, cls=None,
+                 item_attrs=None,
+                 item_classes=None,
+                 wrapper_classes=None,
+                 base_classes=None,
+                 **attrs):
+        super().__init__()
         self.links = links
-        self.cls = self.manage_cls(cls)
+        self.cls = JHTML.manage_cls(cls)
         self.attrs = attrs
+        if item_classes is None:
+            item_classes = self.item_classes
+        self.item_classes = item_classes
+        if wrapper_classes is None:
+            wrapper_classes = self.wrapper_classes
+        self.wrapper_classes = wrapper_classes
+        if base_classes is None:
+            base_classes = self.base_classes
+        self.base_classes = base_classes
         self.item_attrs = {} if item_attrs is None else item_attrs
     @classmethod
     def format_link(self, body=(), href="#", cls=None, **attrs):
-        if isinstance(cls, str):
-            cls = cls.split()
         return JHTML.Anchor(
             body,
             href=href,
-            cls=['list-group-item', 'list-group-item-action'] + self.manage_cls(cls),
+            cls=self.item_classes + JHTML.manage_cls(cls),
             **attrs
         )
     def to_jhtml(self):
         return JHTML.Div(
             JHTML.Div(
                 *[self.format_link(**dict(self.item_attrs, **link)) for link in self.links],
-                cls=['list-group', 'list-group-flush'] + self.cls
+                cls=self.wrapper_classes + self.cls
             ),
-            cls=['d-flex', 'flex-column', 'align-items-stretch', 'flex-shrink-0'],
+            cls=self.base_classes,
             **self.attrs
         )
-class WidgetControl(metaclass=abc.ABCMeta):
+
+class JHTMLControl(JHTMLInterface):
     layout_orientation = 'row'
     def __init__(self, var):
         self.var = VariableSynchronizer.create_var(var)
         self._widget_cache = None
-        self._parents = weakref.WeakSet()
+        super().__init__()
+    def to_widget(self, parent=None):
+        needs_link = self._widget_cache is None
+        widg = super().to_widget(parent=parent)
+        if needs_link:
+            self.var.link(self)
+        return widg
     @abc.abstractmethod
     def set_value(self):
         ...
@@ -344,23 +345,7 @@ class WidgetControl(metaclass=abc.ABCMeta):
         if self._widget_cache is None:
             raise ValueError("not initialized")
         return self._widget_cache.to_widget().observe(fn, names=names)
-    def to_widget(self, parent=None):
-        if parent is not None:
-            self._parents.add(parent)
-        if self._widget_cache is None:
-            self._widget_cache = self.to_jhtml()
-            # self._widget_cache.to_widget.observe(self.set_value, )
-            self.var.link(self)
-        return self._widget_cache
-    @abc.abstractmethod
-    def to_jhtml(self):
-        ...
-    def display(self):
-        JupyterAPIs.get_display_api().display(self.to_widget())
-    def _ipython_display_(self):
-        self.display()
-
-class SidebarSetter(WidgetControl):
+class SidebarSetter(JHTMLControl):
     layout_orientation = 'column'
     def __init__(self, var, options, item_attrs=None, debug_pane=None, **attrs):
         super().__init__(var)
@@ -447,7 +432,7 @@ class SidebarSetter(WidgetControl):
             self._element_map[wrapper['id']] = wrapper
 
         return bar
-class ValueWidget(WidgetControl):
+class ValueWidget(JHTMLControl):
     def __init__(self, var, value=None):
         super().__init__(var)
         if value is not None:
@@ -583,3 +568,40 @@ class CardManipulator(WidgetInterface):
         return interface
     def initialize(self):
         self.output.update()
+
+class AppExplorer(WidgetInterface):
+
+    def __init__(self, interfaces):
+        self.interfaces = interfaces
+
+    def to_widget(self):
+        interface = JHTML.Bootstrap.Card(
+            JHTML.Bootstrap.CardHeader(
+                "" if self.title is None else self.title
+                # JHTML.SubsubHeading("A Pane with Output", JHTML.Small(" with a slider for fun", cls='text-muted')),
+            ),
+            JHTML.Bootstrap.CardBody(
+                JHTML.Div(
+                    JHTML.Bootstrap.Row(
+                        *(JHTML.Bootstrap.Col(c.to_widget(), cls=["col-1", 'bg-light', 'border-end', 'p-0', 'm-0'])
+                          for c in self.column_controls),
+                        JHTML.Bootstrap.Col(
+                            JHTML.Div(
+                                *[t.to_widget() for t in self.toolbar_controls],
+                                cls=['bg-light', 'border-bottom', 'd-inline-block', 'w-100', "p-2"]
+                                # , style=dict(min_height="80px")#, flex="1")
+                            ),
+                            self.output.to_widget(),
+                            style=dict(min_height='500px')
+                        ),
+                        cls=['g-0', "flex-grow-1"]
+                    ),
+                    style=dict(flex="1"),
+                    cls=["p-0", "d-flex", "flex-column", 'max-width-auto', 'w-100']
+                ),
+                cls=["p-0"]
+            ),
+            JHTML.Bootstrap.CardFooter("" if self.output_pane is None else self.output_pane)
+        )
+
+        return interface

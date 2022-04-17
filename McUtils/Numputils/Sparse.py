@@ -1987,7 +1987,7 @@ class ScipySparseArray(SparseArray):
         return base
 
     @classmethod
-    def _find_block_alignment(cls, inds, block, shape):
+    def _find_block_alignment(cls, inds, block):
         """
         finds the positions where the block & index align
         """
@@ -1997,33 +1997,6 @@ class ScipySparseArray(SparseArray):
                                  assume_unique=(False, True),
                                  sortings=(np.arange(len(inds)), np.arange(len(block)))
                                  )
-        # if method == 'sorted':
-        #
-        #     find_spots = np.empty(2*len(block), dtype=inds.dtype)
-        #     find_spots[0::2] = block
-        #     find_spots[1::2] = block+1
-        #     # find where the blocks start and end (doable like this b.c. we ensure sorting)
-        #     # whenever things are modded
-        #     filter = np.full(len(inds), False)
-        #     # print(filter, find_spots)
-        #     block_ends = np.searchsorted(inds, find_spots)
-        #     print(find_spots[:10], block_ends[:10], inds[:10])
-        #     for i in range(0, len(find_spots), 2):
-        #         start = block_ends[i]
-        #         end = block_ends[i+1]
-        #         j = block[i//2]
-        #         if start < len(inds) and inds[start] == j and inds[end-1] == j:
-        #             filter[start:end] = True
-        # else:
-        #     # OLD METHOD HERE SO I CAN SHIT ON IT AS AN EXAMPLE
-        #     # we do an iterated "and" over the not equals
-        #     # and apply a "not" at the end
-        #     filter = np.full(len(inds), True)
-        #     for j in block:
-        #         # hastag meta
-        #         filter[filter] = inds[filter] != j
-        #     filter = np.logical_not(filter)
-        # print(len(inds), np.count_nonzero(filter))
 
         # I was hoping I could make use of that filter stuff to
         # build the mapping but it honestly seems like the two are completely
@@ -2031,7 +2004,7 @@ class ScipySparseArray(SparseArray):
 
         # we find the first position where the positions occur (we assume they _do_ occur)
         # using `searchsorted`
-        mapping = np.searchsorted(block, np.arange(shape))#, sorter=np.arange(len(block)))
+        mapping = np.searchsorted(block, np.arange(max(block)+1))#, sorter=sorter)
 
         return filter, mapping
 
@@ -2046,12 +2019,19 @@ class ScipySparseArray(SparseArray):
                 if len(b2) < len(b):
                     raise ValueError("sparse array slicing can't duplicate indices")
                 b = b2
-                filter, mapping = self._find_block_alignment(ixs, b, s)
-                # now how do we invert this transformation? #TODO: formally provide that I don't need to
-                # resort = np.argsort(sorting)
+                filter, mapping = self._find_block_alignment(ixs, b)#, sorting)
+                # the filter specifies which indices survive
+                # and the mapping tells us where each index will go
+                # in the final set of indices
 
                 inds = [ix[filter] for ix in inds]
                 data = data[filter]
+                args = np.argsort(sorting)
+                # if not (sorting == np.arange(len(sorting))).all():
+                #     print(">>>", b, np.argsort(sorting))
+                #     print(">", mapping)
+                #     print(">", args)
+                mapping = args[mapping]
                 inds[i] = mapping[inds[i]]
 
         return data, inds

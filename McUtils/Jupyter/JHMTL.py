@@ -16,6 +16,8 @@ class JHTML:
     Provides dispatchers to either pure HTML components or Widget components based on whether interactivity
     is required or not
     """
+    manage_cls = HTML.manage_class
+    manage_style = HTML.manage_styles
     @classmethod
     def load(cls):
         from IPython.core.display import display
@@ -67,9 +69,85 @@ class JHTML:
             except KeyError:
                 pass
 
+    callbacks = {}
     @classmethod
-    def parse(cls, src):
-        return HTML.parse(src)
+    def parse_handlers(cls, handler_string):
+        handlers = {}
+        for x in handler_string.split(";"):
+            k,v = x.split(":")
+            k = k.strip()
+            v = v.strip()
+            if v in cls.callbacks:
+                v = cls.callbacks[v]
+            if isinstance(v, str):
+                v = globals()[v]
+            handlers[k] = v
+
+        return handlers
+
+    widgets = {} # should this be a weakset...?
+    @classmethod
+    def parse_widget(cls, uuid):
+        if uuid in cls.widgets:
+            return cls.widgets[uuid]
+        else:        
+            widgets = JupyterAPIs.get_widgets_api().Widget.widgets.values()
+            map = {w.model_id: w for w in widgets}
+            return map[uuid]
+    @classmethod
+    def convert(cls, etree, strip=True, converter=None, **extra_attrs):
+        if converter is None:
+            converter = cls.convert
+
+        base = HTML.convert(etree, strip=strip, converter=converter, **extra_attrs)
+        if base.tag.lower() == "jwidget":
+            base = cls.parse_widget(base.attrs['id'])
+        else:
+            attrs = base.attrs
+            handlers = cls.parse_handlers(attrs['event-handlers']) if 'event-handlers' in attrs else None
+            track_value = attrs['track-value'].lower() == 'true' if 'track-value' in attrs else False
+            dynamic = attrs['dynamic'].lower() == 'true' if 'dynamic' in attrs else False
+            if not dynamic:
+                try:
+                    del attrs['event-handlers']
+                except KeyError:
+                    ...
+                try:
+                    del attrs['track-value']
+                except KeyError:
+                    ...
+                try:
+                    del attrs['dynamic']
+                except KeyError:
+                    ...
+                base.attrs = attrs
+                dynamic = track_value or handlers is not None
+            if not dynamic:
+                dynamic = any(isinstance(x, ActiveHTMLWrapper) for x in base.elems)
+            if dynamic:
+                base = HTMLWidgets.from_HTML(base, dynamic=dynamic, track_value=track_value, event_handlers=handlers)
+
+        return base
+
+    @classmethod
+    def parse(cls, src, event_handlers=None, dynamic=None, track_value=None, strict=True, **attrs):
+        base = HTML.parse(src, strict=strict, converter=cls.convert)
+        _debugPrint = False if '_debugPrint' not in attrs else attrs['_debugPrint']
+        trackInput = False if 'trackInput' not in attrs else attrs['trackInput']
+        if isinstance(base, HTML.XMLElement) and (
+                event_handlers is not None
+                or track_value is True
+                or trackInput is True
+                or _debugPrint is True
+                or dynamic is True
+        ):
+            base = HTMLWidgets.from_HTML(base,
+                                        event_handlers=event_handlers,
+                                        track_value=track_value,
+                                        _debugPrint=_debugPrint,
+                                        **attrs
+                                        )
+        return base
 
     @classmethod
     def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, dynamic=None, track_value=None, trackInput=None, _debugPrint=None, **attrs):
@@ -94,7 +172,7 @@ class JHTML:
     def _dispatch(jhtml, plain, widget, *elements, event_handlers=None, dynamic=None, **styles):
         src = jhtml._resolve_source(plain, widget, *elements, event_handlers=event_handlers, dynamic=dynamic, **styles)
         if src is plain:
-            return src(*elements, **styles)
+            return src(*elements, activator=widget.from_HTML, **styles)
         else:
             return src(*elements, event_handlers=event_handlers, **styles)
 

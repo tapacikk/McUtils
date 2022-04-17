@@ -381,7 +381,7 @@ class HTML:
             'cls':'class',
             'use_for':'for'
         }
-        def __init__(self, tag, *elems, on_update=None, style=None, **attrs):
+        def __init__(self, tag, *elems, on_update=None, style=None, activator=None, **attrs):
             self.tag = tag
             self._elems = list(elems[0] if len(elems) == 1 and isinstance(elems[0], (list, tuple)) else elems)
             self._elem_view = None
@@ -396,6 +396,7 @@ class HTML:
             self._parents = weakref.WeakSet()
             self._tree_cache = None
             self.on_update = on_update if on_update is not None else lambda *s:None
+            self.activator = activator
         @property
         def attrs(self):
             if self._attr_view is None:
@@ -419,6 +420,8 @@ class HTML:
             self._invalidate_cache()
             self.on_update(self)
             self.on_update(self, 'elements', elems)
+        def activate(self):
+            return self.activator(self)
 
         def _invalidate_cache(self):
             if self._tree_cache is not None:
@@ -951,9 +954,36 @@ class HTML:
                     cls._cls_map[v.tag] = v
         return cls._cls_map
 
+    # @classmethod
+    # def extract_body(cls, etree, strip=True):
+    #     text = etree.text
+    #     if text is not None:
+    #         if isinstance(text, str):
+    #             text = [text]
+    #     else:
+    #         text = []
+    #     tail = etree.tail
+    #     if tail is not None:
+    #         if isinstance(tail, str):
+    #             tail = [tail]
+    #     else:
+    #         tail = []
+    #     tag = etree.tag
+    #
+    #     elems = (
+    #             [t.strip() if strip else t for t in text]
+    #             + children
+    #             + [t.strip() if strip else t for t in tail]
+    #     )
+    #     if strip:
+    #         elems = [e for e in elems if not isinstance(e, str) or len(e) > 0]
+
+
     @classmethod
-    def convert(cls, etree:ElementTree.Element, strip=True):
-        children = [cls.convert(x, strip=strip) for x in etree]
+    def convert(cls, etree:ElementTree.Element, strip=True, converter=None, **extra_attrs):
+        if converter is None:
+            converter = cls.convert
+        children = [converter(x, strip=strip) for x in etree]
         text = etree.text
         if text is not None:
             if isinstance(text, str):
@@ -984,10 +1014,10 @@ class HTML:
 
         attrs = {} if etree.attrib is None else etree.attrib
 
-        return tag_class(*elems, **attrs)
+        return tag_class(*elems, **dict(extra_attrs, **attrs))
 
     @classmethod
-    def parse(cls, str, strict=True):
+    def parse(cls, str, strict=True, strip=True, converter=None):
         if strict:
             etree = ElementTree.fromstring(str)
         else:
@@ -995,4 +1025,8 @@ class HTML:
                 etree = ElementTree.fromstring(str)
             except ElementTree.ParseError:
                 return HTML.Span(str)
-        return cls.convert(etree)
+
+        if converter is None:
+            converter = cls.convert
+
+        return converter(etree, strip=strip)
