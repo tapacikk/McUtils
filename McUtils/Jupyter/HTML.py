@@ -456,6 +456,56 @@ class HTML:
             self._invalidate_cache()
             self.on_update(self, item, None)
 
+        @classmethod
+        def construct_etree_element(cls, elem, root, parent=None):
+            if hasattr(elem, 'to_tree'):
+                elem.to_tree(root=root, parent=parent)
+            elif hasattr(elem, 'modify'):
+                elem.modify().to_tree(root=root, parent=parent)
+            elif isinstance(elem, ElementTree.Element):
+                root.append(elem)
+            elif isinstance(elem, (str, int, float, CSS)):
+                elem = str(elem)
+                kids = list(root)
+                if len(kids) > 0:
+                    if kids[-1].tail is None:
+                        kids[-1].tail = elem
+                    else:
+                        kids[-1].tail += "\n" + elem
+                else:
+                    root.text = elem
+            elif hasattr(elem, 'to_widget'):
+                raise ValueError(
+                    "can't convert {} to pure HTML. It looks like a Jupyter widget so look for the appropriate `JHTML` subclass.".format(
+                        elem))
+            else:
+                raise ValueError("don't know what to do with {}".format(elem))
+        @classmethod
+        def construct_etree_attrs(cls, attrs):
+            _copied = False
+            if 'style' in attrs:
+                styles = attrs['style']
+                if hasattr(styles, 'items'):
+                    styles = CSS(**styles)
+                if hasattr(styles, 'tostring'):
+                    if not _copied:
+                        attrs = attrs.copy()
+                        _copied = True
+                    attrs['style'] = styles.tostring()
+            if 'class' in attrs:
+                if not isinstance(attrs['class'], str):
+                    if not _copied:
+                        attrs = attrs.copy()
+                        _copied = True
+                    try:
+                        iter(attrs['class'])
+                    except TypeError:
+                        attrs['class'] = str(attrs['class'])
+                    else:
+                        attrs['class'] = " ".join(str(c) for c in attrs['class'])
+                    if len(attrs['class']) == 0:
+                        del attrs['class']
+            return attrs
         @property
         def tree(self):
             return self.to_tree()
@@ -465,62 +515,20 @@ class HTML:
             if self._tree_cache is None:
                 if root is None:
                     root = ElementTree.Element('root')
-                attrs = self.attrs
-                _copied = False
-                if 'style' in attrs:
-                    styles = attrs['style']
-                    if hasattr(styles, 'items'):
-                        styles = CSS(**styles)
-                    if hasattr(styles, 'tostring'):
-                        if not _copied:
-                            attrs = attrs.copy()
-                            _copied = True
-                        attrs['style'] = styles.tostring()
-                if 'class' in attrs:
-                    if not isinstance(attrs['class'], str):
-                        if not _copied:
-                            attrs = attrs.copy()
-                            _copied = True
-                        try:
-                            iter(attrs['class'])
-                        except TypeError:
-                            attrs['class'] = str(attrs['class'])
-                        else:
-                            attrs['class'] = " ".join(str(c) for c in attrs['class'])
-                        if len(attrs['class']) == 0:
-                            del attrs['class']
+                attrs = self.construct_etree_attrs(self.attrs)
                 my_el = ElementTree.SubElement(root, self.tag, attrs)
                 if all(isinstance(e, str) for e in self.elems):
                     my_el.text = "\n".join(self.elems)
                 else:
                     for elem in self.elems:
-                        if hasattr(elem, 'to_tree'):
-                            elem.to_tree(root=my_el, parent=self)
-                        elif hasattr(elem, 'modify'):
-                            elem.modify().to_tree(root=my_el, parent=self)
-                        elif isinstance(elem, ElementTree.Element):
-                            my_el.append(elem)
-                        elif isinstance(elem, (str, int, float, CSS)):
-                            elem = str(elem)
-                            kids = list(my_el)
-                            if len(kids) > 0:
-                                if kids[-1].tail is None:
-                                    kids[-1].tail = elem
-                                else:
-                                    kids[-1].tail += "\n"+elem
-                            else:
-                                my_el.text = elem
-                        elif hasattr(elem, 'to_widget'):
-                            raise ValueError("can't convert {} to pure HTML. It looks like a `JupyterHTMLWrapper` so look for the appropriate `JHTML` subclass.".format(elem))
-                        else:
-                            raise ValueError("don't know what to do with {}".format(elem))
+                        self.construct_etree_element(elem, my_el, parent=self)
                 self._tree_cache = my_el
             elif root is not None:
                 if self._tree_cache not in root:
                     root.append(self._tree_cache)
             return self._tree_cache
         def tostring(self):
-            return "\n".join(s.decode() for s in ElementTree.tostringlist(self.to_tree()))
+            return "\n".join(s.decode() for s in ElementTree.tostringlist(self.to_tree(), method='html'))
 
         def sanitize_key(self, key):
             key = key.replace("-", "_")
