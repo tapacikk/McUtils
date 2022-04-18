@@ -108,24 +108,17 @@ class JHTML:
             track_value = attrs['track-value'].lower() == 'true' if 'track-value' in attrs else False
             dynamic = attrs['dynamic'].lower() == 'true' if 'dynamic' in attrs else False
             if not dynamic:
-                try:
-                    del attrs['event-handlers']
-                except KeyError:
-                    ...
-                try:
-                    del attrs['track-value']
-                except KeyError:
-                    ...
-                try:
-                    del attrs['dynamic']
-                except KeyError:
-                    ...
+                for k in ['event-handlers', 'track-value', 'dynamic']:
+                    try:
+                        del attrs[k]
+                    except KeyError:
+                        ...
                 base.attrs = attrs
                 dynamic = track_value or handlers is not None
             if not dynamic:
                 dynamic = any(isinstance(x, ActiveHTMLWrapper) for x in base.elems)
             if dynamic:
-                base = HTMLWidgets.from_HTML(base, dynamic=dynamic, track_value=track_value, event_handlers=handlers)
+                base = HTMLWidgets.from_HTML(base, track_value=track_value, event_handlers=handlers)
 
         return base
 
@@ -147,6 +140,7 @@ class JHTML:
                                         _debugPrint=_debugPrint,
                                         **attrs
                                         )
+
         return base
 
     @classmethod

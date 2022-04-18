@@ -816,7 +816,7 @@ class ActiveHTMLWrapper:
                  continuous_update=None,
                  **attributes
                  ):
-        from .ActiveHTMLWidget import HTMLElement
+        HTMLElement = self.load_HTMLElement()
         self.HTMLElement = HTMLElement
 
         if len(elements) == 1 and isinstance(elements[0], (list, tuple)):
@@ -945,9 +945,124 @@ class ActiveHTMLWrapper:
                 #     raise Exception(y)
             body.append(y)
 
-        # print(body, props)
         return cls(*body, tag=x.tag, **props)
 
+    @classmethod
+    def load_HTMLElement(cls):
+        from ActiveHTMLWidget import HTMLElement
+        return HTMLElement
+    @classmethod
+    def convert_child(cls, c):
+        HTMLElement = cls.load_HTMLElement()
+        if isinstance(c, ActiveHTMLWrapper):
+            return c.to_html()
+        elif isinstance(c, HTMLElement):
+            if hasattr(c, 'wrappers'):
+                w = next(iter(c.wrappers))
+                return w.to_html()
+            else:
+                try:
+                    wrapper_cls = HTMLWidgets.get_class_map()[c.tagName]
+                except KeyError:
+                    wrapper_cls = lambda *elems, tag=c.tagName, **attrs: cls(*elems, tag=tag, **attrs)
+
+                body = []
+                if c.innerHTML != "":
+                    body.append(c.innerHTML)
+                elif c.textContent != "":
+                    body.append(c.textContent)
+                else:
+                    body = [cls.convert_child(x) for x in c.children]
+                attrs = c.elementAttributes.copy()
+                if c.value != "":
+                    attrs['value'] = c.value
+                if c.id != "":
+                    attrs["id"] = c.id
+                if len(c.classList) > 0:
+                    attrs["cls"] = c.classList
+                if len(c.styleDict) > 0:
+                    attrs["style"] = c.styleDict
+
+                new_el = wrapper_cls(*body, **attrs)
+                return new_el.to_html()
+        elif isinstance(c, JupyterAPIs.get_widgets_api().Widget):
+            html = HTML.XMLElement("jwidget", id=c.model_id)
+            html.mirror = c
+            return html
+        elif isinstance(c, HTML.XMLElement):
+            return c
+        else:
+            raise ValueError("don't know how to convert {} {}".format(type(c), HTMLElement))
+    def to_html(self):
+        try:
+            wrapper_cls = HTML.get_class_map()[self.tag]
+        except KeyError:
+            wrapper_cls = lambda *elems, **attrs: HTML.XMLElement(self.tag, *elems, **attrs)
+
+        # raise Exception(wrapper_cls, self.tag)
+        attrs = self.attrs.copy()
+        if self.value is not None:
+            attrs['value'] = self.value
+        if self.id is not None:
+            attrs["id"] = self.id
+        if len(self.class_list) > 0:
+            attrs["class"] = self.class_list
+        if len(self.style) > 0:
+            attrs["style"] = self.style
+
+        if self.html is not None:
+            html = wrapper_cls(self.html, **self.attrs)
+        elif self.text is not None:
+            html = wrapper_cls(self.text, **self.attrs)
+        else:
+            html = wrapper_cls(
+                *(self.convert_child(x) for x in self.children),
+                **attrs
+            )
+        html.mirror = self
+        return html
+
+    def find(self, path, find_mirror=True):
+        base = self.to_html().find(path)
+        if find_mirror:
+            base = base.mirror
+        return base
+    def findall(self, path, find_mirror=True):
+        base = self.to_html().findall(path)
+        if find_mirror:
+            base = [b.mirror for b in base]
+        return base
+    def iterfind(self, path, find_mirror=True):
+        bases = self.base.iterfind(path)
+        for b in bases:
+            if find_mirror:
+                b = b.mirror
+            yield b
+    def find_by_id(self, id, mode='first', parent=None, find_mirror=True):
+        base = self.to_html().find_by_id(id, mode=mode, parent=parent)
+        if find_mirror:
+            base = base.mirror
+        return base
+
+    # def to_tree(self, root=None, parent=None):
+    #     if parent is not None:
+    #         self._parents.add(parent)
+    #     if self._tree_cache is None:
+    #         ...
+    #         if root is None:
+    #             root = ElementTree.Element('root')
+    #         attrs = self.construct_etree_attrs(self.attrs)
+    #         my_el = ElementTree.SubElement(root, self.tag, attrs)
+    #         if all(isinstance(e, str) for e in self.elems):
+    #             my_el.text = "\n".join(self.elems)
+    #         else:
+    #             for elem in self.elems:
+    #                 self.construct_etree_element(elem, my_el, parent=self)
+    #         self._tree_cache = my_el
+    #     elif root is not None:
+    #         if self._tree_cache not in root:
+    #             root.append(self._tree_cache)
+    #     return self._tree_cache
     def to_widget(self, parent=None):
         return self.elem
     def __repr__(self):
@@ -1261,7 +1376,6 @@ class HTMLWidgets:
                 if isinstance(v, type) and hasattr(v, 'base') and hasattr(v.base, 'tag'):
                     cls._cls_map[v.base.tag] = v
         return cls._cls_map
-
     @classmethod
     def from_HTML(cls, html:HTML.XMLElement, event_handlers=None, debug_pane=None, **props):
         tag = html.tag
@@ -1273,132 +1387,147 @@ class HTMLWidgets:
 
         return tag_class.from_HTML(html, event_handlers=event_handlers, debug_pane=debug_pane, **props)
 
-    class Abbr(ActiveHTMLWrapper): base=HTML.Abbr
-    class Address(ActiveHTMLWrapper): base=HTML.Address
-    class Anchor(ActiveHTMLWrapper): base=HTML.Anchor
+    class WrappedHTMLElement(ActiveHTMLWrapper):
+        def __repr__(self):
+            body = (
+                self.children if len(self.children) > 0
+                else self.html_string if self.html_string is not None
+                else self.text if self.text is not None
+                else ""
+            )
+            return "{}Element({!r}, cls={}, style={}, id={})".format(
+                type(self).__name__,
+                body,
+                self.class_list,
+                self.style,
+                self.id
+            )
+    class Abbr(WrappedHTMLElement): base=HTML.Abbr
+    class Address(WrappedHTMLElement): base=HTML.Address
+    class Anchor(WrappedHTMLElement): base=HTML.Anchor
     A = Anchor
-    class Area(ActiveHTMLWrapper): base=HTML.Area
-    class Article(ActiveHTMLWrapper): base=HTML.Article
-    class Aside(ActiveHTMLWrapper): base=HTML.Aside
-    class Audio(ActiveHTMLWrapper): base=HTML.Audio
-    class B(ActiveHTMLWrapper): base=HTML.B
-    class Base(ActiveHTMLWrapper): base=HTML.Base
-    class BaseList(ActiveHTMLWrapper): base=HTML.BaseList
-    class Bdi(ActiveHTMLWrapper): base=HTML.Bdi
-    class Bdo(ActiveHTMLWrapper): base=HTML.Bdo
-    class Blockquote(ActiveHTMLWrapper): base=HTML.Blockquote
-    class Body(ActiveHTMLWrapper): base=HTML.Body
-    class Bold(ActiveHTMLWrapper): base=HTML.Bold
-    class Br(ActiveHTMLWrapper): base=HTML.Br
-    class Button(ActiveHTMLWrapper): base=HTML.Button
-    class Canvas(ActiveHTMLWrapper): base=HTML.Canvas
-    class Caption(ActiveHTMLWrapper): base=HTML.Caption
-    class Cite(ActiveHTMLWrapper): base=HTML.Cite
-    class ClassAdder(ActiveHTMLWrapper): base=HTML.ClassAdder
-    class ClassRemover(ActiveHTMLWrapper): base=HTML.ClassRemover
-    class Code(ActiveHTMLWrapper): base=HTML.Code
-    class Col(ActiveHTMLWrapper): base=HTML.Col
-    class Colgroup(ActiveHTMLWrapper): base=HTML.Colgroup
-    class Data(ActiveHTMLWrapper): base=HTML.Data
-    class Datalist(ActiveHTMLWrapper): base=HTML.Datalist
-    class Dd(ActiveHTMLWrapper): base=HTML.Dd
-    class Del(ActiveHTMLWrapper): base=HTML.Del
-    class Details(ActiveHTMLWrapper): base=HTML.Details
-    class Dfn(ActiveHTMLWrapper): base=HTML.Dfn
-    class Dialog(ActiveHTMLWrapper): base=HTML.Dialog
-    class Div(ActiveHTMLWrapper): base=HTML.Div
-    class Dl(ActiveHTMLWrapper): base=HTML.Dl
-    class Dt(ActiveHTMLWrapper): base=HTML.Dt
-    class ElementModifier(ActiveHTMLWrapper): base=HTML.ElementModifier
-    class Em(ActiveHTMLWrapper): base=HTML.Em
-    class Embed(ActiveHTMLWrapper): base=HTML.Embed
-    class Fieldset(ActiveHTMLWrapper): base=HTML.Fieldset
-    class Figcaption(ActiveHTMLWrapper): base=HTML.Figcaption
-    class Figure(ActiveHTMLWrapper): base=HTML.Figure
-    class Footer(ActiveHTMLWrapper): base=HTML.Footer
-    class Form(ActiveHTMLWrapper): base=HTML.Form
-    class Head(ActiveHTMLWrapper): base=HTML.Head
-    class Header(ActiveHTMLWrapper): base=HTML.Header
-    class Heading(ActiveHTMLWrapper): base=HTML.Heading
-    class Hr(ActiveHTMLWrapper): base=HTML.Hr
-    class Iframe(ActiveHTMLWrapper): base=HTML.Iframe
-    class Image(ActiveHTMLWrapper): base=HTML.Image
-    class Img(ActiveHTMLWrapper): base=HTML.Img
-    class Input(ActiveHTMLWrapper): base=HTML.Input
-    class Ins(ActiveHTMLWrapper): base=HTML.Ins
-    class Italic(ActiveHTMLWrapper): base=HTML.Italic
-    class Kbd(ActiveHTMLWrapper): base=HTML.Kbd
-    class Label(ActiveHTMLWrapper): base=HTML.Label
-    class Legend(ActiveHTMLWrapper): base=HTML.Legend
-    class Li(ActiveHTMLWrapper): base=HTML.Li
-    class Link(ActiveHTMLWrapper): base=HTML.Link
-    class List(ActiveHTMLWrapper): base=HTML.List
-    class ListItem(ActiveHTMLWrapper): base=HTML.ListItem
-    class Main(ActiveHTMLWrapper): base=HTML.Main
-    class Map(ActiveHTMLWrapper): base=HTML.Map
-    class Mark(ActiveHTMLWrapper): base=HTML.Mark
-    class Meta(ActiveHTMLWrapper): base=HTML.Meta
-    class Meter(ActiveHTMLWrapper): base=HTML.Meter
-    class Nav(ActiveHTMLWrapper): base=HTML.Nav
-    class Noscript(ActiveHTMLWrapper): base=HTML.Noscript
-    class NumberedList(ActiveHTMLWrapper): base=HTML.NumberedList
-    class Object(ActiveHTMLWrapper): base=HTML.Object
-    class Ol(ActiveHTMLWrapper): base=HTML.Ol
-    class Optgroup(ActiveHTMLWrapper): base=HTML.Optgroup
-    class Option(ActiveHTMLWrapper): base=HTML.Option
-    class Output(ActiveHTMLWrapper): base=HTML.Output
-    class P(ActiveHTMLWrapper): base=HTML.P
-    class Param(ActiveHTMLWrapper): base=HTML.Param
-    class Picture(ActiveHTMLWrapper): base=HTML.Picture
-    class Pre(ActiveHTMLWrapper): base=HTML.Pre
-    class Progress(ActiveHTMLWrapper): base=HTML.Progress
-    class Q(ActiveHTMLWrapper): base=HTML.Q
-    class Rp(ActiveHTMLWrapper): base=HTML.Rp
-    class Rt(ActiveHTMLWrapper): base=HTML.Rt
-    class Ruby(ActiveHTMLWrapper): base=HTML.Ruby
-    class S(ActiveHTMLWrapper): base=HTML.S
-    class Samp(ActiveHTMLWrapper): base=HTML.Samp
-    class Script(ActiveHTMLWrapper): base=HTML.Script
-    class Section(ActiveHTMLWrapper): base=HTML.Section
-    class Select(ActiveHTMLWrapper): base=HTML.Select
-    class Small(ActiveHTMLWrapper): base=HTML.Small
-    class Source(ActiveHTMLWrapper): base=HTML.Source
-    class Span(ActiveHTMLWrapper): base=HTML.Span
-    class Strong(ActiveHTMLWrapper): base=HTML.Strong
-    class Style(ActiveHTMLWrapper): base=HTML.Style
-    class StyleAdder(ActiveHTMLWrapper): base=HTML.StyleAdder
-    class Sub(ActiveHTMLWrapper): base=HTML.Sub
-    class SubHeading(ActiveHTMLWrapper): base=HTML.SubHeading
-    class SubsubHeading(ActiveHTMLWrapper): base=HTML.SubsubHeading
-    class SubsubsubHeading(ActiveHTMLWrapper): base=HTML.SubsubsubHeading
-    class SubHeading5(ActiveHTMLWrapper): base=HTML.SubHeading5
-    class SubHeading6(ActiveHTMLWrapper): base=HTML.SubHeading6
-    class Summary(ActiveHTMLWrapper): base=HTML.Summary
-    class Sup(ActiveHTMLWrapper): base=HTML.Sup
-    class Svg(ActiveHTMLWrapper): base=HTML.Svg
-    class Table(ActiveHTMLWrapper): base=HTML.Table
-    class TableBody(ActiveHTMLWrapper): base=HTML.TableBody
-    class TableHeading(ActiveHTMLWrapper): base=HTML.TableHeading
-    class TableItem(ActiveHTMLWrapper): base=HTML.TableItem
-    class TableRow(ActiveHTMLWrapper): base=HTML.TableRow
-    class TagElement(ActiveHTMLWrapper): base=HTML.TagElement
-    class Tbody(ActiveHTMLWrapper): base=HTML.Tbody
-    class Td(ActiveHTMLWrapper): base=HTML.Td
-    class Template(ActiveHTMLWrapper): base=HTML.Template
-    class Text(ActiveHTMLWrapper): base=HTML.Text
-    class Textarea(ActiveHTMLWrapper): base=HTML.Textarea
-    class Tfoot(ActiveHTMLWrapper): base=HTML.Tfoot
-    class Th(ActiveHTMLWrapper): base=HTML.Th
-    class Thead(ActiveHTMLWrapper): base=HTML.Thead
-    class Time(ActiveHTMLWrapper): base=HTML.Time
-    class Title(ActiveHTMLWrapper): base=HTML.Title
-    class Tr(ActiveHTMLWrapper): base=HTML.Tr
-    class Track(ActiveHTMLWrapper): base=HTML.Track
-    class U(ActiveHTMLWrapper): base=HTML.U
-    class Ul(ActiveHTMLWrapper): base=HTML.Ul
-    class Var(ActiveHTMLWrapper): base=HTML.Var
-    class Video(ActiveHTMLWrapper): base=HTML.Video
-    class Wbr(ActiveHTMLWrapper): base=HTML.Wbr
+    class Area(WrappedHTMLElement): base=HTML.Area
+    class Article(WrappedHTMLElement): base=HTML.Article
+    class Aside(WrappedHTMLElement): base=HTML.Aside
+    class Audio(WrappedHTMLElement): base=HTML.Audio
+    class B(WrappedHTMLElement): base=HTML.B
+    class Base(WrappedHTMLElement): base=HTML.Base
+    class BaseList(WrappedHTMLElement): base=HTML.BaseList
+    class Bdi(WrappedHTMLElement): base=HTML.Bdi
+    class Bdo(WrappedHTMLElement): base=HTML.Bdo
+    class Blockquote(WrappedHTMLElement): base=HTML.Blockquote
+    class Body(WrappedHTMLElement): base=HTML.Body
+    class Bold(WrappedHTMLElement): base=HTML.Bold
+    class Br(WrappedHTMLElement): base=HTML.Br
+    class Button(WrappedHTMLElement): base=HTML.Button
+    class Canvas(WrappedHTMLElement): base=HTML.Canvas
+    class Caption(WrappedHTMLElement): base=HTML.Caption
+    class Cite(WrappedHTMLElement): base=HTML.Cite
+    class ClassAdder(WrappedHTMLElement): base=HTML.ClassAdder
+    class ClassRemover(WrappedHTMLElement): base=HTML.ClassRemover
+    class Code(WrappedHTMLElement): base=HTML.Code
+    class Col(WrappedHTMLElement): base=HTML.Col
+    class Colgroup(WrappedHTMLElement): base=HTML.Colgroup
+    class Data(WrappedHTMLElement): base=HTML.Data
+    class Datalist(WrappedHTMLElement): base=HTML.Datalist
+    class Dd(WrappedHTMLElement): base=HTML.Dd
+    class Del(WrappedHTMLElement): base=HTML.Del
+    class Details(WrappedHTMLElement): base=HTML.Details
+    class Dfn(WrappedHTMLElement): base=HTML.Dfn
+    class Dialog(WrappedHTMLElement): base=HTML.Dialog
+    class Div(WrappedHTMLElement): base=HTML.Div
+    class Dl(WrappedHTMLElement): base=HTML.Dl
+    class Dt(WrappedHTMLElement): base=HTML.Dt
+    class ElementModifier(WrappedHTMLElement): base=HTML.ElementModifier
+    class Em(WrappedHTMLElement): base=HTML.Em
+    class Embed(WrappedHTMLElement): base=HTML.Embed
+    class Fieldset(WrappedHTMLElement): base=HTML.Fieldset
+    class Figcaption(WrappedHTMLElement): base=HTML.Figcaption
+    class Figure(WrappedHTMLElement): base=HTML.Figure
+    class Footer(WrappedHTMLElement): base=HTML.Footer
+    class Form(WrappedHTMLElement): base=HTML.Form
+    class Head(WrappedHTMLElement): base=HTML.Head
+    class Header(WrappedHTMLElement): base=HTML.Header
+    class Heading(WrappedHTMLElement): base=HTML.Heading
+    class Hr(WrappedHTMLElement): base=HTML.Hr
+    class Iframe(WrappedHTMLElement): base=HTML.Iframe
+    class Image(WrappedHTMLElement): base=HTML.Image
+    class Img(WrappedHTMLElement): base=HTML.Img
+    class Input(WrappedHTMLElement): base=HTML.Input
+    class Ins(WrappedHTMLElement): base=HTML.Ins
+    class Italic(WrappedHTMLElement): base=HTML.Italic
+    class Kbd(WrappedHTMLElement): base=HTML.Kbd
+    class Label(WrappedHTMLElement): base=HTML.Label
+    class Legend(WrappedHTMLElement): base=HTML.Legend
+    class Li(WrappedHTMLElement): base=HTML.Li
+    class Link(WrappedHTMLElement): base=HTML.Link
+    class List(WrappedHTMLElement): base=HTML.List
+    class ListItem(WrappedHTMLElement): base=HTML.ListItem
+    class Main(WrappedHTMLElement): base=HTML.Main
+    class Map(WrappedHTMLElement): base=HTML.Map
+    class Mark(WrappedHTMLElement): base=HTML.Mark
+    class Meta(WrappedHTMLElement): base=HTML.Meta
+    class Meter(WrappedHTMLElement): base=HTML.Meter
+    class Nav(WrappedHTMLElement): base=HTML.Nav
+    class Noscript(WrappedHTMLElement): base=HTML.Noscript
+    class NumberedList(WrappedHTMLElement): base=HTML.NumberedList
+    class Object(WrappedHTMLElement): base=HTML.Object
+    class Ol(WrappedHTMLElement): base=HTML.Ol
+    class Optgroup(WrappedHTMLElement): base=HTML.Optgroup
+    class Option(WrappedHTMLElement): base=HTML.Option
+    class Output(WrappedHTMLElement): base=HTML.Output
+    class P(WrappedHTMLElement): base=HTML.P
+    class Param(WrappedHTMLElement): base=HTML.Param
+    class Picture(WrappedHTMLElement): base=HTML.Picture
+    class Pre(WrappedHTMLElement): base=HTML.Pre
+    class Progress(WrappedHTMLElement): base=HTML.Progress
+    class Q(WrappedHTMLElement): base=HTML.Q
+    class Rp(WrappedHTMLElement): base=HTML.Rp
+    class Rt(WrappedHTMLElement): base=HTML.Rt
+    class Ruby(WrappedHTMLElement): base=HTML.Ruby
+    class S(WrappedHTMLElement): base=HTML.S
+    class Samp(WrappedHTMLElement): base=HTML.Samp
+    class Script(WrappedHTMLElement): base=HTML.Script
+    class Section(WrappedHTMLElement): base=HTML.Section
+    class Select(WrappedHTMLElement): base=HTML.Select
+    class Small(WrappedHTMLElement): base=HTML.Small
+    class Source(WrappedHTMLElement): base=HTML.Source
+    class Span(WrappedHTMLElement): base=HTML.Span
+    class Strong(WrappedHTMLElement): base=HTML.Strong
+    class Style(WrappedHTMLElement): base=HTML.Style
+    class StyleAdder(WrappedHTMLElement): base=HTML.StyleAdder
+    class Sub(WrappedHTMLElement): base=HTML.Sub
+    class SubHeading(WrappedHTMLElement): base=HTML.SubHeading
+    class SubsubHeading(WrappedHTMLElement): base=HTML.SubsubHeading
+    class SubsubsubHeading(WrappedHTMLElement): base=HTML.SubsubsubHeading
+    class SubHeading5(WrappedHTMLElement): base=HTML.SubHeading5
+    class SubHeading6(WrappedHTMLElement): base=HTML.SubHeading6
+    class Summary(WrappedHTMLElement): base=HTML.Summary
+    class Sup(WrappedHTMLElement): base=HTML.Sup
+    class Svg(WrappedHTMLElement): base=HTML.Svg
+    class Table(WrappedHTMLElement): base=HTML.Table
+    class TableBody(WrappedHTMLElement): base=HTML.TableBody
+    class TableHeading(WrappedHTMLElement): base=HTML.TableHeading
+    class TableItem(WrappedHTMLElement): base=HTML.TableItem
+    class TableRow(WrappedHTMLElement): base=HTML.TableRow
+    class TagElement(WrappedHTMLElement): base=HTML.TagElement
+    class Tbody(WrappedHTMLElement): base=HTML.Tbody
+    class Td(WrappedHTMLElement): base=HTML.Td
+    class Template(WrappedHTMLElement): base=HTML.Template
+    class Text(WrappedHTMLElement): base=HTML.Text
+    class Textarea(WrappedHTMLElement): base=HTML.Textarea
+    class Tfoot(WrappedHTMLElement): base=HTML.Tfoot
+    class Th(WrappedHTMLElement): base=HTML.Th
+    class Thead(WrappedHTMLElement): base=HTML.Thead
+    class Time(WrappedHTMLElement): base=HTML.Time
+    class Title(WrappedHTMLElement): base=HTML.Title
+    class Tr(WrappedHTMLElement): base=HTML.Tr
+    class Track(WrappedHTMLElement): base=HTML.Track
+    class U(WrappedHTMLElement): base=HTML.U
+    class Ul(WrappedHTMLElement): base=HTML.Ul
+    class Var(WrappedHTMLElement): base=HTML.Var
+    class Video(WrappedHTMLElement): base=HTML.Video
+    class Wbr(WrappedHTMLElement): base=HTML.Wbr
 
     class OutputArea(ActiveHTMLWrapper):
         def __init__(self, *elements, max_messages=None, autoclear=False, event_handlers=None, cls=None, **styles):
