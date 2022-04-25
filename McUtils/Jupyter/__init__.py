@@ -17,5 +17,7 @@ from .HTMLWidgets import *; from .HTMLWidgets import __all__ as exposed
 __all__ += exposed
 from .BootstrapWidgets import *; from .BootstrapWidgets import __all__ as exposed
 __all__ += exposed
+from .Controls import *; from .Controls import __all__ as exposed
+__all__ += exposed
 from .Interfaces import *; from .Interfaces import __all__ as exposed
 __all__ += exposed

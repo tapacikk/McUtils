@@ -135,7 +135,8 @@
           "filename": "remoteEntry.[contenthash].js",
           "exposes": {
             "./index": "/Users/Mark/Documents/UW/Research/Development/ActiveHTMLWidget/lib/index.js",
-            "./extension": "/Users/Mark/Documents/UW/Research/Development/ActiveHTMLWidget/lib/plugin"
+            "./extension": "/Users/Mark/Documents/UW/Research/Development/ActiveHTMLWidget/lib/plugin",
+            "./style": "/Users/Mark/Documents/UW/Research/Development/ActiveHTMLWidget/css/index.css"
           },
           "shared": {
             "@jupyterlab/application": {
@@ -615,6 +616,8 @@
               "singleton": true,
               "import": false
             },
+            "bootstrap": {},
+            "sass": {},
             "ActiveHTMLWidget": {
               "version": "0.1.0",
               "singleton": true,

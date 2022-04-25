@@ -5,8 +5,11 @@ import sys, os, types, importlib, inspect, numpy as np
 
 __all__ = [
     "ModuleReloader",
-    "MoleculeGraphics"
+    "MoleculeGraphics",
+    "NotebookExporter",
 ]
+
+__reload_hook__ = ['.NBExporter']
 
 class ModuleReloader:
     """
@@ -363,3 +366,94 @@ $$$$
                 viewer[0].set_scale(scale)
             return viewer
 
+class NotebookExporter:
+    tag_filters = {
+        'cell':('ignore',),
+        'output':('ignore',),
+        'input':('ignore',),
+    }
+    def __init__(self, name,
+                 src_dir=None,
+                 img_prefix=None,
+                 img_dir=None,
+                 output_dir=None,
+                 tag_filters=None
+                 ):
+        self.name = name
+        self.src_dir = src_dir
+        self.out_dir = output_dir
+        self.img_dir = img_dir
+        self.img_prefix = img_prefix
+        self.tag_filters = self.tag_filters if tag_filters is None else tag_filters
+
+    def load_preprocessor(self):
+        from .NBExporter import MarkdownImageExtractor
+        prefix = '' if self.img_prefix is None else self.img_prefix
+
+        return MarkdownImageExtractor(prefix=prefix)#lambda *args,prefix=prefix,**kw:print(args,kw)
+
+    def load_filters(self):
+        from traitlets.config import Config
+
+        # Setup config
+        c = Config()
+
+        # Configure tag removal - be sure to tag your cells to remove  using the
+        # words remove_cell to remove cells. You can also modify the code to use
+        # a different tag word
+
+        if 'cell' in self.tag_filters:
+            c.TagRemovePreprocessor.remove_cell_tags = self.tag_filters['cell']
+        if 'output' in self.tag_filters:
+            c.TagRemovePreprocessor.remove_all_outputs_tags = self.tag_filters['output']
+        if 'input' in self.tag_filters:
+            c.TagRemovePreprocessor.remove_input_tags = self.tag_filters['input']
+        c.TagRemovePreprocessor.enabled = True
+
+        # Configure and run out exporter
+        c.MarkdownExporter.preprocessors = [
+            self.load_preprocessor(),
+            "nbconvert.preprocessors.TagRemovePreprocessor"
+        ]
+
+        return c
+
+    def load_nb(self):
+        import nbformat
+
+        this_nb = self.name + '.ipynb'
+        if self.src_dir is not None:
+            this_nb = os.path.join(self.src_dir, self.name+".ipynb")
+        with open(this_nb) as nb:
+            nb_cells = nbformat.reads(nb.read(), as_version=4)
+        return nb_cells
+
+    def save_output_file(self, filename, body):
+        fn = os.path.abspath(filename)
+        if fn != filename and self.img_dir is not None:
+            filename = os.path.join(self.img_dir, filename)
+        with open(filename, 'wb') as out:
+            out.write(body)
+        return filename
+
+    def export(self):
+        from nbconvert import MarkdownExporter
+        nb_cells = self.load_nb()
+
+        exporter = MarkdownExporter(config=self.load_filters())
+
+        (body, resources) = exporter.from_notebook_node(nb_cells)
+
+        # raise Exception(resources)
+        if len(resources['outputs']) > 0:
+            for k,v in resources['outputs'].items():
+                self.save_output_file(k, v)
+
+        out_md = self.name + '.md'
+        if self.out_dir is not None:
+            out_md = os.path.join(self.out_dir, self.name + ".md")
+
+        with open(out_md, 'w+') as md:
+            md.write(body)
+
+        return out_md

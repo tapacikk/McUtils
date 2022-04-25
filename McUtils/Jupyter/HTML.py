@@ -397,6 +397,14 @@ class HTML:
             self._tree_cache = None
             self.on_update = on_update if on_update is not None else lambda *s:None
             self.activator = activator
+        def __call__(self, *elems, **kwargs):
+            return type(self)(
+                self.tag,
+                self._elems + list(elems),
+                activator=self.activator,
+                on_update=self.on_update,
+                **dict(self.attrs, **kwargs)
+            )
         @property
         def attrs(self):
             if self._attr_view is None:
@@ -456,8 +464,11 @@ class HTML:
             self._invalidate_cache()
             self.on_update(self, item, None)
 
+        atomic_types = (int, bool, float)
         @classmethod
         def construct_etree_element(cls, elem, root, parent=None):
+            if isinstance(elem, cls.atomic_types):
+                elem = str(elem)
             if hasattr(elem, 'to_tree'):
                 elem.to_tree(root=root, parent=parent)
             elif hasattr(elem, 'modify'):
@@ -607,9 +618,13 @@ class HTML:
             return "{}({}, {})".format(type(self).__name__, self.elems, self.attrs)
         def _repr_html_(self):
             return self.tostring()
+        def _ipython_display_(self):
+            self.display()
         def display(self):
             from .WidgetTools import JupyterAPIs
-            return JupyterAPIs.get_display_api().display(JupyterAPIs.get_display_api().HTML(self.tostring()))
+            display = JupyterAPIs.get_display_api()
+            wrapper = HTML.Div(self, cls='jhtml')
+            return display.display(display.HTML(wrapper.tostring()))
         def make_class_list(self):
             self._attrs['class'] = self._attrs['class'].split()
         def add_class(self, *cls, copy=True):
@@ -806,6 +821,13 @@ class HTML:
         tag = None
         def __init__(self, *elems, **attrs):
             super().__init__(self.tag, *elems, **attrs)
+        def __call__(self, *elems, **kwargs):
+            return type(self)(
+                self._elems + list(elems),
+                activator=self.activator,
+                on_update=self.on_update,
+                **dict(self.attrs, **kwargs)
+            )
     class Nav(TagElement): tag='nav'
     class Anchor(TagElement): tag='a'
     class Text(TagElement): tag='p'
