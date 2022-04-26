@@ -739,6 +739,12 @@ class JHTML:
             self.base = base
         def __call__(self, *args, **kwargs):
             return self.base(*args, **dict(self.attrs, **kwargs))
+        def __repr__(self):
+            return "{}({}, {})".format(
+                type(self).__name__,
+                self.base,
+                self.attrs
+            )
     class Compound:
         def __init__(self, *wrappers):
             self.base = wrappers[-1]

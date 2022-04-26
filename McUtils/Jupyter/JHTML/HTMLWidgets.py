@@ -797,9 +797,14 @@ class HTMLWidgets:
         def print(self, *args, **kwargs):
             with self:
                 print(*args, **kwargs)
-        def display(self, *args):
+        def show_output(self, *args):
             with self:
                 JupyterAPIs().display_api.display(*args)
+        def show_raw(self, *args):
+            with self:
+                api = JupyterAPIs().display_api
+                api.publish_display_data(*({'text/plain': t} if isinstance(t, str) else t for t in args))
+                # api.display(*(api.TextDisplayObject(t) for t in args))
         def clear(self):
             self.output.clear_output()
         def __enter__(self):

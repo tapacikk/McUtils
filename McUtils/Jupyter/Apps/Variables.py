@@ -1,15 +1,15 @@
 
 import numpy as np, weakref
-from .WidgetTools import JupyterAPIs
-from .JHMTL import JHTML, DefaultOutputArea
+from ..JHTML import JHTML, DefaultOutputArea, JupyterAPIs
 
 __all__ = [
     "Var",
     "InterfaceVars",
     "VariableSynchronizer",
-    "Control"
+    "WidgetControl"
 ]
 
+__reload_hook__ = ['..JHTML']
 
 class SettingChecker:
     int_types = (int, np.integer)
@@ -153,7 +153,7 @@ class VariableSynchronizer:
         self._watchers.add(widget)
 def Var(name):
     return VariableSynchronizer.create_var(name)
-class Control:
+class WidgetControl:
     def __init__(self, var, control_type=None, widget=None, **settings):
         self.var = VariableSynchronizer.create_var(var)
         self.settings = settings
