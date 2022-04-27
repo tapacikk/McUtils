@@ -11,10 +11,13 @@ var _JUPYTERLAB;
 
 var moduleMap = {
 	"./index": () => {
-		return Promise.all([__webpack_require__.e("vendors-node_modules_css-loader_dist_runtime_api_js-node_modules_jquery_dist_jquery_js-node_m-c60908"), __webpack_require__.e("lib_widget_js"), __webpack_require__.e("lib_index_js")]).then(() => (() => ((__webpack_require__(/*! ./lib/index.js */ "./lib/index.js")))));
+		return Promise.all([__webpack_require__.e("vendors-node_modules_jquery_dist_jquery_js"), __webpack_require__.e("lib_widget_js"), __webpack_require__.e("lib_index_js")]).then(() => (() => ((__webpack_require__(/*! ./lib/index.js */ "./lib/index.js")))));
 	},
 	"./extension": () => {
-		return Promise.all([__webpack_require__.e("vendors-node_modules_css-loader_dist_runtime_api_js-node_modules_jquery_dist_jquery_js-node_m-c60908"), __webpack_require__.e("lib_widget_js"), __webpack_require__.e("lib_plugin_js")]).then(() => (() => ((__webpack_require__(/*! ./lib/plugin */ "./lib/plugin.js")))));
+		return Promise.all([__webpack_require__.e("vendors-node_modules_jquery_dist_jquery_js"), __webpack_require__.e("lib_widget_js"), __webpack_require__.e("lib_plugin_js")]).then(() => (() => ((__webpack_require__(/*! ./lib/plugin */ "./lib/plugin.js")))));
+	},
+	"./style": () => {
+		return __webpack_require__.e("css_index_css").then(() => (() => ((__webpack_require__(/*! ./css/index.css */ "./css/index.css")))));
 	}
 };
 var get = (module, getScope) => {
@@ -109,7 +112,7 @@ __webpack_require__.d(exports, {
 /******/ 		// This function allow to reference async chunks
 /******/ 		__webpack_require__.u = (chunkId) => {
 /******/ 			// return url for filenames based on template
-/******/ 			return "" + chunkId + "." + {"vendors-node_modules_css-loader_dist_runtime_api_js-node_modules_jquery_dist_jquery_js-node_m-c60908":"e3e90c4dc7ae3414800b","lib_widget_js":"890d3f8023a450f972cc","lib_index_js":"bf6ffa79db984e284e73","lib_plugin_js":"b1c0c1ef97bb24e5f05c"}[chunkId] + ".js";
+/******/ 			return "" + chunkId + "." + {"vendors-node_modules_jquery_dist_jquery_js":"4405729320014649bb98","lib_widget_js":"795f1405ae43de6a3e21","lib_index_js":"bf6ffa79db984e284e73","lib_plugin_js":"b1c0c1ef97bb24e5f05c","css_index_css":"be05056d8d0b20fb51fc","vendors-node_modules_bootstrap_dist_js_bootstrap_esm_js":"cae8f50ef89487b19021"}[chunkId] + ".js";
 /******/ 		};
 /******/ 	})();
 /******/ 	
@@ -176,6 +179,17 @@ __webpack_require__.d(exports, {
 /******/ 		};
 /******/ 	})();
 /******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/sharing */
 /******/ 	(() => {
 /******/ 		__webpack_require__.S = {};
@@ -215,7 +229,8 @@ __webpack_require__.d(exports, {
 /******/ 			var promises = [];
 /******/ 			switch(name) {
 /******/ 				case "default": {
-/******/ 					register("ActiveHTMLWidget", "0.1.0", () => (Promise.all([__webpack_require__.e("vendors-node_modules_css-loader_dist_runtime_api_js-node_modules_jquery_dist_jquery_js-node_m-c60908"), __webpack_require__.e("lib_widget_js"), __webpack_require__.e("lib_index_js")]).then(() => (() => (__webpack_require__(/*! ./lib/index.js */ "./lib/index.js"))))));
+/******/ 					register("ActiveHTMLWidget", "0.1.0", () => (Promise.all([__webpack_require__.e("vendors-node_modules_jquery_dist_jquery_js"), __webpack_require__.e("lib_widget_js"), __webpack_require__.e("lib_index_js")]).then(() => (() => (__webpack_require__(/*! ./lib/index.js */ "./lib/index.js"))))));
+/******/ 					register("bootstrap", "5.1.3", () => (__webpack_require__.e("vendors-node_modules_bootstrap_dist_js_bootstrap_esm_js").then(() => (() => (__webpack_require__(/*! ./node_modules/bootstrap/dist/js/bootstrap.esm.js */ "./node_modules/bootstrap/dist/js/bootstrap.esm.js"))))));
 /******/ 				}
 /******/ 				break;
 /******/ 			}
@@ -382,7 +397,8 @@ __webpack_require__.d(exports, {
 /******/ 			"webpack/sharing/consume/default/@jupyter-widgets/base": () => (loadSingletonVersionCheck("default", "@jupyter-widgets/base", [,[1,4,0,0],[1,3,0,0],[1,2,0,0],[1,1,1,10],1,1,1])),
 /******/ 			"webpack/sharing/consume/default/@lumino/widgets": () => (loadSingletonVersionCheck("default", "@lumino/widgets", [1,1,19,0])),
 /******/ 			"webpack/sharing/consume/default/@lumino/algorithm": () => (loadSingletonVersionCheck("default", "@lumino/algorithm", [1,1,3,3])),
-/******/ 			"webpack/sharing/consume/default/@lumino/messaging": () => (loadSingletonVersionCheck("default", "@lumino/messaging", [1,1,4,3]))
+/******/ 			"webpack/sharing/consume/default/@lumino/messaging": () => (loadSingletonVersionCheck("default", "@lumino/messaging", [1,1,4,3])),
+/******/ 			"webpack/sharing/consume/default/bootstrap/bootstrap": () => (loadStrictVersionCheckFallback("default", "bootstrap", [1,5,1,3], () => (__webpack_require__.e("vendors-node_modules_bootstrap_dist_js_bootstrap_esm_js").then(() => (() => (__webpack_require__(/*! bootstrap */ "./node_modules/bootstrap/dist/js/bootstrap.esm.js")))))))
 /******/ 		};
 /******/ 		// no consumes in initial chunks
 /******/ 		var chunkMapping = {
@@ -390,7 +406,8 @@ __webpack_require__.d(exports, {
 /******/ 				"webpack/sharing/consume/default/@jupyter-widgets/base",
 /******/ 				"webpack/sharing/consume/default/@lumino/widgets",
 /******/ 				"webpack/sharing/consume/default/@lumino/algorithm",
-/******/ 				"webpack/sharing/consume/default/@lumino/messaging"
+/******/ 				"webpack/sharing/consume/default/@lumino/messaging",
+/******/ 				"webpack/sharing/consume/default/bootstrap/bootstrap"
 /******/ 			]
 /******/ 		};
 /******/ 		__webpack_require__.f.consumes = (chunkId, promises) => {
@@ -522,4 +539,4 @@ __webpack_require__.d(exports, {
 /******/ 	
 /******/ })()
 ;
-//# sourceMappingURL=remoteEntry.91a9a9b2ced07c8977c5.js.map
+//# sourceMappingURL=remoteEntry.b42f751f114172094c0a.js.map

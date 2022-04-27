@@ -118,10 +118,10 @@ class ZMatrixCoordinateSystem(InternalCoordinateSystem):
         if converter_options is None:
             converter_options = opts
         super().__init__(dimension=dimension, coordinate_shape=coordinate_shape, converter_options=converter_options)
-        # self.jacobian_prep = self.jacobian_prep_coordinates
+        self.jacobian_prep = self.jacobian_prep_coordinates
     def jacobian_prep_coordinates(self,
                                   coord, displacements, values,
-                                  dihedral_cutoff=4
+                                  dihedral_cutoff=6
                                   ):
         # target_ndim = len(self.dimension) + len(coord) + 1
         extra_dim = displacements.ndim - values.ndim
@@ -133,10 +133,19 @@ class ZMatrixCoordinateSystem(InternalCoordinateSystem):
             ref = dihedrals[central_point]
             for x in central_point:
                 ref = ref[np.newaxis]
+            # ref = np.broadcast_to(ref, dihedrals.shape)
             true_diffs = dihedrals - ref
             bad_spots = np.where(abs(true_diffs) > dihedral_cutoff)
-            if np.any(bad_spots):
-                raise Exception(true_diffs, bad_spots)
+            if len(bad_spots) > 0 and len(bad_spots[0]) > 0:
+                # ref_vals = ref[bad_spots]
+                patch_vals = dihedrals[bad_spots]
+                patch_signs = np.sign(patch_vals)
+                # if we have a negative 2pi, we have a negative displaced val and positive start val
+                # in this case we want to do np.pi + (displaced_val - np.pi) = 2pi + displaced_val
+                # if we have a positive 2pi, we have a positive displaced_val and negative start val
+                # in this case we want to do -np.pi + (displaced_val - np.pi) = -2pi + displaced_val
+                fix_spots = bad_spots + (np.full(len(bad_spots[0]), 2),)
+                values[fix_spots] = patch_vals + (-patch_signs)*2*np.pi
         elif analytic_order == 1:
             raise NotImplementedError('correcting periodicity wraparound not handled for analytic derivative order {}'.format(analytic_order))
         else:

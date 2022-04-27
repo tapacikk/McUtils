@@ -3,7 +3,7 @@ from .HTML import HTML, CSS
 from .Bootstrap import Bootstrap
 from .HTMLWidgets import ActiveHTMLWrapper, HTMLWidgets
 from .BootstrapWidgets import BootstrapWidgets
-from .WidgetTools import JupyterAPIs
+from .WidgetTools import JupyterAPIs, DefaultOutputArea
 
 import functools
 
@@ -18,33 +18,44 @@ class JHTML:
     """
     manage_cls = HTML.manage_class
     manage_style = HTML.manage_styles
+    extract_styles = HTML.extract_styles
+    manage_attrs = HTML.manage_attrs
     @classmethod
-    def load(cls):
+    def load(cls, overwrite=False):
         from IPython.core.display import display
 
         elems = [
-            HTMLWidgets.load(),
-            BootstrapWidgets.load()
+            HTMLWidgets.load(overwrite=overwrite)
+            # BootstrapWidgets.load()
         ]
         display(*(e for e in elems if e is not None))
 
-    def __init__(self, context=None, include_bootstrap=False):
+    def __init__(self, context=None,
+                 include_bootstrap=False,
+                 expose_classes=True,
+                 output_pane=True,
+                 callbacks=None,
+                 widgets=None
+                 ):
         self._context = context
         self._additions = set()
         self._include_boostrap = include_bootstrap
+        self.expose_classes = expose_classes
+        self._callbacks = callbacks
+        self._widgets = widgets
+        self._output_pane = (
+            DefaultOutputArea() if output_pane is True
+            else DefaultOutputArea(output_pane) if output_pane is not None
+            else output_pane
+        )
+
     def _get_frame_vars(self):
         import inspect
         frame = inspect.currentframe()
-        parent = frame.f_back.f_back
+        parent = frame.f_back.f_back.f_back
         # print(parent.f_locals)
         return parent.f_locals
-    def __enter__(self):
-        """
-        To make writing HTML interactively a bit nicer
-
-        :return:
-        :rtype:
-        """
+    def insert_vars(self):
         globs = self._context
         if globs is None:
             globs = self._get_frame_vars()
@@ -58,8 +69,55 @@ class JHTML:
                 if not x.startswith("_"):
                     globs[x] = getattr(cls.Bootstrap, x)
                     self._additions.add(x)
-    def __exit__(self, exc_type, exc_val, exc_tb):
 
+    def wrap_callbacks(self, c):
+        if self._output_pane is None:
+            callbacks = c
+        else:
+            callbacks = {}
+            for k,v in c.items():
+                @functools.wraps(v)
+                def callback(*args, self=self, **kwargs):
+                    with self._output_pane:
+                        v(*args, **kwargs)
+                callbacks[k] = callback
+        return callbacks
+
+    _callback_stack = []
+    _widget_stack = []
+    def __enter__(self):
+        """
+        To make writing HTML interactively a bit nicer
+
+        :return:
+        :rtype:
+        """
+
+        if self.expose_classes:
+            self.insert_vars()
+        if self._callbacks is not None:
+            cls = type(self)
+            self._callback_stack.append(cls.callbacks.copy())
+            cls.callbacks = self.wrap_callbacks(self._callbacks)
+        if self._output_pane is not None:
+            self._output_pane.__enter__()
+            if self._widgets is None:
+                self._widgets = {'out':self._output_pane.obj}
+            elif 'out' not in self._widgets:
+                self._widgets['out'] = self._output_pane.obj
+            else:
+                self._widgets['default_output'] = self._output_pane.obj
+        if self._widgets is not None:
+            cls = type(self)
+            self._widget_stack.append(cls.widgets.copy())
+            cls.widgets = self._widgets
+
+        return self
+    @property
+    def out(self):
+        return self._output_pane.obj
+
+    def prune_vars(self):
         globs = self._context
         if globs is None:
             globs = self._get_frame_vars()
@@ -68,6 +126,17 @@ class JHTML:
                 del globs[x]
             except KeyError:
                 pass
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.expose_classes:
+            self.prune_vars()
+        if self._output_pane is not None:
+            self._output_pane.__exit__(exc_type, exc_val, exc_tb)
+        if self._callbacks is not None:
+            cls = type(self)
+            cls.callbacks = self._callback_stack.pop()
+        if self._widgets is not None:
+            cls = type(self)
+            cls.widgets = self._widget_stack.pop()
 
     callbacks = {}
     @classmethod
@@ -107,16 +176,17 @@ class JHTML:
             handlers = cls.parse_handlers(attrs['event-handlers']) if 'event-handlers' in attrs else None
             track_value = attrs['track-value'].lower() == 'true' if 'track-value' in attrs else False
             dynamic = attrs['dynamic'].lower() == 'true' if 'dynamic' in attrs else False
+            for k in ['event-handlers', 'track-value', 'dynamic']:
+                try:
+                    del attrs[k]
+                except KeyError:
+                    ...
+            base.attrs = attrs
             if not dynamic:
-                for k in ['event-handlers', 'track-value', 'dynamic']:
-                    try:
-                        del attrs[k]
-                    except KeyError:
-                        ...
-                base.attrs = attrs
                 dynamic = track_value or handlers is not None
             if not dynamic:
-                dynamic = any(isinstance(x, ActiveHTMLWrapper) for x in base.elems)
+                Widget = JupyterAPIs.get_widgets_api().Widget
+                dynamic = any(isinstance(x, (ActiveHTMLWrapper, Widget)) for x in base.elems)
             if dynamic:
                 base = HTMLWidgets.from_HTML(base, track_value=track_value, event_handlers=handlers)
 
@@ -144,6 +214,20 @@ class JHTML:
         return base
 
     @classmethod
+    def _check_widg(cls, elems):
+        Widget = JupyterAPIs.get_widgets_api().Widget
+        if isinstance(elems, (list, tuple)) and len(elems) == 0:
+            return False
+        elif isinstance(elems, (ActiveHTMLWrapper, Widget)) or hasattr(elems, 'to_widget'):
+            return True
+        else:
+            return any(
+                cls._check_widg(e) if isinstance(e, (list, tuple)) else
+                 (isinstance(e, (ActiveHTMLWrapper, Widget)) or hasattr(e, 'to_widget'))
+                for e in elems
+            )
+
+    @classmethod
     def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, dynamic=None, track_value=None, trackInput=None, _debugPrint=None, **attrs):
         if (
             event_handlers is not None
@@ -154,11 +238,7 @@ class JHTML:
         ):
             return widget
         else:
-            Widget = JupyterAPIs.get_widgets_api().Widget
-            if (
-                    len(elems) > 0
-                    and any(isinstance(e, (ActiveHTMLWrapper, Widget)) or hasattr(e, 'to_widget') for e in elems)
-            ):
+            if jhtml._check_widg(elems):
                 return widget
             else:
                 return plain
@@ -664,3 +744,25 @@ class JHTML:
         def Collapse(boots, *elements, **styles): ...
 
         del dispatcher
+
+    class Styled:
+        def __init__(self, base, **attrs):
+            self.attrs = attrs
+            self.base = base
+        def __call__(self, *args, **kwargs):
+            return self.base(*args, **dict(self.attrs, **kwargs))
+        def __repr__(self):
+            return "{}({}, {})".format(
+                type(self).__name__,
+                self.base,
+                self.attrs
+            )
+    class Compound:
+        def __init__(self, *wrappers):
+            self.base = wrappers[-1]
+            self.classes = wrappers[:-1]
+        def __call__(self, *args, **kwargs):
+            base = self.base(*args, **kwargs)
+            for c in reversed(self.classes):
+                base = c(base)
+            return base

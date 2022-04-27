@@ -1,5 +1,5 @@
 from .HTML import HTML
-from .HTMLWidgets import HTMLWidgets, JupyterHTMLWrapper, ActiveHTMLWrapper
+from .HTMLWidgets import ActiveHTMLWrapper
 from .Bootstrap import Bootstrap3, Bootstrap4, Bootstrap5
 
 __all__ = ["BootstrapWidgets"]
@@ -174,4 +174,4 @@ class Bootstrap5Widgets(BootstrapWidgetsBase):
 Bootstrap5Widgets._monkey_patch()
 
 BootstrapWidgets = Bootstrap5Widgets
-JupyterHTMLWrapper._widget_sources.append(BootstrapWidgets)
+# JupyterHTMLWrapper._widget_sources.append(BootstrapWidgets)

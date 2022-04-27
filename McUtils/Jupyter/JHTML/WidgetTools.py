@@ -79,3 +79,7 @@ class DefaultOutputArea:
         self._output_area_stack.pop()
     def __call__(self, *args, **kwargs):
         return self.get_default()
+
+class frozendict(dict):
+    def __setitem__(self, key, value):
+        raise TypeError("`frozendict` is immutable")

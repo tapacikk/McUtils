@@ -6,6 +6,8 @@ __all__ = [
     "CSS"
 ]
 
+from .Enums import Options
+
 class CSS:
     """
     Defines a holder for CSS properties
@@ -13,6 +15,7 @@ class CSS:
     def __init__(self, *selectors, **props):
         self.selectors = selectors
         self.props = self.canonicalize_props(props)
+    known_properties = set(o.value for o in Options)
     @classmethod
     def construct(cls,
                   *selectors,
@@ -372,31 +375,62 @@ class HTML:
         elif isinstance(styles, str):
             styles = CSS.parse(styles)
         return styles
+
+    keyword_replacements = {
+        'cls': 'class',
+        'use_for': 'for'
+    }
+    @classmethod
+    def manage_attrs(cls, attrs):
+        for k, v in cls.keyword_replacements.items():
+            if k in attrs:
+                attrs[v] = attrs[k]
+                del attrs[k]
+        attrs = {k.replace("_", "-"):v for k,v in attrs.items()}
+        return attrs
+    @classmethod
+    def extract_styles(cls, attrs):
+        styles = {}
+        for k,v in tuple(attrs.items()):
+            if k in CSS.known_properties:
+                styles[k] = v
+                del attrs[k]
+        return styles, attrs
     class XMLElement:
         """
         Convenience API for ElementTree
         """
 
-        keyword_replacements = {
-            'cls':'class',
-            'use_for':'for'
-        }
         def __init__(self, tag, *elems, on_update=None, style=None, activator=None, **attrs):
             self.tag = tag
             self._elems = list(elems[0] if len(elems) == 1 and isinstance(elems[0], (list, tuple)) else elems)
             self._elem_view = None
-            for k,v in self.keyword_replacements.items():
-                if k in attrs:
-                    attrs[v] = attrs[k]
-                    del attrs[k]
+            attrs = HTML.manage_attrs(attrs)
+            extra_styles, attrs = HTML.extract_styles(attrs)
             if style is not None:
-                attrs['style'] = HTML.manage_styles(style)
-            self._attrs = {k.replace("_", "-"):v for k,v in attrs.items()}
+                style = HTML.manage_styles(style).props
+                for k,v in extra_styles.items():
+                    if k in style:
+                        raise ValueError("got style {} specified in two different locations".format(k))
+                    style[k] = v
+            else:
+                style = extra_styles
+            if len(style) > 0:
+                attrs['style'] = style
+            self._attrs = attrs
             self._attr_view = None
             self._parents = weakref.WeakSet()
             self._tree_cache = None
             self.on_update = on_update if on_update is not None else lambda *s:None
             self.activator = activator
+        def __call__(self, *elems, **kwargs):
+            return type(self)(
+                self.tag,
+                self._elems + list(elems),
+                activator=self.activator,
+                on_update=self.on_update,
+                **dict(self.attrs, **kwargs)
+            )
         @property
         def attrs(self):
             if self._attr_view is None:
@@ -404,7 +438,7 @@ class HTML:
             return self._attr_view
         @attrs.setter
         def attrs(self, attrs):
-            self._attrs = attrs
+            self._attrs = HTML.manage_attrs(attrs)
             self._attr_view = None
             self._invalidate_cache()
             self.on_update(self, 'attributes', attrs)
@@ -431,11 +465,13 @@ class HTML:
                     self._parents.remove(p)
         def __getitem__(self, item):
             if isinstance(item, str):
+                item = item.replace("_", "-")
                 return self._attrs[item]
             else:
                 return self._elems[item]
         def __setitem__(self, item, value):
             if isinstance(item, str):
+                item = item.replace("_", "-")
                 self._attrs[item] = value
                 self._attr_view = None
             else:
@@ -445,6 +481,7 @@ class HTML:
             self.on_update(self, item, value)
         def __delitem__(self, item):
             if isinstance(item, str):
+                item = item.replace("_", "-")
                 try:
                     del self._attrs[item]
                 except KeyError:
@@ -456,8 +493,11 @@ class HTML:
             self._invalidate_cache()
             self.on_update(self, item, None)
 
+        atomic_types = (int, bool, float)
         @classmethod
         def construct_etree_element(cls, elem, root, parent=None):
+            if isinstance(elem, cls.atomic_types):
+                elem = str(elem)
             if hasattr(elem, 'to_tree'):
                 elem.to_tree(root=root, parent=parent)
             elif hasattr(elem, 'modify'):
@@ -532,7 +572,7 @@ class HTML:
 
         def sanitize_key(self, key):
             key = key.replace("-", "_")
-            for safe, danger in self.keyword_replacements.items():
+            for safe, danger in HTML.keyword_replacements.items():
                 key = key.replace(danger, safe)
             return key
         def format(self, padding="", prefix="", linewidth=100):
@@ -607,9 +647,13 @@ class HTML:
             return "{}({}, {})".format(type(self).__name__, self.elems, self.attrs)
         def _repr_html_(self):
             return self.tostring()
+        def _ipython_display_(self):
+            self.display()
         def display(self):
             from .WidgetTools import JupyterAPIs
-            return JupyterAPIs.get_display_api().display(JupyterAPIs.get_display_api().HTML(self.tostring()))
+            display = JupyterAPIs.get_display_api()
+            wrapper = HTML.Div(self, cls='jhtml')
+            return display.display(display.HTML(wrapper.tostring()))
         def make_class_list(self):
             self._attrs['class'] = self._attrs['class'].split()
         def add_class(self, *cls, copy=True):
@@ -806,6 +850,13 @@ class HTML:
         tag = None
         def __init__(self, *elems, **attrs):
             super().__init__(self.tag, *elems, **attrs)
+        def __call__(self, *elems, **kwargs):
+            return type(self)(
+                self._elems + list(elems),
+                activator=self.activator,
+                on_update=self.on_update,
+                **dict(self.attrs, **kwargs)
+            )
     class Nav(TagElement): tag='nav'
     class Anchor(TagElement): tag='a'
     class Text(TagElement): tag='p'
