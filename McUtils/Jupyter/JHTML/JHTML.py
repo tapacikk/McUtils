@@ -18,12 +18,14 @@ class JHTML:
     """
     manage_cls = HTML.manage_class
     manage_style = HTML.manage_styles
+    extract_styles = HTML.extract_styles
+    manage_attrs = HTML.manage_attrs
     @classmethod
-    def load(cls):
+    def load(cls, overwrite=False):
         from IPython.core.display import display
 
         elems = [
-            HTMLWidgets.load()
+            HTMLWidgets.load(overwrite=overwrite)
             # BootstrapWidgets.load()
         ]
         display(*(e for e in elems if e is not None))
@@ -212,6 +214,20 @@ class JHTML:
         return base
 
     @classmethod
+    def _check_widg(cls, elems):
+        Widget = JupyterAPIs.get_widgets_api().Widget
+        if isinstance(elems, (list, tuple)) and len(elems) == 0:
+            return False
+        elif isinstance(elems, (ActiveHTMLWrapper, Widget)) or hasattr(elems, 'to_widget'):
+            return True
+        else:
+            return any(
+                cls._check_widg(e) if isinstance(e, (list, tuple)) else
+                 (isinstance(e, (ActiveHTMLWrapper, Widget)) or hasattr(e, 'to_widget'))
+                for e in elems
+            )
+
+    @classmethod
     def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, dynamic=None, track_value=None, trackInput=None, _debugPrint=None, **attrs):
         if (
             event_handlers is not None
@@ -222,11 +238,7 @@ class JHTML:
         ):
             return widget
         else:
-            Widget = JupyterAPIs.get_widgets_api().Widget
-            if (
-                    len(elems) > 0
-                    and any(isinstance(e, (ActiveHTMLWrapper, Widget)) or hasattr(e, 'to_widget') for e in elems)
-            ):
+            if jhtml._check_widg(elems):
                 return widget
             else:
                 return plain

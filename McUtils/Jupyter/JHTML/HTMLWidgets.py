@@ -38,6 +38,7 @@ class ActiveHTMLWrapper:
             shadow_el = self.base(cls=cls, style=style, **attributes)
         else:
             shadow_el = None
+        attributes = HTML.manage_attrs(attributes)
         if tag is None and hasattr(shadow_el, 'tag'):
             tag = shadow_el.tag
         if tag is not None:
@@ -65,7 +66,15 @@ class ActiveHTMLWrapper:
         if len(eventPropertiesDict) > 0:
             attrs['eventPropertiesDict'] = eventPropertiesDict
 
-        if len(elements) == 1:
+        if not isinstance(elements, (list, tuple)):
+            val = elements
+            if isinstance(val, str):
+                attrs['innerHTML'] = val
+            elif isinstance(val, HTML.XMLElement):
+                attrs['innerHTML'] = val.tostring()
+            else:
+                attrs['children'] = [self.canonicalize_widget(val)]
+        elif len(elements) == 1:
             val = elements[0]
             if isinstance(val, str):
                 attrs['innerHTML'] = val
@@ -85,10 +94,11 @@ class ActiveHTMLWrapper:
             if 'style' in shadow_el.attrs:
                 style = shadow_el['style']
         if style is not None:
-            if isinstance(style, str):
-                style = CSS.parse(style).props
-            elif isinstance(style, CSS):
-                style = style.props
+            style = HTML.manage_styles(style).props
+            # if isinstance(style, str):
+            #     style = CSS.parse(style).props
+            # elif isinstance(style, CSS):
+            #     style = style.props
             attrs['styleDict'] = style
         if '_debugPrint' in attributes:
             attrs['_debugPrint'] = attributes['_debugPrint']
@@ -429,7 +439,6 @@ class ActiveHTMLWrapper:
         else:
             attrs = self.elem.elementAttributes
             attrs[key] = value
-            # print(attrs)
             self.elem.elementAttributes = attrs
             self.elem.send_state('elementAttributes')
     def del_attribute(self, key):
@@ -616,13 +625,11 @@ class ActiveHTMLWrapper:
         if len(self.elem.eventPropertiesDict) == 0:
             self.elem.reset_callbacks()
 
-
 class HTMLWidgets:
     @classmethod
-    def load(cls):
+    def load(cls, overwrite=False):
         from .ActiveHTMLWidget import HTMLElement
-        return HTMLElement.jupyterlab_install()
-
+        return HTMLElement.jupyterlab_install(overwrite=overwrite)
     _cls_map = None
     @classmethod
     def get_class_map(cls):
@@ -640,7 +647,6 @@ class HTMLWidgets:
             tag_class = map[tag]
         except KeyError:
             tag_class = ActiveHTMLWrapper#lambda *es,**ats:HTML.XMLElement(tag, *es, **ats)
-
         return tag_class.from_HTML(html, event_handlers=event_handlers, debug_pane=debug_pane, **props)
 
     class WrappedHTMLElement(ActiveHTMLWrapper):

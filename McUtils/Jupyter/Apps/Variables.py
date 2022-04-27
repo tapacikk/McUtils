@@ -78,15 +78,24 @@ SettingChecker.checkers.append(FloatRangeChecker)
 
 class InterfaceVars:
     _cache_stack = []
-    def __init__(self):
-        self._var_set = set()
-        self.var_list = []
+    def __init__(self, *vars):
+        vars = [Var(x) for x in vars]
+        self._var_set = set(vars)
+        self.var_list = vars
     @classmethod
     def active_vars(cls):
         if len(cls._cache_stack) > 0:
             return cls._cache_stack[-1]
         else:
             return None
+    @property
+    def dict(self):
+        return {v.name:v.value for v in self.var_list}
+    @property
+    def items(self):
+        return [(v.name, v.value) for v in self.var_list]
+    def __iter__(self):
+        return iter(self.var_list)
     def add(self, var):
         if var not in self._var_set:
             self.var_list.append(var)
@@ -148,8 +157,9 @@ class VariableSynchronizer:
                     if w is not caller:
                         w.value = self._value
     def link(self, widget):
-        self.set_value(widget.value, caller=widget)
-        widget.observe(lambda d: self.set_value(widget.value, caller=widget), names=['value'])
+        if hasattr(widget, 'value'):
+            self.set_value(widget.value, caller=widget)
+            widget.observe(lambda d: self.set_value(widget.value, caller=widget), names=['value'])
         self._watchers.add(widget)
 def Var(name):
     return VariableSynchronizer.create_var(name)

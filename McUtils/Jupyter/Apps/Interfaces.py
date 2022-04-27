@@ -1,5 +1,7 @@
 
 import abc, weakref, uuid
+import itertools
+
 from ..JHTML import JHTML
 from ..JHTML.WidgetTools import JupyterAPIs, frozendict
 
@@ -9,11 +11,19 @@ __all__ = [
     "Container",
     "ListGroup",
     "Navbar",
+    "Sidebar",
     "Dropdown",
     "DropdownList",
     "Tabs",
     "TabPane",
     "TabList",
+    "Accordion",
+    "AccordionHeader",
+    "AccordionBody",
+    "Opener",
+    "OpenerHeader",
+    "OpenerBody",
+    "Breadcrumb",
     "Layout",
     "Grid",
     "Flex"
@@ -221,7 +231,19 @@ class Navbar(MenuComponent):
     subwrapper_classes = [['container-fluid'], ['navbar-nav']]
     item = JHTML.Anchor
     item_classes = ['nav-link']
+class Sidebar(MenuComponent):
+    wrapper = JHTML.Nav
+    wrapper_classes = ['nav', 'flex-column']
+    # subwrappers = [JHTML.Div, JHTML.Div]
+    # subwrapper_classes = [['container-fluid'], ['navbar-nav']]
+    item = JHTML.Compound(
+        JHTML.Styled(JHTML.Li, cls='nav-item'),
+        JHTML.Anchor
+    )
+    item_classes = ['nav-link']
 
+def short_uuid(len=6):
+    return str(uuid.uuid4()).replace("-", "")[:len]
 class TabList(MenuComponent):
     wrapper = JHTML.Ul
     wrapper_classes = ['nav', 'nav-tabs']
@@ -249,7 +271,7 @@ class TabPane(MenuComponent):
     item_classes = ['tab-pane']
     def __init__(self, *args, base_name=None, **kwargs):
         if base_name is None:
-            base_name = 'tabs-' + str(uuid.uuid1()).replace("-", "")[:5]
+            base_name = 'tabs-' + + short_uuid()
         self.base_name = base_name
         self._active = None
         super().__init__(*args, **kwargs)
@@ -279,6 +301,109 @@ class Tabs(MenuComponent):
             self.panes
         ]
         return super().wrap_items(items)
+
+class AccordionHeader(Container):
+    wrapper_classes = ['accordion-header']
+    item = JHTML.Button
+    item_classes = ['accordion-button']
+    def __init__(self, key, base_name=None, **kw):
+        self.base_name = base_name
+        super().__init__([key], id=self.base_name+'-heading', **kw)
+    def create_item(self, i, **kw):
+        return super().create_item(i, type='button', data_bs_toggle='collapse', data_bs_target='#'+self.base_name+'-collapse')
+class AccordionBody(Container):
+    wrapper_classes = ['accordion-collapse', 'collapse']
+    item = JHTML.Div
+    item_classes = ['accordion-body']
+    def __init__(self, key, parent_name=None, base_name=None, **kw):
+        self.base_name = base_name
+        super().__init__([key], id=self.base_name+'-collapse', data_bs_parent='#'+parent_name, **kw)
+class Accordion(MenuComponent):
+    wrapper_classes = ['accordion']
+    item = JHTML.Div
+    item_classes = ['accordion-item']
+    header_classes = ['h2']
+    def __init__(self, items, base_name=None, header_classes=None, **attrs):
+        if base_name is None:
+            base_name = 'accordion-' + short_uuid()
+        self.base_name = base_name
+        if isinstance(items, dict):
+            items = items.items()
+        self._active = None
+        if header_classes is None:
+            self.header_classes = header_classes
+        super().__init__(items, id=self.base_name, **attrs)
+    def create_item(self, item, cls=None, **kw):
+        key, item = item
+        item_id = self.base_name + "-" + short_uuid(3)
+        cls = JHTML.manage_cls(cls)
+        if self._active is None:
+            cls = cls + ['show']
+            self._active = item_id
+            header_cls = None
+        else:
+            header_cls = ['collapsed']
+
+        header = AccordionHeader(key, base_name=item_id, item_attrs={'cls':header_cls}, wrapper_classes=self.header_classes)
+        body = AccordionBody(item, parent_name=self.base_name, base_name=item_id, cls=cls, **kw)
+        return super().create_item([header, body])
+
+class OpenerHeader(Container):
+    wrapper_classes = ['collapse-header']
+    item = JHTML.Button
+    item_classes = ['accordion-button']
+    def __init__(self, key, base_name=None, **kw):
+        self.base_name = base_name
+        super().__init__([key], id=self.base_name+'-heading', **kw)
+    def create_item(self, i, **kw):
+        return super().create_item(i, type='button', data_bs_toggle='collapse', data_bs_target='#'+self.base_name+'-collapse')
+class OpenerBody(Container):
+    wrapper_classes = ['collapse']
+    item = JHTML.Div
+    item_classes = ['collapse-body']
+    def __init__(self, key, parent_name=None, base_name=None, **kw):
+        self.base_name = base_name
+        super().__init__([key], id=self.base_name+'-collapse', data_bs_parent='#'+parent_name, **kw)
+class Opener(MenuComponent):
+    wrapper_classes = ['opener']
+    item = JHTML.Div
+    item_classes = ['opener-item']
+    header_classes = ['h2']
+    def __init__(self, items, base_name=None, header_classes=None, **attrs):
+        if base_name is None:
+            base_name = 'opener-' + short_uuid()
+        self.base_name = base_name
+        if isinstance(items, dict):
+            items = items.items()
+        # self._active = None
+        if header_classes is None:
+            self.header_classes = header_classes
+        super().__init__(items, id=self.base_name, **attrs)
+    def create_item(self, item, cls=None, **kw):
+        key, item = item
+        item_id = self.base_name + "-" + short_uuid(3)
+        cls = JHTML.manage_cls(cls)
+        # if self._active is None:
+        #     cls = cls + ['show']
+        #     self._active = item_id
+        #     header_cls = None
+        # else:
+        header_cls = ['collapsed']
+
+        header = OpenerHeader(key, base_name=item_id, item_attrs={'cls':header_cls}, wrapper_classes=self.header_classes)
+        body = OpenerBody(item, parent_name=self.base_name, base_name=item_id, cls=cls, **kw)
+        return super().create_item([header, body])
+
+class Breadcrumb(MenuComponent):
+    wrapper = JHTML.Nav
+    subwrappers = [JHTML.Ol]
+    subwrapper_classes = ['breadcrumb']
+    item = JHTML.Li
+    item_classes = ['breadcrumb-item']
+
+#endregion
+
+#region Misc
 
 #endregion
 
@@ -408,6 +533,8 @@ class Grid(Layout):
         ncols = 0
         for i, row in enumerate(grid):
             for j, el in enumerate(row):
+                if el is None:
+                    continue
                 elem = self.wrap_item(el, dict(attrs, row=i+1, col=j+1))
                 n = elem.row
                 if elem.row_span is not None:

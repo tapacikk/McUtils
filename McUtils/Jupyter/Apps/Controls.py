@@ -3,18 +3,20 @@ import abc, uuid, numpy as np
 from ..JHTML import JHTML
 
 from .Interfaces import Component, ListGroup, Dropdown
-from .Variables import Var
+from .Variables import Var, InterfaceVars
 
 __all__ = [
     "Control",
     "InputField",
     "StringField",
-    "Checkbox",
     "Slider",
+    "Checkbox",
     "RadioButton",
+    "Switch",
     "TextArea",
     "Select",
     "VariableDisplay",
+    "FunctionDisplay",
     # "DropdownMenu",
     "MenuSelect",
     "DropdownSelect"
@@ -55,16 +57,18 @@ class Control(Component):
 
     control_types = {}
     @classmethod
-    def construct(cls, var, control_type=None, **attrs):
+    def construct(cls, var, control_type=None, field_type=None, value=None, **attrs):
         if control_type is None:
-            control_type = cls.infer_control(**attrs)
+            control_type = cls.infer_control(field_type=field_type, value=value, **attrs)
         if isinstance(control_type, str):
             control_type = cls.control_types[control_type]
-        return control_type
+        if value is not None:
+            value = str(value)
+        return control_type(var, value=value, **attrs)
     @classmethod
-    def infer_control(cls, field_type=None, default=None, **ignored):
-        if field_type is None and default is not None:
-            field_type = type(default)
+    def infer_control(cls, field_type=None, value=None, **ignored):
+        if field_type is None and value is not None:
+            field_type = type(value)
         if field_type is not None:
             if issubclass(field_type, str):
                 return cls.control_types['StringField']
@@ -95,25 +99,54 @@ class ValueWidget(Control):
         if self._widget_cache is not None:
             self.var.value = self._widget_cache.value
 class InputField(ValueWidget):
-    def __init__(self, var, value=None, tag='input', track_value=True, continuous_update=False, **attrs):
+    base_cls = ['form-control']
+    def __init__(self, var, value=None, tag='input', track_value=True, continuous_update=False, base_cls=None, cls=None, **attrs):
         super().__init__(var, value=value)
+        if base_cls is not None:
+            self.base_cls = base_cls
+        attrs['cls'] = self.base_cls + JHTML.manage_cls(cls)
         attrs['tag'] = tag
         attrs['track_value'] = track_value
         attrs['continuous_update'] = continuous_update
         self.attrs = attrs
     def to_jhtml(self):
-        self._attrs['value'] = self.var.value
+        value = self.var.value
+        if value is not None and not isinstance(value, str):
+            value = str(value)
+        self._attrs['value'] = value
         field = JHTML.Input(**self.attrs)
         return field
 class StringField(InputField):
+    # base_cls = ['form-text']
     def __init__(self, var, type='text', **attrs):
         super().__init__(var, type=type, **attrs)
 Control.control_types['StringField'] = StringField
 class Slider(InputField):
-    def __init__(self, var, type='range', **attrs):
-        super().__init__(var, type=type, **attrs)
+    base_cls = ['form-range']
+    def __init__(self, var, type='range', value=None, **attrs):
+        if value is not None and not isinstance(value, str):
+            value = str(value)
+        super().__init__(var, type=type, value=value, **attrs)
+    def get_value(self):
+        if self._widget_cache is not None:
+            val = self._widget_cache.value
+            try:
+                val = int(val)
+            except TypeError:
+                try:
+                    val = float(val)
+                except TypeError:
+                    ...
+            return val
+    def set_value(self):
+        if self._widget_cache is not None:
+            v = self.var.value
+            if not isinstance(v, str):
+                v = str(v)
+            self._widget_cache.value = v
 Control.control_types['Slider'] = Slider
 class Checkbox(InputField):
+    base_cls = ['form-check-input']
     def __init__(self, var, type='checkbox', **attrs):
         super().__init__(var, type=type, **attrs)
     def get_value(self):
@@ -128,27 +161,41 @@ class Checkbox(InputField):
                 self._widget_cache.value = 'false'
 Control.control_types['Checkbox'] = Checkbox
 class RadioButton(InputField):
+    base_cls = ['form-check-input']
     def __init__(self, var, type='radio', **attrs):
         super().__init__(var, type=type, **attrs)
+Control.control_types['RadioButton'] = RadioButton
+class Switch(InputField):
+    base_cls = ['form-check-input']
+    def __init__(self, var, type='checkbox', role='switch', **attrs):
+        super().__init__(var, type=type, role=role, **attrs)
+Control.control_types['Switch'] = Switch
 class TextArea(InputField):
+    base_cls = ['form-control']
     def __init__(self, var, tag='textarea', **attrs):
         super().__init__(var, tag=tag, **attrs)
     def to_jhtml(self):
         field = JHTML.Textarea(**self.attrs)
         return field
+Control.control_types['TextArea'] = TextArea
 class ChangeTracker(ValueWidget):
     base = None
-    def __init__(self, var, base=None, value=None, track_value=True, continuous_update=False, **attrs):
+    base_cls = []
+    def __init__(self, var, base=None, value=None, track_value=True, continuous_update=False, base_cls=None, cls=None, **attrs):
         super().__init__(var, value=value)
         base = self.base if base is None else base
         self.base = getattr(JHTML, base) if isinstance(base, str) else base
+        if base_cls is not None:
+            self.base_cls = base_cls
+        attrs['cls'] = self.base_cls + JHTML.manage_cls(cls)
         attrs['value'] = value
         attrs['track_value'] = track_value
         attrs['continuous_update'] = continuous_update
         self.attrs = attrs
 class Select(ChangeTracker):
     base=JHTML.Select
-    def __init__(self, var, options, value=None, **attrs):
+    base_cls = ['form-select']
+    def __init__(self, var, options=None, value=None, **attrs):
         self._options = self.canonicalize_options(options)
         if value is None and len(self._options) > 0:
             value = self._options[0][1]
@@ -171,6 +218,7 @@ class Select(ChangeTracker):
     def to_jhtml(self):
         field = self.base(*self._build_options_list(), **self.attrs)
         return field
+Control.control_types['Select'] = Select
 class VariableDisplay(Control):
     def __init__(self, var, pane=None, autoclear=True, **attrs):
         super().__init__(var)
@@ -195,6 +243,37 @@ class VariableDisplay(Control):
         self.set_value()
     def to_jhtml(self):
         self.set_value()
+        return self.out
+class FunctionDisplay(Component):
+    def __init__(self, fn, vars, pane=None, autoclear=True, **attrs):
+        super().__init__()
+        if pane is None:
+            pane = JHTML.OutputArea(autoclear=autoclear, **attrs)
+        self.out = pane
+        self.fn = fn
+        self.vars = InterfaceVars(*vars) if not isinstance(vars, InterfaceVars) else vars
+    def to_widget(self, parent=None):
+        needs_link = self._widget_cache is None
+        widg = super().to_widget(parent=parent)
+        if needs_link:
+            self.update = self.update # weakref patch
+            for v in self.vars:
+                v.callbacks.add(self.update)
+                v.link(self)
+        return widg
+    def observe(self, fn, names=None):
+        if self._widget_cache is None:
+            raise ValueError("not initialized")
+        return self._widget_cache.to_widget().observe(fn, names=names)
+    def update(self, e):
+        with self.out:
+            res = self.fn(event=e, pane=self, **self.vars.dict)
+            if isinstance(res, str):
+                self.out.print(res)
+            elif res is not None:
+                self.out.show_output(res)
+    def to_jhtml(self):
+        self.update(None)
         return self.out
 
 class MenuSelect(ValueWidget):
@@ -256,7 +335,7 @@ class MenuSelect(ValueWidget):
                     'value':v
                 }
             if 'id' not in k:
-                uid = str(uuid.uuid1()).replace("-", "")
+                uid = str(uuid.uuid4()).replace("-", "")
                 k['id'] = uid
             val_dict[k['id']] = k['value']
             k['event_handlers'] = {'click':lambda *e,i=k['id'],v=k['value']:self.onclick(e, i, v)}
@@ -267,6 +346,7 @@ class MenuSelect(ValueWidget):
         init_key = next(iter(self._value_map.keys()))
         self.set_active(init_key)
         return widg
+
 class DropdownSelect(ValueWidget):
     menu_type = Dropdown
     def __init__(self, var, options, name=None, menu_type=None, **attrs):
