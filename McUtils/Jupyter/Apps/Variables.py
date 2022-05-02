@@ -6,6 +6,7 @@ __all__ = [
     "Var",
     "InterfaceVars",
     "VariableSynchronizer",
+    "VariableNamespace",
     "WidgetControl"
 ]
 
@@ -105,9 +106,51 @@ class InterfaceVars:
         return self.var_list
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._cache_stack.pop()
+class VariableNamespace:
+    _namespace_cache = weakref.WeakValueDictionary()
+    def __init__(self, name, dedupe=True):
+        self.name = name
+        self._old_space = None
+        if dedupe:
+            if name in self._namespace_cache:
+                self._var_cache = self._namespace_cache[name]._var_cache
+            else:
+                self._var_cache = weakref.WeakValueDictionary()
+                self._namespace_cache[name] = self
+        else:
+            self._var_cache = weakref.WeakValueDictionary()
+    def __repr__(self):
+        return "{}({}, {})".format(
+            type(self).__name__,
+            self.name,
+            list(self._var_cache.values())
+        )
+    @classmethod
+    def create(cls, name):
+        if isinstance(name, VariableNamespace):
+            return name
+        else:
+            if name not in cls._namespace_cache:
+                this = VariableNamespace(name)
+                cls._namespace_cache[name] = this # hold a reference...
+            return cls._namespace_cache[name]
+    def __contains__(self, item):
+        return self._var_cache.__contains__(item)
+    def __getitem__(self, item):
+        return self._var_cache[item]
+    def __setitem__(self, key, value):
+        self._var_cache[key] = value
+    def __enter__(self):
+        self._old_space = VariableSynchronizer.current_namespace
+        VariableSynchronizer.current_namespace = self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        VariableSynchronizer.current_namespace = self._old_space
+        self._old_space = None
 class VariableSynchronizer:
-    def __init__(self, name, value=None, callbacks=(), output_pane=None):
+    current_namespace = VariableNamespace.create('globals')
+    def __init__(self, name, namespace=None, value=None, callbacks=(), output_pane=None):
         self._name = name
+        self.namespace = namespace
         self._value = value
         self.callbacks = weakref.WeakSet(callbacks)
         self.output_pane = DefaultOutputArea.get_default() if output_pane is None else output_pane
@@ -118,7 +161,6 @@ class VariableSynchronizer:
             self._name,
             self._value
         )
-    _var_cache = weakref.WeakValueDictionary()
     @classmethod
     def create_var(cls, var):
         var_cache = InterfaceVars.active_vars()
@@ -127,12 +169,12 @@ class VariableSynchronizer:
                 var_cache.add(var)
             return var
         else:
-            if var not in cls._var_cache:
-                this_var = VariableSynchronizer(var)
-                cls._var_cache[var] = this_var # hold a reference...
+            if var not in cls.current_namespace:
+                this_var = VariableSynchronizer(var, namespace=cls.current_namespace)
+                cls.current_namespace[var] = this_var
             if var_cache is not None:
-                var_cache.add(cls._var_cache[var])
-            return cls._var_cache[var]
+                var_cache.add(cls.current_namespace[var])
+            return cls.current_namespace[var]
     @property
     def name(self):
         return self._name
@@ -161,8 +203,12 @@ class VariableSynchronizer:
             self.set_value(widget.value, caller=widget)
             widget.observe(lambda d: self.set_value(widget.value, caller=widget), names=['value'])
         self._watchers.add(widget)
-def Var(name):
-    return VariableSynchronizer.create_var(name)
+def Var(name, namespace=None):
+    if namespace is not None:
+        with VariableNamespace.create(namespace):
+            return VariableSynchronizer.create_var(name)
+    else:
+        return VariableSynchronizer.create_var(name)
 class WidgetControl:
     def __init__(self, var, control_type=None, widget=None, **settings):
         self.var = VariableSynchronizer.create_var(var)

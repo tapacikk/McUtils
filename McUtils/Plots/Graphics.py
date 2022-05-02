@@ -431,7 +431,7 @@ class GraphicsBase(metaclass=ABCMeta):
         if 'facecolor' not in kw:
             kw['facecolor'] = self.background# -_- stupid MPL
         if format is None:
-            format = os.path.splitext(where)[1]
+            format = os.path.splitext(where)[1].split('.')[-1]
         return self.figure.savefig(where,
                     format=format,
                     **kw

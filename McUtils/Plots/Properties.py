@@ -98,11 +98,17 @@ class GraphicsPropertyManager:
             self.axes.set_xlabel("")
         elif isinstance(xlab, Styled):
             self.axes.set_xlabel(*xlab.val, **xlab.opts)
+        elif Styled.could_be(xlab):
+            xlab = Styled.construct(xlab)
+            self.axes.set_xlabel(*xlab.val, **xlab.opts)
         else:
             self.axes.set_xlabel(xlab)
         if ylab is None:
             self.axes.set_ylabel("")
         elif isinstance(ylab, Styled):
+            self.axes.set_ylabel(*ylab.val, **ylab.opts)
+        elif Styled.could_be(ylab):
+            ylab = Styled.construct(ylab)
             self.axes.set_ylabel(*ylab.val, **ylab.opts)
         else:
             self.axes.set_ylabel(ylab)

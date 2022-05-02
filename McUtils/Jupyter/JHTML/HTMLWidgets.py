@@ -33,11 +33,29 @@ class ActiveHTMLWrapper:
         if len(elements) == 1 and isinstance(elements[0], (list, tuple)):
             elements = elements[0]
 
+        #pre-prune
         attrs = {}
+        if '_debugPrint' in attributes:
+            attrs['_debugPrint'] = attributes['_debugPrint']
+            del attributes['_debugPrint']
+        if 'trackInput' in attributes:
+            if track_value is None:
+                track_value = attributes['trackInput']
+            del attributes['trackInput']
+        if track_value is not None:
+            attrs['trackInput'] = track_value
+        if 'continuousUpdate' in attributes:
+            if continuous_update is None:
+                continuous_update = attributes['continuousUpdate']
+            del attributes['continuousUpdate']
+        if continuous_update is not None:
+            attrs['continuousUpdate'] = continuous_update
+
         if self.base is not None:
             shadow_el = self.base(cls=cls, style=style, **attributes)
         else:
             shadow_el = None
+
         attributes = HTML.manage_attrs(attributes)
         if tag is None and hasattr(shadow_el, 'tag'):
             tag = shadow_el.tag
@@ -50,6 +68,7 @@ class ActiveHTMLWrapper:
         if cls is not None:
             classList = HTML.manage_class(cls)
             attrs['classList'] = classList
+
         eventPropertiesDict = {}
         if event_handlers is not None:
             event_handlers = event_handlers.copy()
@@ -90,31 +109,27 @@ class ActiveHTMLWrapper:
         if value is not None:
             attrs['value'] = value
 
+        extra_styles, attributes = HTML.extract_styles(attributes)
         if shadow_el is not None:
             if 'style' in shadow_el.attrs:
-                style = shadow_el['style']
-        if style is not None:
+                extra_styles = shadow_el['style']
+            else:
+                extra_styles = {}
+
+        if style is None:
+            style = extra_styles
+        else:
+            for k,v in extra_styles.items():
+                if k in style and style[k] != v:
+                    raise ValueError("style {} given twice".format(k))
+                style[k] = v
+        if len(style) > 0:
             style = HTML.manage_styles(style).props
             # if isinstance(style, str):
             #     style = CSS.parse(style).props
             # elif isinstance(style, CSS):
             #     style = style.props
             attrs['styleDict'] = style
-        if '_debugPrint' in attributes:
-            attrs['_debugPrint'] = attributes['_debugPrint']
-            del attributes['_debugPrint']
-        if 'trackInput' in attributes:
-            if track_value is None:
-                track_value = attributes['trackInput']
-            del attributes['trackInput']
-        if track_value is not None:
-            attrs['trackInput'] = track_value
-        if 'continuousUpdate' in attributes:
-            if continuous_update is None:
-                continuous_update = attributes['continuousUpdate']
-            del attributes['continuousUpdate']
-        if continuous_update is not None:
-            attrs['continuousUpdate'] = continuous_update
 
         if len(attributes) > 0:
             attrs['elementAttributes'] = attributes
@@ -123,16 +138,16 @@ class ActiveHTMLWrapper:
         self.link(self.elem)
         self._html_cache = None
 
+        if debug_pane is None:
+            debug_pane = DefaultOutputArea.get_default()
+        self.debug_pane = debug_pane
+
         self.event_handlers = {} if event_handlers is None else event_handlers
         if len(eventPropertiesDict) > 0:
             self.elem.bind_callback(self.handle_event)
         # if eventPropertiesDict
         # for e in event_handlers:
         #     eventPropertiesDict[e] = None
-
-        if debug_pane is None:
-            debug_pane = DefaultOutputArea.get_default()
-        self.debug_pane = debug_pane
     def __call__(self, *elems, **kwargs):
         return type(self)(
             self.elements + list(*elems),
@@ -414,6 +429,11 @@ class ActiveHTMLWrapper:
             self.set_attribute(item, value)
         else:
             self.set_child(item, value)
+    def __delitem__(self, item):
+        if isinstance(item, str):
+            self.del_attribute(item)
+        else:
+            self.del_child(item)
     def get_attribute(self, key):
         if key == "id":
             return self.id
@@ -423,6 +443,8 @@ class ActiveHTMLWrapper:
             return self.elem.classList
         elif key == "style":
             return self.elem.styleDict
+        elif key in CSS.known_properties:
+            return self.elem.styleDict[key]
         else:
             return self.elem.elementAttributes[key]
     def set_attribute(self, key, value):
@@ -435,6 +457,9 @@ class ActiveHTMLWrapper:
             self.elem.send_state('classList')
         elif key == "style":
             self.elem.styleDict = HTML.manage_styles(value)
+            self.elem.send_state('styleDict')
+        elif key in CSS.known_properties:
+            self.elem.styleDict[key] = value
             self.elem.send_state('styleDict')
         else:
             attrs = self.elem.elementAttributes
@@ -451,6 +476,9 @@ class ActiveHTMLWrapper:
             self.elem.send_state('classList')
         elif key == "style":
             self.elem.styleDict = {}
+            self.elem.send_state('styleDict')
+        elif key in CSS.known_properties:
+            del self.elem.styleDict[key]
             self.elem.send_state('styleDict')
         else:
             del self.elem.elementAttributes[key]
@@ -480,6 +508,19 @@ class ActiveHTMLWrapper:
             self.children = kids
             # self.elem.children = kids
             # self.elem.send_state('children')
+    def insert(self, where, child):
+        kids = self.elem.children
+        if len(kids) == 0:
+            body = self.html
+            if body is None:
+                raise IndexError("element {} has no body to index")
+            body.insert(where, child)
+        else:
+            kids = list(kids)
+            kids.insert(where, self.canonicalize_widget(child))
+            self.children = tuple(kids)
+    def append(self, child):
+        self.insert(-1, child)
     def del_child(self, position):
         kids = self.elem.children
         if len(kids) == 0:

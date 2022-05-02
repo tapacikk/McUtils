@@ -340,15 +340,48 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     }
     updateValue() {
         let el = this.el;
+        let debug = this.model.get("_debugPrint");
         if (el !== undefined) {
-            let is_checkbox = el.getAttribute('type') === 'checkbox';
+            let is_checkbox = el.getAttribute('type') === 'checkbox' || el.getAttribute('type') === 'radio';
+            let multiple = el.getAttribute('multiple');
             if (is_checkbox) {
                 let checked = el.checked;
                 if (checked !== undefined) {
                     let newVal = this.model.get('value');
                     let checkVal = newVal.length > 0 && newVal != "false" && newVal != "0";
+                    if (debug) {
+                        console.log('updating checked', checked, "->", checkVal);
+                    }
                     if (checkVal !== checked) {
                         el.checked = checkVal;
+                    }
+                }
+            }
+            else if (multiple) {
+                let el = this.el;
+                let opts = el.selectedOptions;
+                if (opts !== undefined) {
+                    let val = [];
+                    for (let i = 0; i < opts.length; i++) {
+                        let o = opts[i];
+                        val.push(o.value);
+                    }
+                    let newValStr = this.model.get('value');
+                    if (typeof newValStr === 'string') {
+                        let testVal = val.join('&&');
+                        if (debug) {
+                            console.log('updating selection', testVal, "->", newValStr);
+                        }
+                        if (newValStr !== testVal) {
+                            let splitVals = newValStr.split("&&");
+                            for (let i = 0; i < el.options.length; i++) {
+                                let o = el.options[i];
+                                o.selected = (splitVals.indexOf(o.value) > -1);
+                                if (debug) {
+                                    console.log('updating selection...', o.selected);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -356,6 +389,9 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                 let val = el.value;
                 if (val !== undefined) {
                     let newVal = this.model.get('value');
+                    if (debug) {
+                        console.log('updating value', val, "->", newVal);
+                    }
                     if (newVal !== val) {
                         el.value = newVal;
                     }
@@ -418,11 +454,11 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         this.updateBody();
         // this.updateTextContent();
         this.updateAttribute('id');
-        this.updateValue();
         this.updateAttributes();
         this.updateClassList();
         this.setStyles();
         this.setEvents();
+        this.updateValue();
         // this.el.classList = this.model.get("classList");
     }
     // @ts-ignore
@@ -465,11 +501,27 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     }
     handleChanged(e) {
         let target = e.target;
-        let is_checkbox = this.el.getAttribute('type') === 'checkbox';
+        let el = this.el;
+        let is_checkbox = el.getAttribute('type') === 'checkbox' || el.getAttribute('type') === 'radio';
+        let multiple = el.getAttribute('multiple');
         if (is_checkbox) {
             let checked = target.checked;
             if (checked !== undefined) {
                 this.model.set('value', checked ? "true" : "false", { updated_view: this });
+                this.touch();
+            }
+        }
+        else if (multiple) {
+            let el = this.el;
+            let opts = el.selectedOptions;
+            if (opts !== undefined) {
+                let val = [];
+                for (let i = 0; i < opts.length; i++) {
+                    let o = opts[i];
+                    val.push(o.value);
+                }
+                let newVal = val.join('&&');
+                this.model.set('value', newVal, { updated_view: this });
                 this.touch();
             }
         }
@@ -562,4 +614,4 @@ module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","descr
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.795f1405ae43de6a3e21.js.map
+//# sourceMappingURL=lib_widget_js.614c9b02d8dcf4fb8901.js.map
