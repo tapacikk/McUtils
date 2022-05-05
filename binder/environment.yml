@@ -10,4 +10,4 @@ dependencies:
   - ipywidgets
 #  - mpi4py
 variables:
-  - PYTHONPATH=$HOME
+  - PYTHONPATH=/home/jovyan
