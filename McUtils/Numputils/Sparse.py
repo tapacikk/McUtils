@@ -1995,7 +1995,7 @@ class ScipySparseArray(SparseArray):
         # duh...
         filter, _, _ = contained(inds, block,
                                  assume_unique=(False, True),
-                                 sortings=(np.arange(len(inds)), np.arange(len(block)))
+                                 sortings=(None, np.arange(len(block)))
                                  )
 
         # I was hoping I could make use of that filter stuff to
@@ -2005,6 +2005,7 @@ class ScipySparseArray(SparseArray):
         # we find the first position where the positions occur (we assume they _do_ occur)
         # using `searchsorted`
         mapping = np.searchsorted(block, np.arange(max(block)+1))#, sorter=sorter)
+
 
         return filter, mapping
 
@@ -2023,7 +2024,6 @@ class ScipySparseArray(SparseArray):
                 # the filter specifies which indices survive
                 # and the mapping tells us where each index will go
                 # in the final set of indices
-
                 inds = [ix[filter] for ix in inds]
                 data = data[filter]
                 args = np.argsort(sorting)

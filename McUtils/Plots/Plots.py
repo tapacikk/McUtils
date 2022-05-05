@@ -248,6 +248,12 @@ class Plot(Graphics):
         if not self._initialized:
             self._initialize()
         return self.graphics
+    @property
+    def artists(self):
+        if self.graphics is None or isinstance(self.graphics, list):
+            return self.graphics
+        else:
+            return [self.graphics]
 
     def clear(self):
         """
