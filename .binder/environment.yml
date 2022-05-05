@@ -4,7 +4,6 @@ channels:
   - defaults
 dependencies:
   - python=3.8
-  - mccoygroup-mcutils
   - h5py
   - ipywidgets
 #  - mpi4py
