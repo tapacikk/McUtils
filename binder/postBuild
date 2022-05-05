@@ -1,3 +1,5 @@
 #!/bin/sh
 
 python -c 'from McUtils.Jupyter import JHTML; JHTML.load()'
+echo 'export PATH=$PATH:$HOME' > $PREFIX/etc/conda/activate.d
+echo 'export PYTHONPATH=$PYTHONPATH:$HOME' > $PREFIX/etc/conda/activate.d

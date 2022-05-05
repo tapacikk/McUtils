@@ -1,0 +1,47 @@
+# GitHub Actions container to support doing CI
+FROM python:3.8-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && apt-get purge -y --auto-remove \
+    && rm -rf /var/lib/apt/lists/*
+
+# installs python packages we'd want for unit testing
+RUN pip install \
+              numpy \
+              matplotlib \
+              scipy \
+              h5py \
+              notebook \
+              jupyterlab \
+              ipywidgets
+
+LABEL "name"="McCoyGroup/McUtilsBinder"
+LABEL "maintainer"="Mark Boyer <b3m2a1uw.edu>"
+LABEL "version"="0.0.1"
+
+LABEL "com.github.actions.name"="McUtils Binder"
+LABEL "com.github.actions.description"="Configures a binder env for the McUtils package"
+LABEL "com.github.actions.icon"="git"
+LABEL "com.github.actions.color"="orange"
+
+RUN \
+    cd /home && \
+    git clone https://github.com/McCoyGroup/Peeves.git && \
+    git clone https://github.com/McCoyGroup/McUtils.git
+
+RUN \
+    cd /home/McUtils 
+
+ARG NB_USER=jovyan
+ARG NB_UID=1000
+ENV USER ${NB_USER}
+ENV NB_UID ${NB_UID}
+ENV HOME /home/${NB_USER}
+
+RUN adduser --disabled-password \
+    --gecos "Default user" \
+    --uid ${NB_UID} \
+    ${NB_USER}
+
+ENV PATH=${PATH}:$HOME
