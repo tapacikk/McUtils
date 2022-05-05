@@ -9,3 +9,5 @@ dependencies:
   - h5py
   - ipywidgets
 #  - mpi4py
+variables:
+  - PYTHONPATH=$HOME
