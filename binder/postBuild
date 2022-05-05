@@ -1,0 +1,4 @@
+#!/bin/sh
+
+python -c 'from McUtils.Jupyter import JHTML; JHTML.load()'
+export PATH=$PATH:..
