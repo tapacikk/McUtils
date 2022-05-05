@@ -127,16 +127,16 @@ class ZMatrixCoordinateSystem(InternalCoordinateSystem):
         extra_dim = displacements.ndim - values.ndim
         raw_displacement_shape = displacements.shape[:-2]
         analytic_order = extra_dim // 2
-        if analytic_order == 0:
-            dihedrals = values[..., 2]
-            central_point = tuple((x - 1) // 2 for x in raw_displacement_shape) # just need a rough check
-            ref = dihedrals[central_point]
-            for x in central_point:
-                ref = ref[np.newaxis]
-            # ref = np.broadcast_to(ref, dihedrals.shape)
-            true_diffs = dihedrals - ref
-            bad_spots = np.where(abs(true_diffs) > dihedral_cutoff)
-            if len(bad_spots) > 0 and len(bad_spots[0]) > 0:
+        dihedrals = values[..., 2]
+        central_point = tuple((x - 1) // 2 for x in raw_displacement_shape) # just need a rough check
+        ref = dihedrals[central_point]
+        for x in central_point:
+            ref = ref[np.newaxis]
+        # ref = np.broadcast_to(ref, dihedrals.shape)
+        true_diffs = dihedrals - ref
+        bad_spots = np.where(abs(true_diffs) > dihedral_cutoff)
+        if len(bad_spots) > 0 and len(bad_spots[0]) > 0:
+            if analytic_order == 0:
                 # ref_vals = ref[bad_spots]
                 patch_vals = dihedrals[bad_spots]
                 patch_signs = np.sign(patch_vals)
@@ -146,10 +146,10 @@ class ZMatrixCoordinateSystem(InternalCoordinateSystem):
                 # in this case we want to do -np.pi + (displaced_val - np.pi) = -2pi + displaced_val
                 fix_spots = bad_spots + (np.full(len(bad_spots[0]), 2),)
                 values[fix_spots] = patch_vals + (-patch_signs)*2*np.pi
-        elif analytic_order == 1:
-            raise NotImplementedError('correcting periodicity wraparound not handled for analytic derivative order {}'.format(analytic_order))
-        else:
-            raise NotImplementedError('correcting periodicity wraparound not handled for analytic derivative order {}'.format(analytic_order))
+            elif analytic_order == 1:
+                raise NotImplementedError('correcting periodicity wraparound not handled for analytic derivative order {}'.format(analytic_order))
+            else:
+                raise NotImplementedError('correcting periodicity wraparound not handled for analytic derivative order {}'.format(analytic_order))
 
         # we will want to make sure all angles and dihedrals stay within a range of eachother...
         return displacements, values

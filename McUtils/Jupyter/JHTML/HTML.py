@@ -7,6 +7,7 @@ __all__ = [
 ]
 
 from .Enums import Options
+from .WidgetTools import frozendict
 
 class CSS:
     """
@@ -434,7 +435,7 @@ class HTML:
         @property
         def attrs(self):
             if self._attr_view is None:
-                self._attr_view = self._attrs.copy()
+                self._attr_view = frozendict(self._attrs)
             return self._attr_view
         @attrs.setter
         def attrs(self, attrs):
@@ -456,6 +457,23 @@ class HTML:
             self.on_update(self, 'elements', elems)
         def activate(self):
             return self.activator(self)
+
+        @property
+        def style(self):
+            if 'style' in self._attrs:
+                return frozendict(self._attrs['style'])
+        @style.setter
+        def style(self, styles):
+            self['style'] = styles
+
+        @property
+        def class_list(self):
+            if 'class' in self._attrs:
+                return HTML.manage_class(self._attrs['class'])
+            else:
+                return []
+        def style(self, styles):
+            self['style'] = styles
 
         def _invalidate_cache(self):
             if self._tree_cache is not None:
@@ -479,6 +497,12 @@ class HTML:
                 self._elem_view = None
             self._invalidate_cache()
             self.on_update(self, item, value)
+        def insert(self, where, child):
+            self._elems.insert(where, child)
+            self._invalidate_cache()
+            self.on_update(self, where, child)
+        def append(self, child):
+            self.insert(-1, child)
         def __delitem__(self, item):
             if isinstance(item, str):
                 item = item.replace("_", "-")

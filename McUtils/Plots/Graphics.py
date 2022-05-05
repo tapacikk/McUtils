@@ -6,6 +6,8 @@ Provides Graphics base classes that can be extended upon
 import platform, os
 # import matplotlib.figure
 # import matplotlib.axes
+import weakref
+
 from .Properties import GraphicsPropertyManager, GraphicsPropertyManager3D
 from .Styling import Styled, ThemeManager
 from .Backends import Backends
@@ -33,6 +35,7 @@ class GraphicsBase(metaclass=ABCMeta):
         'plot_label',
         'plot_range',
         'plot_legend',
+        'legend_style',
         'ticks',
         'ticks_style',
         'ticks_label_style',
@@ -65,20 +68,20 @@ class GraphicsBase(metaclass=ABCMeta):
 
     def __init__(self,
                  *args,
-                 figure = None,
-                 tighten = False,
-                 axes = None,
-                 subplot_kw = None,
-                 parent = None,
-                 image_size = None,
-                 padding = None,
-                 aspect_ratio = None,
-                 non_interactive = None,
-                 mpl_backend = None,
+                 figure=None,
+                 tighten=False,
+                 axes=None,
+                 subplot_kw=None,
+                 parent=None,
+                 image_size=None,
+                 padding=None,
+                 aspect_ratio=None,
+                 non_interactive=None,
+                 mpl_backend=None,
                  theme=None,
-                 prop_manager = GraphicsPropertyManager,
-                 theme_manager = ThemeManager,
-                 managed = None,
+                 prop_manager=GraphicsPropertyManager,
+                 theme_manager=ThemeManager,
+                 managed=None,
                  **opts
                  ):
         """
@@ -107,25 +110,26 @@ class GraphicsBase(metaclass=ABCMeta):
             subplot_kw = {}
 
         self.non_interactive = non_interactive
-        # if mpl_backend is None and platform.system() == "Darwin":
-        #     mpl_backend = "TkAgg"
         self.mpl_backend = mpl_backend
         if isinstance(figure, GraphicsBase):
             parent = figure
         self.parent = parent
-        if image_size is None and parent is not None: # gotta copy in some layout stuff..
-            image_size = self.parent.image_size
-        if aspect_ratio is None and parent is not None:
-            aspect_ratio = self.parent.aspect_ratio
-
+        self.children = weakref.WeakSet()
+        if parent is not None:
+            parent.children.add(self)
+            # TODO: generalize this to a set of inherited props...
+            if image_size is None: # gotta copy in some layout stuff..
+                image_size = self.parent.image_size
+            if aspect_ratio is None:
+                aspect_ratio = self.parent.aspect_ratio
 
         theme = self._get_def_opt('theme', theme, {})
         self.theme=theme
         self.theme_manager=theme_manager
-        if theme is not None:
-            theme_dict = theme_manager.resolve_theme(theme)[1]
-        else:
-            theme_dict = {}
+        # if theme is not None:
+        #     theme_dict = theme_manager.resolve_theme(theme)[1]
+        # else:
+        #     theme_dict = {}
         aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio, theme)
         image_size = self._get_def_opt('image_size', image_size, theme)
         padding = self._get_def_opt('padding', padding, theme)
@@ -431,7 +435,7 @@ class GraphicsBase(metaclass=ABCMeta):
         if 'facecolor' not in kw:
             kw['facecolor'] = self.background# -_- stupid MPL
         if format is None:
-            format = os.path.splitext(where)[1]
+            format = os.path.splitext(where)[1].split('.')[-1]
         return self.figure.savefig(where,
                     format=format,
                     **kw
@@ -458,7 +462,10 @@ class GraphicsBase(metaclass=ABCMeta):
         # currently assumes a matplotlib backend...
         return self.to_png().read()
 
-    def add_colorbar(self, graphics=None, norm=None, cmap=None,
+    def add_colorbar(self,
+                     graphics=None,
+                     norm=None,
+                     cmap=None,
                      size=(20, 200),
                      tick_padding=40,
                      **kw
@@ -533,6 +540,7 @@ class Graphics(GraphicsBase):
                     plot_label=None,
                     plot_range=None,
                     plot_legend=None,
+                    legend_style=None,
                     frame=None,
                     frame_style=None,
                     ticks=None,
@@ -554,6 +562,7 @@ class Graphics(GraphicsBase):
         opts = (
             ('plot_label', plot_label),
             ('plot_legend', plot_legend),
+            ('legend_style', legend_style),
             ('axes_labels', axes_labels),
             ('frame', frame),
             ('frame_style', frame_style),
@@ -572,6 +581,11 @@ class Graphics(GraphicsBase):
             oval = self._get_def_opt(oname, oval, {})
             if oval is not None:
                 setattr(self, oname, oval)
+
+    @property
+    def artists(self):
+        return []
+
     # attaching custom property setters
     @property
     def plot_label(self):
@@ -701,6 +715,14 @@ class Graphics(GraphicsBase):
     @colorbar.setter
     def colorbar(self, value):
         self._prop_manager.colorbar = value
+
+    def prep_show(self):
+        super().prep_show()
+        for c in self.children:
+            c.prep_show()
+        if self.plot_legend or any(c.plot_legend for c in self.children):
+            ls = self.legend_style if self.legend_style is not None else {}
+            self.axes.legend(**ls)
 
 ########################################################################################################################
 #

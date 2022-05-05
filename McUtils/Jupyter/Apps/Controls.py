@@ -14,7 +14,7 @@ __all__ = [
     "RadioButton",
     "Switch",
     "TextArea",
-    "Select",
+    "Selector",
     "VariableDisplay",
     "FunctionDisplay",
     # "DropdownMenu",
@@ -35,7 +35,10 @@ class Control(Component):
         needs_link = self._widget_cache is None
         widg = super().to_widget(parent=parent)
         if needs_link:
+            val = self.var.value
             self.var.link(self)
+            self.var.value = val
+            self.set_value()
         return widg
     @abc.abstractmethod
     def set_value(self):
@@ -92,6 +95,8 @@ class ValueWidget(Control):
         if self._widget_cache is not None:
             val = self._widget_cache.value
             return "" if val is None else val
+        else:
+            return self.var.value
     def set_value(self):
         if self._widget_cache is not None:
             self._widget_cache.value = self.var.value
@@ -110,10 +115,10 @@ class InputField(ValueWidget):
         attrs['continuous_update'] = continuous_update
         self.attrs = attrs
     def to_jhtml(self):
-        value = self.var.value
-        if value is not None and not isinstance(value, str):
-            value = str(value)
-        self._attrs['value'] = value
+        # value = self.var.value
+        # if value is not None and not isinstance(value, str):
+        #     value = str(value)
+        # self._attrs['value'] = value
         field = JHTML.Input(**self.attrs)
         return field
 class StringField(InputField):
@@ -132,10 +137,10 @@ class Slider(InputField):
             val = self._widget_cache.value
             try:
                 val = int(val)
-            except TypeError:
+            except (ValueError, TypeError):
                 try:
                     val = float(val)
-                except TypeError:
+                except (ValueError, TypeError):
                     ...
             return val
     def set_value(self):
@@ -160,15 +165,27 @@ class Checkbox(InputField):
             else:
                 self._widget_cache.value = 'false'
 Control.control_types['Checkbox'] = Checkbox
-class RadioButton(InputField):
+class RadioButton(Checkbox):
     base_cls = ['form-check-input']
     def __init__(self, var, type='radio', **attrs):
         super().__init__(var, type=type, **attrs)
 Control.control_types['RadioButton'] = RadioButton
-class Switch(InputField):
+class Switch(Checkbox):
     base_cls = ['form-check-input']
     def __init__(self, var, type='checkbox', role='switch', **attrs):
         super().__init__(var, type=type, role=role, **attrs)
+    def get_value(self):
+        if self._widget_cache is not None:
+            val = self._widget_cache.get_child(0).value
+            return isinstance(val, str) and val == "true"
+    def set_value(self):
+        if self._widget_cache is not None:
+            if self.var.value:
+                self._widget_cache.get_child(0).value = 'true'
+            else:
+                self._widget_cache.get_child(0).value = 'false'
+    def to_jhtml(self):
+        return JHTML.Div(super().to_jhtml(), cls=['form-switch'])
 Control.control_types['Switch'] = Switch
 class TextArea(InputField):
     base_cls = ['form-control']
@@ -188,18 +205,49 @@ class ChangeTracker(ValueWidget):
         if base_cls is not None:
             self.base_cls = base_cls
         attrs['cls'] = self.base_cls + JHTML.manage_cls(cls)
-        attrs['value'] = value
         attrs['track_value'] = track_value
         attrs['continuous_update'] = continuous_update
         self.attrs = attrs
-class Select(ChangeTracker):
+class Selector(ChangeTracker):
     base=JHTML.Select
     base_cls = ['form-select']
-    def __init__(self, var, options=None, value=None, **attrs):
+    def __init__(self, var, options=None, value=None, multiple=False, **attrs):
         self._options = self.canonicalize_options(options)
-        if value is None and len(self._options) > 0:
+        if not multiple and value is None and len(self._options) > 0:
             value = self._options[0][1]
+        if multiple:
+            attrs['multiple']=True
         super().__init__(var, value=value, **attrs)
+    @property
+    def multiple(self):
+        if self._widget_cache is not None:
+            try:
+                mult = self._widget_cache['multiple']
+            except KeyError:
+                mult = False
+            return mult is True or mult == 'true'
+        else:
+            return 'multiple' in self.attrs and self.attrs['multiple']
+    def get_value(self):
+        if self._widget_cache is not None:
+            val = super().get_value()
+            if self.multiple:
+                if val is None or val == "":
+                    val = []
+                else:
+                    val = val.split("&&")
+            elif val == "":
+                val = None
+            return val
+    def set_value(self):
+        if self._widget_cache is not None:
+            if self.multiple:
+                v = self.var.value
+                if not isinstance(v, str):
+                    v = "&&".join(v)
+                self._widget_cache.value = v
+            else:
+                super().set_value()
     @classmethod
     def canonicalize_options(cls, options):
         ops = []
@@ -214,11 +262,21 @@ class Select(ChangeTracker):
             ops.append((k,v))
         return tuple(ops)
     def _build_options_list(self):
-        return [JHTML.Option(k, value=v) for k,v in self._options]
+        if self.multiple:
+            vals = self.var.value
+            if vals is None:
+                vals = []
+            elif isinstance(vals, str):
+                vals = vals.split("&&")
+            opts = [JHTML.Option(k, value=v, selected="true") if v in vals else JHTML.Option(k, value=v) for k,v in self._options]
+        else:
+            val = self.var.value
+            opts = [JHTML.Option(k, value=v, selected=(val is not None and v == val)) for k,v in self._options]
+        return opts
     def to_jhtml(self):
         field = self.base(*self._build_options_list(), **self.attrs)
         return field
-Control.control_types['Select'] = Select
+Control.control_types['Selector'] = Selector
 class VariableDisplay(Control):
     def __init__(self, var, pane=None, autoclear=True, **attrs):
         super().__init__(var)

@@ -6,7 +6,7 @@ __all__ = [
 
 import types
 
-from ..JHTML import JHTML#, HTML, ActiveHTMLWrapper
+from ..JHTML import JHTML, DefaultOutputArea#, HTML, ActiveHTMLWrapper
 from ..JHTML.WidgetTools import JupyterAPIs
 from .Interfaces import *
 from .Controls import Control, FunctionDisplay
@@ -64,25 +64,69 @@ class App(Component):
                  toolbar=None,
                  layout='grid',
                  cls='border',
+                 output=None,
+                 capture_output=True,
                  **attrs
                  ):
         super().__init__()
         self.vars = InterfaceVars()
-        self.body = body
-        self.header = header
-        self.footer = footer
-        self.sidebar = sidebar
-        self.toolbar = toolbar
+        self.output = JHTML.OutputArea(autoclear=True) if output is None else output
+        self.capture_output = capture_output
+        self._body = [None, body]
+        self._header = [None, header]
+        self._footer = [None, footer]
+        self._sidebar = [None, sidebar]
+        self._toolbar = [None, toolbar]
         self.layout = layout
         self.cls = cls
         self.attrs = attrs
+    @property
+    def body(self):
+        if self._body[1] is not None:
+            if self._body[0] is None:
+                with DefaultOutputArea(self.output):
+                    with self.vars:
+                        self._body[0] = self.construct_body(self._body[1])
+        return self._body[0]
+    @property
+    def header(self):
+        if self._header[1] is not None:
+            if self._header[0] is None:
+                with DefaultOutputArea(self.output):
+                    with self.vars:
+                        self._header[0] = self.construct_header(self._header[1])
+        return self._header[0]
+    @property
+    def sidebar(self):
+        if self._sidebar[1] is not None:
+            if self._sidebar[0] is None:
+                with DefaultOutputArea(self.output):
+                    with self.vars:
+                        self._sidebar[0] = self.construct_sidebar(self._sidebar[1])
+        return self._sidebar[0]
+    @property
+    def toolbar(self):
+        if self._toolbar[1] is not None:
+            if self._toolbar[0] is None:
+                with DefaultOutputArea(self.output):
+                    with self.vars:
+                        self._toolbar[0] = self.construct_toolbar(self._toolbar[1])
+        return self._toolbar[0]
+    @property
+    def footer(self):
+        if self._footer[1] is not None:
+            if self._footer[0] is None:
+                with DefaultOutputArea(self.output):
+                    with self.vars:
+                        self._footer[0] = self.construct_footer(self._footer[1])
+        return self._footer[0]
 
     @classmethod
     def construct_navbar_item(cls, item):
         if isinstance(item, tuple):
             k,v = item
             if isinstance(v, tuple):
-                item = Dropdown(k, v)
+                item = {'raw':Dropdown(k, v)}
         return item
     @classmethod
     def construct_header(cls, header):
@@ -100,16 +144,25 @@ class App(Component):
     def construct_footer(cls, footer):
         if isinstance(footer, (list, tuple)):
             footer = Navbar(footer,
-                cls=['navbar-light', 'bg-light', 'border-bottom']
+                cls=['navbar-light', 'bg-light', 'border-top']
             )
         return footer
-
     @classmethod
     def construct_sidebar_item(cls, item):
         if isinstance(item, tuple):
-            k,v = item
-            if isinstance(v, tuple):
-                item = Opener(k, v)
+            if isinstance(item[0], tuple) and len(item[0]) == 2:
+                items = []
+                for k,v in item:
+                    if isinstance(v, tuple):
+                        v = Sidebar([cls.construct_sidebar_item(h) for h in v])
+                    items.append((k, v))
+                item = {'body':Opener(items, header_classes=['pt-0', 'bg-light']), 'cls':['ps-0', 'pe-0']}
+            else:
+                k,v = item
+                if isinstance(v, tuple):
+                    v = Sidebar([cls.construct_sidebar_item(h) for h in v])
+                item = {'body':Opener(((k, v),), header_classes=['pt-0', 'bg-light']), 'cls':['ps-0', 'pe-0']}
+
         return item
     @classmethod
     def construct_sidebar(cls, sidebar):
@@ -147,7 +200,7 @@ class App(Component):
         # @functools.wraps(fn)
         # def wrapper(event=None, pane=None, **vars):
         #     return fn(event=event, pane=pane, **vars)
-        return FunctionDisplay(fn, self.vars)
+        return FunctionDisplay(fn, self.vars, **styles)
     def construct_body_item(self, item):
         if isinstance(item, (types.MethodType, types.FunctionType, types.LambdaType)):
             item = self.wrap_body(item)
@@ -158,7 +211,6 @@ class App(Component):
                 pass
             else:
                 if isinstance(item, (types.MethodType, types.FunctionType, types.LambdaType)):
-                    print(item)
                     item = self.wrap_body(item, **styles)
                 else:
                     item = JHTML.Span(item, **styles)
@@ -171,62 +223,70 @@ class App(Component):
         return body
 
     def construct_layout(self):
-        with self.vars:
-            if self.layout == 'grid':
-                elements = []
-                nrows = 0
-                ncols = 0
+        with DefaultOutputArea(self.output):
+            with self.vars:
+                if self.layout == 'grid':
+                    elements = []
+                    nrows = 0
+                    ncols = 0
 
-                # if self.header is not None:
-                #     nrows += 1
-                if self.sidebar is not None:
-                    ncols += 1
-                if self.toolbar is not None:
-                    nrows += 1
-                    ncols += 1
-                if self.body is not None:
-                    nrows += 1
-                    ncols = min(ncols+1, 2)
-                # if self.footer is not None:
-                #     nrows += 1
+                    # if self.header is not None:
+                    #     nrows += 1
+                    if self.sidebar is not None:
+                        ncols += 1
+                    if self.toolbar is not None:
+                        nrows += 1
+                        ncols += 1
+                    if self.capture_output:
+                        nrows += 1
+                    if self.body is not None:
+                        nrows += 1
+                        ncols = min(ncols+1, 2)
+                    # if self.footer is not None:
+                    #     nrows += 1
 
-                column_width = []
-                row_height = []
-                if self.header is not None:
-                    header = []
-                    elem = self.construct_header(self.header)
-                    header.append(Grid.Item(elem, col_span=ncols))
-                    elements.append(header)
-                    row_height.append('auto')
+                    column_width = []
+                    row_height = []
+                    if self.header is not None:
+                        header = []
+                        header.append(Grid.Item(self.header, col_span=ncols))
+                        elements.append(header)
+                        row_height.append('auto')
 
-                body = []
-                if self.sidebar is not None:
-                    elem = self.construct_sidebar(self.sidebar)
-                    body.append(Grid.Item(elem, row_span=nrows))
-                    column_width.append('auto')
-                if self.toolbar is not None:
-                    body.append(self.construct_toolbar(self.toolbar))
+                    body = []
+                    if self.sidebar is not None:
+                        body.append(Grid.Item(self.sidebar, row_span=nrows))
+                        column_width.append('auto')
+                    if self.toolbar is not None:
+                        body.append(self.toolbar)
+                        elements.append(body)
+                        body = [None]
+                        row_height.append('auto')
+                    body.append(self.body)
+                    column_width.append('1fr')
+                    row_height.append('1fr')
                     elements.append(body)
-                    body = [None]
-                    row_height.append('auto')
-                body.append(self.construct_body(self.body))
-                column_width.append('1fr')
-                row_height.append('1fr')
-                elements.append(body)
 
-                if self.footer is not None:
-                    footer = []
-                    elem = self.construct_footer(self.footer)
-                    footer.append(Grid.Item(elem, col_span=ncols))
-                    elements.append(footer)
-                    row_height.append('auto')
-                return Grid(
-                    elements,
-                    column_width=column_width,
-                    row_height=row_height,
-                    cls=self.cls
-                )
-            else:
-                raise NotImplementedError("ugh")
+                    if self.capture_output:
+                        elements.append([None, Grid.Item(self.output)])
+                        row_height.append('auto')
+
+                    if self.footer is not None:
+                        footer = []
+                        footer.append(Grid.Item(self.footer, col_span=ncols))
+                        elements.append(footer)
+                        row_height.append('auto')
+
+                    layout = Grid(
+                        elements,
+                        column_width=column_width,
+                        row_height=row_height,
+                        cls=self.cls,
+                        **self.attrs
+                    )
+                else:
+                    raise NotImplementedError("ugh")
+        return layout
+
     def to_jhtml(self):
         return self.construct_layout().to_jhtml()
