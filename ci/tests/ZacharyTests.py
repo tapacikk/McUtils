@@ -148,8 +148,13 @@ class ZacharyTests(TestCase):
 
     #region FD
     # @dataGenTest
-    @validationTest
+    @debugTest
     def test_finite_difference(self):
+
+        sin_grid = np.linspace(0, 2 * np.pi, 200)
+        sin_vals = np.sin(sin_grid)
+        deriv = finite_difference(sin_grid, sin_vals, 1) # 3rd deriv
+
         sin_grid = np.arange(0, 1, .001)
         sin_vals = np.sin(sin_grid)
         sin_d3_vals = -np.cos(sin_grid)
@@ -208,27 +213,41 @@ class ZacharyTests(TestCase):
                 self.print_error(n, ord, errs)
             self.assertLess(errs[1], .05 / ord)
 
-    @validationTest
+    @debugTest
     def test_FD2D(self):
 
         print_error = False
         plot_error = False
 
-        x_grid = np.arange(0, 1, .01, dtype=np.longdouble)
-        y_grid = np.arange(0, 1, .001, dtype=np.longdouble)
+        x_grid = np.linspace(0, np.pi, 200, dtype=np.longdouble)
+        y_grid = np.linspace(0, np.pi, 100, dtype=np.longdouble)
 
-        sin_x_vals = np.sin(x_grid); sin_y_vals =  np.sin(y_grid)
-        cos_x_vals = np.cos(x_grid); cos_y_vals =  np.cos(y_grid)
+        sin_x_vals = np.sin(x_grid); sin_y_vals = np.sin(y_grid)
+        cos_x_vals = np.cos(x_grid); cos_y_vals = np.cos(y_grid)
         vals_2D = np.outer(sin_x_vals, sin_y_vals)
         grid_2D = np.array(np.meshgrid(x_grid, y_grid)).T
 
+        # x_grid_new = np.linspace(0, 2 * np.pi, 200)
+        # y_grid_new = np.linspace(0, 2 * np.pi, 100)
+        #
+        # sin_x_vals = np.sin(x_grid_new); sin_y_vals = np.sin(y_grid_new)
+        # vals_2D = np.outer(sin_x_vals, sin_y_vals)
+        # grid_2D = np.array(np.meshgrid(x_grid, y_grid)).T
+        #
+        # deriv = finite_difference(grid_2D, vals_2D, (1, 3))
+        #
+        #
+        # deriv = finite_difference(grid_2D, vals_2D, (1, 1))
+        # deriv = finite_difference(grid_2D, vals_2D, (1, 2))
+        # deriv = finite_difference(grid_2D, vals_2D, (1, 3))
+
         # try 1st and 1st derivs
-        test_11 = False
+        test_11 = True
         if test_11:
             ref_vals = np.outer(cos_x_vals, cos_y_vals)
             for ord in range(3, 7, 2):
                 n = (1, 1)
-                vals = finite_difference(grid_2D, vals_2D, n, stencil = ord, end_point_accuracy=1)
+                vals = finite_difference(grid_2D, vals_2D, n, stencil=ord, end_point_accuracy=1)
 
                 errs = self.get_error(ref_vals, vals)
                 if plot_error:
@@ -238,7 +257,7 @@ class ZacharyTests(TestCase):
                 self.assertLess(errs[1], .1 / ord)
 
         # 1,2 mixed deriv
-        test_12 = False
+        test_12 = True
         if test_12:
             ref_vals = -np.outer(cos_x_vals, sin_y_vals)
             for ord in range(3, 7, 2):
@@ -260,8 +279,9 @@ class ZacharyTests(TestCase):
             for ord in range(5, 10):
                 n = (2, 3)
                 vals = finite_difference(grid_2D, vals_2D, n,
-                                         stencil=ord, end_point_accuracy=2,
-                                         only_core = True
+                                         stencil=ord,
+                                         end_point_accuracy=2,
+                                         only_core=True
                                          )
 
                 floop = np.math.floor(ord/2)
@@ -448,7 +468,7 @@ class ZacharyTests(TestCase):
                     + self.kb * bend**2
             )
 
-    @debugTest
+    @validationTest
     def test_FiniteDifferenceParallelism(self):
 
         re_1 = 0.9575
