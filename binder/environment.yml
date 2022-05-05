@@ -8,7 +8,3 @@ dependencies:
   - matplotlib
   - h5py
   - ipywidgets
-variables:
-  - PYTHONPATH: /home/jovyan
-  - V2: asdasd
-  - V3: asdasd
