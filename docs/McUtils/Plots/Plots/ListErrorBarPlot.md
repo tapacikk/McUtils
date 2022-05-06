@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.ListErrorBarPlot">ListErrorBarPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L331)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L331?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L337)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L337?message=Update%20Docs)]
 </div>
 
 A Plot that pulls the errorbar data from a list
@@ -18,7 +18,7 @@ A Plot that pulls the errorbar data from a list
 __init__(self, griddata, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L333)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L333?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L339)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L339?message=Update%20Docs)]
 </div>
 
  </div>
@@ -33,4 +33,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ListErrorBarPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ListErrorBarPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ListErrorBarPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L331?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L337?message=Update%20Docs)

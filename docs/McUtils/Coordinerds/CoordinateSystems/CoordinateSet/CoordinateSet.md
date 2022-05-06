@@ -153,6 +153,7 @@ Delegates to the jacobian function of the current coordinate system
 - [CartesianToZMatrix](#CartesianToZMatrix)
 - [CartesianToZMatrixMulti](#CartesianToZMatrixMulti)
 - [CartesianToZMatrixAndBack](#CartesianToZMatrixAndBack)
+- [PsiAnglesToZMatrixAndBack](#PsiAnglesToZMatrixAndBack)
 - [ExpansionCoordinates](#ExpansionCoordinates)
 - [CartesianToZMatrixJacobian](#CartesianToZMatrixJacobian)
 - [CartesianToZMatrixMultiJacobian](#CartesianToZMatrixMultiJacobian)
@@ -264,6 +265,140 @@ class ConverterTest(TestCase):
         coord_set = coord_set.convert(CartesianCoordinates3D)
         cs2 = coord_set
         self.assertEqual(round(np.linalg.norm(cs2 - cs1), 8), 0.)
+```
+#### <a name="PsiAnglesToZMatrixAndBack">PsiAnglesToZMatrixAndBack</a>
+```python
+    def test_PsiAnglesToZMatrixAndBack(self):
+        carts_OCHH = CoordinateSet([
+                                      [
+                                          [  0.000000, 0.000000, 0.000000],
+                                          [  0.000000, 0.000000, 1.220000],
+                                          [  0.926647, 0.000000, 1.755000],
+                                          [ -0.926647, 0.000000, 1.755000]
+                                      ]
+                                  ] * 2,
+                                  system=CartesianCoordinates3D
+                                  )
+        O1 = 0
+        C1 = 1
+        H1 = 2
+        H2 = 3
+        _ = -1
+        zm_ochh = [
+            [O1, _, _, _],
+            [C1, O1, _, _],
+            [H1, O1, C1, _],
+            [H2, O1, C1, H1]
+        ]
+
+
+        O1 = 1
+        H1 = 0
+        H2 = 2
+        O2 = 3
+        H3 = 4
+        H4 = 5
+        _ = -1
+        zm_old = [  # water_dimer_freq_unopt Z-mat
+            [H1, _, _, _],
+            [O1, H1, _, _],
+            [H2, O1, H1, _],
+            [O2, O1, H2, H1],
+            [H3, O2, H2, H1],
+            [H4, O2, H2, H1]
+        ]
+
+        carts_old = CoordinateSet([
+                                      [
+                                          [  0.899890,  1.851024,  0.000000],
+                                          [ -0.000214,  1.516013,  0.000000],
+                                          [  0.099753,  0.552590,  0.000000],
+                                          [ -0.000214, -1.390289, -0.000000],
+                                          [ -0.498111, -1.704705,  0.761032],
+                                          [ -0.498111, -1.704705, -0.761032]
+                                      ]
+                                  ] * 2,
+                                  system=CartesianCoordinates3D
+                              )
+        carts_new = CoordinateSet([
+                                      [
+                                          [  0.000000,  0.000000,  0.000000],
+                                          [  0.000000,  0.000000,  0.962259],
+                                          [  0.931459,  0.000000, -0.241467],
+                                          [ -1.297691, -2.406089, -0.989477],
+                                          [ -2.033248, -2.168659, -1.559520],
+                                          [ -0.925486, -1.557192, -0.708516]
+                                      ]
+                                  ] * 2,
+                                  system=CartesianCoordinates3D
+                                  )
+
+        O1 = 1
+        H1 = 0
+        H2 = 2
+        O2 = 3
+        H3 = 4
+        H4 = 5
+        _ = -1
+        zm_old = [ #water_dimer_freq_unopt Z-mat
+            [H1, _, _, _],
+            [O1, H1, _, _],
+            [H2, O1, H1, _],
+            [O2, O1, H2, H1],
+            [H3, O2, H2, H1],
+            [H4, O2, H2, H1]
+        ]
+
+        O1 = 0
+        H1 = 1
+        H2 = 2
+        O2 = 3
+        H3 = 4
+        H4 = 5
+        _ = -1
+        zm_new = [
+            [O1, _,   _,  _],
+            [H1, O1,  _,  _],
+            [H2, O1, H1,  _],
+            [O2, O1, H1, H2],
+            [H3, O2, O1, H2],
+            [H4, O2, H3, O1]
+        ]
+
+
+        # test that we get same thing out for a given input
+        carts = carts_new
+        zm = zm_new
+
+        # zmat_system = ZMatrixCoordinateSystem(
+        #     ordering=zm
+        # )
+        # internals = carts.convert(zmat_system)
+        # carts2 = internals.convert(CartesianCoordinates3D)
+        # print(">>>", np.round(carts[0], 3))
+        # print("==>", np.round(np.rad2deg(internals[0][:, 1:]), 0))
+        # self.assertEqual(round(np.linalg.norm(carts - carts2), 8), 0.)
+
+        zmat_system = ZMatrixCoordinateSystem(
+            ordering=[x + [1] for x in zm]
+        )
+        internals2 = carts.convert(zmat_system)
+        carts2 = internals2.convert(CartesianCoordinates3D)
+
+        print("<<<", np.round(carts [0], 3))
+        print("<<<", np.round(carts2[0], 3))
+        print("<==", np.round(np.rad2deg(internals2[0][:, 1:]), 3))
+
+        carts2 = CoordinateSet(carts2,
+                      system=CartesianCoordinates3D
+                      )
+        zmat_system = ZMatrixCoordinateSystem(
+            ordering=[x + [1] for x in zm]
+        )
+        internals3 = carts2.convert(zmat_system)
+        print("<==", np.round(np.rad2deg(internals3[0][:, 1:]), 3))
+
+        self.assertEqual(round(np.linalg.norm(carts - carts2), 8), 0.)
 ```
 #### <a name="ExpansionCoordinates">ExpansionCoordinates</a>
 ```python

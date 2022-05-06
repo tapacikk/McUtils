@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.Plot3D">Plot3D</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L670)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L670?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L697)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L697?message=Update%20Docs)]
 </div>
 
 A base class for 3D plots
@@ -18,7 +18,7 @@ A base class for 3D plots
 __init__(self, *params, plot_style=None, method='plot_surface', colorbar=None, figure=None, axes=None, subplot_kw=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L672)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L672?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L699)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L699?message=Update%20Docs)]
 </div>
 
 
@@ -44,7 +44,7 @@ __init__(self, *params, plot_style=None, method='plot_surface', colorbar=None, f
 plot(self, *params, **plot_style): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L726)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L726?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L753)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L753?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Plots.Plot3D.add_colorbar" class="docs-object-method">&nbsp;</a> 
@@ -52,7 +52,7 @@ plot(self, *params, **plot_style):
 add_colorbar(self, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L732)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L732?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L759)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L759?message=Update%20Docs)]
 </div>
 
  </div>
@@ -147,4 +147,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/Plot3D.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/Plot3D.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/Plot3D.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L670?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L697?message=Update%20Docs)

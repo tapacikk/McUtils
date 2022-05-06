@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.HistogramPlot">HistogramPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L426)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L426?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L453)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L453?message=Update%20Docs)]
 </div>
 
 Makes a Histogram of data
@@ -18,7 +18,7 @@ Makes a Histogram of data
 __init__(*args, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L430)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L430?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L457)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L457?message=Update%20Docs)]
 </div>
 
  </div>
@@ -33,4 +33,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/HistogramPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/HistogramPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/HistogramPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L426?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L453?message=Update%20Docs)

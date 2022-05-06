@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.VerticalLinePlot">VerticalLinePlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L442)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L442?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L469)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L469?message=Update%20Docs)]
 </div>
 
 Plots a bunch of vertical lines
@@ -18,7 +18,7 @@ Plots a bunch of vertical lines
 __init__(*args, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L446)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L446?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L473)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L473?message=Update%20Docs)]
 </div>
 
  </div>
@@ -33,4 +33,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/VerticalLinePlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/VerticalLinePlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/VerticalLinePlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L442?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L469?message=Update%20Docs)

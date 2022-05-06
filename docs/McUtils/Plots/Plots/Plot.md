@@ -58,12 +58,21 @@ Plots a set of data & stores the result
 - `:returns`: `_`
     >the graphics that matplotlib made
 
+<a id="McUtils.Plots.Plots.Plot.artists" class="docs-object-method">&nbsp;</a> 
+```python
+@property
+artists(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L?message=Update%20Docs)]
+</div>
+
 <a id="McUtils.Plots.Plots.Plot.clear" class="docs-object-method">&nbsp;</a> 
 ```python
 clear(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L252)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L252?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L258)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L258?message=Update%20Docs)]
 </div>
 
 Removes the plotted data
@@ -73,7 +82,7 @@ Removes the plotted data
 restyle(self, **plot_style): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L260)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L260?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L266)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L266?message=Update%20Docs)]
 </div>
 
 Replots the data with updated plot styling
@@ -107,7 +116,7 @@ The styling options applied to the plot
 add_colorbar(self, graphics=None, norm=None, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L288)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L288?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L294)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L294?message=Update%20Docs)]
 </div>
 
 Adds a colorbar to the plot
@@ -117,7 +126,7 @@ Adds a colorbar to the plot
 set_graphics_properties(self, *which, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L297)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L297?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L303)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L303?message=Update%20Docs)]
 </div>
 
  </div>

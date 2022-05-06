@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Graphics.Graphics">Graphics</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L515)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L515?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L526)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L526?message=Update%20Docs)]
 </div>
 
 A mini wrapper to matplotlib.pyplot to create a unified interface I know how to work with
@@ -18,10 +18,19 @@ default_style: dict
 ```
 <a id="McUtils.Plots.Graphics.Graphics.set_options" class="docs-object-method">&nbsp;</a> 
 ```python
-set_options(self, axes_labels=None, plot_label=None, plot_range=None, plot_legend=None, frame=None, frame_style=None, ticks=None, scale=None, padding=None, spacings=None, ticks_style=None, image_size=None, aspect_ratio=None, background=None, colorbar=None, prolog=None, epilog=None, **parent_opts): 
+set_options(self, axes_labels=None, plot_label=None, plot_range=None, plot_legend=None, legend_style=None, frame=None, frame_style=None, ticks=None, scale=None, padding=None, spacings=None, ticks_style=None, image_size=None, aspect_ratio=None, background=None, colorbar=None, prolog=None, epilog=None, **parent_opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L527)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L527?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L538)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L538?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Plots.Graphics.Graphics.artists" class="docs-object-method">&nbsp;</a> 
+```python
+@property
+artists(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics.plot_label" class="docs-object-method">&nbsp;</a> 
@@ -195,6 +204,14 @@ colorbar(self):
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
 </div>
 
+<a id="McUtils.Plots.Graphics.Graphics.prep_show" class="docs-object-method">&nbsp;</a> 
+```python
+prep_show(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L719)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L719?message=Update%20Docs)]
+</div>
+
  </div>
 </div>
 
@@ -234,4 +251,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Graphics/Graphics.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Graphics/Graphics.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Graphics/Graphics.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L515?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L526?message=Update%20Docs)

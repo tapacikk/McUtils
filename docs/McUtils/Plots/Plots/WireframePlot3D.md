@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.WireframePlot3D">WireframePlot3D</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L748)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L748?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L775)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L775?message=Update%20Docs)]
 </div>
 
 Creates a Wireframe mesh plot of 3D data
@@ -18,7 +18,7 @@ Creates a Wireframe mesh plot of 3D data
 __init__(self, *params, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L752)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L752?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L779)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L779?message=Update%20Docs)]
 </div>
 
  </div>
@@ -33,4 +33,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/WireframePlot3D.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/WireframePlot3D.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/WireframePlot3D.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L748?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L775?message=Update%20Docs)

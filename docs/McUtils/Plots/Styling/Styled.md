@@ -21,6 +21,22 @@ __init__(self, *str, **opts):
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Styling.py#L18)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Styling.py#L18?message=Update%20Docs)]
 </div>
 
+<a id="McUtils.Plots.Styling.Styled.could_be" class="docs-object-method">&nbsp;</a> 
+```python
+could_be(data): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Styling.py#L21)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Styling.py#L21?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Plots.Styling.Styled.construct" class="docs-object-method">&nbsp;</a> 
+```python
+construct(data): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Styling.py#L24)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Styling.py#L24?message=Update%20Docs)]
+</div>
+
  </div>
 </div>
 

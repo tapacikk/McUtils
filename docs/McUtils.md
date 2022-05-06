@@ -14,46 +14,46 @@ been written over the years.
 <div class="container alert alert-secondary bg-light">
   <div class="row">
    <div class="col" markdown="1">
-[Misc](McUtils/Misc.md)   
-</div>
-   <div class="col" markdown="1">
 [Parsers](McUtils/Parsers.md)   
 </div>
    <div class="col" markdown="1">
 [Extensions](McUtils/Extensions.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Plots](McUtils/Plots.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [ExternalPrograms](McUtils/ExternalPrograms.md)   
 </div>
    <div class="col" markdown="1">
 [Zachary](McUtils/Zachary.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Data](McUtils/Data.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [Coordinerds](McUtils/Coordinerds.md)   
 </div>
    <div class="col" markdown="1">
 [GaussianInterface](McUtils/GaussianInterface.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Numputils](McUtils/Numputils.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [Scaffolding](McUtils/Scaffolding.md)   
 </div>
    <div class="col" markdown="1">
 [Parallelizers](McUtils/Parallelizers.md)   
+</div>
+   <div class="col" markdown="1">
+[Jupyter](McUtils/Jupyter.md)   
 </div>
 </div>
 </div>
