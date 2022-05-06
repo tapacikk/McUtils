@@ -37,7 +37,7 @@ get_block_settings(self, block_level):
 get_block(self, level=0, tag=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L497)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L497?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L505)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L505?message=Update%20Docs)]
 </div>
 
 
@@ -53,7 +53,7 @@ get_block(self, level=0, tag=None):
 get_line(self, level=0, tag=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L532)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L532?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L540)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L540?message=Update%20Docs)]
 </div>
 
 
@@ -69,7 +69,7 @@ get_line(self, level=0, tag=None):
 get_blocks(self, tag=None, level=0): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L554)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L554?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L562)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L562?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Logging.LogParser.get_lines" class="docs-object-method">&nbsp;</a> 
@@ -77,7 +77,7 @@ get_blocks(self, tag=None, level=0):
 get_lines(self, tag=None, level=0): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L568)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L568?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L576)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L576?message=Update%20Docs)]
 </div>
 
  </div>
