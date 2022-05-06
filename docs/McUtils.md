@@ -56,6 +56,11 @@ been written over the years.
 [Jupyter](McUtils/Jupyter.md)   
 </div>
 </div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Misc](McUtils/Misc.md)   
+</div>
+</div>
 </div>
 
 ## Examples

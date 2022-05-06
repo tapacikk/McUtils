@@ -22,41 +22,35 @@ Defines a set of miscellaneous helper utilities that are commonly used across pr
 [FileMatcher](Misc/FileMatcher/FileMatcher.md)   
 </div>
    <div class="col" markdown="1">
-[ModuleReloader](Misc/InteractiveTools/ModuleReloader.md)   
-</div>
-   <div class="col" markdown="1">
-[MoleculeGraphics](Misc/InteractiveTools/MoleculeGraphics.md)   
-</div>
-</div>
-  <div class="row">
-   <div class="col" markdown="1">
 [SBatchJob](Misc/SBatchHelper/SBatchJob.md)   
 </div>
    <div class="col" markdown="1">
 [njit](Misc/NumbaTools/njit.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [jit](Misc/NumbaTools/jit.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [type_spec](Misc/NumbaTools/type_spec.md)   
 </div>
    <div class="col" markdown="1">
 [without_numba](Misc/NumbaTools/without_numba.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [numba_decorator](Misc/NumbaTools/numba_decorator.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [import_from_numba](Misc/NumbaTools/import_from_numba.md)   
 </div>
    <div class="col" markdown="1">
 [_noop_context](Misc/NumbaTools/_noop_context.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [ModificationTracker](Misc/DebugTools/ModificationTracker.md)   
 </div>
