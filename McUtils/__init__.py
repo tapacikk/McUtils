@@ -11,7 +11,7 @@ been written over the years.
 import McUtils.Data
 import McUtils.Parsers
 import McUtils.GaussianInterface
-import McUtils.Misc
+import McUtils.Jupyter
 import McUtils.Plots
 import McUtils.Zachary
 import McUtils.Coordinerds
