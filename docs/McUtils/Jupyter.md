@@ -55,142 +55,150 @@ Defines a set of miscellaneous helper utilities that are commonly used across pr
 [ListGroup](Jupyter/Apps/Interfaces/ListGroup.md)   
 </div>
    <div class="col" markdown="1">
-[Navbar](Jupyter/Apps/Interfaces/Navbar.md)   
+[ButtonGroup](Jupyter/Apps/Interfaces/ButtonGroup.md)   
 </div>
    <div class="col" markdown="1">
-[Carousel](Jupyter/Apps/Interfaces/Carousel.md)   
+[Navbar](Jupyter/Apps/Interfaces/Navbar.md)   
 </div>
 </div>
   <div class="row">
+   <div class="col" markdown="1">
+[Carousel](Jupyter/Apps/Interfaces/Carousel.md)   
+</div>
    <div class="col" markdown="1">
 [Pagination](Jupyter/Apps/Interfaces/Pagination.md)   
 </div>
    <div class="col" markdown="1">
 [Sidebar](Jupyter/Apps/Interfaces/Sidebar.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [Dropdown](Jupyter/Apps/Interfaces/Dropdown.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [DropdownList](Jupyter/Apps/Interfaces/DropdownList.md)   
 </div>
    <div class="col" markdown="1">
 [Tabs](Jupyter/Apps/Interfaces/Tabs.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [TabPane](Jupyter/Apps/Interfaces/TabPane.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [TabList](Jupyter/Apps/Interfaces/TabList.md)   
 </div>
    <div class="col" markdown="1">
 [Accordion](Jupyter/Apps/Interfaces/Accordion.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [AccordionHeader](Jupyter/Apps/Interfaces/AccordionHeader.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [AccordionBody](Jupyter/Apps/Interfaces/AccordionBody.md)   
 </div>
    <div class="col" markdown="1">
 [Opener](Jupyter/Apps/Interfaces/Opener.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [OpenerHeader](Jupyter/Apps/Interfaces/OpenerHeader.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [OpenerBody](Jupyter/Apps/Interfaces/OpenerBody.md)   
 </div>
    <div class="col" markdown="1">
 [Breadcrumb](Jupyter/Apps/Interfaces/Breadcrumb.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [Card](Jupyter/Apps/Interfaces/Card.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [CardHeader](Jupyter/Apps/Interfaces/CardHeader.md)   
 </div>
    <div class="col" markdown="1">
 [CardBody](Jupyter/Apps/Interfaces/CardBody.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [CardFooter](Jupyter/Apps/Interfaces/CardFooter.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Layout](Jupyter/Apps/Interfaces/Layout.md)   
 </div>
    <div class="col" markdown="1">
 [Grid](Jupyter/Apps/Interfaces/Grid.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [Flex](Jupyter/Apps/Interfaces/Flex.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Control](Jupyter/Apps/Controls/Control.md)   
 </div>
    <div class="col" markdown="1">
 [InputField](Jupyter/Apps/Controls/InputField.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [StringField](Jupyter/Apps/Controls/StringField.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Slider](Jupyter/Apps/Controls/Slider.md)   
 </div>
    <div class="col" markdown="1">
 [Checkbox](Jupyter/Apps/Controls/Checkbox.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [RadioButton](Jupyter/Apps/Controls/RadioButton.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Switch](Jupyter/Apps/Controls/Switch.md)   
 </div>
    <div class="col" markdown="1">
 [TextArea](Jupyter/Apps/Controls/TextArea.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [Selector](Jupyter/Apps/Controls/Selector.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [VariableDisplay](Jupyter/Apps/Controls/VariableDisplay.md)   
 </div>
    <div class="col" markdown="1">
 [FunctionDisplay](Jupyter/Apps/Controls/FunctionDisplay.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [MenuSelect](Jupyter/Apps/Controls/MenuSelect.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [DropdownSelect](Jupyter/Apps/Controls/DropdownSelect.md)   
 </div>
    <div class="col" markdown="1">
 [App](Jupyter/Apps/Apps/App.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [Manipulator](Jupyter/Apps/Apps/Manipulator.md)   
+</div>
+   <div class="col" markdown="1">
+[MoleculeGraphics](Jupyter/MoleculeGraphics/MoleculeGraphics.md)   
 </div>
 </div>
 </div>
