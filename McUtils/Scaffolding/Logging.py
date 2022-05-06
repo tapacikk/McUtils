@@ -52,7 +52,7 @@ class LoggingBlock:
         {
             'opener': ">>" + "-" * 25 + ' {tag} ' + "-" * 25,
             'prompt': "::{meta} ",
-            'closer': '<<'
+            'closer': '>>'+'-'*25+'<<'
         },
         {
             'opener': "::> {tag}",
@@ -430,6 +430,7 @@ class LogParser(FileStreamReader):
         def line_iterator(self, pattern=""):
             og_settings = self.parent.get_block_settings(self.depth)
             prompt = og_settings['prompt'].format(meta="") + pattern
+            raise NotImplementedError('Never finished the line iterator')
 
         def parse_prompt_blocks(self, chunk, prompt):
             splitsies = chunk.split("\n" + prompt)
@@ -454,17 +455,24 @@ class LogParser(FileStreamReader):
             lines = []
 
             with StringStreamReader(self.data) as parser:
-                header = parser.parse_key_block("", {"tag":opener, "skip_tag":False})
+                header = parser.parse_key_block(None, {"tag":opener, "skip_tag":False})
                 if header is not None:
                     lines.extend(self.parse_prompt_blocks(header, prompt))
-                    block = parser.parse_key_block("", closer)
+                    block = parser.parse_key_block(None, {"tag":closer, "skip_tag":True})
+                    if block is None:
+                        raise ValueError("unclosed block found at position {} in stream '{}'".format(parser.tell(), parser.read()))
                     lines.append(self.make_subblock(block))
+                    # print("??", parser.stream.read(1))
                     while header is not None:
-                        header = parser.parse_key_block("", {"tag":opener, "skip_tag":False})
+                        header = parser.parse_key_block(None, {"tag":opener, "skip_tag":False})
+                        curp = parser.tell()
                         if header is None:
                             break #
                         lines.extend(self.parse_prompt_blocks(header, prompt))
-                        block = parser.parse_key_block("", closer)
+                        block = parser.parse_key_block(None, {"tag":closer, "skip_tag":True})
+                        if block is None:
+                            parser.seek(curp)
+                            raise ValueError("unclosed block found at position {} in stream (from block '{}')".format(curp, parser.read(-1)))
                         lines.append(self.make_subblock(block))
 
                 rest = parser.stream.read()
@@ -472,18 +480,18 @@ class LogParser(FileStreamReader):
 
             tag_start = og_settings['opener'].split("{tag}", 1)[0]
             tag_end = og_settings['opener'].split("{tag}", 2)[-1]
-            if tag_start == "":
-                if tag_end == "":
-                    tag = lines[0].strip()
-                else:
-                    tag = lines[0].split(tag_end)[0].strip()
-            elif tag_end == "":
-                tag = lines[0].split(tag_start, 1)[-1].strip()
+            tag = lines[0]
+            if tag_start != "":
+                tag = tag.split(tag_start, 1)[-1]
+            if tag_end != "":
+                tag = tag.split(tag_end)[0]
             else:
-                tag = lines[0].split(tag_start, 1)[-1].split(tag_end)[0].strip()
+                tag = tag.split("\n")[0]
+            tag = tag.strip()
 
             block_end = "\n" + og_settings['closer'].split("{tag}", 1)[0]
-            lines[-1] = lines[-1].split(block_end, 1)[0]
+            if isinstance(lines[-1], str):
+                lines[-1] = lines[-1].split(block_end, 1)[0]
 
             return tag, lines[1:]
 
