@@ -19,7 +19,6 @@ import McUtils.ExternalPrograms
 import McUtils.Extensions
 
 __all__ = [
-    "Misc",
     "Parsers",
     "Extensions",
     "Plots",
