@@ -1,3 +1,4 @@
+import uuid
 
 import numpy as np, weakref
 from ..JHTML import JHTML, DefaultOutputArea, JupyterAPIs
@@ -108,7 +109,9 @@ class InterfaceVars:
         self._cache_stack.pop()
 class VariableNamespace:
     _namespace_cache = weakref.WeakValueDictionary()
-    def __init__(self, name, dedupe=True):
+    def __init__(self, name=None, dedupe=True):
+        if name is None:
+            name = uuid.uuid4()
         self.name = name
         self._old_space = None
         if dedupe:

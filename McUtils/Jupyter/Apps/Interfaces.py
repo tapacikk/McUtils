@@ -11,6 +11,7 @@ __all__ = [
     "Container",
     "MenuComponent",
     "ListGroup",
+    "ButtonGroup",
     "Navbar",
     "Carousel",
     "Pagination",
@@ -265,6 +266,9 @@ class MenuComponent(Container):
 class ListGroup(MenuComponent):
     item_classes = ['list-group-item', 'list-group-item-action']
     wrapper_classes = ['list-group', 'list-group-flush']
+class ButtonGroup(MenuComponent):
+    item = JHTML.Bootstrap.Button
+    wrapper_classes = ['btn-group']
 class DropdownList(MenuComponent):
     wrapper = JHTML.Ul
     wrapper_classes = ['dropdown-menu']
@@ -382,7 +386,7 @@ class TabList(MenuComponent):
         super().__init__(*args, role=role, **kwargs)
     def create_item(self, item, cls=None, **kw):
         item, _ = item
-        item_id = self.base_name+"-"+item
+        item_id = self.base_name+"-"+item.replace(' ', '')
         if self._active is None:
             cls = JHTML.manage_cls(cls) + ['active']
             self._active = item_id
@@ -393,13 +397,13 @@ class TabPane(MenuComponent):
     item_classes = ['tab-pane']
     def __init__(self, *args, base_name=None, **kwargs):
         if base_name is None:
-            base_name = 'tabs-' + + short_uuid()
+            base_name = 'tabs-' + short_uuid()
         self.base_name = base_name
         self._active = None
         super().__init__(*args, **kwargs)
     def create_item(self, item, cls=None, **kw):
         key, item = item
-        item_id = self.base_name+"-"+key
+        item_id = self.base_name+"-"+key.replace(' ', '')
         if self._active is None:
             cls = JHTML.manage_cls(cls) + ['active']
             self._active = item_id
