@@ -365,6 +365,9 @@ class ActiveHTMLWrapper:
         if not hasattr(elem, 'wrappers'):
             elem.wrappers = weakref.WeakSet()
         elem.wrappers.add(self)
+        def wrapper():
+            return next(iter(elem.wrappers))
+        elem.wrapper = wrapper
 
     # add an API to make the elem look more like regular HTML
     @property
@@ -501,7 +504,7 @@ class ActiveHTMLWrapper:
         if len(kids) == 0:
             body = self.html
             if body is None:
-                raise IndexError("element {} has no body to index")
+                raise IndexError("element {} has no body to index".format(self))
             body[position] = value
         else:
             kids[position] = self.canonicalize_widget(value)
@@ -513,27 +516,38 @@ class ActiveHTMLWrapper:
         if len(kids) == 0:
             body = self.html
             if body is None:
-                raise IndexError("element {} has no body to index")
-            body.insert(where, child)
+                kids = list(kids)
+                kids.insert(0, self.canonicalize_widget(child))
+                self.children = tuple(kids)
+            elif isinstance(child, (str, HTML.XMLElement)):
+                body.insert(where, child)
+            else:
+                self.activate_body()
+                self.insert(where, child)
         else:
             kids = list(kids)
+            if where is None:
+                where = len(kids)
             kids.insert(where, self.canonicalize_widget(child))
             self.children = tuple(kids)
     def append(self, child):
-        self.insert(-1, child)
+        self.insert(None, child)
     def del_child(self, position):
         kids = self.elem.children
         if len(kids) == 0:
             body = self.html
             if body is None:
-                raise IndexError("element {} has no body to index")
+                raise IndexError("element {} has no body to index".format(self))
             del body[position]
         else:
             del kids[position]
             self.children = kids
             # self.elem.children = kids
             # self.elem.send_state('children')
-
+    def activate_body(self):
+        html = self.html
+        self.html_string = ""
+        self.children = [self.canonicalize_widget(html)]
     @property
     def elements(self):
         kids = self.elem.children

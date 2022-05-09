@@ -498,11 +498,13 @@ class HTML:
             self._invalidate_cache()
             self.on_update(self, item, value)
         def insert(self, where, child):
+            if where is None:
+                where = len(self._elems)
             self._elems.insert(where, child)
             self._invalidate_cache()
             self.on_update(self, where, child)
         def append(self, child):
-            self.insert(-1, child)
+            self.insert(None, child)
         def __delitem__(self, item):
             if isinstance(item, str):
                 item = item.replace("_", "-")

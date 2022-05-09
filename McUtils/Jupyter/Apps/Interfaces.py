@@ -11,6 +11,7 @@ __all__ = [
     "Container",
     "MenuComponent",
     "ListGroup",
+    "Button",
     "ButtonGroup",
     "Navbar",
     "Carousel",
@@ -27,8 +28,20 @@ __all__ = [
     "Opener",
     "OpenerHeader",
     "OpenerBody",
+    "Modal",
+    "ModalHeader",
+    "ModalBody",
+    "ModalFooter",
+    "Toast",
+    "ToastBody",
+    "ToastHeader",
+    "ToastContainer",
+    "Spacer",
     "Breadcrumb",
-    "Card", "CardHeader", "CardBody", "CardFooter",
+    "Card",
+    "CardHeader",
+    "CardBody",
+    "CardFooter",
     "Layout",
     "Grid",
     "Flex"
@@ -108,7 +121,6 @@ class Component(WidgetInterface):
         ))
     def del_widget_child(self, key):
         del self._widget_cache[key]
-
     def __delitem__(self, key):
         if isinstance(key, str):
             self.del_attr(key)
@@ -119,7 +131,53 @@ class Component(WidgetInterface):
             if self._widget_cache is not None:
                 self.del_widget_child(key)
 
-        # self.invalidate_cache()
+    def insert(self, where, new):
+        self.insert_child(where, new)
+        if self._widget_cache is not None:
+            self.insert_widget_child(where, new)
+    def append(self, child):
+        return self.insert(None, child)
+
+    def insert_child(self, where, child):
+        raise NotImplementedError("{} doesn't have children".format(
+            type(self).__name__
+        ))
+    def insert_widget_child(self, where, child):
+        self._widget_cache.insert(where, child)
+
+    def add_class(self, *cls):
+        self.add_component_class(*cls)
+        if self._widget_cache is not None:
+            self.add_widget_class(*cls)
+    def add_component_class(self, *cls):
+        if not 'cls' in self._attrs:
+            self._attrs['cls'] = []
+        new = self._attrs['cls'].copy()
+        for c in cls:
+            for y in JHTML.manage_cls(c):
+                if y not in new:
+                    new.append(y)
+        self._attrs['cls'] = new
+    def add_widget_class(self, *cls):
+        return self._widget_cache.add_class(*cls)
+    def remove_class(self, *cls):
+        self.remove_component_class(*cls)
+        if self._widget_cache is not None:
+            self.remove_widget_class(*cls)
+    def remove_component_class(self, *cls):
+        if not 'cls' in self._attrs:
+            self._attrs['cls'] = []
+        new = self._attrs['cls'].copy()
+        for c in cls:
+            for y in JHTML.manage_cls(c):
+                try:
+                    new.remove(y)
+                except ValueError:
+                    pass
+        self._attrs['cls'] = new
+    def remove_widget_class(self, *cls):
+        return self._widget_cache.remove_class(*cls)
+
 
     @abc.abstractmethod
     def to_jhtml(self):
@@ -130,6 +188,7 @@ class Component(WidgetInterface):
         if self._widget_cache is None:
             with DefaultOutputArea(self.debug_pane):
                 self._widget_cache = self.to_jhtml()
+                self._widget_cache.component = self
             # self._widget_cache.to_widget.observe(self.set_value, )
         return self._widget_cache
     def mutate(self, fn):
@@ -143,21 +202,15 @@ class WrapperComponent(Component):
     wrapper = JHTML.Div
     wrapper_classes = []
     def __init__(self, items, wrapper=None, wrapper_classes=None, cls=None, **attrs):
+        self.items, attrs = self.manage_items(items, attrs)
         super().__init__(**attrs)
         if wrapper is not None:
             self.wrapper = wrapper
         if wrapper_classes is not None:
             self.wrapper_classes = wrapper_classes
-        self.items = items
         self.wrapper_classes = self.wrapper_classes + JHTML.manage_cls(cls)
-    def get_child(self, key):
-        return self.items[key]
-    def wrap_items(self, items):
-        return self.wrapper(*items, cls=self.wrapper_classes, **self.attrs)
-    def to_jhtml(self, parent=None):
-        return self.wrap_items(self.items)
-class AutoWrapper(WrapperComponent):
-    def __init__(self, items, **attrs):
+    @classmethod
+    def manage_items(cls, items, attrs):
         if isinstance(items, dict):
             attrs = dict(attrs, **items)
             del attrs['body']
@@ -169,7 +222,47 @@ class AutoWrapper(WrapperComponent):
         ):
             attrs = dict(attrs, **items[1])
             items = items[0]
-        super().__init__(items, **attrs)
+        if (
+                isinstance(items, str)
+                or hasattr(items, 'to_tree')
+                or hasattr(items, 'to_widget')
+        ):
+            items = [items]
+        elif items is None:
+            items = []
+        else:
+            items = list(items)
+        return items, attrs
+    def get_child(self, key):
+        return self.items[key]
+    def set_child(self, which, new):
+        self.items[which] = new
+    def insert_child(self, where, child):
+        if where is None:
+            where = len(self.items)
+        self.items.insert(where, child)
+
+    def add_component_class(self, *cls):
+        new = self.wrapper_classes.copy()
+        for c in cls:
+            for y in JHTML.manage_cls(c):
+                if y not in new:
+                    new.append(y)
+        self.wrapper_classes = new
+    def remove_component_class(self, *cls):
+        new = self.wrapper_classes.copy()
+        for c in cls:
+            for y in JHTML.manage_cls(c):
+                try:
+                    new.remove(y)
+                except ValueError:
+                    pass
+        self.wrapper_classes = new
+
+    def wrap_items(self, items):
+        return self.wrapper(*items, cls=self.wrapper_classes, **self.attrs)
+    def to_jhtml(self, parent=None):
+        return self.wrap_items(self.items)
 class Container(WrapperComponent):
     subwrappers = None
     subwrapper_classes = None
@@ -183,6 +276,7 @@ class Container(WrapperComponent):
                  **attrs):
 
         self._items = None
+        items, attrs = self.manage_items(items, attrs)
         if subwrappers is None:
             subwrappers = self.subwrappers
         if subwrapper_classes is None:
@@ -205,14 +299,11 @@ class Container(WrapperComponent):
                   )
             )
             self.wrapper_classes = JHTML.manage_cls(subwrapper_classes[-1])
-            super().__init__(
-                None,
-                wrapper=wrapper
-            )
+            super().__init__(None, wrapper=wrapper)
         else:
             super().__init__(None, cls=cls, wrapper=wrapper, wrapper_classes=wrapper_classes, **attrs)
-
         self._items = items
+
         if item is not None:
             self.item = item
         if item_classes is not None:
@@ -249,6 +340,27 @@ class Container(WrapperComponent):
                 return self._create_dict_item(body=i, **kw)
             else:
                return self._create_base_item(i)
+
+    def update_widget_child(self, key, value):
+        super().update_widget_child(key, self.create_item(value))
+    def insert_widget_child(self, where, child):
+        super().insert_widget_child(where, self.create_item(child))
+
+class Button(WrapperComponent):
+    wrapper = JHTML.Bootstrap.Button
+    def __init__(self, body, action=None, event_handlers=None, **kwargs):
+        if event_handlers is None:
+            event_handlers = {}
+        self.action = action
+        event_handlers['click'] = self._eval
+        super().__init__(
+            body,
+            event_handlers=event_handlers,
+            **kwargs
+        )
+    def _eval(self, *args):
+        if self.action is not None:
+            self.action(*args)
 
 #region Menus
 
@@ -530,11 +642,11 @@ class Breadcrumb(MenuComponent):
     item = JHTML.Li
     item_classes = ['breadcrumb-item']
 
-class CardBody(AutoWrapper):
+class CardBody(WrapperComponent):
     wrapper = JHTML.Bootstrap.CardBody
-class CardHeader(AutoWrapper):
+class CardHeader(WrapperComponent):
     wrapper = JHTML.Bootstrap.CardHeader
-class CardFooter(AutoWrapper):
+class CardFooter(WrapperComponent):
     wrapper = JHTML.Bootstrap.CardHeader
 class Card(WrapperComponent):
     wrapper = JHTML.Bootstrap.Card
@@ -546,12 +658,147 @@ class Card(WrapperComponent):
                  ):
         items = []
         if header is not None:
-            items.append(CardHeader(header))
+            header = CardHeader(header)
+            items.append(header)
+        self.header = header
         if body is not None:
-            items.append(CardBody(body))
+            body = CardBody(body)
+            items.append(body)
+        self.body = body
         if footer is not None:
-            items.append(CardFooter(footer))
+            footer = CardFooter(footer)
+            items.append(footer)
+        self.footer = footer
         super().__init__(items, **attrs)
+
+class Modal(Container):
+    wrapper_classes = ['modal', 'fade']
+    subwrappers = [JHTML.Div, JHTML.Div]
+    subwrapper_classes = [['modal-dialog', 'modal-dialog-centered'], ['modal-content']]
+    def __init__(self,
+                 header=None,
+                 body=None,
+                 footer=None,
+                 id=None,
+                 tabindex=-1,
+                 **attrs
+                 ):
+        items = []
+        if header is not None:
+            header = ModalHeader(header)
+            items.append(header)
+        self.header = header
+        if body is not None:
+            body = ModalBody(body)
+            items.append(body)
+        self.body = body
+        if footer is not None:
+            footer = ModalFooter(footer)
+            items.append(footer)
+        self.footer = footer
+        if id is None:
+            id = 'modal-'+short_uuid(6)
+        self._id = id
+        super().__init__(items, id=id, tabindex=tabindex, **attrs)
+
+    trigger_class = JHTML.Bootstrap.Button
+    def get_trigger(self, *items, trigger_class=None, data_bs_toggle='modal', data_bs_target=None, **attrs):
+        if trigger_class is None:
+            trigger_class = self.trigger_class
+        if data_bs_target is None:
+            data_bs_target = "#"+self._id
+        return trigger_class(items, data_bs_toggle=data_bs_toggle, data_bs_target=data_bs_target, **attrs)
+    @classmethod
+    def close_button(self):
+        return JHTML.Button(cls='btn-close', data_bs_dismiss='modal')
+class ModalHeader(WrapperComponent):
+    wrapper_classes = ['modal-header']
+    def __init__(self, items, **attrs):
+        items, attrs = self.manage_items(items, attrs)
+        items.append(Modal.close_button())
+        super().__init__(items, **attrs)
+class ModalFooter(WrapperComponent):
+    wrapper_classes = ['modal-footer']
+class ModalBody(WrapperComponent):
+    wrapper_classes = ['modal-body']
+
+class Spacer(WrapperComponent):
+    wrapper = JHTML.Span
+    wrapper_classes = ['me-auto']
+    def __init__(self, items=None, **kwargs):
+        if items is None:
+            items = []
+        super().__init__(items, **kwargs)
+
+class ToastBody(WrapperComponent):
+    wrapper_classes = ['toast-body']
+    def __init__(self, items, include_controls=False, cls=None, **attrs):
+        if include_controls:
+            cls = JHTML.manage_cls(cls) + ['d-flex']
+            items, attrs = self.manage_items(items, attrs)
+            items.extend([Spacer(), Toast.close_button()])
+        super().__init__(items, cls=cls, **attrs)
+class ToastHeader(WrapperComponent):
+    wrapper_classes = ['toast-header']
+    def __init__(self, items, include_controls=True, **attrs):
+        if include_controls:
+            items, attrs = self.manage_items(items, attrs)
+            items.extend([Spacer(), Toast.close_button()])
+        super().__init__(items, **attrs)
+class Toast(WrapperComponent):
+    wrapper_classes = ['toast']
+    def __init__(self,
+                 header=None,
+                 body=None,
+                 role='alert',
+                 hidden=False,
+                 cls=None,
+                 id=None,
+                 **attrs
+                 ):
+        attrs['role'] = role
+        items = []
+        only_body = header is not None and body is None
+        if only_body:
+            body = header
+            header = None
+        if header is not None:
+            items.append(ToastHeader(header))
+        if body is not None:
+            items.append(ToastBody(body, include_controls=only_body))
+        if id is None:
+            id = 'modal-'+short_uuid(6)
+        self._id = id
+        if not hidden:
+            cls = JHTML.manage_cls(cls) + ['show']
+        super().__init__(items, cls=cls, **attrs)
+
+    # trigger_class = JHTML.Bootstrap.Button
+    # def get_trigger(self, *items, trigger_class=None, data_bs_toggle='toast', data_bs_target=None, **attrs):
+    #     if trigger_class is None:
+    #         trigger_class = self.trigger_class
+    #     if data_bs_target is None:
+    #         data_bs_target = "#" + self._id
+    #     return trigger_class(items, data_bs_toggle=data_bs_toggle, data_bs_target=data_bs_target, **attrs)
+    @classmethod
+    def close_button(self):
+        return JHTML.Button(cls='btn-close', data_bs_dismiss='toast')
+    def show(self):
+        self.add_class('show')
+        self.remove_class('hide')
+    def hide(self):
+        self.remove_class('show')
+        self.add_class('hide')
+class ToastContainer(WrapperComponent):
+    wrapper_classes = ['toast-container']
+    def __init__(self, items=None, **kwargs):
+        if items is None:
+            items = []
+        super().__init__(items, **kwargs)
+    def create_toast(self, header=None, body=None, **kwargs):
+        toast = Toast(header=header, body=body, **kwargs)
+        self.append(toast)
+        return toast
 
 #endregion
 
