@@ -1,5 +1,5 @@
 from .HTML import HTML
-from .HTMLWidgets import ActiveHTMLWrapper
+from .HTMLWidgets import ActiveHTMLWrapper, HTMLWidgets
 from .Bootstrap import Bootstrap3, Bootstrap4, Bootstrap5
 
 __all__ = ["BootstrapWidgets"]
@@ -146,31 +146,31 @@ class Bootstrap5Widgets(BootstrapWidgetsBase):
         "https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
     ]
     bootstrap_version = Bootstrap5
-    class Icon(ActiveHTMLWrapper): base = Bootstrap5.Icon
-    class Alert(ActiveHTMLWrapper): base = Bootstrap5.Alert
-    class Badge(ActiveHTMLWrapper): base = Bootstrap5.Badge
-    class CardBody(ActiveHTMLWrapper): base = Bootstrap5.CardBody
-    class CardHeader(ActiveHTMLWrapper): base = Bootstrap5.CardHeader
-    class CardFooter(ActiveHTMLWrapper): base = Bootstrap5.CardFooter
-    class CardImage(ActiveHTMLWrapper): base = Bootstrap5.CardImage
-    class Card(ActiveHTMLWrapper): base = Bootstrap5.Card
-    class Col(ActiveHTMLWrapper): base = Bootstrap5.Col
-    class Row(ActiveHTMLWrapper): base = Bootstrap5.Row
-    class Container(ActiveHTMLWrapper): base = Bootstrap5.Container
-    class ButtonGroup(ActiveHTMLWrapper): base = Bootstrap5.ButtonGroup
-    class Button(ActiveHTMLWrapper): base = Bootstrap5.Button
-    class LinkButton(HTML.Anchor): base = Bootstrap5.LinkButton
-    class Table(ActiveHTMLWrapper): base = Bootstrap5.Table
-    class ListGroup(ActiveHTMLWrapper): base = Bootstrap5.ListGroup
-    class ListGroupItem(ActiveHTMLWrapper): base = Bootstrap5.ListGroupItem
-    class FontAwesomeIcon(ActiveHTMLWrapper): base = Bootstrap5.FontAwesomeIcon
-    class GlyphIcon(ActiveHTMLWrapper): base = Bootstrap5.GlyphIcon
-    class Label(ActiveHTMLWrapper): base = Bootstrap5.Label
-    class Pill(ActiveHTMLWrapper): base = Bootstrap5.Pill
-    class ListComponent(ActiveHTMLWrapper): base = Bootstrap5.ListComponent
-    class ListItemComponent(ActiveHTMLWrapper): base = Bootstrap5.ListItemComponent
-    class Breadcrumb(ActiveHTMLWrapper): base = Bootstrap5.Breadcrumb
-    class BreadcrumbItem(ActiveHTMLWrapper): base = Bootstrap5.BreadcrumbItem
+    class Icon(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Icon
+    class Alert(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Alert
+    class Badge(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Badge
+    class CardBody(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.CardBody
+    class CardHeader(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.CardHeader
+    class CardFooter(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.CardFooter
+    class CardImage(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.CardImage
+    class Card(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Card
+    class Col(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Col
+    class Row(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Row
+    class Container(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Container
+    class ButtonGroup(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.ButtonGroup
+    class Button(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Button
+    class LinkButton(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.LinkButton
+    class Table(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Table
+    class ListGroup(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.ListGroup
+    class ListGroupItem(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.ListGroupItem
+    class FontAwesomeIcon(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.FontAwesomeIcon
+    class GlyphIcon(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.GlyphIcon
+    class Label(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Label
+    class Pill(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Pill
+    class ListComponent(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.ListComponent
+    class ListItemComponent(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.ListItemComponent
+    class Breadcrumb(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Breadcrumb
+    class BreadcrumbItem(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.BreadcrumbItem
 Bootstrap5Widgets._monkey_patch()
 
 BootstrapWidgets = Bootstrap5Widgets

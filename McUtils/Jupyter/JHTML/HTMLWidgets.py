@@ -22,6 +22,8 @@ class ActiveHTMLWrapper:
                  value=None,
                  style=None,
                  event_handlers=None,
+                 javascript_handles=None,
+                 oninitialize=None,
                  debug_pane=None,
                  track_value=None,
                  continuous_update=None,
@@ -51,6 +53,9 @@ class ActiveHTMLWrapper:
         if continuous_update is not None:
             attrs['continuousUpdate'] = continuous_update
 
+        if javascript_handles is not None:
+            attrs['jsHandlers'] = javascript_handles
+
         if self.base is not None:
             shadow_el = self.base(cls=cls, style=style, **attributes)
         else:
@@ -69,16 +74,30 @@ class ActiveHTMLWrapper:
             classList = HTML.manage_class(cls)
             attrs['classList'] = classList
 
+        if oninitialize is not None:
+            if isinstance(oninitialize, str):
+                oninitialize = {'method':oninitialize}
+            elif isinstance(oninitialize, list):
+                oninitialize = {'fields':oninitialize}
+            attrs['oninitialize'] = oninitialize
+
         eventPropertiesDict = {}
         if event_handlers is not None:
             event_handlers = event_handlers.copy()
             for c, v in event_handlers.items():
                 if isinstance(v, dict):
                     v = v.copy()
-                    callback = v['callback']
-                    del v['callback']
+                    if 'callback' in v:
+                        callback = v['callback']
+                        del v['callback']
+                        event_handlers[c] = callback
+                        v['notify'] = True
+                    else:
+                        event_handlers[c] = None
                     eventPropertiesDict[c] = v
-                    event_handlers[c] = callback
+                elif isinstance(v, str):
+                    eventPropertiesDict[c] = v
+                    event_handlers[c] = None
                 else:
                     eventPropertiesDict[c] = None
                     event_handlers[c] = v
@@ -365,6 +384,9 @@ class ActiveHTMLWrapper:
         if not hasattr(elem, 'wrappers'):
             elem.wrappers = weakref.WeakSet()
         elem.wrappers.add(self)
+        def wrapper():
+            return next(iter(elem.wrappers))
+        elem.wrapper = wrapper
 
     # add an API to make the elem look more like regular HTML
     @property
@@ -501,7 +523,7 @@ class ActiveHTMLWrapper:
         if len(kids) == 0:
             body = self.html
             if body is None:
-                raise IndexError("element {} has no body to index")
+                raise IndexError("element {} has no body to index".format(self))
             body[position] = value
         else:
             kids[position] = self.canonicalize_widget(value)
@@ -513,27 +535,38 @@ class ActiveHTMLWrapper:
         if len(kids) == 0:
             body = self.html
             if body is None:
-                raise IndexError("element {} has no body to index")
-            body.insert(where, child)
+                kids = list(kids)
+                kids.insert(0, self.canonicalize_widget(child))
+                self.children = tuple(kids)
+            elif isinstance(child, (str, HTML.XMLElement)):
+                body.insert(where, child)
+            else:
+                self.activate_body()
+                self.insert(where, child)
         else:
             kids = list(kids)
+            if where is None:
+                where = len(kids)
             kids.insert(where, self.canonicalize_widget(child))
             self.children = tuple(kids)
     def append(self, child):
-        self.insert(-1, child)
+        self.insert(None, child)
     def del_child(self, position):
         kids = self.elem.children
         if len(kids) == 0:
             body = self.html
             if body is None:
-                raise IndexError("element {} has no body to index")
+                raise IndexError("element {} has no body to index".format(self))
             del body[position]
         else:
             del kids[position]
             self.children = kids
             # self.elem.children = kids
             # self.elem.send_state('children')
-
+    def activate_body(self):
+        html = self.html
+        self.html_string = ""
+        self.children = [self.canonicalize_widget(html)]
     @property
     def elements(self):
         kids = self.elem.children
@@ -582,7 +615,25 @@ class ActiveHTMLWrapper:
             html_base.on_update = self._track_html_change
         return html_base
 
-
+    @property
+    def oninitialize(self):
+        return self.elem.oninitialize
+    @oninitialize.setter
+    def oninitialize(self, init):
+        if init is None:
+            init = {}
+        elif isinstance(init, str):
+            init = {'method':init}
+        elif isinstance(init, list):
+            init = {'fields':init}
+        self.elem.oninitialize = init
+    @property
+    def javascript_handles(self):
+        return self.elem.jsHandlers
+    @javascript_handles.setter
+    def javascript_handles(self, js):
+        self.elem.jsHandlers = js
+        self.elem.send_state('jsHandlers')
     @property
     def class_list(self):
         return self.elem.classList
@@ -642,10 +693,16 @@ class ActiveHTMLWrapper:
         for c,v in events.items():
             if isinstance(v, dict):
                 v = v.copy()
-                callback = v['callback']
-                del v['callback']
+                if 'callback' in v:
+                    callback = v['callback']
+                    del v['callback']
+                    self.event_handlers[c] = callback
+                    v['notify'] = True
+                else:
+                    self.event_handlers[c] = None
+            elif isinstance(v, str):
                 ed[c] = v
-                self.event_handlers[c] = callback
+                self.event_handlers[c] = None
             else:
                 ed[c] = None
                 self.event_handlers[c] = v

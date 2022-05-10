@@ -40,8 +40,24 @@ exports.MODULE_NAME = data.name;
 
 // Copyright (c) b3m2a1
 // Distributed under the terms of the Modified BSD License.
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ActiveHTMLView = exports.ActiveHTMLModel = void 0;
@@ -50,8 +66,8 @@ const version_1 = __webpack_require__(/*! ./version */ "./lib/version.js");
 const widgets_1 = __webpack_require__(/*! @lumino/widgets */ "webpack/sharing/consume/default/@lumino/widgets");
 const algorithm_1 = __webpack_require__(/*! @lumino/algorithm */ "webpack/sharing/consume/default/@lumino/algorithm");
 const messaging_1 = __webpack_require__(/*! @lumino/messaging */ "webpack/sharing/consume/default/@lumino/messaging");
-const jquery_1 = __importDefault(__webpack_require__(/*! jquery */ "./node_modules/jquery/dist/jquery.js"));
-__webpack_require__(/*! bootstrap */ "webpack/sharing/consume/default/bootstrap/bootstrap");
+const jquery_1 = __importStar(__webpack_require__(/*! jquery */ "./node_modules/jquery/dist/jquery.js")), jquery = jquery_1;
+const bootstrap = __importStar(__webpack_require__(/*! bootstrap */ "webpack/sharing/consume/default/bootstrap/bootstrap"));
 class LayoutManagerWidget extends widgets_1.Widget {
     constructor(options) {
         let view = options.view;
@@ -87,6 +103,16 @@ class LayoutManagerWidget extends widgets_1.Widget {
     }
 }
 class ActiveHTMLModel extends base_1.DOMWidgetModel {
+    // _ihandlers: Record<string, [number, any]>;
+    // constructor() {
+    //     super();
+    // }
+    initialize(attributes, options) {
+        super.initialize(attributes, options);
+        // this._ihandlers= {};
+        this._updateHandlers();
+        this.on('change:jsHandlers', this._updateHandlers, this);
+    }
     defaults() {
         return Object.assign(Object.assign({}, super.defaults()), { _model_name: ActiveHTMLModel.model_name, _model_module: ActiveHTMLModel.model_module, _model_module_version: ActiveHTMLModel.model_module_version, _view_name: ActiveHTMLModel.view_name, _view_module: ActiveHTMLModel.view_module, _view_module_version: ActiveHTMLModel.view_module_version, tagName: 'div', children: [], classList: [], innerHTML: "", textContent: "", _bodyType: "", _debugPrint: false, styleDict: {}, elementAttributes: {}, id: "", value: "", trackInput: false, continuousUpdate: true, eventPropertiesDict: {}, defaultEventProperties: [
                 "bubbles", "cancelable", "composed",
@@ -94,7 +120,44 @@ class ActiveHTMLModel extends base_1.DOMWidgetModel {
                 "key", "repeat",
                 "button", "buttons",
                 "alKey", "shiftKey", "ctrlKey", "metaKey"
-            ] });
+            ], jsHandlers: {}, _ihandlers: {}, oninitialize: {}, exportData: {} });
+    }
+    _defineHandler(name, body) {
+        // adapted from SO to define a named handler
+        let lines = ['return function ' + name + '(event, widget, context) {'];
+        lines.push('\"use strict\";');
+        lines.push(body);
+        lines.push("}");
+        return new Function(lines.join("\n"))();
+    }
+    _stringHash(str) {
+        // just needed a simple one so: https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript
+        var hash = 0, i, chr;
+        if (str.length === 0)
+            return hash;
+        for (i = 0; i < str.length; i++) {
+            chr = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + chr;
+            hash |= 0; // Convert to 32bit integer
+        }
+        return hash;
+    }
+    _updateHandlers() {
+        let handlers = this.get('jsHandlers');
+        let debug = this.get('_debugPrint');
+        let _ihandlers = this.get('_ihandlers');
+        for (let h in handlers) {
+            if (handlers.hasOwnProperty(h)) {
+                let hash = this._stringHash(handlers[h]);
+                if ((!_ihandlers.hasOwnProperty(h)) ||
+                    (_ihandlers[h][0] !== hash)) {
+                    if (debug) {
+                        console.log('adding handler', h);
+                    }
+                    _ihandlers[h] = [hash, this._defineHandler(h, handlers[h])];
+                }
+            }
+        }
     }
 }
 exports.ActiveHTMLModel = ActiveHTMLModel;
@@ -134,6 +197,10 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         this._currentEvents = {};
         this._currentClasses = new Set();
         this._currentStyles = new Set();
+        let oninit = this.model.get('oninitialize');
+        if (Object.keys(oninit).length > 0) {
+            this.handleEvent(new Event('fake', {}), 'oninitialize', oninit);
+        }
     }
     removeStyles() {
         let newStyles = this.model.get("styleDict");
@@ -377,9 +444,6 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                             for (let i = 0; i < el.options.length; i++) {
                                 let o = el.options[i];
                                 o.selected = (splitVals.indexOf(o.value) > -1);
-                                if (debug) {
-                                    console.log('updating selection...', o.selected);
-                                }
                             }
                         }
                     }
@@ -533,31 +597,68 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
             }
         }
     }
+    setData(key, value) {
+        let data = this.model.get('exportData');
+        data[key] = value;
+        this.model.set('exportData', {}, { updated_view: this });
+        this.model.set('exportData', data, { updated_view: this });
+        this.touch();
+    }
+    handleEvent(e, eventName, propData) {
+        let props;
+        let method = "";
+        let send = true;
+        if (Array.isArray(propData)) {
+            props = propData;
+        }
+        else if (propData === undefined || propData === null) {
+            props = this.model.get('defaultEventProperties');
+        }
+        else if (typeof propData === 'string') {
+            method = propData;
+            props = [];
+        }
+        else {
+            method = propData['method'];
+            if (method === undefined || method === null) {
+                method = "";
+            }
+            else {
+                send = propData.hasOwnProperty('notify') && propData['notify'] === true;
+            }
+            if (propData.hasOwnProperty('fields')) {
+                props = propData['fields'];
+            }
+            else {
+                props = this.model.get('defaultEventProperties');
+            }
+            let prop = propData['propagate'] !== true;
+            if (prop) {
+                e.stopPropagation();
+            }
+        }
+        let debug = this.model.get('_debugPrint');
+        if (debug) {
+            console.log(this.el, "Handling event:", eventName, propData);
+            if (method !== "") {
+                console.log(this.el, "calling handler", method);
+            }
+        }
+        // console.log("|", eventName, props);
+        if (method !== "") {
+            this.callHandler(method, e);
+        }
+        if (send) {
+            this.sendEventMessage(e, this.constructEventMessage(e, props, eventName));
+        }
+    }
+    callHandler(method, event) {
+        this.model.get('_ihandlers')[method][1](event, this, ActiveHTMLView.handlerContext); // inline caller for now b.c. not sure how to make it go otherwise
+    }
     constructEventListener(eventName, propData) {
         let parent = this;
         return function (e) {
-            let props;
-            if (Array.isArray(propData)) {
-                props = propData;
-            }
-            else if (propData === undefined || propData === null) {
-                props = parent.model.get('defaultEventProperties');
-            }
-            else {
-                //@ts-ignore
-                props = propData['fields'];
-                //@ts-ignore
-                let prop = propData['propagate'];
-                if (prop !== true) {
-                    e.stopPropagation();
-                }
-            }
-            let debug = parent.model.get('_debugPrint');
-            if (debug) {
-                console.log(parent.el, "Handling event:", eventName);
-            }
-            // console.log("|", eventName, props);
-            parent.sendEventMessage(e, parent.constructEventMessage(e, props, eventName));
+            parent.handleEvent(e, eventName, propData);
         };
     }
     constructEventMessage(e, props, eventName) {
@@ -599,6 +700,11 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     }
 }
 exports.ActiveHTMLView = ActiveHTMLView;
+ActiveHTMLView.handlerContext = {
+    'bootstrap': bootstrap,
+    "$": jquery_1.default,
+    "jquery": jquery,
+};
 //# sourceMappingURL=widget.js.map
 
 /***/ }),
@@ -609,9 +715,9 @@ exports.ActiveHTMLView = ActiveHTMLView;
   \**********************/
 /***/ ((module) => {
 
-module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","description":"A Custom Jupyter Widget Library","keywords":["jupyter","jupyterlab","jupyterlab-extension","widgets"],"files":["lib/**/*.js","dist/*.js","css/*.css"],"homepage":"https://github.com//ActiveHTMLWidget","bugs":{"url":"https://github.com//ActiveHTMLWidget/issues"},"license":"MIT","author":{"name":"b3m2a1","email":"b3m2a1@gmail.com"},"main":"lib/index.js","types":"./lib/index.d.ts","style":"css/index.css","sideEffects":["css/*.css"],"repository":{"type":"git","url":"https://github.com//ActiveHTMLWidget"},"scripts":{"build":"yarn run build:lib && yarn run build:nbextension && yarn run build:labextension:dev","build:prod":"yarn run build:lib && yarn run build:nbextension && yarn run build:labextension","build:labextension":"jupyter labextension build .","build:labextension:dev":"jupyter labextension build --development True .","build:lib":"tsc","build:nbextension":"webpack","clean":"yarn run clean:lib && yarn run clean:nbextension && yarn run clean:labextension","clean:lib":"rimraf lib","clean:labextension":"rimraf ActiveHTMLWidget/labextension","clean:nbextension":"rimraf ActiveHTMLWidget/nbextension/static/index.js","lint":"eslint . --ext .ts,.tsx --fix","lint:check":"eslint . --ext .ts,.tsx","prepack":"yarn run build:lib","test":"jest","watch":"npm-run-all -p watch:*","watch:lib":"tsc -w","watch:nbextension":"webpack --watch --mode=development","watch:labextension":"jupyter labextension watch ."},"dependencies":{"@jupyter-widgets/base":"^1.1.10 || ^2.0.0 || ^3.0.0 || ^4.0.0","bootstrap":"^5.1.3","sass":"^1.50.1"},"devDependencies":{"@babel/core":"^7.5.0","@babel/preset-env":"^7.5.0","@jupyterlab/builder":"^3.0.0","@phosphor/application":"^1.6.0","@phosphor/widgets":"^1.6.0","@types/jest":"^26.0.0","@types/webpack-env":"^1.13.6","@typescript-eslint/eslint-plugin":"^3.6.0","@typescript-eslint/parser":"^3.6.0","acorn":"^7.2.0","css-loader":"^3.2.0","eslint":"^7.4.0","eslint-config-prettier":"^6.11.0","eslint-plugin-prettier":"^3.1.4","fs-extra":"^7.0.0","identity-obj-proxy":"^3.0.0","jest":"^26.0.0","mkdirp":"^0.5.1","npm-run-all":"^4.1.3","prettier":"^2.0.5","rimraf":"^2.6.2","source-map-loader":"^1.1.3","style-loader":"^1.0.0","ts-jest":"^26.0.0","ts-loader":"^8.0.0","typescript":"~4.1.3","webpack":"^5.0.0","webpack-cli":"^4.0.0"},"jupyterlab":{"extension":"lib/plugin","outputDir":"ActiveHTMLWidget/labextension/","sharedPackages":{"@jupyter-widgets/base":{"bundled":false,"singleton":true}}}}');
+module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","description":"A Custom Jupyter Widget Library","keywords":["jupyter","jupyterlab","jupyterlab-extension","widgets"],"files":["lib/**/*.js","dist/*.js","css/*.css"],"homepage":"https://github.com//ActiveHTMLWidget","bugs":{"url":"https://github.com//ActiveHTMLWidget/issues"},"license":"MIT","author":{"name":"b3m2a1","email":"b3m2a1@gmail.com"},"main":"lib/index.js","types":"./lib/index.d.ts","style":"css/index.css","sideEffects":["css/*.css"],"repository":{"type":"git","url":"https://github.com//ActiveHTMLWidget"},"scripts":{"build":"yarn run build:lib && yarn run build:nbextension && yarn run build:labextension:dev","build:prod":"yarn run build:lib && yarn run build:nbextension && yarn run build:labextension","build:labextension":"jupyter labextension build .","build:labextension:dev":"jupyter labextension build --development True .","build:lib":"tsc","build:nbextension":"webpack","clean":"yarn run clean:lib && yarn run clean:nbextension && yarn run clean:labextension","clean:lib":"rimraf lib","clean:labextension":"rimraf ActiveHTMLWidget/labextension","clean:nbextension":"rimraf ActiveHTMLWidget/nbextension/static/index.js","lint":"eslint . --ext .ts,.tsx --fix","lint:check":"eslint . --ext .ts,.tsx","prepack":"yarn run build:lib","test":"jest","watch":"npm-run-all -p watch:*","watch:lib":"tsc -w","watch:nbextension":"webpack --watch --mode=development","watch:labextension":"jupyter labextension watch ."},"dependencies":{"@jupyter-widgets/base":"^1.1.10 || ^2.0.0 || ^3.0.0 || ^4.0.0","bootstrap":"^5.1.3","sass":"^1.50.1"},"devDependencies":{"@babel/core":"^7.5.0","@babel/preset-env":"^7.5.0","@jupyterlab/builder":"^3.0.0","@phosphor/application":"^1.6.0","@phosphor/widgets":"^1.6.0","@types/bootstrap":"^5.1.11","@types/jest":"^26.0.0","@types/webpack-env":"^1.13.6","@typescript-eslint/eslint-plugin":"^3.6.0","@typescript-eslint/parser":"^3.6.0","acorn":"^7.2.0","css-loader":"^3.2.0","eslint":"^7.4.0","eslint-config-prettier":"^6.11.0","eslint-plugin-prettier":"^3.1.4","fs-extra":"^7.0.0","identity-obj-proxy":"^3.0.0","jest":"^26.0.0","mkdirp":"^0.5.1","npm-run-all":"^4.1.3","prettier":"^2.0.5","rimraf":"^2.6.2","source-map-loader":"^1.1.3","style-loader":"^1.0.0","ts-jest":"^26.0.0","ts-loader":"^8.0.0","typescript":"~4.1.3","webpack":"^5.0.0","webpack-cli":"^4.0.0"},"jupyterlab":{"extension":"lib/plugin","outputDir":"ActiveHTMLWidget/labextension/","sharedPackages":{"@jupyter-widgets/base":{"bundled":false,"singleton":true}}}}');
 
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.614c9b02d8dcf4fb8901.js.map
+//# sourceMappingURL=lib_widget_js.1bcce180bf5ad3debbd7.js.map
