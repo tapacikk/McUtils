@@ -22,6 +22,8 @@ class ActiveHTMLWrapper:
                  value=None,
                  style=None,
                  event_handlers=None,
+                 javascript_handles=None,
+                 oninitialize=None,
                  debug_pane=None,
                  track_value=None,
                  continuous_update=None,
@@ -51,6 +53,9 @@ class ActiveHTMLWrapper:
         if continuous_update is not None:
             attrs['continuousUpdate'] = continuous_update
 
+        if javascript_handles is not None:
+            attrs['jsHandlers'] = javascript_handles
+
         if self.base is not None:
             shadow_el = self.base(cls=cls, style=style, **attributes)
         else:
@@ -69,16 +74,30 @@ class ActiveHTMLWrapper:
             classList = HTML.manage_class(cls)
             attrs['classList'] = classList
 
+        if oninitialize is not None:
+            if isinstance(oninitialize, str):
+                oninitialize = {'method':oninitialize}
+            elif isinstance(oninitialize, list):
+                oninitialize = {'fields':oninitialize}
+            attrs['oninitialize'] = oninitialize
+
         eventPropertiesDict = {}
         if event_handlers is not None:
             event_handlers = event_handlers.copy()
             for c, v in event_handlers.items():
                 if isinstance(v, dict):
                     v = v.copy()
-                    callback = v['callback']
-                    del v['callback']
+                    if 'callback' in v:
+                        callback = v['callback']
+                        del v['callback']
+                        event_handlers[c] = callback
+                        v['notify'] = True
+                    else:
+                        event_handlers[c] = None
                     eventPropertiesDict[c] = v
-                    event_handlers[c] = callback
+                elif isinstance(v, str):
+                    eventPropertiesDict[c] = v
+                    event_handlers[c] = None
                 else:
                     eventPropertiesDict[c] = None
                     event_handlers[c] = v
@@ -596,7 +615,25 @@ class ActiveHTMLWrapper:
             html_base.on_update = self._track_html_change
         return html_base
 
-
+    @property
+    def oninitialize(self):
+        return self.elem.oninitialize
+    @oninitialize.setter
+    def oninitialize(self, init):
+        if init is None:
+            init = {}
+        elif isinstance(init, str):
+            init = {'method':init}
+        elif isinstance(init, list):
+            init = {'fields':init}
+        self.elem.oninitialize = init
+    @property
+    def javascript_handles(self):
+        return self.elem.jsHandlers
+    @javascript_handles.setter
+    def javascript_handles(self, js):
+        self.elem.jsHandlers = js
+        self.elem.send_state('jsHandlers')
     @property
     def class_list(self):
         return self.elem.classList
@@ -656,10 +693,16 @@ class ActiveHTMLWrapper:
         for c,v in events.items():
             if isinstance(v, dict):
                 v = v.copy()
-                callback = v['callback']
-                del v['callback']
+                if 'callback' in v:
+                    callback = v['callback']
+                    del v['callback']
+                    self.event_handlers[c] = callback
+                    v['notify'] = True
+                else:
+                    self.event_handlers[c] = None
+            elif isinstance(v, str):
                 ed[c] = v
-                self.event_handlers[c] = callback
+                self.event_handlers[c] = None
             else:
                 ed[c] = None
                 self.event_handlers[c] = v

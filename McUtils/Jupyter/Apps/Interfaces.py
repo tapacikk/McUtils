@@ -42,6 +42,8 @@ __all__ = [
     "CardHeader",
     "CardBody",
     "CardFooter",
+    "ModifierComponent",
+    "Tooltip",
     "Layout",
     "Grid",
     "Flex"
@@ -177,7 +179,6 @@ class Component(WidgetInterface):
         self._attrs['cls'] = new
     def remove_widget_class(self, *cls):
         return self._widget_cache.remove_class(*cls)
-
 
     @abc.abstractmethod
     def to_jhtml(self):
@@ -346,18 +347,77 @@ class Container(WrapperComponent):
     def insert_widget_child(self, where, child):
         super().insert_widget_child(where, self.create_item(child))
 
+class ModifierComponent(Component):
+    modifiers = None
+    def __init__(self, base=None, **modifiers):
+        base_mods = self.modifiers
+        if base_mods is None:
+            base_mods = {}
+        modifiers = dict(base_mods, **modifiers)
+        super().__init__(**modifiers)
+        self.base = base
+    def __call__(self, base):
+        if self.base is None:
+            self.base = base
+        else:
+            raise ValueError("{} already has a base object".format(
+                self
+            ))
+        return self
+    blacklist = {'dynamic'}
+    def to_jhtml(self):
+        base = self.base
+        if hasattr(base, 'to_jhtml'):
+            base = base.to_jhtml()
+        for k,v in self.attrs.items():
+            if k not in self.blacklist:
+                base[k] = v
+        return base
+
+class Tooltip(ModifierComponent):
+    modifiers = dict(
+        data_bs_toggle="tooltip",
+        data_bs_placement='top',
+        type="button"
+    )
+    def __init__(self, base=None, title="tooltip", **kwargs):
+        if not isinstance(title, str):
+            if hasattr(title, 'tostring'):
+                title = title.tostring()
+            elif hasattr(title, 'to_tree'):
+                title = title.to_tree().tostring()
+            else:
+                raise TypeError('tooltip title must be a string')
+        super().__init__(base, title=title, **kwargs)
+
 class Button(WrapperComponent):
     wrapper = JHTML.Bootstrap.Button
     def __init__(self, body, action=None, event_handlers=None, **kwargs):
         if event_handlers is None:
             event_handlers = {}
-        self.action = action
-        event_handlers['click'] = self._eval
+        self._action = action
+        if isinstance(action, (str, dict, list)):
+            event_handlers['click'] = action
+        else:
+            event_handlers['click'] = self._eval
         super().__init__(
             body,
             event_handlers=event_handlers,
             **kwargs
         )
+    @property
+    def action(self):
+        return self._action
+    @action.setter
+    def action(self, a):
+        if isinstance(a, (str, dict, list)):
+            self._attrs['event_handlers'] = {'click':a}
+            if self._widget_cache is not None:
+                self._widget_cache.add_event(click=a)
+        else:
+            self._attrs['event_handlers'] = {'click':self._eval}
+            if self._widget_cache is not None:
+                self._widget_cache.add_event(click=self._eval)
     def _eval(self, *args):
         if self.action is not None:
             self.action(*args)
@@ -799,6 +859,7 @@ class ToastContainer(WrapperComponent):
         toast = Toast(header=header, body=body, **kwargs)
         self.append(toast)
         return toast
+
 
 #endregion
 
