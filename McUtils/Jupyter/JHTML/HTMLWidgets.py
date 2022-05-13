@@ -870,6 +870,20 @@ class ActiveHTMLWrapper:
     def continuous_update(self, v):
         self.elem.continuousUpdate = v
 
+    class LazyLoader:
+        def __init__(self, base_cls, args, kwargs):
+            self.base = base_cls
+            self.args = args
+            self.kwargs = kwargs
+            self._obj = None
+        def load(self):
+            if self._obj is None:
+                self._obj = self.base(*self.args, **self.kwargs)
+            return self._obj
+    @classmethod
+    def loader(cls, *args, **kwargs):
+        return cls.LazyLoader(cls, args, kwargs)
+
 class HTMLWidgets:
     @classmethod
     def load(cls, overwrite=False):

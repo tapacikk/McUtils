@@ -884,7 +884,7 @@ class Spacer(WrapperComponent):
             items = []
         super().__init__(items, **kwargs)
 
-ToastAPI = JHTML.JavascriptAPI(
+ToastAPI = JHTML.JavascriptAPI.loader(
     init="""widget.el.toast = new context.bootstrap.Toast(widget.el)""",
     showToast="""
 let id = widget.getAttribute("data-bs-target");
@@ -936,7 +936,7 @@ class Toast(WrapperComponent):
         if not hidden:
             cls = JHTML.manage_class(cls) + ['show']
         if javascript_handles is None:
-            javascript_handles = ToastAPI
+            javascript_handles = ToastAPI.load()
         if onevents is None:
             onevents = {'initialize':'init'}
         super().__init__(items, cls=cls, javascript_handles=javascript_handles, onevents=onevents, id=id, **attrs)

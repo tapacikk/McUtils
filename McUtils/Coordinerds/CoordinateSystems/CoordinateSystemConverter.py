@@ -166,7 +166,10 @@ class CoordinateSystemConverters:
             converter = cls.converters[(system1, system2)]
         except KeyError:
             for key_pair, conv in reversed(cls.converters.items()):
-                if isinstance(system1, key_pair[0]) and isinstance(system2, key_pair[1]):
+                if (
+                        (isinstance(system1, key_pair[0]) and isinstance(system2, key_pair[1]))
+                        or system1.name == key_pair[0].name and system2.name == key_pair[1].name
+                ):
                     converter = conv
                     break
             else:

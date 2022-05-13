@@ -615,14 +615,10 @@ class JHTML:
     @dispatcher
     def Wbr(jhtml, *elements, **styles): ...
 
-    @classmethod
-    def OutputArea(jhtml, *elements, **styles):
-        return HTMLWidgets.OutputArea(*elements, **styles)
-    @classmethod
-    def JavascriptAPI(jhtml, **handles):
-        return HTMLWidgets.JavascriptAPI(**handles)
-
     del dispatcher
+
+    OutputArea = HTMLWidgets.OutputArea
+    JavascriptAPI = HTMLWidgets.JavascriptAPI
 
     class Bootstrap:
 
