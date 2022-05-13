@@ -617,7 +617,6 @@
               "import": false
             },
             "bootstrap": {},
-            "sass": {},
             "ActiveHTMLWidget": {
               "version": "0.1.0",
               "singleton": true,

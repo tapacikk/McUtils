@@ -20,18 +20,19 @@ class HTMLElement(DOMWidget):
     tagName = Unicode('div').tag(sync=True)
     classList = List().tag(sync=True)
     styleDict = Dict().tag(sync=True)
-    elementAttributes = Dict().tag(sync=True)
+    elementAttributes = Dict().tag(sync=True, **widget_serialization)
     innerHTML = Unicode('').tag(sync=True)
     textContent = Unicode('').tag(sync=True)
     children = TypedTuple(trait=Instance(Widget)).tag(sync=True, **widget_serialization)
     id = Unicode('').tag(sync=True)
     value = Unicode('').tag(sync=True)
-    exportData = Dict().tag(sync=True)
+    exportData = Dict().tag(sync=True, **widget_serialization)
     trackInput = Bool(False).tag(sync=True)
     continuousUpdate = Bool(True).tag(sync=True)
     eventPropertiesDict = Dict().tag(sync=True)
     jsHandlers = Dict().tag(sync=True)
-    oninitialize = Dict().tag(sync=True)
+    jsAPI = Instance(Widget, allow_none=True).tag(sync=True, **widget_serialization)
+    onevents = Dict().tag(sync=True)
     defaultEventProperties = List(default_value=[
         "bubbles", "cancelable", "composed",
         "target", "timestamp", "type",
@@ -108,3 +109,16 @@ class HTMLElement(DOMWidget):
         from IPython.core.display import HTML
         if copied:
             return HTML("<h4>Extension installed. You will need to reload the page to get the widgets to display.</h1>")
+
+    def trigger(self, event, content=None, buffers=None):
+        if content is None:
+            content = {}
+        content = content.copy()
+        content['handle'] = event
+        return self._send({"method": "trigger", "content": content}, buffers=buffers)
+    def call(self, method, content=None, buffers=None):
+        if content is None:
+            content = {}
+        content = content.copy()
+        content['handle'] = method
+        return self._send({"method": "call", "content": content}, buffers=buffers)

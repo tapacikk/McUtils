@@ -155,6 +155,8 @@ class BootstrapBase(HTML):
     class Button(ButtonComponent):
         cls = 'btn'
         base_style = 'primary'
+    class CloseButton(ButtonComponent):
+        cls = 'btn-close'
     class LinkButton(AnchorComponent):
         cls = 'btn'
         base_style = 'default'

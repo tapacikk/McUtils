@@ -16,7 +16,7 @@ class JHTML:
     Provides dispatchers to either pure HTML components or Widget components based on whether interactivity
     is required or not
     """
-    manage_cls = HTML.manage_class
+    manage_class = HTML.manage_class
     manage_style = HTML.manage_styles
     extract_styles = HTML.extract_styles
     manage_attrs = HTML.manage_attrs
@@ -30,9 +30,12 @@ class JHTML:
         ]
         display(*(e for e in elems if e is not None))
 
+    APIs = JupyterAPIs
+    DefaultOutputArea = DefaultOutputArea
+
     def __init__(self, context=None,
                  include_bootstrap=False,
-                 expose_classes=True,
+                 expose_classes=False,
                  output_pane=True,
                  callbacks=None,
                  widgets=None
@@ -228,13 +231,19 @@ class JHTML:
             )
 
     @classmethod
-    def _resolve_source(jhtml, plain, widget, *elems, event_handlers=None, dynamic=None, track_value=None, trackInput=None, _debugPrint=None, **attrs):
+    def _resolve_source(jhtml, plain, widget, *elems,
+                        event_handlers=None, dynamic=None,
+                        track_value=None, trackInput=None, _debugPrint=None,
+                        javascript_handles=None, oninitialize=None,
+                        **attrs):
         if (
             event_handlers is not None
             or track_value is True
             or trackInput is True
             or _debugPrint is True
             or dynamic is True
+            or javascript_handles is not None
+            or oninitialize is not None
         ):
             return widget
         else:
@@ -609,6 +618,9 @@ class JHTML:
     @classmethod
     def OutputArea(jhtml, *elements, **styles):
         return HTMLWidgets.OutputArea(*elements, **styles)
+    @classmethod
+    def JavascriptAPI(jhtml, **handles):
+        return HTMLWidgets.JavascriptAPI(**handles)
 
     del dispatcher
 
@@ -761,8 +773,42 @@ class JHTML:
         def __init__(self, *wrappers):
             self.base = wrappers[-1]
             self.classes = wrappers[:-1]
+        @staticmethod
+        def destructure_wrapper(wrapper):
+            try:
+                lw = len(wrapper)
+            except TypeError:
+                lw = 0
+            if lw == 2 and isinstance(wrapper[0], str):
+                name, wrapper = wrapper
+            else:
+                name = None
+            return name, wrapper
+        class CompoundWrapperData:
+            __slots__ = ["list", "dict"]
+            def __init__(self, list, dict):
+                self.list = list
+                self.dict = dict
+            def __getitem__(self, item):
+                if isinstance(item, str):
+                    return self.dict[item]
+                else:
+                    return self.list[item]
         def __call__(self, *args, **kwargs):
-            base = self.base(*args, **kwargs)
+            cache = []
+            names = {}
+            cwd = self.CompoundWrapperData(cache, names)
+            n,w = self.destructure_wrapper(self.base)
+            base = w(*args, **kwargs)
+            if n is not None:
+                names[n] = base
+            cache.append(base)
+            base.compound_wrapper_data = cwd
             for c in reversed(self.classes):
+                n, c = self.destructure_wrapper(c)
                 base = c(base)
+                if n is not None:
+                    names[n] = base
+                cache.append(base)
+                base.compound_wrapper_data = cwd
             return base

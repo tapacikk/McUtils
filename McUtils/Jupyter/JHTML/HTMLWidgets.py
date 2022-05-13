@@ -23,7 +23,7 @@ class ActiveHTMLWrapper:
                  style=None,
                  event_handlers=None,
                  javascript_handles=None,
-                 oninitialize=None,
+                 onevents=None,
                  debug_pane=None,
                  track_value=None,
                  continuous_update=None,
@@ -53,8 +53,13 @@ class ActiveHTMLWrapper:
         if continuous_update is not None:
             attrs['continuousUpdate'] = continuous_update
 
+        self._handle_api = None
         if javascript_handles is not None:
-            attrs['jsHandlers'] = javascript_handles
+            if isinstance(javascript_handles, ActiveHTMLWrapper):
+                self._handle_api = javascript_handles
+                attrs['jsAPI'] = javascript_handles.elem
+            else:
+                attrs['jsHandlers'] = javascript_handles
 
         if self.base is not None:
             shadow_el = self.base(cls=cls, style=style, **attributes)
@@ -73,13 +78,6 @@ class ActiveHTMLWrapper:
         if cls is not None:
             classList = HTML.manage_class(cls)
             attrs['classList'] = classList
-
-        if oninitialize is not None:
-            if isinstance(oninitialize, str):
-                oninitialize = {'method':oninitialize}
-            elif isinstance(oninitialize, list):
-                oninitialize = {'fields':oninitialize}
-            attrs['oninitialize'] = oninitialize
 
         eventPropertiesDict = {}
         if event_handlers is not None:
@@ -103,6 +101,29 @@ class ActiveHTMLWrapper:
                     event_handlers[c] = v
         if len(eventPropertiesDict) > 0:
             attrs['eventPropertiesDict'] = eventPropertiesDict
+
+        if onevents is not None:
+            if event_handlers is None:
+                event_handlers = {}
+            for c,v in onevents.items():
+                if isinstance(v, dict):
+                    v = v.copy()
+                    if 'callback' in v:
+                        callback = v['callback']
+                        del v['callback']
+                        event_handlers[c] = callback
+                        v['notify'] = True
+                    else:
+                        event_handlers[c] = None
+                    onevents[c] = v
+                elif isinstance(v, str):
+                    onevents[c] = v
+                    event_handlers[c] = None
+                else:
+                    onevents[c] = None
+                    event_handlers[c] = v
+            if len(onevents) > 0:
+                attrs['onevents'] = onevents
 
         if not isinstance(elements, (list, tuple)):
             val = elements
@@ -161,7 +182,7 @@ class ActiveHTMLWrapper:
             debug_pane = DefaultOutputArea.get_default()
         self.debug_pane = debug_pane
 
-        self.event_handlers = {} if event_handlers is None else event_handlers
+        self._event_handlers = {} if event_handlers is None else event_handlers
         if len(eventPropertiesDict) > 0:
             self.elem.bind_callback(self.handle_event)
         # if eventPropertiesDict
@@ -174,11 +195,13 @@ class ActiveHTMLWrapper:
             cls=self.class_list,
             style=self.style,
             event_handlers=self.event_handlers,
+            onevents=self.onevents,
+            javascript_handles=self.javascript_handles,
             value=self.value,
             id=self.id,
             debug_pane=self.debug_pane,
-            track_value=self.elem.trackInput,
-            continuous_update=self.elem.continuousUpdate,
+            track_value=self.track_value,
+            continuous_update=self.continuous_update,
             **dict(self.attrs, **kwargs)
         )
     @classmethod
@@ -431,6 +454,10 @@ class ActiveHTMLWrapper:
         if "value" in val:
             self.elem.value = val['value']
             del val['value']
+        if "javascript_handles" in val:
+            self.javascript_handles = val
+            del val['javascript_handles']
+        val = HTML.manage_attrs(val)
         if "class" in val:
             self.elem.classList = HTML.manage_class(val['class'])
             self.elem.send_state('classList')
@@ -461,50 +488,73 @@ class ActiveHTMLWrapper:
             return self.id
         elif key == "value":
             return self.value
-        elif key == "class":
-            return self.elem.classList
         elif key == "style":
-            return self.elem.styleDict
-        elif key in CSS.known_properties:
-            return self.elem.styleDict[key]
+            return self.style
+        elif key == "javascript_handles":
+            return self.javascript_handles
+        elif key == "event_handlers":
+            return self.event_handlers
+        elif key == "onevents":
+            return self.onevents
         else:
-            return self.elem.elementAttributes[key]
+            key = HTML.clean_key(key)
+            if key == "class":
+                return self.class_list
+            if key in CSS.known_properties:
+                return self.elem.styleDict[key]
+            else:
+                return self.elem.elementAttributes[key]
     def set_attribute(self, key, value):
         if key == "id":
             self.id = value
         elif key == "value":
             self.value = value
-        elif key == "class":
-            self.elem.classList = HTML.manage_class(value)
-            self.elem.send_state('classList')
+        elif key == "javascript_handles":
+            self.javascript_handles = value
+        elif key == "event_handlers":
+            self.event_handlers = value
+        elif key == "onevents":
+            self.onevents = value
         elif key == "style":
             self.elem.styleDict = HTML.manage_styles(value)
             self.elem.send_state('styleDict')
-        elif key in CSS.known_properties:
-            self.elem.styleDict[key] = value
-            self.elem.send_state('styleDict')
         else:
-            attrs = self.elem.elementAttributes
-            attrs[key] = value
-            self.elem.elementAttributes = attrs
-            self.elem.send_state('elementAttributes')
+            key = HTML.clean_key(key)
+            if key == "class":
+                self.class_list = value
+            elif key in CSS.known_properties:
+                self.elem.styleDict[key] = value
+                self.elem.send_state('styleDict')
+            else:
+                attrs = self.elem.elementAttributes
+                attrs[key] = value
+                self.elem.elementAttributes = attrs
+                self.elem.send_state('elementAttributes')
     def del_attribute(self, key):
         if key == "id":
             self.id = None
         elif key == "value":
             self.value = None
-        elif key == "class":
-            self.elem.classList = []
-            self.elem.send_state('classList')
         elif key == "style":
             self.elem.styleDict = {}
             self.elem.send_state('styleDict')
-        elif key in CSS.known_properties:
-            del self.elem.styleDict[key]
-            self.elem.send_state('styleDict')
+        elif key == "javascript_handles":
+            self.javascript_handles = None
+        elif key == "event_handlers":
+            self.event_handlers = None
+        elif key == "onevents":
+            self.onevents = None
         else:
-            del self.elem.elementAttributes[key]
-            self.elem.send_state('elementAttributes')
+            key = HTML.clean_key(key)
+            if key == "class":
+                self.elem.classList = []
+                self.elem.send_state('classList')
+            elif key in CSS.known_properties:
+                del self.elem.styleDict[key]
+                self.elem.send_state('styleDict')
+            else:
+                del self.elem.elementAttributes[key]
+                self.elem.send_state('elementAttributes')
     def get_child(self, position, wrapper=False):
         kids = self.elem.children
         if len(kids) == 0:
@@ -616,24 +666,21 @@ class ActiveHTMLWrapper:
         return html_base
 
     @property
-    def oninitialize(self):
-        return self.elem.oninitialize
-    @oninitialize.setter
-    def oninitialize(self, init):
-        if init is None:
-            init = {}
-        elif isinstance(init, str):
-            init = {'method':init}
-        elif isinstance(init, list):
-            init = {'fields':init}
-        self.elem.oninitialize = init
-    @property
     def javascript_handles(self):
-        return self.elem.jsHandlers
+        if self._handle_api is None:
+            return self.elem.jsHandlers
+        else:
+            return self._handle_api
     @javascript_handles.setter
     def javascript_handles(self, js):
-        self.elem.jsHandlers = js
-        self.elem.send_state('jsHandlers')
+        if isinstance(js, ActiveHTMLWrapper):
+            self._handle_api = js
+            self.elem.jsAPI = js.elem
+            self.elem.send_state('jsAPI')
+        else:
+            self._handle_api = None
+            self.elem.jsHandlers = js
+            self.elem.send_state('jsHandlers')
     @property
     def class_list(self):
         return self.elem.classList
@@ -688,7 +735,20 @@ class ActiveHTMLWrapper:
                 del sd[c]
         self.elem.styleDict = sd
         self.elem.send_state('styleDict')
-    def add_event(self, **events):
+
+    @property
+    def event_handlers(self):
+        return {
+            k: self._event_handlers[k] if self._event_handlers[k] is not None else v
+            for k, v in self.elem.eventPropertiesDict.items()
+        }
+    @event_handlers.setter
+    def event_handlers(self, event_handlers):
+        self.update_events(event_handlers)
+    def update_events(self, events):
+        self.add_event(**events, send=False)
+        self.remove_event(*(k for k in self.elem.eventPropertiesDict if k not in events))
+    def add_event(self, send=True, **events):
         ed = self.elem.eventPropertiesDict
         for c,v in events.items():
             if isinstance(v, dict):
@@ -696,32 +756,119 @@ class ActiveHTMLWrapper:
                 if 'callback' in v:
                     callback = v['callback']
                     del v['callback']
-                    self.event_handlers[c] = callback
+                    self._event_handlers[c] = callback
                     v['notify'] = True
                 else:
-                    self.event_handlers[c] = None
+                    self._event_handlers[c] = None
             elif isinstance(v, str):
                 ed[c] = v
-                self.event_handlers[c] = None
+                self._event_handlers[c] = None
             else:
                 ed[c] = None
-                self.event_handlers[c] = v
+                self._event_handlers[c] = v
         self.elem.eventPropertiesDict = ed
-        self.elem.send_state('eventPropertiesDict')
+        if send:
+            self.elem.send_state('eventPropertiesDict')
         if len(self.elem.eventPropertiesDict) > 0:
             self.elem.bind_callback(self.handle_event)
         return self
-    def remove_event(self, *events):
+    def remove_event(self, *events, send=True):
         ed = self.elem.eventPropertiesDict
         for c in events:
             if c in ed:
                 del ed[c]
-            if c in self.event_handlers:
-                del ed[c]
+            if c in self._event_handlers:
+                del self._event_handlers[c]
         self.elem.eventPropertiesDict = ed
-        self.elem.send_state('eventPropertiesDict')
+        if send:
+            self.elem.send_state('eventPropertiesDict')
         if len(self.elem.eventPropertiesDict) == 0:
             self.elem.reset_callbacks()
+
+    def call(self, method, buffers=None, **content):
+        return self.elem.call(method, content=content, buffers=buffers)
+    def add_javascript(self, **methods):
+        ed = self.javascript_handles
+        if isinstance(ed, ActiveHTMLWrapper):
+            ed.add_javascript(**methods)
+        else:
+            ed.update(methods)
+            self.javascript_handles = ed
+        return self
+    def remove_javascript(self, *methods):
+        ed = self.javascript_handles
+        if isinstance(ed, ActiveHTMLWrapper):
+            ed.remove_javascript(*methods)
+        else:
+            for c in methods:
+                if c in ed:
+                    del ed[c]
+            self.javascript_handles = ed
+        return self
+
+    def trigger(self, method, buffers=None, **content):
+        return self.elem.trigger(method, content=content, buffers=buffers)
+    @property
+    def onevents(self):
+        return {
+            k:self._event_handlers[k] if self._event_handlers[k] is not None else v
+            for k,v in self.elem.onevents.items()
+        }
+    @onevents.setter
+    def onevents(self, onevents):
+        self.update_onevents(onevents)
+    def update_onevents(self, events):
+        self.on(**events, send=False)
+        self.off(*(k for k in self.elem.onevents if k not in events))
+    def on(self, send=True, **events):
+        ed = self.elem.onevents
+        for c,v in events.items():
+            if isinstance(v, dict):
+                v = v.copy()
+                if 'callback' in v:
+                    callback = v['callback']
+                    del v['callback']
+                    self._event_handlers[c] = callback
+                    v['notify'] = True
+                else:
+                    self._event_handlers[c] = None
+            elif isinstance(v, str):
+                ed[c] = v
+                self._event_handlers[c] = None
+            else:
+                ed[c] = None
+                self._event_handlers[c] = v
+        self.elem.onevents = ed
+        if send:
+            self.elem.send_state('onevents')
+        if len(self.elem.onevents) > 0:
+            self.elem.bind_callback(self.handle_event)
+        return self
+    def off(self, *events, send=True):
+        ed = self.elem.onevents
+        for c in events:
+            if c in ed:
+                del ed[c]
+            if c in self._event_handlers:
+                del self._event_handlers[c]
+        self.elem.onevents = ed
+        if send:
+            self.elem.send_state('onevents')
+        if len(self.elem.eventPropertiesDict) == 0:
+            self.elem.reset_callbacks()
+
+    @property
+    def track_value(self):
+        return self.elem.trackInput
+    @track_value.setter
+    def track_value(self, v):
+        self.elem.trackInput = v
+    @property
+    def continuous_update(self):
+        return self.elem.continuousUpdate
+    @continuous_update.setter
+    def continuous_update(self, v):
+        self.elem.continuousUpdate = v
 
 class HTMLWidgets:
     @classmethod
@@ -747,6 +894,14 @@ class HTMLWidgets:
             tag_class = ActiveHTMLWrapper#lambda *es,**ats:HTML.XMLElement(tag, *es, **ats)
         return tag_class.from_HTML(html, event_handlers=event_handlers, debug_pane=debug_pane, **props)
 
+    class JavascriptAPI(ActiveHTMLWrapper):
+        def __init__(self, safety_wrap=True, **javascript_handles):
+            if safety_wrap:
+                javascript_handles = {k:self.safety_wrap(v) for k,v in javascript_handles.items()}
+            super().__init__(javascript_handles=javascript_handles)
+        safety_template="try{{\n{body}\n}} catch(error) {{ console.log(error); alert('An error occurred: ' + error.toString() + '; check console for details') }}"
+        def safety_wrap(self, v):
+            return self.safety_template.format(body=v)
     class WrappedHTMLElement(ActiveHTMLWrapper):
         def __repr__(self):
             body = (
