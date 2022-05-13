@@ -48,7 +48,7 @@ converter_dispatch(self):
 convert(self, data, allow_pickle=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L551)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L551?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L557)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L557?message=Update%20Docs)]
 </div>
 
 Recursively loop through, test data, make sure HDF5 compatible
@@ -62,7 +62,7 @@ Recursively loop through, test data, make sure HDF5 compatible
 deconvert(self, data): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L595)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L595?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L601)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L601?message=Update%20Docs)]
 </div>
 
 Reverses the conversion process
@@ -77,7 +77,7 @@ Reverses the conversion process
 __call__(self, data, allow_pickle=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L645)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L645?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L651)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L651?message=Update%20Docs)]
 </div>
 
  </div>
