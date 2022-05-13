@@ -477,7 +477,13 @@ class NDarrayMarshaller:
                         if not try_numpy: break
 
                 if try_numpy:
-                    arr = np.array(data)
+                    np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
+                    try:
+                        arr = np.array(data)
+                    except np.VisibleDeprecationWarning:
+                        arr = np.empty(shape=(len(data),), dtype=object)
+                        for i, v in enumerate(data):
+                            arr[i] = v
                 else:
                     arr = np.empty(shape=(len(data),), dtype=object)
                     for i, v in enumerate(data):
