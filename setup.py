@@ -59,7 +59,7 @@ setup(
     # ],
     data_files=[
         ('share/jupyter/nbextensions/ActiveHTMLWidget', glob.glob('McUtils/Jupyter/JHTML/ActiveHTMLWidget/nbextension/*')),
-        ('share/jupyter/labextensions/ActiveHTMLWidget', glob.glob('McUtils/Jupyter/JHTML/ActiveHTMLWidget/labextension/*')),
+        ('share/jupyter/labextensions/ActiveHTMLWidget', glob.glob('McUtils/Jupyter/JHTML/ActiveHTMLWidget/labextension/*.js')),
         ('share/jupyter/labextensions/ActiveHTMLWidget', ['McUtils/Jupyter/JHTML/ActiveHTMLWidget/install.json']),
         ('etc/jupyter/nbconfig/notebook.d', ['McUtils/Jupyter/JHTML/ActiveHTMLWidget/ActiveHTMLWidget.json']),
     ]
