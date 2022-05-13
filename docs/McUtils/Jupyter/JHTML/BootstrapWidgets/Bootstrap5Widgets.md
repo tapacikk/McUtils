@@ -31,6 +31,7 @@ Row: type
 Container: type
 ButtonGroup: type
 Button: type
+CloseButton: type
 LinkButton: type
 Table: type
 ListGroup: type

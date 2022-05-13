@@ -1,6 +1,6 @@
 ## <a id="McUtils.Jupyter.Apps.Controls.Slider">Slider</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L129)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L129?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L130)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L130?message=Update%20Docs)]
 </div>
 
 
@@ -21,7 +21,7 @@ base_cls: list
 __init__(self, var, type='range', value=None, **attrs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L131)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L131?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L132)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L132?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.Apps.Controls.Slider.get_value" class="docs-object-method">&nbsp;</a> 
@@ -29,7 +29,7 @@ __init__(self, var, type='range', value=None, **attrs):
 get_value(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L135)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L135?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L136)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L136?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.Apps.Controls.Slider.set_value" class="docs-object-method">&nbsp;</a> 
@@ -37,7 +37,7 @@ get_value(self):
 set_value(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L146)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L146?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L147)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L147?message=Update%20Docs)]
 </div>
 
  </div>
@@ -52,4 +52,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Jupyter/Apps/Controls/Slider.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/Apps/Controls/Slider.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/Apps/Controls/Slider.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L129?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L130?message=Update%20Docs)

@@ -1,6 +1,6 @@
 ## <a id="McUtils.Jupyter.JHTML.Bootstrap.Bootstrap5">Bootstrap5</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/Bootstrap.py#L213)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/Bootstrap.py#L213?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/Bootstrap.py#L215)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/Bootstrap.py#L215?message=Update%20Docs)]
 </div>
 
 
@@ -44,4 +44,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/Bootstrap.py#L213?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/Bootstrap.py#L215?message=Update%20Docs)

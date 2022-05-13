@@ -170,12 +170,20 @@ manage_styles(styles):
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L372)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L372?message=Update%20Docs)]
 </div>
 
+<a id="McUtils.Jupyter.JHTML.HTML.HTML.clean_key" class="docs-object-method">&nbsp;</a> 
+```python
+clean_key(k): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L384)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L384?message=Update%20Docs)]
+</div>
+
 <a id="McUtils.Jupyter.JHTML.HTML.HTML.manage_attrs" class="docs-object-method">&nbsp;</a> 
 ```python
 manage_attrs(attrs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L384)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L384?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L390)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L390?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.JHTML.HTML.HTML.extract_styles" class="docs-object-method">&nbsp;</a> 
@@ -183,7 +191,7 @@ manage_attrs(attrs):
 extract_styles(attrs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L392)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L392?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L398)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L398?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.JHTML.HTML.HTML.get_class_map" class="docs-object-method">&nbsp;</a> 
@@ -191,7 +199,7 @@ extract_styles(attrs):
 get_class_map(): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L1033)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L1033?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L1039)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L1039?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.JHTML.HTML.HTML.convert" class="docs-object-method">&nbsp;</a> 
@@ -199,7 +207,7 @@ get_class_map():
 convert(etree: xml.etree.ElementTree.Element, strip=True, converter=None, **extra_attrs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L1067)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L1067?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L1073)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L1073?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.JHTML.HTML.HTML.parse" class="docs-object-method">&nbsp;</a> 
@@ -207,7 +215,7 @@ convert(etree: xml.etree.ElementTree.Element, strip=True, converter=None, **extr
 parse(str, strict=True, strip=True, converter=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L1104)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L1104?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML.py#L1110)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML.py#L1110?message=Update%20Docs)]
 </div>
 
  </div>

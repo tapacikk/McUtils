@@ -66,7 +66,7 @@ Gets the appropriate converter for two CoordinateSystem objects
 register_converter(system1, system2, converter, check=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSystemConverter.py#L180)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSystemConverter.py#L180?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSystemConverter.py#L183)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSystemConverter.py#L183?message=Update%20Docs)]
 </div>
 
 Registers a converter between two coordinate systems

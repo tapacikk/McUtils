@@ -1,6 +1,6 @@
 ## <a id="McUtils.Jupyter.Apps.Controls.TextArea">TextArea</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L190)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L190?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L191)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L191?message=Update%20Docs)]
 </div>
 
 
@@ -21,7 +21,7 @@ base_cls: list
 __init__(self, var, tag='textarea', **attrs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L192)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L192?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L193)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L193?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.Apps.Controls.TextArea.to_jhtml" class="docs-object-method">&nbsp;</a> 
@@ -29,7 +29,7 @@ __init__(self, var, tag='textarea', **attrs):
 to_jhtml(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L194)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L194?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L195)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L195?message=Update%20Docs)]
 </div>
 
  </div>
@@ -44,4 +44,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Jupyter/Apps/Controls/TextArea.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/Apps/Controls/TextArea.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/Apps/Controls/TextArea.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L190?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L191?message=Update%20Docs)

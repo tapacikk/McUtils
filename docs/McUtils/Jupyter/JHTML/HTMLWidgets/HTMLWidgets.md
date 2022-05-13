@@ -1,6 +1,6 @@
 ## <a id="McUtils.Jupyter.JHTML.HTMLWidgets.HTMLWidgets">HTMLWidgets</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets.py#L726)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L726?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets.py#L887)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L887?message=Update%20Docs)]
 </div>
 
 
@@ -14,6 +14,7 @@
  <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
 
 ```python
+JavascriptAPI: type
 WrappedHTMLElement: type
 Abbr: type
 Address: type
@@ -148,7 +149,7 @@ OutputArea: type
 load(overwrite=False): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets.py#L727)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L727?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets.py#L888)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L888?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.JHTML.HTMLWidgets.HTMLWidgets.get_class_map" class="docs-object-method">&nbsp;</a> 
@@ -156,7 +157,7 @@ load(overwrite=False):
 get_class_map(): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets.py#L732)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L732?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets.py#L893)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L893?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.JHTML.HTMLWidgets.HTMLWidgets.from_HTML" class="docs-object-method">&nbsp;</a> 
@@ -164,7 +165,7 @@ get_class_map():
 from_HTML(html: McUtils.Jupyter.JHTML.HTML.HTML.XMLElement, event_handlers=None, debug_pane=None, **props): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets.py#L740)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L740?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets.py#L901)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L901?message=Update%20Docs)]
 </div>
 
  </div>
@@ -179,4 +180,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L726?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L887?message=Update%20Docs)
