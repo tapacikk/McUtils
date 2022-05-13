@@ -2,7 +2,7 @@
 import abc, uuid, numpy as np
 from ..JHTML import JHTML
 
-from .Interfaces import Component, ListGroup, Dropdown
+from .Interfaces import Component, ListGroup, Dropdown, Progress
 from .Variables import Var, InterfaceVars
 
 __all__ = [
@@ -19,7 +19,8 @@ __all__ = [
     "FunctionDisplay",
     # "DropdownMenu",
     "MenuSelect",
-    "DropdownSelect"
+    "DropdownSelect",
+    "ProgressBar"
 ]
 
 __reload_hook__ = ['.Interfaces', '.Variables']
@@ -109,7 +110,7 @@ class InputField(ValueWidget):
         super().__init__(var, value=value)
         if base_cls is not None:
             self.base_cls = base_cls
-        attrs['cls'] = self.base_cls + JHTML.manage_cls(cls)
+        attrs['cls'] = self.base_cls + JHTML.manage_class(cls)
         attrs['tag'] = tag
         attrs['track_value'] = track_value
         attrs['continuous_update'] = continuous_update
@@ -204,7 +205,7 @@ class ChangeTracker(ValueWidget):
         self.base = getattr(JHTML, base) if isinstance(base, str) else base
         if base_cls is not None:
             self.base_cls = base_cls
-        attrs['cls'] = self.base_cls + JHTML.manage_cls(cls)
+        attrs['cls'] = self.base_cls + JHTML.manage_class(cls)
         attrs['track_value'] = track_value
         attrs['continuous_update'] = continuous_update
         self.attrs = attrs
@@ -333,6 +334,27 @@ class FunctionDisplay(Component):
     def to_jhtml(self):
         self.update(None)
         return self.out
+
+class ProgressBar(Control):
+    def __init__(self, var, bar=None, **attrs):
+        super().__init__(var)
+        if bar is None:
+            bar = Progress(self.value, **attrs)
+        self.bar = bar
+    def get_value(self):
+        val = self.var.value
+        if val is None or val == "":
+            self.var.value = 0
+        elif isinstance(val, str):
+            self.var.val = int(val)
+        return self.var.value
+    def set_value(self):
+        self.bar.bar['width'] = str(self.value) + "%"
+    def update(self, e):
+        self.set_value()
+    def to_jhtml(self):
+        self.set_value()
+        return self.bar.to_widget()
 
 class MenuSelect(ValueWidget):
     menu_type = ListGroup

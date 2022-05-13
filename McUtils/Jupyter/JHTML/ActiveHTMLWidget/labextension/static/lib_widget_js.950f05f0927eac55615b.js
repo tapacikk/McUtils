@@ -59,6 +59,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ActiveHTMLView = exports.ActiveHTMLModel = void 0;
 const base_1 = __webpack_require__(/*! @jupyter-widgets/base */ "webpack/sharing/consume/default/@jupyter-widgets/base");
@@ -120,7 +129,7 @@ class ActiveHTMLModel extends base_1.DOMWidgetModel {
                 "key", "repeat",
                 "button", "buttons",
                 "alKey", "shiftKey", "ctrlKey", "metaKey"
-            ], jsHandlers: {}, _ihandlers: {}, oninitialize: {}, exportData: {} });
+            ], jsHandlers: {}, jsAPI: null, _ihandlers: {}, onevents: {}, exportData: {} });
     }
     _defineHandler(name, body) {
         // adapted from SO to define a named handler
@@ -159,12 +168,61 @@ class ActiveHTMLModel extends base_1.DOMWidgetModel {
             }
         }
     }
+    _handle_comm_msg(msg) {
+        const data = msg.content.data;
+        let method = data.method;
+        // if (this.get("_debugPrint")) {
+        //     console.log("Message In:", data.method);
+        // }
+        if (method === "trigger") {
+            this.trigger(data.content['handle'], data.content, msg.buffers);
+            return Promise.resolve();
+        }
+        else if (method === "call") {
+            this.callHandler(data.content['handle'], this.dummyEvent(data.content['handle'], { content: data.content, buffers: msg.buffers }));
+            return Promise.resolve();
+        }
+        else {
+            return super._handle_comm_msg(msg);
+        }
+    }
+    dummyEvent(name, ops = {}) {
+        return Object.assign({ target: this, type: name, stopPropagation: function () { } }, ops); // a hack only so we can use the same interface for custom events
+    }
+    callHandler(method, event) {
+        let handlers = this.get('_ihandlers');
+        let fn = null;
+        if (handlers.hasOwnProperty(method)) {
+            fn = handlers[method][1];
+        }
+        else {
+            let api = this.get('jsAPI');
+            if (api !== null) {
+                handlers = api.get("_ihandlers");
+                if (handlers.hasOwnProperty(method)) {
+                    fn = handlers[method][1];
+                }
+            }
+        }
+        if (fn !== null) {
+            fn.call(this, event, this, ActiveHTMLView.handlerContext);
+        }
+        else {
+            throw new Error("couldn't find handler " + method);
+        }
+    }
 }
 exports.ActiveHTMLModel = ActiveHTMLModel;
 ActiveHTMLModel.serializers = Object.assign(Object.assign({}, base_1.DOMWidgetModel.serializers), { 
     // Add any extra serializers here
     //@ts-ignore
-    children: { deserialize: base_1.unpack_models } });
+    children: { deserialize: base_1.unpack_models }, 
+    //@ts-ignore
+    elementAttributes: { deserialize: base_1.unpack_models }, 
+    //@ts-ignore
+    exportData: { deserialize: base_1.unpack_models }, 
+    //@ts-ignore
+    jsAPI: { deserialize: base_1.unpack_models } });
 ActiveHTMLModel.model_name = 'ActiveHTMLModel';
 ActiveHTMLModel.model_module = version_1.MODULE_NAME;
 ActiveHTMLModel.model_module_version = version_1.MODULE_VERSION;
@@ -172,6 +230,19 @@ ActiveHTMLModel.view_name = 'ActiveHTMLView'; // Set to null if no view
 ActiveHTMLModel.view_module = version_1.MODULE_NAME; // Set to null if no view
 ActiveHTMLModel.view_module_version = version_1.MODULE_VERSION;
 class ActiveHTMLView extends base_1.DOMWidgetView {
+    constructor() {
+        super(...arguments);
+        this._escapesMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;',
+            '`': '&#x60;',
+            '=': '&#x3D;'
+        };
+    }
     // constructDict(listPair:any) {
     //     let res = {};
     //     let keys = listPair[0];
@@ -195,58 +266,57 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         this.listenTo(this.model, 'change:elementAttributes', this.updateAttributes);
         this.listenTo(this.model, 'change:eventPropertiesDict', this.updateEvents);
         this._currentEvents = {};
+        this._currentOnHandlers = {};
         this._currentClasses = new Set();
         this._currentStyles = new Set();
-        let oninit = this.model.get('oninitialize');
-        if (Object.keys(oninit).length > 0) {
-            this.handleEvent(new Event('fake', {}), 'oninitialize', oninit);
-        }
+        this._initted = false;
     }
     removeStyles() {
         let newStyles = this.model.get("styleDict");
         let current = this._currentStyles;
-        for (let prop of current) {
+        return ActiveHTMLView._each(current, (prop) => {
             if (!newStyles.hasOwnProperty(prop)) {
                 this.el.style.removeProperty(prop);
                 this._currentStyles.delete(prop);
             }
-        }
+        });
     }
     setLayout(layout, oldLayout) { } // null override
     setStyle(style, oldStyle) { } // null override
     setStyles() {
         let elementStyles = this.model.get("styleDict");
-        if (elementStyles.length === 0) {
+        let keys = Object.keys(elementStyles);
+        if (keys.length === 0) {
             this._currentStyles.clear();
             this.el.removeAttribute('style');
+            return ActiveHTMLView._defaultPromise();
         }
         else {
             if (this.model.get("_debugPrint")) {
                 console.log(this.el, "Element Styles:", elementStyles);
             }
-            for (let prop in elementStyles) {
+            return ActiveHTMLView._each(keys, (prop) => {
                 if (elementStyles.hasOwnProperty(prop)) {
                     // console.log(">>>", prop, elementStyles[prop], typeof prop);
                     this.el.style.setProperty(prop, elementStyles[prop]);
                     // console.log("<<<", prop, this.el.style.getPropertyValue(prop));
                     this._currentStyles.add(prop);
                 }
-            }
+            });
         }
     }
     updateStyles() {
-        this.setStyles();
-        this.removeStyles();
+        return this.setStyles().then(() => this.removeStyles);
     }
     setClasses() {
         if (this.model.get("_debugPrint")) {
             console.log(this.el, "Element Classes:", this.model.get("classList"));
         }
         let classList = this.model.get("classList");
-        for (let cls of classList) {
+        return ActiveHTMLView._each(classList, (cls) => {
             this.el.classList.add(cls);
             this._currentClasses.add(cls);
-        }
+        });
     }
     removeClasses() {
         if (this.model.get("_debugPrint")) {
@@ -254,16 +324,15 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         }
         let current = this._currentClasses;
         let classes = this.model.get("classList");
-        for (let prop of current) {
-            if (!classes.includes(prop)) {
-                this.el.classList.remove(prop);
-                this._currentClasses.delete(prop);
+        return ActiveHTMLView._each(current, (cls) => {
+            if (!classes.includes(cls)) {
+                this.el.classList.remove(cls);
+                this._currentClasses.delete(cls);
             }
-        }
+        });
     }
     updateClassList() {
-        this.setClasses();
-        this.removeClasses();
+        return this.setClasses().then(() => this.removeClasses);
     }
     //manage body of element (borrowed from ipywidgets.Box)
     _createElement(tagName) {
@@ -280,12 +349,15 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     }
     update_children() {
         if (this.children_views !== null) {
-            this.children_views.update(this.model.get('children')).then((views) => {
+            return this.children_views.update(this.model.get('children')).then((views) => {
                 // Notify all children that their sizes may have changed.
                 views.forEach((view) => {
                     messaging_1.MessageLoop.postMessage(view.pWidget, widgets_1.Widget.ResizeMessage.UnknownSize);
                 });
             });
+        }
+        else {
+            return ActiveHTMLView._defaultPromise();
         }
     }
     add_child_model(model) {
@@ -302,10 +374,17 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
             this.pWidget.insertWidget(i, view.pWidget);
             dummy.dispose();
             return view;
-        }).catch(base_1.reject('Could not add child view to box', true));
+        }).catch(base_1.reject('Could not add child view to HTMLElement', true));
     }
     remove() {
         this.children_views = null;
+        let onevents = this.model.get('onevents');
+        if (onevents.hasOwnProperty('remove')) {
+            let oninit = onevents['remove'];
+            // if (Object.keys(oninit).length > 0) {
+            this.handleEvent(this.dummyEvent('remove'), 'remove', oninit);
+            // }
+        }
         super.remove();
     }
     updateBody() {
@@ -315,7 +394,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
             if (debug) {
                 console.log(this.el, "Updating Children...");
             }
-            this.update_children();
+            return this.update_children();
         }
         else {
             let html = this.model.get("innerHTML");
@@ -324,6 +403,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                     console.log(this.el, "Updating HTML...");
                 }
                 this.updateInnerHTML();
+                return ActiveHTMLView._defaultPromise();
             }
             else {
                 let text = this.model.get("textContent");
@@ -332,12 +412,14 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                         console.log(this.el, "Updating Text...");
                     }
                     this.updateTextContent();
+                    return ActiveHTMLView._defaultPromise();
                 }
                 else {
                     if (debug) {
                         console.log(this.el, "Updating HTML...");
                     }
                     this.updateInnerHTML();
+                    return ActiveHTMLView._defaultPromise();
                 }
             }
         }
@@ -370,16 +452,16 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         //   this.model.set('_bodyType', "html");
         // }
     }
+    getAttribute(attrName) {
+        return this.model.get('elementAttributes')[attrName];
+    }
     // Setting attributes (like id)
     updateAttribute(attrName) {
-        let val = this.model.get(attrName);
-        if (val === "") {
-            this.el.removeAttribute(attrName);
-        }
-        else {
-            this.el.setAttribute(attrName, val);
-        }
+        let attrs = {};
+        attrs[attrName] = this.model.get(attrName);
+        return this._updateAttribute(attrName, attrs);
     }
+    ;
     updateAttributeFromQuery(attrName, queryName) {
         let val = this.model.get(queryName);
         if (val === "") {
@@ -389,21 +471,124 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
             this.el.setAttribute(attrName, val);
         }
     }
+    _escapeHTML(html) {
+        let parent = this;
+        return String(html).replace(/[&<>"'`=\/]/g, function (s) {
+            return parent._escapesMap[s];
+        });
+    }
+    _modelHTMLSetter(prop, val) {
+        let parent = this;
+        function setHTML() {
+            let ud = val.update();
+            if (ud !== undefined) {
+                return ud.then(() => {
+                    let newHTML = val.el.outerHTML;
+                    let oldHTML = parent.el.getAttribute(prop);
+                    if (newHTML != oldHTML) {
+                        parent.el.setAttribute(prop, newHTML);
+                        return parent.notifyAttrUpdate(prop);
+                    }
+                    else {
+                        return ActiveHTMLView._defaultPromise();
+                    }
+                });
+            }
+            else {
+                let newHTML = val.el.outerHTML;
+                let oldHTML = parent.el.getAttribute(prop);
+                if (newHTML != oldHTML) {
+                    parent.el.setAttribute(prop, newHTML);
+                    return parent.notifyAttrUpdate(prop);
+                }
+                else {
+                    return ActiveHTMLView._defaultPromise();
+                }
+            }
+        }
+        return setHTML;
+    }
+    _attachWidgetAsAttr(prop, val) {
+        let setter = this._modelHTMLSetter(prop, val);
+        val.model.on("change", setter, val);
+        let r = val.render();
+        if (r !== undefined) {
+            return r.then(() => {
+                if (val.hasOwnProperty('renderChildren')) {
+                    //@ts-ignore
+                    return val.renderChildren().then(setter);
+                }
+                else {
+                    return setter();
+                }
+            });
+        }
+        else if (val.hasOwnProperty('renderChildren')) {
+            //@ts-ignore
+            return val.renderChildren().then(setter);
+        }
+        else {
+            return setter();
+        }
+    }
+    _updateAttribute(prop, attrs) {
+        let val = attrs[prop];
+        if (val === "") {
+            if (this.el.hasAttribute(prop)) {
+                this.el.removeAttribute(prop);
+                return this.notifyAttrUpdate(prop);
+            }
+        }
+        else if (typeof val === 'string') {
+            let cur = this.el.getAttribute(prop);
+            if (cur !== val) {
+                this.el.setAttribute(prop, val);
+                return this.notifyAttrUpdate(prop);
+            }
+        }
+        else if (val instanceof base_1.WidgetView) {
+            return this._attachWidgetAsAttr(prop, val);
+        }
+        else if (val instanceof base_1.WidgetModel) {
+            return this.create_child_view(val).then((view) => {
+                return this._attachWidgetAsAttr(prop, view);
+            }).catch(base_1.reject('Could not add child view to HTMLElement', true));
+        }
+        else {
+            this.el.setAttribute(prop, val.toString() + Object.keys(val).toString());
+            return this.notifyAttrUpdate(prop);
+        }
+        return ActiveHTMLView._defaultPromise();
+    }
+    static _each(arr, fn) {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (const item of arr)
+                yield fn(item);
+        });
+    }
+    static _defaultPromise(val = null) {
+        return new Promise((resolve) => { resolve(val); });
+    }
     updateAttributes() {
         let attrs = this.model.get('elementAttributes');
         let debug = this.model.get("_debugPrint");
         if (debug) {
             console.log(this.el, "Element Properties:", attrs);
         }
-        for (let prop in attrs) {
-            let val = attrs[prop];
-            if (val === "") {
-                this.el.removeAttribute(prop);
+        return ActiveHTMLView._each(Object.keys(attrs), (prop) => this._updateAttribute(prop, attrs));
+    }
+    notifyAttrUpdate(prop) {
+        let key = "view-change:" + prop;
+        let onevents = this.model.get('onevents');
+        if (onevents.hasOwnProperty('remove')) {
+            if (this.model.get('_debugPrint')) {
+                console.log('notifying attr change:', key);
             }
-            else {
-                this.el.setAttribute(prop, val);
-            }
+            let props = onevents[key];
+            this.handleEvent(this.dummyEvent(key), key, props);
+            // }
         }
+        return ActiveHTMLView._defaultPromise();
     }
     updateValue() {
         let el = this.el;
@@ -416,10 +601,10 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                 if (checked !== undefined) {
                     let newVal = this.model.get('value');
                     let checkVal = newVal.length > 0 && newVal != "false" && newVal != "0";
-                    if (debug) {
-                        console.log('updating checked', checked, "->", checkVal);
-                    }
                     if (checkVal !== checked) {
+                        if (debug) {
+                            console.log(this.el, 'updating checked', checked, "->", checkVal);
+                        }
                         el.checked = checkVal;
                     }
                 }
@@ -436,10 +621,10 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                     let newValStr = this.model.get('value');
                     if (typeof newValStr === 'string') {
                         let testVal = val.join('&&');
-                        if (debug) {
-                            console.log('updating selection', testVal, "->", newValStr);
-                        }
                         if (newValStr !== testVal) {
+                            if (debug) {
+                                console.log(this.el, 'updating selection', testVal, "->", newValStr);
+                            }
                             let splitVals = newValStr.split("&&");
                             for (let i = 0; i < el.options.length; i++) {
                                 let o = el.options[i];
@@ -453,14 +638,32 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                 let val = el.value;
                 if (val !== undefined) {
                     let newVal = this.model.get('value');
-                    if (debug) {
-                        console.log('updating value', val, "->", newVal);
-                    }
                     if (newVal !== val) {
+                        if (debug) {
+                            console.log(this.el, 'updating value', val, "->", newVal);
+                        }
                         el.value = newVal;
                     }
                 }
             }
+        }
+        return ActiveHTMLView._defaultPromise();
+    }
+    _registerEvent(key, listeners) {
+        if (!this._currentEvents.hasOwnProperty(key)) {
+            this._currentEvents[key] = [
+                listeners[key],
+                this.constructEventListener(key, listeners[key])
+            ];
+            this.el.addEventListener(key, this._currentEvents[key][1]);
+        }
+        else if (this._currentEvents[key][0] !== listeners[key]) {
+            this.el.removeEventListener(key, this._currentEvents[key][1]);
+            this._currentEvents[key] = [
+                listeners[key],
+                this.constructEventListener(key, listeners[key])
+            ];
+            this.el.addEventListener(key, this._currentEvents[key][1]);
         }
     }
     setEvents() {
@@ -469,31 +672,17 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         if (debug) {
             console.log(this.el, "Adding Events:", listeners);
         }
-        for (let key in listeners) {
+        return ActiveHTMLView._each(Object.keys(listeners), (key) => {
             if (listeners.hasOwnProperty(key)) {
-                if (!this._currentEvents.hasOwnProperty(key)) {
-                    this._currentEvents[key] = [
-                        listeners[key],
-                        this.constructEventListener(key, listeners[key])
-                    ];
-                    this.el.addEventListener(key, this._currentEvents[key][1]);
-                }
-                else if (this._currentEvents[key][0] !== listeners[key]) {
-                    this.el.removeEventListener(key, this._currentEvents[key][1]);
-                    this._currentEvents[key] = [
-                        listeners[key],
-                        this.constructEventListener(key, listeners[key])
-                    ];
-                    this.el.addEventListener(key, this._currentEvents[key][1]);
-                }
+                this._registerEvent(key, listeners);
             }
-        }
+        });
     }
     removeEvents() {
         let newListeners = this.model.get('eventPropertiesDict');
         let current = this._currentEvents;
         let debug = this.model.get("_debugPrint");
-        for (let prop in current) {
+        return ActiveHTMLView._each(Object.keys(current), (prop) => {
             if (current.hasOwnProperty(prop)) {
                 if (!newListeners.hasOwnProperty(prop)) {
                     if (debug) {
@@ -503,27 +692,102 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
                     this._currentEvents.delete(prop);
                 }
             }
-        }
+        });
     }
     updateEvents() {
-        this.setEvents();
-        this.removeEvents();
+        return this.setEvents().then(() => this.removeEvents);
+    }
+    _registerOnHandler(key, listeners) {
+        if (!this._currentOnHandlers.hasOwnProperty(key)) {
+            this._currentOnHandlers[key] = [
+                listeners[key],
+                this.constructOnHandler(key, listeners[key])
+            ];
+            this.model.on(key, this._currentOnHandlers[key][1], this);
+        }
+        else if (this._currentOnHandlers[key][0] !== listeners[key]) {
+            this.model.off(key, this._currentOnHandlers[key][1], this);
+            this._currentOnHandlers[key] = [
+                listeners[key],
+                this.constructOnHandler(key, listeners[key])
+            ];
+            this.model.on(key, this._currentOnHandlers[key][1], this);
+        }
+    }
+    setOnHandlers() {
+        let listeners = this.model.get('onevents');
+        let debug = this.model.get("_debugPrint");
+        if (debug) {
+            console.log(this.el, "Adding On Handlers:", listeners);
+        }
+        return ActiveHTMLView._each(Object.keys(listeners), (key) => {
+            if (listeners.hasOwnProperty(key)) {
+                return this._registerOnHandler(key, listeners);
+            }
+        });
+    }
+    removeOnHandlers() {
+        let newListeners = this.model.get('onevents');
+        let current = this._currentOnHandlers;
+        let debug = this.model.get("_debugPrint");
+        return ActiveHTMLView._each(Object.keys(current), (prop) => {
+            if (current.hasOwnProperty(prop)) {
+                if (!newListeners.hasOwnProperty(prop)) {
+                    if (debug) {
+                        console.log(this.el, "Removing On Handler:", prop);
+                    }
+                    this.model.off(prop, current[prop][1], this);
+                    current.delete(prop);
+                }
+            }
+        });
+    }
+    updateOnHandlers() {
+        return this.setOnHandlers().then(() => this.removeOnHandlers);
+    }
+    _calloninit() {
+        if (!this._initted) {
+            let onevents = this.model.get('onevents');
+            if (onevents.hasOwnProperty('initialize')) {
+                let oninit = onevents['initialize'];
+                if (Object.keys(oninit).length > 0) {
+                    this.handleEvent(this.dummyEvent('initialize'), 'initialize', oninit);
+                }
+            }
+        }
+        this._initted = true;
     }
     render() {
-        super.render();
-        this.el.classList.remove('lm-Widget', 'p-Widget');
-        this.update();
+        let r = super.render();
+        if (r !== undefined) {
+            return r.then((v) => {
+                this.el.classList.remove('lm-Widget', 'p-Widget');
+                return this.update().then(() => this._calloninit);
+            });
+        }
+        else {
+            this.el.classList.remove('lm-Widget', 'p-Widget');
+            return this.update().then((v) => { this._calloninit(); return v; });
+        }
+    }
+    renderChildren() {
+        if (this.children_views !== null) {
+            return this.children_views.update([]).then((views) => ActiveHTMLView._each(views, (v) => {
+                if (v.hasOwnProperty('renderChildren')) {
+                    //@ts-ignore
+                    return v.renderChildren();
+                }
+                else {
+                    v.render();
+                }
+            }));
+        }
+        else {
+            return ActiveHTMLView._defaultPromise();
+        }
     }
     update() {
-        this.updateBody();
-        // this.updateTextContent();
-        this.updateAttribute('id');
-        this.updateAttributes();
-        this.updateClassList();
-        this.setStyles();
-        this.setEvents();
-        this.updateValue();
-        // this.el.classList = this.model.get("classList");
+        return this.updateAttribute('id').then(() => this.updateClassList().then(() => this.setStyles().then(() => this.updateBody().then(() => this.updateAttributes().then(() => this.setEvents().then(() => this.setOnHandlers().then(() => this.updateValue().then(() => { return this; }))))))));
     }
     // @ts-ignore
     get tagName() {
@@ -600,9 +864,13 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
     setData(key, value) {
         let data = this.model.get('exportData');
         data[key] = value;
-        this.model.set('exportData', {}, { updated_view: this });
+        this.model.set('exportData', {}, { updated_view: this }); // force a state change
         this.model.set('exportData', data, { updated_view: this });
         this.touch();
+    }
+    getData(key, value) {
+        let data = this.model.get('exportData');
+        return data[key];
     }
     handleEvent(e, eventName, propData) {
         let props;
@@ -653,12 +921,41 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         }
     }
     callHandler(method, event) {
-        this.model.get('_ihandlers')[method][1](event, this, ActiveHTMLView.handlerContext); // inline caller for now b.c. not sure how to make it go otherwise
+        let handlers = this.model.get('_ihandlers');
+        let fn = null;
+        if (handlers.hasOwnProperty(method)) {
+            fn = handlers[method][1];
+        }
+        else {
+            let api = this.model.get('jsAPI');
+            if (api !== null) {
+                handlers = api.get("_ihandlers");
+                if (handlers.hasOwnProperty(method)) {
+                    fn = handlers[method][1];
+                }
+            }
+        }
+        if (fn !== null) {
+            fn.call(this, event, this, ActiveHTMLView.handlerContext);
+        }
+        else {
+            throw new Error("couldn't find handler " + method);
+        }
+    }
+    dummyEvent(name, ops = {}) {
+        return Object.assign({ target: this.el, type: name, stopPropagation: function () { } }, ops); // a hack only so we can use the same interface for custom events
     }
     constructEventListener(eventName, propData) {
         let parent = this;
         return function (e) {
             parent.handleEvent(e, eventName, propData);
+        };
+    }
+    constructOnHandler(eventName, propData) {
+        let listener = this.constructEventListener(eventName, propData);
+        let event = this.dummyEvent(eventName);
+        return function (msg) {
+            return listener(Object.assign(Object.assign({}, msg), event));
         };
     }
     constructEventMessage(e, props, eventName) {
@@ -715,9 +1012,9 @@ ActiveHTMLView.handlerContext = {
   \**********************/
 /***/ ((module) => {
 
-module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","description":"A Custom Jupyter Widget Library","keywords":["jupyter","jupyterlab","jupyterlab-extension","widgets"],"files":["lib/**/*.js","dist/*.js","css/*.css"],"homepage":"https://github.com//ActiveHTMLWidget","bugs":{"url":"https://github.com//ActiveHTMLWidget/issues"},"license":"MIT","author":{"name":"b3m2a1","email":"b3m2a1@gmail.com"},"main":"lib/index.js","types":"./lib/index.d.ts","style":"css/index.css","sideEffects":["css/*.css"],"repository":{"type":"git","url":"https://github.com//ActiveHTMLWidget"},"scripts":{"build":"yarn run build:lib && yarn run build:nbextension && yarn run build:labextension:dev","build:prod":"yarn run build:lib && yarn run build:nbextension && yarn run build:labextension","build:labextension":"jupyter labextension build .","build:labextension:dev":"jupyter labextension build --development True .","build:lib":"tsc","build:nbextension":"webpack","clean":"yarn run clean:lib && yarn run clean:nbextension && yarn run clean:labextension","clean:lib":"rimraf lib","clean:labextension":"rimraf ActiveHTMLWidget/labextension","clean:nbextension":"rimraf ActiveHTMLWidget/nbextension/static/index.js","lint":"eslint . --ext .ts,.tsx --fix","lint:check":"eslint . --ext .ts,.tsx","prepack":"yarn run build:lib","test":"jest","watch":"npm-run-all -p watch:*","watch:lib":"tsc -w","watch:nbextension":"webpack --watch --mode=development","watch:labextension":"jupyter labextension watch ."},"dependencies":{"@jupyter-widgets/base":"^1.1.10 || ^2.0.0 || ^3.0.0 || ^4.0.0","bootstrap":"^5.1.3","sass":"^1.50.1"},"devDependencies":{"@babel/core":"^7.5.0","@babel/preset-env":"^7.5.0","@jupyterlab/builder":"^3.0.0","@phosphor/application":"^1.6.0","@phosphor/widgets":"^1.6.0","@types/bootstrap":"^5.1.11","@types/jest":"^26.0.0","@types/webpack-env":"^1.13.6","@typescript-eslint/eslint-plugin":"^3.6.0","@typescript-eslint/parser":"^3.6.0","acorn":"^7.2.0","css-loader":"^3.2.0","eslint":"^7.4.0","eslint-config-prettier":"^6.11.0","eslint-plugin-prettier":"^3.1.4","fs-extra":"^7.0.0","identity-obj-proxy":"^3.0.0","jest":"^26.0.0","mkdirp":"^0.5.1","npm-run-all":"^4.1.3","prettier":"^2.0.5","rimraf":"^2.6.2","source-map-loader":"^1.1.3","style-loader":"^1.0.0","ts-jest":"^26.0.0","ts-loader":"^8.0.0","typescript":"~4.1.3","webpack":"^5.0.0","webpack-cli":"^4.0.0"},"jupyterlab":{"extension":"lib/plugin","outputDir":"ActiveHTMLWidget/labextension/","sharedPackages":{"@jupyter-widgets/base":{"bundled":false,"singleton":true}}}}');
+module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","description":"A Custom Jupyter Widget Library","keywords":["jupyter","jupyterlab","jupyterlab-extension","widgets"],"files":["lib/**/*.js","dist/*.js","css/*.css"],"homepage":"https://github.com//ActiveHTMLWidget","bugs":{"url":"https://github.com//ActiveHTMLWidget/issues"},"license":"MIT","author":{"name":"b3m2a1","email":"b3m2a1@gmail.com"},"main":"lib/index.js","types":"./lib/index.d.ts","style":"css/index.css","sideEffects":["css/*.css"],"repository":{"type":"git","url":"https://github.com//ActiveHTMLWidget"},"scripts":{"build":"yarn run build:lib && yarn run build:nbextension && yarn run build:labextension:dev","build:prod":"yarn run build:lib && yarn run build:nbextension && yarn run build:labextension","build:labextension":"jupyter labextension build .","build:labextension:dev":"jupyter labextension build --development True .","build:lib":"tsc","build:nbextension":"webpack","clean":"yarn run clean:lib && yarn run clean:nbextension && yarn run clean:labextension","clean:lib":"rimraf lib","clean:labextension":"rimraf ActiveHTMLWidget/labextension","clean:nbextension":"rimraf ActiveHTMLWidget/nbextension/static/index.js","lint":"eslint . --ext .ts,.tsx --fix","lint:check":"eslint . --ext .ts,.tsx","prepack":"yarn run build:lib","test":"jest","watch":"npm-run-all -p watch:*","watch:lib":"tsc -w","watch:nbextension":"webpack --watch --mode=development","watch:labextension":"jupyter labextension watch ."},"dependencies":{"@jupyter-widgets/base":"^1.1.10 || ^2.0.0 || ^3.0.0 || ^4.0.0","bootstrap":"^5.1.3"},"devDependencies":{"@babel/core":"^7.5.0","@babel/preset-env":"^7.5.0","@jupyterlab/builder":"^3.0.0","@phosphor/application":"^1.6.0","@phosphor/widgets":"^1.6.0","@types/bootstrap":"^5.1.11","@types/jest":"^26.0.0","@types/webpack-env":"^1.13.6","@typescript-eslint/eslint-plugin":"^3.6.0","@typescript-eslint/parser":"^3.6.0","acorn":"^7.2.0","css-loader":"^3.2.0","eslint":"^7.4.0","eslint-config-prettier":"^6.11.0","eslint-plugin-prettier":"^3.1.4","fs-extra":"^7.0.0","identity-obj-proxy":"^3.0.0","jest":"^26.0.0","mkdirp":"^0.5.1","npm-run-all":"^4.1.3","prettier":"^2.0.5","rimraf":"^2.6.2","sass":"^1.51.0","source-map-loader":"^1.1.3","style-loader":"^1.0.0","ts-jest":"^26.0.0","ts-loader":"^8.0.0","typescript":"~4.1.3","webpack":"^5.0.0","webpack-cli":"^4.0.0"},"jupyterlab":{"extension":"lib/plugin","outputDir":"ActiveHTMLWidget/labextension/","sharedPackages":{"@jupyter-widgets/base":{"bundled":false,"singleton":true}}}}');
 
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.1bcce180bf5ad3debbd7.js.map
+//# sourceMappingURL=lib_widget_js.950f05f0927eac55615b.js.map

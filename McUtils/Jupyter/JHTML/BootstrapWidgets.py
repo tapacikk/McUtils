@@ -159,6 +159,7 @@ class Bootstrap5Widgets(BootstrapWidgetsBase):
     class Container(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Container
     class ButtonGroup(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.ButtonGroup
     class Button(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Button
+    class CloseButton(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.CloseButton
     class LinkButton(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.LinkButton
     class Table(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.Table
     class ListGroup(HTMLWidgets.WrappedHTMLElement): base = Bootstrap5.ListGroup

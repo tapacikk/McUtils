@@ -1488,3 +1488,6 @@ class SemanticClass(enum.Enum):
 
     def __str__(self):
         return self.value
+
+    def __call__(self, obj):
+        return obj.add_class(self.value)

@@ -382,6 +382,12 @@ class HTML:
         'use_for': 'for'
     }
     @classmethod
+    def clean_key(cls, k):
+        if k in cls.keyword_replacements:
+            return cls.keyword_replacements[k]
+        else:
+            return k.replace("_", "-")
+    @classmethod
     def manage_attrs(cls, attrs):
         for k, v in cls.keyword_replacements.items():
             if k in attrs:
