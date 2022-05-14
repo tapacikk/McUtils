@@ -42,6 +42,18 @@ setup(
     # Comment out this line to prevent the files from being packaged with your software
     # include_package_data=True
 
+    install_requires=[
+        "numpy>=1.8,<=1.21",
+        "scipy>=1.7.0",
+        "h5py>=2.10.0",
+        "numba>=0.53.1",
+        "matplotlib>=3.3.4",
+        "jupyterlab>=3.3.2",
+        "ipywidgets>=7.6.3",
+        "sympy>=1.9",
+        "nglview>=3.0.1"
+    ],
+
     include_package_data=True,
     # data_files=[
     #     # like `jupyter nbextension install --sys-prefix`

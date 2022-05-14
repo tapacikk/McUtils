@@ -13,7 +13,37 @@ The easiest way to install is via `pip`, as
 pip install mccoygroup-mcutils
 ```
 
-This hasn't been thoroughly tested, so if things break it is always possible to clone the repository and go from there.
+This should install all dependencies. 
+The major requirement is that Python 3.8+ is required due to use of features in the `types` module.
+For safety, it is best to install this in a [virtual environment](https://docs.python.org/3.8/tutorial/venv.html), which we can make like
+
+```lang-shell
+python3.8 -m pip venv mcenv
+```
+
+and activate like
+
+```lang-shell
+. mcenv/bin/activate
+```
+
+or to use it in a [container](https://www.docker.com/) or [conda environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) or some other place where we can control the environment.
+
+It is also possible to install from source like
+
+```lang-shell
+git clone https://github.com/McCoyGroup/McUtils.git
+```
+
+but in this case you will need to make sure the library is on the path yourself and all of the dependencies are installed.
+If you want to get all of the nice `JHTML` features for working in Jupyter, you'll then need to run
+
+```python
+from McUtils.Jupyter import JHTML
+JHTML.load()
+```
+
+and then reload the browser window when prompted.
 
 ### Contributing
 
