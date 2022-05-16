@@ -52,7 +52,7 @@ class LoggingBlock:
         {
             'opener': ">>" + "-" * 25 + ' {tag} ' + "-" * 25,
             'prompt': "::{meta} ",
-            'closer': '>>'+'-'*25+'<<'
+            'closer': '>>'+'-'*50+'<<'
         },
         {
             'opener': "::> {tag}",
