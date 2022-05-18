@@ -554,7 +554,7 @@ def pts_dihedrals(pts1, pts2, pts3, pts4):
     d2 = vec_dots(m1, n2)
 
     # arctan(d2/d1) + sign stuff from relative signs of d2 and d1
-    return -np.arctan2(d2, d1)
+    return np.arctan2(d2, d1)
 
 ################################################
 #
