@@ -554,7 +554,7 @@ def pts_dihedrals(pts1, pts2, pts3, pts4):
     d2 = vec_dots(m1, n2)
 
     # arctan(d2/d1) + sign stuff from relative signs of d2 and d1
-    return np.arctan2(d2, d1)
+    return -np.arctan2(d2, d1)
 
 ################################################
 #
@@ -629,7 +629,7 @@ def cartesian_from_rad_transforms(centers, vecs1, vecs2, angles, dihedrals, retu
     crosses = vec_crosses(vecs1, vecs2)
     rot_mats_1 = rotation_matrix(crosses, -angles)
     if dihedrals is not None:
-        rot_mats_2 = rotation_matrix(vecs1, -dihedrals)
+        rot_mats_2 = rotation_matrix(vecs1, dihedrals)
         rot_mat = np.matmul(rot_mats_2, rot_mats_1)
     else:
         rot_mat = rot_mats_1
