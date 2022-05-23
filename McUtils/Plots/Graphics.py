@@ -47,7 +47,9 @@ class GraphicsBase(metaclass=ABCMeta):
         'event_handlers',
         'animated',
         'epilog'
-        'prolog'
+        'prolog',
+        'subplot_kw',
+        'theme'
     }
     def _get_def_opt(self, key, val, theme):
         if val is None:
@@ -66,6 +68,15 @@ class GraphicsBase(metaclass=ABCMeta):
         else:
             return val
 
+    def _update_copy_opt(self, key, val):
+        if not self._in_init:
+            if key not in self._init_opts or self._init_opts[key] is None:
+                if val != self._get_def_opt(key, None, self.theme):
+                    self._init_opts[key] = val
+            elif val != self._init_opts[key]:
+                self._init_opts[key] = val
+        # if key in self._init_opts:
+        #     print(key, self._init_opts[key])
     def __init__(self,
                  *args,
                  figure=None,
@@ -76,7 +87,7 @@ class GraphicsBase(metaclass=ABCMeta):
                  image_size=None,
                  padding=None,
                  aspect_ratio=None,
-                 non_interactive=None,
+                 interactive=None,
                  mpl_backend=None,
                  theme=None,
                  prop_manager=GraphicsPropertyManager,
@@ -99,17 +110,34 @@ class GraphicsBase(metaclass=ABCMeta):
         :type opts:
         """
 
+
+        self._init_opts = dict(opts, # for copying
+                               tighten=tighten,
+                               axes=axes,
+                               subplot_kw=subplot_kw,
+                               image_size=image_size,
+                               padding=padding,
+                               aspect_ratio=aspect_ratio,
+                               interactive=interactive,
+                               mpl_backend=mpl_backend,
+                               theme=theme,
+                               prop_manager=prop_manager,
+                               theme_manager=theme_manager,
+                               managed=managed
+                               )
+        self._in_init = True
+
         # we try to only load pyplot once and use it
         # as an API rather than a global import
         # this is to potentially support non-MPL interfaces
         # in the future
-        self.pyplot = None
+        # self.pyplot = None
         self._mpl_loaded = False
 
         if subplot_kw is None:
             subplot_kw = {}
 
-        self.non_interactive = non_interactive
+        self.interactive = interactive
         self.mpl_backend = mpl_backend
         if isinstance(figure, GraphicsBase):
             parent = figure
@@ -122,6 +150,9 @@ class GraphicsBase(metaclass=ABCMeta):
                 image_size = self.parent.image_size
             if aspect_ratio is None:
                 aspect_ratio = self.parent.aspect_ratio
+            if interactive is None:
+                interactive = self.parent.interactive
+            prop_manager = self.parent._prop_manager
 
         theme = self._get_def_opt('theme', theme, {})
         self.theme=theme
@@ -130,6 +161,17 @@ class GraphicsBase(metaclass=ABCMeta):
         #     theme_dict = theme_manager.resolve_theme(theme)[1]
         # else:
         #     theme_dict = {}
+
+        if managed is None:
+            if figure is not None and isinstance(figure, GraphicsBase):
+                managed = figure.managed
+            else:
+                managed = False
+        self.managed = managed
+
+        interactive = self._get_def_opt('interactive', interactive, theme)
+        self.interactive = interactive
+
         aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio, theme)
         image_size = self._get_def_opt('image_size', image_size, theme)
         padding = self._get_def_opt('padding', padding, theme)
@@ -157,19 +199,18 @@ class GraphicsBase(metaclass=ABCMeta):
                 image_size = (w, h)
             subplot_kw['figsize'] = (w/72., h/72.)
 
+        self.subplot_kw = subplot_kw
         if theme is not None:
             with theme_manager.from_spec(theme):
                 self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
         else:
             self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
+        if not self.interactive:
+            self.pyplot.mpl_disconnect()
 
-        if managed is None:
-            if figure is not None and isinstance(figure, GraphicsBase):
-                managed = figure.managed
-            else:
-                managed = False
-        self.managed = managed
-        self._prop_manager = prop_manager(self, self.figure, self.axes, managed=managed)
+        if isinstance(prop_manager, type):
+            prop_manager = prop_manager(self, self.figure, self.axes, managed=managed)
+        self._prop_manager = prop_manager
         self._colorbar_axis = None
         self.set_options(padding=padding, aspect_ratio=aspect_ratio, image_size=image_size, **opts)
 
@@ -178,19 +219,194 @@ class GraphicsBase(metaclass=ABCMeta):
         self.animator = None
         self.tighten = tighten
 
-    def load_mpl(self):
-        if not self._mpl_loaded:
-            import matplotlib.pyplot as plt
-            self.pyplot = plt
-            if self.mpl_backend is not None:
+
+        self._in_init = False
+
+    class MPLManager:
+        _plt = None
+        _mpl = None
+        def __init__(self, figure):
+            self.fig = figure
+            self.fig.mpl = self
+            self.jlab = None
+            self._old_interactive = None
+            self._drawer = None
+            self._draw_all = None
+            self._old_show = None
+            self._old_mpl_backend = None
+            self._old_magic_backend = None
+        @property
+        def plt(self):
+            if self._plt is None:
+                import matplotlib.pyplot as plt
+                type(self)._plt = plt
+            return self._plt
+        @property
+        def mpl(self):
+            if self._mpl is None:
                 import matplotlib as mpl
-                mpl.use(self.mpl_backend)
-            self._mpl_loaded = True
+                type(self)._mpl = mpl
+            return self._mpl
+        def draw_if_interactive(self, *args, **kwargs):
+            pass
+        def magic_backend(self, backend):
+            try:
+                from IPython.core.getipython import get_ipython
+            except ImportError:
+                pass
+            else:
+                shell = get_ipython()
+                ip_name = type(shell).__name__
+                in_nb = ip_name == 'ZMQInteractiveShell'
+                if in_nb:
+                    try:
+                        from IPython.core.magics import PylabMagics
+                    except ImportError:
+                        pass
+                    else:
+                        set_jupyter_backend = PylabMagics(shell).matplotlib
+                        set_jupyter_backend(backend)
+
+        def __enter__(self):
+            if self.fig.mpl_backend is not None:
+                self._old_mpl_backend = self.mpl.get_backend()
+                self.mpl.use(self.fig.mpl_backend)
+            self._was_interactive = self.plt.isinteractive()
+            if not self.fig.managed:
+                # import matplotlib.pyplot as plt
+                # plt.ioff
+                # if 'inline' in self.mpl.get_backend():
+                #     backend = self.plt._backend_mod
+                #     self.plt.show = ...
+                #     self._old_show = backend.show
+                #     backend.show = self.jupyter_show
+                if not self.fig.interactive:
+                    self.plt.ioff()
+                    # manager.canvas.mpl_disconnect(manager._cidgcf)
+                    # self._drawer = self.plt.draw_if_interactive
+                    # self._draw_all = self.plt.draw_all
+                    # self.plt.draw_if_interactive = self.draw_if_interactive
+                    # self.plt.draw_all = self.draw_if_interactive
+                    # if self.fig.mpl_backend is None:
+                    #     self._old_magic_backend = self.mpl.get_backend()
+                    #     self.magic_backend('Agg')
+                else:
+                    self.plt.ion()
+                    # if self.fig.mpl_backend is None:
+                    #     self._old_magic_backend = self.mpl.get_backend()
+                    #     if 'inline' not in self._old_magic_backend:
+                    #         self.magic_backend('inline')
+            self.fig._mpl_loaded=True
+            return self.plt
+        def mpl_disconnect(self):
+            # this is a hack that might need to be updated in the future
+            if 'inline' in self.mpl.get_backend():
+                try:
+                    from matplotlib._pylab_helpers import Gcf
+                    canvas = self.fig.figure.canvas
+                    num = canvas.manager.num
+                    if all(hasattr(num, attr) for attr in ["num", "_cidgcf", "destroy"]):
+                        manager = num
+                        if Gcf.figs.get(manager.num) is manager:
+                            Gcf.figs.pop(manager.num)
+                        else:
+                            return
+                    else:
+                        try:
+                            manager = Gcf.figs.pop(num)
+                        except KeyError:
+                            return
+                    # manager.canvas.mpl_disconnect(manager._cidgcf)
+                    # self.fig.figure.canvas.mpl_disconnect(
+                    #     self.fig.figure.canvas.manager._cidgcf
+                    # )
+                except:
+                    pass
+
+        def mpl_connect(self):
+            if 'inline' in self.mpl.get_backend():
+                # try:
+                from matplotlib._pylab_helpers import Gcf
+                canvas = self.fig.figure.canvas
+                manager = canvas.manager
+                num = canvas.manager.num
+                Gcf.figs[num] = manager
+                manager._cidgcf = canvas.mpl_connect(
+                    "button_press_event", lambda event: Gcf.set_active(manager)
+                )
+                # manager.canvas.mpl_disconnect(manager._cidgcf)
+                # self.fig.figure.canvas.mpl_disconnect(
+                #     self.fig.figure.canvas.manager._cidgcf
+                # )
+                # except:
+                #     pass
+
+        def jupyter_show(self, close=None, block=None):
+            """Show all figures as SVG/PNG payloads sent to the IPython clients.
+            Parameters
+            ----------
+            close : bool, optional
+                If true, a ``plt.close('all')`` call is automatically issued after
+                sending all the figures. If this is set, the figures will entirely
+                removed from the internal list of figures.
+            block : Not used.
+                The `block` parameter is a Matplotlib experimental parameter.
+                We accept it in the function signature for compatibility with other
+                backends.
+            """
+            from matplotlib._pylab_helpers import Gcf
+            from IPython.core.display import display
+            mpl_inline = self.plt._backend_mod
+            # from matplotlib.backends import backend as mpl_inline
+            print(mpl_inline)
+            # mpl_inline = sys.modules[type(self.plt).__module__]
+
+            if close is None:
+                close = mpl_inline.InlineBackend.instance().close_figures
+            try:
+                for figure_manager in [Gcf.get_active()]:
+                    display(
+                        figure_manager.canvas.figure,
+                        metadata=mpl_inline._fetch_figure_metadata(figure_manager.canvas.figure)
+                    )
+            finally:
+                self._to_draw = []
+                # only call close('all') if any to close
+                # close triggers gc.collect, which can be slow
+                if close and Gcf.get_all_fig_managers():
+                    self.plt.close('all')
+        # This flag will be reset by draw_if_interactive when called
+        _draw_called = False
+        # list of figures to draw when flush_figures is called
+        _to_draw = []
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            if self._old_mpl_backend is not None:
+                self.mpl.use(self._old_mpl_backend)
+            if self._drawer is not None:
+                self.plt.draw_if_interactive = self._drawer
+                self._drawer = None
+            if self._draw_all is not None:
+                self.plt.draw_all = self._drawer
+                self._drawer = None
+            if self._old_show is not None:
+                self.plt._backend_mod.show = self._old_show
+                self._old_show = None
+
+            if self._old_magic_backend is not None:
+                if 'inline' in self._old_magic_backend:
+                    self.magic_backend('inline')
+                else:
+                    self.mpl.use(self._old_mpl_backend)
+            if self._was_interactive and not self.plt.isinteractive():
+                self.plt.ion()
+    @property
+    def pyplot(self):
+        return self.MPLManager(self)
 
     @staticmethod
     def _subplot_init(*args, mpl_backend=None, figure=None, **kw):
-        figure.load_mpl()
-        return figure.pyplot.subplots(*args, **kw)
+        with figure.pyplot as plt:
+            return plt.subplots(*args, **kw)
 
     def _init_suplots(self, figure, axes, *args, **kw):
         """Initializes the subplots for the Graphics object
@@ -296,29 +512,29 @@ class GraphicsBase(metaclass=ABCMeta):
         # might want to clear the elements in the epilog?
         self._epilog = e
 
-    def __getattr__(self, item):
-        reraise_error = None
-        axes = object.__getattribute__(self, 'axes')
-        try:
-            meth = getattr(axes, item)
-        except AttributeError as e:
-            if 'Axes' not in e.args[0] or item not in e.args[0]:
-                reraise_error = e
-            else:
-                try:
-                    meth = getattr(self.figure, item)
-                except AttributeError as e:
-                    if 'Figure' not in e.args[0] or item not in e.args[0]:
-                        reraise_error = e
-                    else:
-                        reraise_error = AttributeError("'{}' object has no attribute '{}'".format(
-                            type(self).__name__,
-                            item
-                        ))
-        if reraise_error is not None:
-            raise reraise_error
-
-        return meth
+    # def __getattr__(self, item):
+    #     reraise_error = None
+    #     axes = object.__getattribute__(self, 'axes')
+    #     try:
+    #         meth = getattr(axes, item)
+    #     except AttributeError as e:
+    #         if 'Axes' not in e.args[0] or item not in e.args[0]:
+    #             reraise_error = e
+    #         else:
+    #             try:
+    #                 meth = getattr(self.figure, item)
+    #             except AttributeError as e:
+    #                 if 'Figure' not in e.args[0] or item not in e.args[0]:
+    #                     reraise_error = e
+    #                 else:
+    #                     reraise_error = AttributeError("'{}' object has no attribute '{}'".format(
+    #                         type(self).__name__,
+    #                         item
+    #                     ))
+    #     if reraise_error is not None:
+    #         raise reraise_error
+    #
+    #     return meth
 
     def copy_axes(self):
         """Copies the axes object
@@ -354,7 +570,7 @@ class GraphicsBase(metaclass=ABCMeta):
     def opts(self):
         opt_dict = {}
         for k in self.opt_keys:
-            if k in self.__dict__:
+            if k in self.__dict__ or hasattr(self._prop_manager, k):
                 opt_dict[k] = getattr(self, k)
             elif "_"+k in self.__dict__:
                 opt_dict[k] = getattr(self, "_" + k)
@@ -366,7 +582,15 @@ class GraphicsBase(metaclass=ABCMeta):
         :return:
         :rtype:
         """
-        return type(self)(**self.opts)
+        return self.change_figure(None)
+    def change_figure(self, new, *init_args, **init_kwargs):
+        """Creates a copy of the object with new axes and a new figure
+
+        :return:
+        :rtype:
+        """
+        # print(self._init_opts)
+        return type(self)(*init_args, **dict(self._init_opts, figure=new, **init_kwargs))
 
     def prep_show(self):
         self.set_options(**self.opts)  # matplotlib is dumb so it makes sense to just reset these again...
@@ -377,33 +601,35 @@ class GraphicsBase(metaclass=ABCMeta):
         if self.tighten:
             self.figure.tight_layout()
         self._shown = True
-    def show(self, reshow=True):
-
+    def show(self, reshow=False):
         from .VTKInterface import VTKWindow
 
         if isinstance(self.figure, VTKWindow):
             self.figure.show()
         else:
-            self.load_mpl()
-            if not self.managed:
-                if self.non_interactive:
-                    self.pyplot.ioff()
-                elif self.non_interactive is False:
-                    self.pyplot.ion()
-
             if reshow or not self._shown:
                 self.prep_show()
                 if not self.managed:
-                    self.pyplot.show()
+                    ni = not self.interactive
+                    try:
+                        with self.pyplot as plt:
+                            if ni:
+                                self.pyplot.mpl_connect()
+                            plt.show()
+                    finally:
+                        self.interactive = not ni
+                        if ni:
+                            self.pyplot.mpl_disconnect()
             else:
-                self._shown = False
-                self.refresh().show()
+                # self._shown = False
+                self.copy().show()
                 # raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
 
     def close(self, force=False):
         if force or self.parent is None: # parent manages cleanup
-            if self.pyplot is not None:
-                return self.pyplot.close(self.figure)
+            if self._mpl_loaded:
+                with self.pyplot as plt:
+                    return plt.close(self.figure)
 
     def __del__(self):
         self.close()
@@ -532,7 +758,8 @@ class Graphics(GraphicsBase):
         frame=((True, False), (True, False)),
         aspect_ratio=1,
         image_size=300,
-        padding=((60, 10), (35, 10))
+        padding=((60, 10), (35, 10)),
+        interactive=False
     )
 
     def set_options(self,
@@ -592,6 +819,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.plot_label
     @plot_label.setter
     def plot_label(self, value):
+        self._update_copy_opt('plot_label', value)
         self._prop_manager.plot_label = value
 
     @property
@@ -599,6 +827,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.plot_legend
     @plot_legend.setter
     def plot_legend(self, value):
+        self._update_copy_opt('plot_legend', value)
         self._prop_manager.plot_legend = value
 
     @property
@@ -606,6 +835,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.axes_labels
     @axes_labels.setter
     def axes_labels(self, value):
+        self._update_copy_opt('axes_labels', value)
         self._prop_manager.axes_labels = value
 
     @property
@@ -613,6 +843,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.frame
     @frame.setter
     def frame(self, value):
+        self._update_copy_opt('frame', value)
         self._prop_manager.frame = value
 
     @property
@@ -620,6 +851,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.frame_style
     @frame_style.setter
     def frame_style(self, value):
+        self._update_copy_opt('frame_style', value)
         self._prop_manager.frame_style = value
 
     @property
@@ -627,6 +859,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.plot_range
     @plot_range.setter
     def plot_range(self, value):
+        self._update_copy_opt('plot_range', value)
         self._prop_manager.plot_range = value
 
     @property
@@ -634,6 +867,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.ticks
     @ticks.setter
     def ticks(self, value):
+        self._update_copy_opt('ticks', value)
         self._prop_manager.ticks = value
 
     @property
@@ -641,13 +875,23 @@ class Graphics(GraphicsBase):
         return self._prop_manager.ticks_style
     @ticks_style.setter
     def ticks_style(self, value):
+        self._update_copy_opt('ticks_style', value)
         self._prop_manager.ticks_style = value
+
+    @property
+    def ticks_label_style(self):
+        return self._prop_manager.ticks_label_style
+    @ticks_label_style.setter
+    def ticks_label_style(self, value):
+        self._update_copy_opt('ticks_label_style', value)
+        self._prop_manager.ticks_label_style = value
 
     @property
     def scale(self):
         return self._prop_manager.ticks
     @scale.setter
     def scale(self, value):
+        self._update_copy_opt('scale', value)
         self._prop_manager.scale = value
 
     @property
@@ -655,6 +899,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.aspect_ratio
     @aspect_ratio.setter
     def aspect_ratio(self, value):
+        self._update_copy_opt('aspect_ratio', value)
         self._prop_manager.aspect_ratio = value
 
     @property
@@ -662,6 +907,8 @@ class Graphics(GraphicsBase):
         return self._prop_manager.image_size
     @image_size.setter
     def image_size(self, value):
+        # print(">>>", value)
+        self._update_copy_opt('image_size', value)
         self._prop_manager.image_size = value
 
     @property
@@ -669,30 +916,35 @@ class Graphics(GraphicsBase):
         return self._prop_manager.padding
     @padding.setter
     def padding(self, value):
+        self._update_copy_opt('padding', value)
         self._prop_manager.padding = value
     @property
     def padding_left(self):
         return self._prop_manager.padding_left
     @padding_left.setter
     def padding_left(self, value):
+        self._update_copy_opt('padding_left', value)
         self._prop_manager.padding_left = value
     @property
     def padding_right(self):
         return self._prop_manager.padding_right
     @padding_right.setter
     def padding_right(self, value):
+        self._update_copy_opt('padding_right', value)
         self._prop_manager.padding_right = value
     @property
     def padding_top(self):
         return self._prop_manager.padding_top
     @padding_top.setter
     def padding_top(self, value):
+        self._update_copy_opt('padding_top', value)
         self._prop_manager.padding_top = value
     @property
     def padding_bottom(self):
         return self._prop_manager.padding_bottom
     @padding_bottom.setter
     def padding_bottom(self, value):
+        self._update_copy_opt('padding_bottom', value)
         self._prop_manager.padding_bottom = value
 
     @property
@@ -700,6 +952,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.spacings
     @spacings.setter
     def spacings(self, value):
+        self._update_copy_opt('spacings', value)
         self._prop_manager.spacings = value
 
     @property
@@ -707,6 +960,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.background
     @background.setter
     def background(self, value):
+        self._update_copy_opt('background', value)
         self._prop_manager.background = value
 
     @property
@@ -714,6 +968,7 @@ class Graphics(GraphicsBase):
         return self._prop_manager.colorbar
     @colorbar.setter
     def colorbar(self, value):
+        self._update_copy_opt('colorbar', value)
         self._prop_manager.colorbar = value
 
     def prep_show(self):
@@ -731,7 +986,7 @@ class Graphics(GraphicsBase):
 class Graphics3D(Graphics):
     """Extends the standard matplotlib 3D plotting to use all the Graphics extensions"""
 
-    opt_keys = GraphicsBase.opt_keys & {'view_settings'}
+    opt_keys = GraphicsBase.opt_keys | {'view_settings'}
 
     def __init__(self, *args,
                  figure=None,
@@ -801,12 +1056,12 @@ class Graphics3D(Graphics):
             window = VTKWindow()
             return window, window
         else:
-            graphics.load_mpl()
-            subplot_kw = {"projection": '3d'}
-            if 'subplot_kw' in kw:
-                subplot_kw = dict(subplot_kw, **kw['subplot_kw'])
-                del kw['subplot_kw']
-            return graphics.pyplot.subplots(*args, subplot_kw=subplot_kw, **kw)
+            with graphics.pyplot as plt:
+                subplot_kw = {"projection": '3d'}
+                if 'subplot_kw' in kw:
+                    subplot_kw = dict(subplot_kw, **kw['subplot_kw'])
+                    del kw['subplot_kw']
+                return plt.subplots(*args, subplot_kw=subplot_kw, **kw)
 
     def _init_suplots(self, figure, axes, *args, **kw):
         """matplotlib subplot instantiation
@@ -824,7 +1079,7 @@ class Graphics3D(Graphics):
         """
 
         if figure is None:
-            figure, axes = self._subplot_init(*args, backend = self._backend, mpl_backend=self.mpl_backend, **kw)
+            figure, axes = self._subplot_init(*args, backend=self._backend, mpl_backend=self.mpl_backend, **kw)
         elif isinstance(figure, GraphicsBase):
             axes = figure.axes
             figure = figure.figure
@@ -885,6 +1140,13 @@ class Graphics3D(Graphics):
     @ticks_style.setter
     def ticks_style(self, value):
         self._prop_manager.ticks_style = value
+
+    @property
+    def ticks_label_style(self):
+        return self._prop_manager.ticks_label_style
+    @ticks_label_style.setter
+    def ticks_label_style(self, value):
+        self._prop_manager.ticks_label_style = value
 
     @property
     def scale(self):
@@ -1161,24 +1423,24 @@ class GraphicsGrid(GraphicsBase):
         else:
             self.axes[i][j] = val
 
-    def __getattr__(self, item):
-        reraise_error = None
-        figure = object.__getattribute__(self, 'figure')
-        try:
-            meth = getattr(figure, item)
-        except AttributeError as e:
-            if 'Figure' not in e.args[0] or item not in e.args[0]:
-                reraise_error = e
-            else:
-                reraise_error = AttributeError("'{}' object has no attribute '{}'".format(
-                    type(self).__name__,
-                    item
-                ))
-
-        if reraise_error is not None:
-            raise reraise_error
-
-        return meth
+    # def __getattr__(self, item):
+    #     reraise_error = None
+    #     figure = object.__getattribute__(self, 'figure')
+    #     try:
+    #         meth = getattr(figure, item)
+    #     except AttributeError as e:
+    #         if 'Figure' not in e.args[0] or item not in e.args[0]:
+    #             reraise_error = e
+    #         else:
+    #             reraise_error = AttributeError("'{}' object has no attribute '{}'".format(
+    #                 type(self).__name__,
+    #                 item
+    #             ))
+    #
+    #     if reraise_error is not None:
+    #         raise reraise_error
+    #
+    #     return meth
 
     # set size
     def calc_image_size(self):
