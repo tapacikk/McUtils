@@ -249,6 +249,25 @@ class Plot(Graphics):
         if len(params) > 0:
             self.plot(*params)
 
+    layout_keys = Graphics.layout_keys | {
+        'method',
+        'plot_style'
+    }
+    @classmethod
+    def filter_options(cls, opts, allowed=None):
+        new = {}
+        if allowed is None:
+            allowed = cls.known_styles | cls.layout_keys
+        for k in opts.keys() & allowed:
+                new[k] = opts[k]
+        return new
+    def _check_opts(self, opts):
+        diff = opts.keys() - (self.known_styles | self.layout_keys)
+        if len(diff) > 0:
+            raise ValueError("unknown options for {}: {}".format(
+                type(self).__name__, list(diff)
+            ))
+
     def _initialize(self):
         self._initialized = True
         self.set_options(**self.plot_opts)
