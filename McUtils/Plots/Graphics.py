@@ -77,6 +77,27 @@ class GraphicsBase(metaclass=ABCMeta):
                 self._init_opts[key] = val
         # if key in self._init_opts:
         #     print(key, self._init_opts[key])
+
+    layout_keys = {
+        'figure',
+        'tighten',
+        'axes',
+        'subplot_kw',
+        'parent',
+        'image_size',
+        'padding',
+        'aspect_ratio',
+        'interactive',
+        'mpl_backend',
+        'theme',
+        'prop_manager',
+        'theme_manager',
+        'managed',
+        'event_handlers',
+        'animated',
+        'prolog',
+        'epilog'
+    }
     def __init__(self,
                  *args,
                  figure=None,
@@ -93,6 +114,7 @@ class GraphicsBase(metaclass=ABCMeta):
                  prop_manager=GraphicsPropertyManager,
                  theme_manager=ThemeManager,
                  managed=None,
+                 strict=True,
                  **opts
                  ):
         """
@@ -212,7 +234,7 @@ class GraphicsBase(metaclass=ABCMeta):
             prop_manager = prop_manager(self, self.figure, self.axes, managed=managed)
         self._prop_manager = prop_manager
         self._colorbar_axis = None
-        self.set_options(padding=padding, aspect_ratio=aspect_ratio, image_size=image_size, **opts)
+        self.set_options(padding=padding, aspect_ratio=aspect_ratio, image_size=image_size, strict=strict, **opts)
 
         self.event_handler = None
         self._shown = False
@@ -469,11 +491,18 @@ class GraphicsBase(metaclass=ABCMeta):
                 self.animator.stop()
             self.animator = Animator(self, *args, **opts)
 
+    def _check_opts(self, opts):
+        diff = opts.keys() - self.layout_keys
+        if len(diff) > 0:
+            raise ValueError("unknown options for {}: {}".format(
+                type(self).__name__, list(diff)
+            ))
     def set_options(self,
                     event_handlers=None,
                     animated=None,
                     prolog=None,
                     epilog=None,
+                    strict=True,
                     **opts
                     ):
         """Sets options for the plot
@@ -484,6 +513,9 @@ class GraphicsBase(metaclass=ABCMeta):
         :return:
         :rtype:
         """
+        if strict:
+            self._check_opts(opts)
+
         self.bind_events(event_handlers)
         self._animated = animated
         self.create_animation(animated)
@@ -762,6 +794,25 @@ class Graphics(GraphicsBase):
         interactive=False
     )
 
+    layout_keys = {
+        'plot_label',
+        'plot_legend',
+        'legend_style'
+        'axes_labels',
+        'frame',
+        'frame_style',
+        'plot_range',
+        'ticks',
+        'ticks_style',
+        'ticks_label_style',
+        'scale',
+        'aspect_ratio'
+        'image_size',
+        'padding',
+        'spacings',
+        'background',
+        'colorbar',
+    } | GraphicsBase.layout_keys
     def set_options(self,
                     axes_labels=None,
                     plot_label=None,
@@ -775,6 +826,7 @@ class Graphics(GraphicsBase):
                     padding=None,
                     spacings=None,
                     ticks_style=None,
+                    ticks_label_style=None,
                     image_size=None,
                     aspect_ratio=None,
                     background=None,
@@ -796,6 +848,7 @@ class Graphics(GraphicsBase):
             ('plot_range', plot_range),
             ('ticks', ticks),
             ('ticks_style', ticks_style),
+            ('ticks_label_style', ticks_label_style),
             ('scale', scale),
             ('aspect_ratio', aspect_ratio),
             ('image_size', image_size),
