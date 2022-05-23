@@ -94,6 +94,13 @@ class GraphicsPropertyManager:
                 for a in artists:
                     a.set_label(legend)
 
+    # # set axes labels
+    # @property
+    # def axes(self):
+    #     return self._axes
+    # @axes.setter
+    # def axes(self, axes):
+    #     ...
 
     # set axes labels
     @property
@@ -290,7 +297,7 @@ class GraphicsPropertyManager:
         else:
             l = r = x
 
-        self._ticks_label_style = ((l, r), (b, t))
+        self._frame_style = ((l, r), (b, t))
         lax, rax, bax, tax = self.axes.spines.values()
         # print(l, r, b, t)
         for a,o in zip((lax, rax, bax, tax), (l, r, b, t)):
@@ -379,6 +386,7 @@ class GraphicsPropertyManager:
 
             self._image_size = (w, h)
             if not self.managed:
+                # print(w, wi, hi)
                 self.figure.set_size_inches(wi, hi)
 
     # set background color
