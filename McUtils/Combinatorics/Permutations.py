@@ -1701,10 +1701,14 @@ class IntegerPartitionPermutations:
                 for d, g in zip(partition_data, groups)
             ]
             if dtype is None:
-                dtype = _infer_dtype(np.max([np.max(s) for s in ushifts]) + np.max(totals))
+                tets_val = np.max([np.max(s) for s in ushifts]) + np.max(totals) + 1
+                dtype = _infer_dtype(tets_val)
             subinds = [
                 (g.astype(dtype) + s) for g,s in zip(ushifts, totals)
             ]
+            # for s in subinds:
+            #     if np.any(s < 0):
+            #         raise ValueError('overflow on {} from {}'.format(s, dtype))
 
         # raise Exception(groups, subinds)
 
@@ -1976,10 +1980,14 @@ class SymmetricGroupGenerator:
         groups = np.split(perms, inds)[1:]
 
         partitioners, shifts = self._get_partition_perms(usums)
-        perms_inds = [p.get_partition_permutation_indices(g, assume_standard=assume_standard,
+        perms_inds = [p.get_partition_permutation_indices(g,
+                                                 assume_standard=assume_standard,
                                                  preserve_ordering=preserve_ordering,
                                                  check_partition_counts=check_partition_counts) for p, g in zip(partitioners, groups) ]
         if dtype is None:
+        #     for i,p in enumerate(perms_inds):
+        #         if np.any(p < 0):
+        #             raise ValueError("dtype overflow on {}".format(groups[i]))
             dtype = _infer_dtype(np.max([np.max(p) for p in perms_inds]) + np.max(shifts))
         subinds = [ (g.astype(dtype) + s) for g,s in zip(perms_inds, shifts) ]
         indices = np.concatenate(subinds, axis=0)
