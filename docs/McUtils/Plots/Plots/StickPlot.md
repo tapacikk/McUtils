@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.StickPlot">StickPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L343)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L343?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L436)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L436?message=Update%20Docs)]
 </div>
 
 A Plot object that plots sticks
@@ -15,24 +15,18 @@ A Plot object that plots sticks
 
 ```python
 default_plot_style: dict
+known_styles: set
+method: str
 ```
-<a id="McUtils.Plots.Plots.StickPlot.__init__" class="docs-object-method">&nbsp;</a> 
-```python
-__init__(self, *args, **kwargs): 
-```
-<div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L347)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L347?message=Update%20Docs)]
-</div>
-
 <a id="McUtils.Plots.Plots.StickPlot.plot" class="docs-object-method">&nbsp;</a> 
 ```python
 plot(self, *params, insert_default_styles=True, **plot_style): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L349)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L349?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L442)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L442?message=Update%20Docs)]
 </div>
 
-Plots a set of data & stores the result
+Plots a set of data | stores the result
 - `:returns`: `_`
     >the graphics that matplotlib made
 
@@ -48,4 +42,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/StickPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/StickPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/StickPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L343?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L436?message=Update%20Docs)

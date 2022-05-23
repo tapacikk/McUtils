@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Graphics.Graphics3D">Graphics3D</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L731)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L731?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1039)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1039?message=Update%20Docs)]
 </div>
 
 Extends the standard matplotlib 3D plotting to use all the Graphics extensions
@@ -21,7 +21,7 @@ opt_keys: set
 __init__(self, *args, figure=None, axes=None, subplot_kw=None, event_handlers=None, animate=None, axes_labels=None, plot_label=None, plot_range=None, plot_legend=None, ticks=None, scale=None, ticks_style=None, image_size=None, background=None, view_settings=None, backend=<Backends.MPL: 'matplotlib'>, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L736)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L736?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1044)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1044?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.set_options" class="docs-object-method">&nbsp;</a> 
@@ -29,7 +29,7 @@ __init__(self, *args, figure=None, axes=None, subplot_kw=None, event_handlers=No
 set_options(self, view_settings=None, **parent_opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L777)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L777?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1085)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1085?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.load_mpl" class="docs-object-method">&nbsp;</a> 
@@ -37,7 +37,7 @@ set_options(self, view_settings=None, **parent_opts):
 load_mpl(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L792)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L792?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1100)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1100?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.Graphics3D.plot_label" class="docs-object-method">&nbsp;</a> 
@@ -98,6 +98,15 @@ ticks(self):
 ```python
 @property
 ticks_style(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Plots.Graphics.Graphics3D.ticks_label_style" class="docs-object-method">&nbsp;</a> 
+```python
+@property
+ticks_label_style(self): 
 ```
 <div class="docs-source-link" markdown="1">
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L?message=Update%20Docs)]
@@ -187,4 +196,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Graphics/Graphics3D.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Graphics/Graphics3D.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Graphics/Graphics3D.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L731?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1039?message=Update%20Docs)

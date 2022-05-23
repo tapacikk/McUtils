@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.ContourPlot3D">ContourPlot3D</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L783)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L783?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L1135)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L1135?message=Update%20Docs)]
 </div>
 
 Creates a 3D ContourPlot of 3D data
@@ -13,13 +13,10 @@ Creates a 3D ContourPlot of 3D data
  </div>
  <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
 
-<a id="McUtils.Plots.Plots.ContourPlot3D.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, *params, **opts): 
+method: str
 ```
-<div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L787)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L787?message=Update%20Docs)]
-</div>
+
 
  </div>
 </div>
@@ -33,4 +30,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ContourPlot3D.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ContourPlot3D.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ContourPlot3D.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L783?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L1135?message=Update%20Docs)

@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.DensityPlot">DensityPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L609)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L609?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L914)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L914?message=Update%20Docs)]
 </div>
 
 
@@ -13,13 +13,11 @@
  </div>
  <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
 
-<a id="McUtils.Plots.Plots.DensityPlot.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, *params, **opts): 
+method: str
+known_styles: set
 ```
-<div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L610)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L610?message=Update%20Docs)]
-</div>
+
 
  </div>
 </div>
@@ -33,4 +31,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/DensityPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/DensityPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/DensityPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L609?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L914?message=Update%20Docs)

@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.ArrayPlot">ArrayPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L486)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L486?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L784)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L784?message=Update%20Docs)]
 </div>
 
 Plots an array as an image
@@ -13,12 +13,16 @@ Plots an array as an image
  </div>
  <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
 
+```python
+method: tuple
+known_styles: set
+```
 <a id="McUtils.Plots.Plots.ArrayPlot.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, *params, plot_style=None, colorbar=None, figure=None, axes=None, subplot_kw=None, method='imshow', **opts): 
+__init__(self, *params, plot_style=None, colorbar=None, figure=None, axes=None, subplot_kw=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L490)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L490?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L791)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L791?message=Update%20Docs)]
 </div>
 
  </div>
@@ -33,4 +37,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ArrayPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ArrayPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ArrayPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L486?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L784?message=Update%20Docs)

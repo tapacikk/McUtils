@@ -42,92 +42,213 @@ Image/animation support and other back end support for 3D graphics (`VTK`) are p
 [Plot](Plots/Plots/Plot.md)   
 </div>
    <div class="col" markdown="1">
-[ScatterPlot](Plots/Plots/ScatterPlot.md)   
-</div>
-</div>
-  <div class="row">
-   <div class="col" markdown="1">
-[ErrorBarPlot](Plots/Plots/ErrorBarPlot.md)   
-</div>
-   <div class="col" markdown="1">
-[ListErrorBarPlot](Plots/Plots/ListErrorBarPlot.md)   
-</div>
-   <div class="col" markdown="1">
-[StickPlot](Plots/Plots/StickPlot.md)   
-</div>
-</div>
-  <div class="row">
-   <div class="col" markdown="1">
-[ListStickPlot](Plots/Plots/ListStickPlot.md)   
-</div>
-   <div class="col" markdown="1">
-[TriPlot](Plots/Plots/TriPlot.md)   
-</div>
-   <div class="col" markdown="1">
-[ListTriPlot](Plots/Plots/ListTriPlot.md)   
-</div>
-</div>
-  <div class="row">
-   <div class="col" markdown="1">
 [DataPlot](Plots/Plots/DataPlot.md)   
 </div>
-   <div class="col" markdown="1">
-[HistogramPlot](Plots/Plots/HistogramPlot.md)   
-</div>
-   <div class="col" markdown="1">
-[HistogramPlot2D](Plots/Plots/HistogramPlot2D.md)   
-</div>
 </div>
   <div class="row">
-   <div class="col" markdown="1">
-[VerticalLinePlot](Plots/Plots/VerticalLinePlot.md)   
-</div>
    <div class="col" markdown="1">
 [ArrayPlot](Plots/Plots/ArrayPlot.md)   
 </div>
    <div class="col" markdown="1">
 [TensorPlot](Plots/Plots/TensorPlot.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Plot2D](Plots/Plots/Plot2D.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [ListPlot2D](Plots/Plots/ListPlot2D.md)   
 </div>
-   <div class="col" markdown="1">
-[ContourPlot](Plots/Plots/ContourPlot.md)   
-</div>
-</div>
-  <div class="row">
-   <div class="col" markdown="1">
-[DensityPlot](Plots/Plots/DensityPlot.md)   
-</div>
-   <div class="col" markdown="1">
-[ListContourPlot](Plots/Plots/ListContourPlot.md)   
-</div>
-   <div class="col" markdown="1">
-[ListDensityPlot](Plots/Plots/ListDensityPlot.md)   
-</div>
-</div>
-  <div class="row">
-   <div class="col" markdown="1">
-[ListTriContourPlot](Plots/Plots/ListTriContourPlot.md)   
-</div>
-   <div class="col" markdown="1">
-[ListTriDensityPlot](Plots/Plots/ListTriDensityPlot.md)   
-</div>
-   <div class="col" markdown="1">
-[ListTriPlot3D](Plots/Plots/ListTriPlot3D.md)   
-</div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Plot3D](Plots/Plots/Plot3D.md)   
 </div>
    <div class="col" markdown="1">
 [ListPlot3D](Plots/Plots/ListPlot3D.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[FilledPlot](Plots/Plots/FilledPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[ScatterPlot](Plots/Plots/ScatterPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[ErrorBarPlot](Plots/Plots/ErrorBarPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[StickPlot](Plots/Plots/StickPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[DatePlot](Plots/Plots/DatePlot.md)   
+</div>
+   <div class="col" markdown="1">
+[StepPlot](Plots/Plots/StepPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[LogLogPlot](Plots/Plots/LogLogPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[SemiLogXPlot](Plots/Plots/SemiLogXPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[SemilogYPlot](Plots/Plots/SemilogYPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[HorizontalFilledPlot](Plots/Plots/HorizontalFilledPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[BarPlot](Plots/Plots/BarPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[HorizontalBarPlot](Plots/Plots/HorizontalBarPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[EventPlot](Plots/Plots/EventPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[PiePlot](Plots/Plots/PiePlot.md)   
+</div>
+   <div class="col" markdown="1">
+[StackPlot](Plots/Plots/StackPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[BrokenHorizontalBarPlot](Plots/Plots/BrokenHorizontalBarPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[HorizontalLinePlot](Plots/Plots/HorizontalLinePlot.md)   
+</div>
+   <div class="col" markdown="1">
+[PolygonPlot](Plots/Plots/PolygonPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[AxisHorizontalLinePlot](Plots/Plots/AxisHorizontalLinePlot.md)   
+</div>
+   <div class="col" markdown="1">
+[AxisHorizontalSpanPlot](Plots/Plots/AxisHorizontalSpanPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[AxisVerticalLinePlot](Plots/Plots/AxisVerticalLinePlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[AxisVeticalSpanPlot](Plots/Plots/AxisVeticalSpanPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[AxisLinePlot](Plots/Plots/AxisLinePlot.md)   
+</div>
+   <div class="col" markdown="1">
+[StairsPlot](Plots/Plots/StairsPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[HistogramPlot](Plots/Plots/HistogramPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[HistogramPlot2D](Plots/Plots/HistogramPlot2D.md)   
+</div>
+   <div class="col" markdown="1">
+[SpectrogramPlot](Plots/Plots/SpectrogramPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[AutocorrelationPlot](Plots/Plots/AutocorrelationPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[AngleSpectrumPlot](Plots/Plots/AngleSpectrumPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[CoherencePlot](Plots/Plots/CoherencePlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[CrossSpectralDensityPlot](Plots/Plots/CrossSpectralDensityPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[MagnitudeSpectrumPlot](Plots/Plots/MagnitudeSpectrumPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[PhaseSpectrumPlot](Plots/Plots/PhaseSpectrumPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[PowerSpectralDensityPlot](Plots/Plots/PowerSpectralDensityPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[CrossCorrelationPlot](Plots/Plots/CrossCorrelationPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[BoxPlot](Plots/Plots/BoxPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[ViolinPlot](Plots/Plots/ViolinPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[BoxAndWhiskerPlot](Plots/Plots/BoxAndWhiskerPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[HexagonalHistogramPlot](Plots/Plots/HexagonalHistogramPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[QuiverPlot](Plots/Plots/QuiverPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[StreamPlot](Plots/Plots/StreamPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[MatrixPlot](Plots/Plots/MatrixPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[SparsityPlot](Plots/Plots/SparsityPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[ContourPlot](Plots/Plots/ContourPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[DensityPlot](Plots/Plots/DensityPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[HeatmapPlot](Plots/Plots/HeatmapPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[TriPlot](Plots/Plots/TriPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[TriDensityPlot](Plots/Plots/TriDensityPlot.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[TriContourLinesPlot](Plots/Plots/TriContourLinesPlot.md)   
+</div>
+   <div class="col" markdown="1">
+[TriContourPlot](Plots/Plots/TriContourPlot.md)   
 </div>
    <div class="col" markdown="1">
 [ScatterPlot3D](Plots/Plots/ScatterPlot3D.md)   

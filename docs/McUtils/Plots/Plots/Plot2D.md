@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.Plot2D">Plot2D</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L562)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L562?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L868)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L868?message=Update%20Docs)]
 </div>
 
 A base class for plots of 3D data but plotted on 2D axes
@@ -13,12 +13,16 @@ A base class for plots of 3D data but plotted on 2D axes
  </div>
  <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
 
+```python
+known_styles: set
+method: str
+```
 <a id="McUtils.Plots.Plots.Plot2D.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, *params, plot_style=None, method='contour', colorbar=None, figure=None, axes=None, subplot_kw=None, **opts): 
+__init__(self, *params, plot_style=None, colorbar=None, figure=None, axes=None, subplot_kw=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L566)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L566?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L876)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L876?message=Update%20Docs)]
 </div>
 
 
@@ -51,4 +55,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/Plot2D.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/Plot2D.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/Plot2D.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L562?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L868?message=Update%20Docs)

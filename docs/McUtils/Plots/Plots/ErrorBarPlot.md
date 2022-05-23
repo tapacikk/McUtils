@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.ErrorBarPlot">ErrorBarPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L328)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L328?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L422)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L422?message=Update%20Docs)]
 </div>
 
 Inherits from `Plot`.
@@ -14,13 +14,11 @@ Plots error bars using the `errorbar` method.
  </div>
  <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
 
-<a id="McUtils.Plots.Plots.ErrorBarPlot.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, *args, **kwargs): 
+known_styles: set
+method: str
 ```
-<div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L333)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L333?message=Update%20Docs)]
-</div>
+
 
  </div>
 </div>
@@ -34,4 +32,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ErrorBarPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ErrorBarPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ErrorBarPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L328?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L422?message=Update%20Docs)

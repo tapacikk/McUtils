@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.ScatterPlot">ScatterPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L312)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L312?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L404)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L404?message=Update%20Docs)]
 </div>
 
 Inherits from `Plot`.
@@ -14,13 +14,12 @@ Plots a bunch of x values against a bunch of y values using the `scatter` method
  </div>
  <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
 
-<a id="McUtils.Plots.Plots.ScatterPlot.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, *args, **kwargs): 
+known_styles: set
+style_mapping: dict
+method: str
 ```
-<div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L317)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L317?message=Update%20Docs)]
-</div>
+
 
  </div>
 </div>
@@ -87,4 +86,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ScatterPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ScatterPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ScatterPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L312?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L404?message=Update%20Docs)
