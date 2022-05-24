@@ -281,27 +281,35 @@ Image/animation support and other back end support for 3D graphics (`VTK`) are p
 [Line](Plots/Primitives/Line.md)   
 </div>
    <div class="col" markdown="1">
+[Text](Plots/Primitives/Text.md)   
+</div>
+   <div class="col" markdown="1">
+[Arrow](Plots/Primitives/Arrow.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
 [EventHandler](Plots/Interactive/EventHandler.md)   
 </div>
    <div class="col" markdown="1">
 [Animator](Plots/Interactive/Animator.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Styled](Plots/Styling/Styled.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [ThemeManager](Plots/Styling/ThemeManager.md)   
 </div>
    <div class="col" markdown="1">
 [Image](Plots/Image/Image.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [GraphicsPropertyManager](Plots/Properties/GraphicsPropertyManager.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [GraphicsPropertyManager3D](Plots/Properties/GraphicsPropertyManager3D.md)   
 </div>
