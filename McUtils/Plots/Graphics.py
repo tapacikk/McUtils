@@ -29,6 +29,33 @@ class GraphicsBase(metaclass=ABCMeta):
     The base class for all things Graphics
     Defines the common parts of the interface with some calling into matplotlib
     """
+    _figure_mapping = weakref.WeakValueDictionary()
+    _figure_children = weakref.WeakKeyDictionary()
+    @classmethod
+    def resolve_figure_graphics(cls, fig):
+        if fig in cls._figure_mapping:
+            return cls._figure_mapping[fig]
+    @classmethod
+    def add_figure_graphics(cls, fig, graphics):
+        if fig in cls._figure_mapping:
+            parent = cls._figure_mapping[fig]
+            # cls._figure_children[parent].add(graphics)
+            cls._figure_children[parent].append(graphics)
+        else:
+            cls._figure_mapping[fig] = graphics
+            cls._figure_children[graphics] = []
+    @classmethod
+    def remove_figure_mapping(cls, fig):
+        if fig in cls._figure_mapping:
+            parent = cls._figure_mapping[fig]
+            del cls._figure_mapping[fig]
+            del cls._figure_children[parent]
+    @classmethod
+    def get_child_graphics(cls, fig):
+        if fig in cls._figure_mapping:
+            parent = cls._figure_mapping[fig]
+            return cls._figure_children[parent]
+
     opt_keys = {
         'background',
         'axes_labels',
@@ -49,7 +76,8 @@ class GraphicsBase(metaclass=ABCMeta):
         'epilog'
         'prolog',
         'subplot_kw',
-        'theme'
+        'theme',
+        'annotations'
     }
     def _get_def_opt(self, key, val, theme):
         if val is None:
@@ -96,7 +124,8 @@ class GraphicsBase(metaclass=ABCMeta):
         'event_handlers',
         'animated',
         'prolog',
-        'epilog'
+        'epilog',
+        'annotations'
     }
     def __init__(self,
                  *args,
@@ -115,6 +144,7 @@ class GraphicsBase(metaclass=ABCMeta):
                  theme_manager=ThemeManager,
                  managed=None,
                  strict=True,
+                 # annotations=None,
                  **opts
                  ):
         """
@@ -131,7 +161,6 @@ class GraphicsBase(metaclass=ABCMeta):
         :param opts:
         :type opts:
         """
-
 
         self._init_opts = dict(opts, # for copying
                                tighten=tighten,
@@ -163,18 +192,20 @@ class GraphicsBase(metaclass=ABCMeta):
         self.mpl_backend = mpl_backend
         if isinstance(figure, GraphicsBase):
             parent = figure
-        self.parent = parent
-        self.children = weakref.WeakSet()
+        # self.parent = parent
+        # self.children = set()#weakref.WeakSet()
+
         if parent is not None:
-            parent.children.add(self)
             # TODO: generalize this to a set of inherited props...
             if image_size is None: # gotta copy in some layout stuff..
-                image_size = self.parent.image_size
+                image_size = parent.image_size
             if aspect_ratio is None:
-                aspect_ratio = self.parent.aspect_ratio
+                aspect_ratio = parent.aspect_ratio
             if interactive is None:
-                interactive = self.parent.interactive
-            prop_manager = self.parent._prop_manager
+                interactive = parent.interactive
+            prop_manager = parent._prop_manager
+
+        # print(parent.children)
 
         theme = self._get_def_opt('theme', theme, {})
         self.theme=theme
@@ -227,6 +258,8 @@ class GraphicsBase(metaclass=ABCMeta):
                 self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
         else:
             self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
+        self.add_figure_graphics(self.figure, self)
+
         if not self.interactive:
             self.pyplot.mpl_disconnect()
 
@@ -240,7 +273,6 @@ class GraphicsBase(metaclass=ABCMeta):
         self._shown = False
         self.animator = None
         self.tighten = tighten
-
 
         self._in_init = False
 
@@ -448,14 +480,31 @@ class GraphicsBase(metaclass=ABCMeta):
         if figure is None:
             figure, axes = self._subplot_init(*args, mpl_backend=self.mpl_backend, figure=self, **kw)
             # yes axes is overwritten intentionally for now -- not sure how to "reparent" an Axes object
-        elif isinstance(figure, GraphicsBase):
+        elif isinstance(figure, GraphicsBase) or all(hasattr(figure, h) for h in ['layout_keys']):
             axes = figure.axes # type: matplotlib.axes.Axes
             figure = figure.figure # type: matplotlib.figure.Figure
+            # print("???")
+        # print(figure)
 
         if axes is None:
-            axes = figure.add_subplot(1, 1, 1) # type: matplotlib.axes.Axes
+            if not hasattr(figure, 'add_subplot'):
+                figure = figure.figure
+            if not hasattr(figure, 'axes'):
+                axes = figure.add_subplot(1, 1, 1) # type: matplotlib.axes.Axes
+            else:
+                axes = figure.axes
 
         return figure, axes
+
+    @property
+    def parent(self):
+        return self.resolve_figure_graphics(self.figure)
+    @property
+    def children(self):
+        if self.parent is self:
+            return self.get_child_graphics(self.figure)
+        else:
+            return None
 
     @property
     def event_handlers(self):
@@ -491,8 +540,9 @@ class GraphicsBase(metaclass=ABCMeta):
                 self.animator.stop()
             self.animator = Animator(self, *args, **opts)
 
+    known_keys = layout_keys
     def _check_opts(self, opts):
-        diff = opts.keys() - self.layout_keys
+        diff = opts.keys() - self.known_keys
         if len(diff) > 0:
             raise ValueError("unknown options for {}: {}".format(
                 type(self).__name__, list(diff)
@@ -520,19 +570,22 @@ class GraphicsBase(metaclass=ABCMeta):
         self._animated = animated
         self.create_animation(animated)
 
-        self._prolog = prolog
-        if self._prolog is not None:
-            self.prolog = prolog
+        if prolog is not None or not hasattr(self, '_prolog'):
+            self._prolog = prolog
+            if self._prolog is not None:
+                self.prolog = prolog
 
-        self._epilog = epilog
-        if self._epilog is not None:
-            self.epilog = epilog
+        if epilog is not None or not hasattr(self, '_epilog'):
+            self._epilog = epilog
+            if self._epilog is not None:
+                self.epilog = epilog
 
     @property
     def prolog(self):
         return self._prolog
     @prolog.setter
     def prolog(self, p):
+        self._update_copy_opt('prolog', p)
         # might want to clear the elements in the prolog?
         self._prolog = p
 
@@ -541,6 +594,7 @@ class GraphicsBase(metaclass=ABCMeta):
         return self._epilog
     @epilog.setter
     def epilog(self, e):
+        self._update_copy_opt('epilog', e)
         # might want to clear the elements in the epilog?
         self._epilog = e
 
@@ -602,9 +656,15 @@ class GraphicsBase(metaclass=ABCMeta):
     def opts(self):
         opt_dict = {}
         for k in self.opt_keys:
-            if k in self.__dict__ or hasattr(self._prop_manager, k):
+            if (
+                    k in self.__dict__
+                    or hasattr(self._prop_manager, k)
+            ):
                 opt_dict[k] = getattr(self, k)
-            elif "_"+k in self.__dict__:
+            elif (
+                    "_"+k in self.__dict__
+                    or hasattr(self, "_"+k)
+            ):
                 opt_dict[k] = getattr(self, "_" + k)
         return opt_dict
 
@@ -615,15 +675,41 @@ class GraphicsBase(metaclass=ABCMeta):
         :rtype:
         """
         return self.change_figure(None)
-    def change_figure(self, new, *init_args, **init_kwargs):
+    def _get_init_opts(self, parent_opts, unmerged_keys=None):
+        if unmerged_keys is None:
+            unmerged_keys = self.layout_keys
+        base = self._init_opts.copy()
+        problems = unmerged_keys & base.keys()
+        for k in problems & parent_opts.keys():
+            del base[k]
+        return base
+    def change_figure(self, new, *init_args, figs=None, **init_kwargs):
         """Creates a copy of the object with new axes and a new figure
 
         :return:
         :rtype:
         """
-        # print(self._init_opts)
-        return type(self)(*init_args, **dict(self._init_opts, figure=new, **init_kwargs))
+        # print(self._init_opts, init_kwargs)
+        parent = self.parent
+        figs = {} if figs is None else figs
+        if parent is self:
+            # opts = self.get_init_opts(**init_kwargs)
+            figs[self] = base = self._change_figure(new, *init_args, parent_opts={}, **init_kwargs)
+            parent_opts = dict(self._get_init_opts({}), **init_kwargs)
+            for c in self.children:
+                figs[c] = c._change_figure(base, parent_opts=parent_opts)
+        else:
+            parent.change_figure(new, *init_args, figs=figs, **init_kwargs)
+        return figs[self]
+    def _get_init_args(self, *init_args):
+        return init_args
+    def _change_figure(self, new, *init_args, parent_opts=None, **init_kwargs):
+        """Creates a copy of the object with new axes and a new figure
 
+        :return:
+        :rtype:
+        """
+        return type(self)(*self._get_init_args(*init_args), **dict(self._get_init_opts(parent_opts), figure=new, **init_kwargs))
     def prep_show(self):
         self.set_options(**self.opts)  # matplotlib is dumb so it makes sense to just reset these again...
         if self.epilog is not None:
@@ -640,6 +726,7 @@ class GraphicsBase(metaclass=ABCMeta):
             self.figure.show()
         else:
             if reshow or not self._shown:
+                # print(self, self.epilog)
                 self.prep_show()
                 if not self.managed:
                     ni = not self.interactive
@@ -658,13 +745,17 @@ class GraphicsBase(metaclass=ABCMeta):
                 # raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
 
     def close(self, force=False):
-        if force or self.parent is None: # parent manages cleanup
+        if force or self.resolve_figure_graphics(self.figure) is self: # parent manages cleanup
             if self._mpl_loaded:
                 with self.pyplot as plt:
                     return plt.close(self.figure)
+            self.remove_figure_mapping(self.figure)
 
     def __del__(self):
-        self.close()
+        try:
+            self.close()
+        except AttributeError:
+            pass
 
     def clear(self):
         ax = self.axes  # type: matplotlib.axes.Axes
@@ -813,6 +904,7 @@ class Graphics(GraphicsBase):
         'background',
         'colorbar',
     } | GraphicsBase.layout_keys
+    known_keys = layout_keys
     def set_options(self,
                     axes_labels=None,
                     plot_label=None,
@@ -836,7 +928,7 @@ class Graphics(GraphicsBase):
                     **parent_opts
                     ):
 
-        super().set_options(**parent_opts)
+        super().set_options(prolog=prolog, epilog=epilog, **parent_opts)
 
         opts = (
             ('plot_label', plot_label),
@@ -1024,13 +1116,22 @@ class Graphics(GraphicsBase):
         self._update_copy_opt('colorbar', value)
         self._prop_manager.colorbar = value
 
-    def prep_show(self):
+    def _prep_show(self, parent=False):
         super().prep_show()
-        for c in self.children:
-            c.prep_show()
-        if self.plot_legend or any(c.plot_legend for c in self.children):
-            ls = self.legend_style if self.legend_style is not None else {}
-            self.axes.legend(**ls)
+        if parent:
+            if self.plot_legend or any(hasattr(c, 'plot_legend') and c.plot_legend for c in self.children):
+                ls = self.legend_style if self.legend_style is not None else {}
+                self.axes.legend(**ls)
+    def prep_show(self):
+        if self.parent is self:
+            self._prep_show(parent=True)
+            for c in self.children:
+                if hasattr(c, '_prep_show'):
+                    c._prep_show(parent=False)
+                else:
+                    c.prep_show()
+        else:
+            self.parent.prep_show()
 
 ########################################################################################################################
 #
