@@ -279,11 +279,13 @@ class Selector(ChangeTracker):
         return field
 Control.control_types['Selector'] = Selector
 class VariableDisplay(Control):
-    def __init__(self, var, pane=None, autoclear=True, **attrs):
+    def __init__(self, var, value=None, pane=None, autoclear=True, **attrs):
         super().__init__(var)
         if pane is None:
             pane = JHTML.OutputArea(autoclear=autoclear, **attrs)
         self.out = pane
+        if value is not None:
+            self.var.value = value
     def get_value(self):
         return self.var.value
     def set_value(self):
