@@ -240,6 +240,7 @@ class Plot(Graphics):
         self._data = None
 
         super().__init__(figure=figure, axes=axes, theme=theme, subplot_kw=subplot_kw, **opts)
+        self._init_opts['plot_style'] = plot_style
         if method is None:
            method = self.method
         if isinstance(method, str):
@@ -249,7 +250,7 @@ class Plot(Graphics):
         if len(params) > 0:
             self.plot(*params)
 
-    layout_keys = Graphics.layout_keys | {
+    known_keys = Graphics.known_keys | {
         'method',
         'plot_style'
     }
@@ -257,12 +258,12 @@ class Plot(Graphics):
     def filter_options(cls, opts, allowed=None):
         new = {}
         if allowed is None:
-            allowed = cls.known_styles | cls.layout_keys
+            allowed = cls.known_styles | cls.known_keys
         for k in opts.keys() & allowed:
                 new[k] = opts[k]
         return new
     def _check_opts(self, opts):
-        diff = opts.keys() - (self.known_styles | self.layout_keys)
+        diff = opts.keys() - (self.known_styles | self.known_keys)
         if len(diff) > 0:
             raise ValueError("unknown options for {}: {}".format(
                 type(self).__name__, list(diff)
@@ -299,10 +300,18 @@ class Plot(Graphics):
         else:
             return [self.graphics]
 
-    def copy(self):
-        return self.change_figure(None)
-    def change_figure(self, figure, *init_args, **init_kwargs):
-        return super().change_figure(figure, *self._data[0], *init_args, **init_kwargs)
+    # def copy(self):
+    #     return self.change_figure(None)
+    def _change_figure(self, new, *init_args, **init_kwargs):
+        """Creates a copy of the object with new axes and a new figure
+
+        :return:
+        :rtype:
+        """
+        # print(init_kwargs)
+        # print(self._data[0], init_args)
+        # print(init_kwargs, self._init_opts)
+        return super()._change_figure(new, *self._data[0], *init_args, **init_kwargs)
 
     def clear(self):
         """
