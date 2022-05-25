@@ -15,7 +15,7 @@
 
 <a id="McUtils.Jupyter.Apps.Controls.VariableDisplay.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, var, pane=None, autoclear=True, **attrs): 
+__init__(self, var, value=None, pane=None, autoclear=True, **attrs): 
 ```
 <div class="docs-source-link" markdown="1">
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L282)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L282?message=Update%20Docs)]
@@ -26,7 +26,7 @@ __init__(self, var, pane=None, autoclear=True, **attrs):
 get_value(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L287)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L287?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L289)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L289?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.Apps.Controls.VariableDisplay.set_value" class="docs-object-method">&nbsp;</a> 
@@ -34,7 +34,7 @@ get_value(self):
 set_value(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L289)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L289?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L291)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L291?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.Apps.Controls.VariableDisplay.update" class="docs-object-method">&nbsp;</a> 
@@ -42,7 +42,7 @@ set_value(self):
 update(self, e): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L301)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L301?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L303)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L303?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Jupyter.Apps.Controls.VariableDisplay.to_jhtml" class="docs-object-method">&nbsp;</a> 
@@ -50,7 +50,7 @@ update(self, e):
 to_jhtml(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L303)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L303?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L305)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L305?message=Update%20Docs)]
 </div>
 
  </div>
