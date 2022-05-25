@@ -668,13 +668,13 @@ class GraphicsBase(metaclass=ABCMeta):
                 opt_dict[k] = getattr(self, "_" + k)
         return opt_dict
 
-    def copy(self):
+    def copy(self, **kwargs):
         """Creates a copy of the object with new axes and a new figure
 
         :return:
         :rtype:
         """
-        return self.change_figure(None)
+        return self.change_figure(None, **kwargs)
     def _get_init_opts(self, parent_opts, unmerged_keys=None):
         if unmerged_keys is None:
             unmerged_keys = self.layout_keys
@@ -745,7 +745,11 @@ class GraphicsBase(metaclass=ABCMeta):
                 # raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
 
     def close(self, force=False):
-        if force or self.resolve_figure_graphics(self.figure) is self: # parent manages cleanup
+        if (
+                force
+                or self.figure not in self._figure_mapping
+                or self.resolve_figure_graphics(self.figure) is self
+        ): # parent manages cleanup
             if self._mpl_loaded:
                 with self.pyplot as plt:
                     return plt.close(self.figure)
@@ -762,6 +766,7 @@ class GraphicsBase(metaclass=ABCMeta):
         all_things = ax.artists + ax.patches
         for a in all_things:
             a.remove()
+        self.remove_figure_mapping(self.figure)
 
     def _ipython_display_(self):
         self.show()
