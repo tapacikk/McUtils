@@ -888,7 +888,18 @@ class HTMLWidgets:
     @classmethod
     def load(cls, overwrite=False):
         from .ActiveHTMLWidget import HTMLElement
-        return HTMLElement.jupyterlab_install(overwrite=overwrite)
+
+        nb = HTMLElement.jupyternb_install(overwrite=overwrite)
+        lab = HTMLElement.jupyterlab_install(overwrite=overwrite)
+        res = []
+        if nb is not None:
+            res.append(nb)
+        if lab is not None:
+            res.append(lab)
+        if len(res) > 0:
+            from IPython.core.display import display
+            display(*res)
+
     _cls_map = None
     @classmethod
     def get_class_map(cls):
