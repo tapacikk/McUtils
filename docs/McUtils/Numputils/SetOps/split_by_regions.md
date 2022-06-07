@@ -1,6 +1,6 @@
 # <a id="McUtils.Numputils.SetOps.split_by_regions">split_by_regions</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/SetOps.py#L480)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/SetOps.py#L483)]
 </div>
 
 ```python
@@ -27,4 +27,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Numputils/SetOps/split_by_regions.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Numputils/SetOps/split_by_regions.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Numputils/SetOps/split_by_regions.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/SetOps.py#L480?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/SetOps.py#L483?message=Update%20Docs)
