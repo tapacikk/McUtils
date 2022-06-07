@@ -2120,18 +2120,25 @@ class ScipySparseArray(SparseArray):
 
             # raise Exception(blocks, new_shape, len(inds), len(unflat))
             # od = data
-            try:
-                data = self._build_data(data, unflat, total_shape)
-            except Exception as e:
-                # print(data, data.shape, unflat, total_shape)
-                data = e
+            if len(unflat) == 0:
+                if len(total_shape) == 0:
+                    total_shape = ((1,))
+                return self.empty(total_shape, dtype=self.dtype)
+            else:
+                try:
+                    data = self._build_data(data, unflat, total_shape)
+                except Exception as e:
+                    # print(data, data.shape, unflat, total_shape)
+                    exc = e
+                else:
+                    exc = None
             # raise Exception(unflat, od, data, inds, total_shape)
-            if isinstance(data, Exception):
+            if exc is not None:
                 raise IndexError("{}: couldn't take element {} of array {} (Got Error: '{}')".format(
                     type(self).__name__,
                     idx,
                     self,
-                    data
+                    exc
                 ))
 
             new = type(self)(data, shape=new_shape, layout=self.fmt)

@@ -327,8 +327,6 @@ def find1d(ar, to_find, sorting=None,
         vals = np.searchsorted(ar, to_find, sorter=sorting)
     if isinstance(vals, (np.integer, int)):
         vals = np.array([vals])
-    if minimal_dtype:
-        vals = downcast_index_array(vals, ar.shape[-1])
     # we have the ordering according to the _sorted_ version of `ar`
     # so now we need to invert that back to the unsorted version
     if len(sorting) > 0:
@@ -346,6 +344,8 @@ def find1d(ar, to_find, sorting=None,
             else:
                 # print(vals, bad_vals)
                 vals[bad_vals] = -1
+        else:
+            bad_vals = big_vals
 
     else:
         bad_vals = np.full_like(to_find, True)
@@ -355,6 +355,9 @@ def find1d(ar, to_find, sorting=None,
             raise IndexError("{} not in array".format(to_find[bad_vals]))
         else:
             vals[bad_vals] = missing_val
+
+    if minimal_dtype and not bad_vals.any(): # protecting the missings
+        vals = downcast_index_array(vals, ar.shape[-1])
 
     if search_space_sorting is not None:
         vals = vals[search_space_inverse_sorting]
