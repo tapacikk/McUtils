@@ -581,9 +581,9 @@ class ConverterTest(TestCase):
     def test_CustomConversion(self):
 
         def invert(coords, **opts):
-            return -coords, {}
+            return -coords, opts
 
-        new = CompositeCoordinateSystem.register(CartesianCoordinates3D, invert, inverse_conversion=invert)
+        new = CompositeCoordinateSystem.register(CartesianCoordinates3D, invert, pointwise=False, inverse_conversion=invert)
         coord_set = CoordinateSet(DataGenerator.multicoords(5, 10))
         crds = coord_set.convert(new)
         old = crds.convert(coord_set.system)
@@ -592,5 +592,19 @@ class ConverterTest(TestCase):
         self.assertEquals(np.sum(coord_set - old), 0.)
 
         self.assertAlmostEquals(np.sum(coord_set.jacobian(new)[:, 0].reshape(30, 30) + np.eye(30, 30)), 0.)
+
+    @debugTest
+    def test_ChainCustomConversion(self):
+        def invert(coords, **opts):
+            return -coords, opts
+
+        new = CompositeCoordinateSystem.register(SphericalCoordinates, invert, pointwise=False, inverse_conversion=invert)
+        coord_set = CoordinateSet(DataGenerator.multicoords(5, 10))
+        crds = coord_set.convert(new)
+        old = crds.convert(coord_set.system)
+
+        self.assertAlmostEqual(np.sum(coord_set - old)[()], 0.)
+
+        # self.assertAlmostEquals(np.sum(coord_set.jacobian(new)[:, 0].reshape(30, 30) + np.eye(30, 30)), 0.)
 
     #endregion

@@ -5,10 +5,12 @@ Provides the conversion framework between coordinate systems
 from collections import OrderedDict as odict, deque
 import os, abc, numpy as np, weakref
 from ...Extensions import ModuleLoader
+from ...Numputils import apply_pointwise
 
 __all__ = [
     "CoordinateSystemConverters",
-    "CoordinateSystemConverter"
+    "CoordinateSystemConverter",
+    "SimpleCoordinateSystemConverter"
 ]
 
 __reload_hook__ = ["...Extensions", '.CartesianToZMatrix', '.ZMatrixToCartesian']
@@ -43,7 +45,7 @@ class CoordinateSystemConverter(metaclass=abc.ABCMeta):
         :param kwargs:
         :type kwargs:
         """
-        return np.array((self.convert(coords, **kwargs) for coords in coords_list))
+        return np.array([self.convert(coords, **kwargs) for coords in coords_list])
 
     @abc.abstractmethod
     def convert(self, coords, **kwargs):
@@ -67,6 +69,12 @@ class CoordinateSystemConverter(metaclass=abc.ABCMeta):
         if where is None:
             where = self.converters if not isinstance(self.converters, weakref.ref) else self.converters()
         where.register_converter(*self.types, self, check=check)
+
+    def __call__(self, coords, **kwargs):
+        if coords.ndim > 2: #TODO: make this a more robust check for the future
+            return self.convert_many(coords, **kwargs)
+        else:
+            return self.convert(coords, **kwargs)
 
 ######################################################################################################
 ##
@@ -132,7 +140,7 @@ class CoordinateSystemConverters:
         """
 
         if not self._converters_loaded:
-            self.converter_graph = ConversionGraph()
+            self.converter_graph = ConversionGraph(proxy_function=lambda x,y:x.is_compatible(y))
 
             from .DefaultConverters import __converters__ as converters
             for conv in converters:
@@ -158,7 +166,7 @@ class CoordinateSystemConverters:
         """
 
         cls._preload_converters()
-        path = cls.converter_graph.find_path_bfs(system1, system2, identity_function=lambda x,y:x.is_compatible(y))
+        path = cls.converter_graph.find_path_bfs(system1, system2)
         if path is None:
             raise KeyError(
                 "{}: no rules for converting coordinate system {} to {} in {}".format(cls.__name__, system1, system2, [
@@ -172,11 +180,16 @@ class CoordinateSystemConverters:
             converter = cls.converters[path[0]]
         else:
             conversions = [cls.converters[p] for p in path]
-            def converter(crds, **kwargs):
+            def convert_crds(crds, **kwargs):
                 cur = crds
                 for f in conversions:
                     cur = f(cur, **kwargs)
-                return cur
+                    if isinstance(cur, tuple):
+                        cur, kwargs = cur
+                    else:
+                        kwargs = {}
+                return cur, kwargs
+            return SimpleCoordinateSystemConverter([system1, system2], convert_crds)
 
         #
         # def _get_pathy_conversion(self, src, targ):
@@ -240,9 +253,10 @@ class ConversionGraph:
     Pulled from the UnitGraph stuff
     """
 
-    def __init__(self, stuff_to_update = ()):
+    def __init__(self, stuff_to_update = (), proxy_function=None):
         self._graph = {}
         self.update(stuff_to_update)
+        self.proxy_function = None
 
     def __contains__(self, item):
         return item in self._graph
@@ -251,14 +265,20 @@ class ConversionGraph:
             self._graph[node].add(connection)
         else:
             self._graph[node]={connection}
+        if self.proxy_function is not None:
+            for k in self._graph:
+                if self.proxy_function(node, k):
+                    self._graph[k].add(connection)
+                elif self.proxy_function(connection, k):
+                    self._graph[node].add(k)
         if not connection in self._graph:
             self._graph[connection] = set()
     def update(self, iterable):
         for connection in iterable:
             self.add(*connection)
-    def find_path_bfs(self, start, end, identity_function=None):
+    def find_path_bfs(self, start, end):
         # we use a little poor-man's Dijkstra to find the shortest unit conversion path
-
+        identity_function = self.proxy_function
         if identity_function is None:
             if not start in self._graph or not end in self._graph:
                 return None
@@ -301,5 +321,18 @@ class ConversionGraph:
                 cur = nxt
             # path.append(start)
             return list(reversed(path))
+
+class SimpleCoordinateSystemConverter(CoordinateSystemConverter):
+    def __init__(self, types, conversion, **opts):
+        super().__init__(**opts)
+        self._types = types
+        self.conversion = conversion
+    @property
+    def types(self):
+        return self._types
+    def convert(self, coords, **kw):
+        return self.conversion(coords, **kw)
+    def convert_many(self, coords, **kw):
+        return self.convert(coords, **kw)
 
 CoordinateSystemConverter.converters = weakref.ref(CoordinateSystemConverters)

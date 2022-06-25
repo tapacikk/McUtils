@@ -26,7 +26,8 @@ __all__ = [
     "one_pad_vecs",
     "affine_multiply",
     "cartesian_from_rad",
-    "polar_to_cartesian"
+    "polar_to_cartesian",
+    "apply_pointwise"
 ]
 
 ##
@@ -772,3 +773,10 @@ def polar_to_cartesian(center, v, u, r, a, d):
         transfs = polar_to_cartesian_transforms(center, vecs1, vecs2, a, d)
         newstuff = affine_multiply(transfs, r[..., np.newaxis] * vecs1)
     return newstuff
+
+##############################################################################
+#
+#       apply_pointwise
+#
+def apply_pointwise(tf, points, **kwargs):
+    return np.asanyarray(tf(*np.roll(points, 1)), **kwargs).roll(-1)

@@ -2,6 +2,7 @@ import uuid
 
 from .CoordinateSystem import CoordinateSystem
 from .CoordinateSystemConverter import CoordinateSystemConverter
+from ...Numputils import apply_pointwise
 import weakref
 
 __all__ = [
@@ -17,11 +18,12 @@ class CompositeCoordinateSystem(CoordinateSystem):
     """
 
     _register_cache = weakref.WeakValueDictionary()
-    def __init__(self, base_system, conversion, batched=True, inverse_conversion=None, name=None, **opts):
+    def __init__(self, base_system, conversion, inverse_conversion=None, name=None, batched=None, pointwise=True, **opts):
         self.base_system = base_system
         self.conversion = conversion
         self.inverse_conversion = inverse_conversion
-        self.batched = batched
+        self.pointwise = pointwise
+        self.batched = batched if batched is not None else not pointwise
         super().__init__(**opts)
         self.name = self.canonical_name(name, conversion)
     @classmethod
@@ -43,9 +45,10 @@ class CompositeCoordinateSystem(CoordinateSystem):
         # # super().__init__()
 
     @classmethod
-    def register(cls, base_system, conversion, batched=True, inverse_conversion=None, name=None):
+    def register(cls, base_system, conversion, inverse_conversion=None, name=None,  batched=None, pointwise=True, **opts):
         if (base_system, conversion) not in cls._register_cache:
-            system_class = cls(base_system, conversion, batched=batched, inverse_conversion=inverse_conversion, name=name)
+            system_class = cls(base_system, conversion, inverse_conversion=inverse_conversion, name=name,
+                               batched=batched, pointwise=pointwise, **opts)
             CompositeCoordinateSystemConverter(system_class).register()
             if system_class.inverse_conversion is not None:
                 CompositeCoordinateSystemConverter(system_class, direction='inverse').register()
@@ -70,16 +73,20 @@ class CompositeCoordinateSystemConverter(CoordinateSystemConverter):
             return (self.system, self.system.base_system)
         else:
             return (self.system.base_system, self.system)
-    def convert(self, coords, **kw):
+    def get_conversion(self):
         if self.direction == 'forward':
             convertser = self.system.conversion
         elif self.direction == 'inverse':
             convertser = self.system.inverse_conversion
         else:
             raise NotImplementedError("bad value for '{}': {}".format('direction', self.direction))
-        return convertser(coords, **kw)
+        return convertser
+    def convert(self, coords, **kw):
+        return self.get_conversion()(coords, **kw)
     def convert_many(self, coords, **kw):
-        if self.system.batched:
+        if self.system.pointwise:
+            return apply_pointwise(self.get_conversion(), coords)
+        elif self.system.batched:
             return self.convert(coords, **kw)
         else:
             return super().convert_many(coords, **kw)

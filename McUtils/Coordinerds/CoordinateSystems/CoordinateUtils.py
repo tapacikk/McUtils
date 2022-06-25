@@ -9,7 +9,7 @@ __all__ = [
     "mc_safe_apply"
 ]
 
-def is_multiconfig(coords, coord_shape = None):
+def is_multiconfig(coords, coord_shape=None):
     if coord_shape is None:
         coord_shape = (None, None)
     return len(coords.shape) > len(coord_shape)
