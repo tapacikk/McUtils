@@ -275,6 +275,7 @@ class CoordinateSystem:
             converter = self.converter(system)
             fun = self._convert_caller(converter, kw.copy(), is_multiconfig(coords))
             new_coords = mc_safe_apply(fun, coords=coords)
+            # new_coords = fun(coords)
             # print("...wtf", kw['return_derivs'] if 'return_derivs' in kw else 'nooooooo')
             return new_coords
 
@@ -507,7 +508,7 @@ class CoordinateSystem:
 
                 convert = self._converter(system, deriv_key, self, num_derivs, kw)
             else:
-                print(">>>", converter_options)
+                # print(">>>", converter_options)
                 convert = self._converter(system, deriv_key, self, None, converter_options)
                 # convert = lambda c, s=system, kw=converter_options:
         else:
@@ -580,6 +581,15 @@ class CoordinateSystem:
         """
         return "CoordinateSystem({}, dimension={}, matrix={})".format(self.name, self.dimension, self.matrix)
 
+    def is_compatible(self, system):
+        return (
+                self is system
+                or self.name == system.name
+                or (isinstance(system, type) and isinstance(self, system))
+        )
+        # or system1.name == key_pair[0].name and system2.name == key_pair[1].name
+    def has_conversion(self, system): # to be overloaded
+        return False
 
 ######################################################################################################
 ##

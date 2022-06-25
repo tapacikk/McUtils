@@ -9,10 +9,11 @@ import platform, os
 import weakref
 
 from .Properties import GraphicsPropertyManager, GraphicsPropertyManager3D
-from .Styling import Styled, ThemeManager
+from .Styling import Styled, ThemeManager, PlotLegend
 from .Backends import Backends
 
 __all__ = ["GraphicsBase", "Graphics", "Graphics3D", "GraphicsGrid"]
+__reload_hook__ = ['.Properties', ".Styling", ".Backends"]
 
 
 class GraphicsException(Exception):
@@ -1038,7 +1039,7 @@ class Graphics(GraphicsBase):
 
     @property
     def scale(self):
-        return self._prop_manager.ticks
+        return self._prop_manager.scale
     @scale.setter
     def scale(self, value):
         self._update_copy_opt('scale', value)
@@ -1125,8 +1126,15 @@ class Graphics(GraphicsBase):
         super().prep_show()
         if parent:
             if self.plot_legend or any(hasattr(c, 'plot_legend') and c.plot_legend for c in self.children):
+                pls = self.plot_legend
                 ls = self.legend_style if self.legend_style is not None else {}
-                self.axes.legend(**ls)
+                PlotLegend.check_styles(ls)
+                if isinstance(pls, PlotLegend):
+                    self.axes.legend(handles=pls, **pls.opts, **ls)
+                else:
+                    self.axes.legend(**ls)
+            if 'ticks' in self._init_opts:
+                self.ticks = self._init_opts['ticks']
     def prep_show(self):
         if self.parent is self:
             self._prep_show(parent=True)
@@ -1403,9 +1411,11 @@ class GraphicsGrid(GraphicsBase):
         spacings=(50, 0),
         padding=((50, 10), (50, 10))
     )
+    layout_keys = GraphicsBase.layout_keys | {'nrows', 'ncols'}
+    known_keys = GraphicsBase.known_keys | {'graphics_class'}
     def __init__(self,
                  *args,
-                 nrows=2, ncols=2,
+                 nrows=None, ncols=None,
                  graphics_class=Graphics,
                  figure=None,
                  axes=None,
@@ -1419,6 +1429,25 @@ class GraphicsGrid(GraphicsBase):
                  **opts
                  ):
 
+        if len(args) > 0:
+            if len(args) > 1:
+                raise ValueError("wat")
+            args = args[0]
+            if isinstance(args[0], GraphicsBase):
+                nr = 1
+                nc = len(args)
+            else:
+                nr = len(args)
+                nc = max(len(a) for a in args)
+
+            if nrows is None:
+                nrows = nr
+            if ncols is None:
+                ncols = nc
+        if nrows is None:
+            nrows = 2
+        if ncols is None:
+            ncols = 2
         # if mpl_backend is None and platform.system() == "Darwin":
         #     mpl_backend = "TkAgg"
         self.mpl_backend = mpl_backend
@@ -1445,6 +1474,15 @@ class GraphicsGrid(GraphicsBase):
         )
         self.shape = (nrows, ncols)
         self._colorbar_axis = None # necessary hack for only GraphicsGrid
+
+        if len(args) > 0:
+            if isinstance(args[0], GraphicsBase):
+                for i, g in enumerate(args):
+                    self[0, i] = g
+            else:
+                for i, r in enumerate(args):
+                    for j, g in enumerate(r):
+                        self[i, j] = g
 
     def _init_suplots(self,
                       figure, axes, *args,
@@ -1578,9 +1616,15 @@ class GraphicsGrid(GraphicsBase):
         try:
             i, j = item
         except ValueError:
-            self.axes[item] = val
+            if isinstance(val, GraphicsBase):
+                val.change_figure(self.axes[item])
+            else:
+                self.axes[item] = val
         else:
-            self.axes[i][j] = val
+            if isinstance(val, GraphicsBase):
+                val.change_figure(self.axes[i][j])
+            else:
+                self.axes[i][j] = val
 
     # def __getattr__(self, item):
     #     reraise_error = None

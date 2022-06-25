@@ -2,7 +2,7 @@
 Provides the conversion framework between coordinate systems
 """
 
-from collections import OrderedDict as odict
+from collections import OrderedDict as odict, deque
 import os, abc, numpy as np, weakref
 from ...Extensions import ModuleLoader
 
@@ -79,6 +79,7 @@ class CoordinateSystemConverters:
     """
 
     converters = odict([])
+    converter_graph = None
     converters_dir = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
         "Resources",
@@ -131,16 +132,12 @@ class CoordinateSystemConverters:
         """
 
         if not self._converters_loaded:
-            from .CartesianToZMatrix import __converters__ as converters
+            self.converter_graph = ConversionGraph()
+
+            from .DefaultConverters import __converters__ as converters
             for conv in converters:
-                type_pair = tuple(conv.types)
-                self.converters[type_pair] = conv
-                self.converters.move_to_end(type_pair)
-            from .ZMatrixToCartesian import __converters__ as converters
-            for conv in converters:
-                type_pair = tuple(conv.types)
-                self.converters[type_pair] = conv
-                self.converters.move_to_end(type_pair)
+                self._register(*conv.types, conv, move_to_end=True)
+
             if os.path.exists(self.converters_dir):
                 for file in os.listdir(self.converters_dir):
                     if os.path.splitext(file)[1] == ".py":
@@ -161,28 +158,59 @@ class CoordinateSystemConverters:
         """
 
         cls._preload_converters()
+        path = cls.converter_graph.find_path_bfs(system1, system2, identity_function=lambda x,y:x.is_compatible(y))
+        if path is None:
+            raise KeyError(
+                "{}: no rules for converting coordinate system {} to {} in {}".format(cls.__name__, system1, system2, [
+                    "{}=>{}".format(
+                        k.__name__ if isinstance(k, type) else type(k).__name__,
+                        b.__name__ if isinstance(b, type) else type(b).__name__
+                    ) for k, b in cls.converters
+                ])
+            )
+        elif len(path) == 1:
+            converter = cls.converters[path[0]]
+        else:
+            conversions = [cls.converters[p] for p in path]
+            def converter(crds, **kwargs):
+                cur = crds
+                for f in conversions:
+                    cur = f(cur, **kwargs)
+                return cur
 
-        try:
-            converter = cls.converters[(system1, system2)]
-        except KeyError:
-            for key_pair, conv in reversed(cls.converters.items()):
-                if (
-                        (isinstance(system1, key_pair[0]) and isinstance(system2, key_pair[1]))
-                        or system1.name == key_pair[0].name and system2.name == key_pair[1].name
-                ):
-                    converter = conv
-                    break
-            else:
-                raise KeyError(
-                    "{}: no rules for converting coordinate system {} to {} in {}".format(cls.__name__, system1, system2, [
-                        "{}=>{}".format(k.__name__, b.__name__ ) for k,b in cls.converters
-                    ])
-                )
+        #
+        # def _get_pathy_conversion(self, src, targ):
+        #     conv_path = self._unit_graph.find_path_bfs(src, targ)
+        #     if conv_path is None:
+        #         return conv_path
+        #     cval = 1
+        #     for me, you in zip(conv_path, conv_path[1:]):
+        #         cval *= self.data[(me, you)]["Value"]
+        #     return cval
+        #
+        # try:
+        #     converter = cls.converters[(system1, system2)]
+        # except KeyError:
+        #     for key_pair, conv in reversed(cls.converters.items()):
+        #         if (
+        #                 system1.has_conversion(system2)
+        #                 or (system1.is_compatible(key_pair[0]) and system2.is_compatible(key_pair[1]))
+        #         ):
+        #             converter = conv
+        #             break
+        #     else:
+        #         raise KeyError(
+        #             "{}: no rules for converting coordinate system {} to {} in {}".format(cls.__name__, system1, system2, [
+        #                 "{}=>{}".format(k.__name__, b.__name__ ) for k,b in cls.converters
+        #             ])
+        #         )
+
         return converter
 
     @classmethod
     def register_converter(cls, system1, system2, converter, check=True):
-        """Registers a converter between two coordinate systems
+        """
+        Registers a converter between two coordinate systems
 
         :param system1:
         :type system1: CoordinateSystem
@@ -191,7 +219,6 @@ class CoordinateSystemConverters:
         :return:
         :rtype:
         """
-
         cls._preload_converters()
         if check and not isinstance(converter, cls.converter_type):
             raise TypeError('{}: registered converters should be subclasses of {} <{}> (got {} which inherits from {})'.format(
@@ -200,7 +227,79 @@ class CoordinateSystemConverters:
                 type(converter),
                 ["{} <{}>".format(x, id(x)) for x in type(converter).__bases__]
             ))
-
+        cls._register(system1, system2, converter)
+    @classmethod
+    def _register(cls, system1, system2, converter, move_to_end=False):
         cls.converters[(system1, system2)] = converter
+        if move_to_end:
+            cls.converters.move_to_end((system1, system2))
+        cls.converter_graph.add(system1, system2)
+
+class ConversionGraph:
+    """
+    Pulled from the UnitGraph stuff
+    """
+
+    def __init__(self, stuff_to_update = ()):
+        self._graph = {}
+        self.update(stuff_to_update)
+
+    def __contains__(self, item):
+        return item in self._graph
+    def add(self, node, connection):
+        if node in self._graph:
+            self._graph[node].add(connection)
+        else:
+            self._graph[node]={connection}
+        if not connection in self._graph:
+            self._graph[connection] = set()
+    def update(self, iterable):
+        for connection in iterable:
+            self.add(*connection)
+    def find_path_bfs(self, start, end, identity_function=None):
+        # we use a little poor-man's Dijkstra to find the shortest unit conversion path
+
+        if identity_function is None:
+            if not start in self._graph or not end in self._graph:
+                return None
+        else:
+            for k in self._graph:
+                if identity_function(start, k):
+                    start = k
+                    break
+            else:
+                return None
+            for k in self._graph:
+                if identity_function(end, k):
+                    end = k
+                    break
+            else:
+                return None
+
+        q = deque() # deque as a FIFO queue
+        q.append(start)
+        parents = { start:None }
+        steps = 0
+        while len(q)>0:
+            cur = q.pop()
+            steps += 1
+            for k in self._graph[cur]:
+                if k is end:
+                    parents[k] = cur
+                    break
+                elif k not in parents:
+                    q.append(k)
+                    parents[k] = cur
+        if end not in parents:
+            return None
+        else:
+            path = []*steps
+            cur = end
+            while cur is not start:
+                nxt = parents[cur]
+                path.append((nxt, cur))
+                cur = nxt
+            # path.append(start)
+            return list(reversed(path))
 
 CoordinateSystemConverter.converters = weakref.ref(CoordinateSystemConverters)

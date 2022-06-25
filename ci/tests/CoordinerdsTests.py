@@ -90,7 +90,7 @@ class ConverterTest(TestCase):
         cs2 = coord_set
         self.assertEqual(round(np.linalg.norm(cs2 - cs1), 8), 0.)
 
-    @debugTest
+    @inactiveTest
     def test_PsiAnglesToZMatrixAndBack(self):
         carts_OCHH = CoordinateSet([
                                       [
@@ -264,7 +264,7 @@ class ConverterTest(TestCase):
     #     self.assertEqual(coords.shape, (self.n, 16, 3))
 
     #region Jacobians
-    @validationTest
+    @inactiveTest
     def test_CartesianToZMatrixJacobian(self):
         n = 10
         test_coords = DataGenerator.coords(n)
@@ -376,7 +376,7 @@ class ConverterTest(TestCase):
         )
         self.assertEquals(jacob.shape, (100,) + coord_set.shape[1:] + (5, 3)) # I requested 5 bond lengths
 
-    @validationTest
+    @inactiveTest
     def test_CartesianToZMatrixJacobian2(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10)[0])
         njacob = coord_set.jacobian(ZMatrixCoordinates, 2, stencil=5, all_numerical=True)
@@ -521,7 +521,7 @@ class ConverterTest(TestCase):
         # ArrayPlot(jacob[0], colorbar=True).show()
         self.assertEquals(jacob.shape, (10, 10*3, 10*3, 10*3, 10 * 3 - 3 )) # we always lose one atom
 
-    @validationTest
+    @inactiveTest
     def test_CartesianToZMatrixMultiJacobian3(self):
         coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
         jacob = coord_set.jacobian(ZMatrixCoordinates, 3, stencil=5)
@@ -539,15 +539,15 @@ class ConverterTest(TestCase):
 
     #region CoordinateSystemTests
 
-    @validationTest
+    @debugTest
     def test_ZMatrixStep(self):
         self.assertEquals(ZMatrixCoordinates.displacement(.1), .1)
 
-    @validationTest
+    @debugTest
     def test_CartStep(self):
         self.assertEquals(CartesianCoordinates3D.displacement(.1), .1)
 
-    @validationTest
+    @debugTest
     def test_CartExpanded(self):
         expansion = (np.array(
             [
@@ -563,5 +563,34 @@ class ConverterTest(TestCase):
         disp = system.displacement(.1)
         self.assertEquals(disp, .1)
         # self.assertEquals(disp.shape, (3,))
+
+    @debugTest
+    def test_SphericalCoords(self):
+
+        coord_set = CoordinateSet(DataGenerator.multicoords(1, 10))
+        crds = coord_set.convert(SphericalCoordinates, use_rad=False)
+        old = crds.convert(coord_set.system, use_rad=False)
+        newnew = old.convert(SphericalCoordinates, use_rad=False)
+
+        self.assertAlmostEquals(np.sum(newnew - crds)[()], 0.)
+        self.assertAlmostEquals(np.sum(coord_set - old)[()], 0.)
+
+        # self.assertAlmostEquals(np.sum(coord_set.jacobian(new)[:, 0].reshape(30, 30) + np.eye(30, 30)), 0.)
+
+    @debugTest
+    def test_CustomConversion(self):
+
+        def invert(coords, **opts):
+            return -coords, {}
+
+        new = CompositeCoordinateSystem.register(CartesianCoordinates3D, invert, inverse_conversion=invert)
+        coord_set = CoordinateSet(DataGenerator.multicoords(5, 10))
+        crds = coord_set.convert(new)
+        old = crds.convert(coord_set.system)
+
+        self.assertEquals(np.sum(crds + coord_set), 0.)
+        self.assertEquals(np.sum(coord_set - old), 0.)
+
+        self.assertAlmostEquals(np.sum(coord_set.jacobian(new)[:, 0].reshape(30, 30) + np.eye(30, 30)), 0.)
 
     #endregion

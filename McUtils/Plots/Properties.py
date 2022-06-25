@@ -2,12 +2,14 @@
 Handles all the nastiness of Matplotlib properties so that we can use a more classically python plotting method
 """
 
-from .Styling import Styled
+from .Styling import Styled, PlotLegend
 
 __all__ = [
     "GraphicsPropertyManager",
     "GraphicsPropertyManager3D"
 ]
+
+__reload_hook__ = [".Styling"]
 
 class GraphicsPropertyManager:
     """
@@ -76,23 +78,27 @@ class GraphicsPropertyManager:
     @plot_legend.setter
     def plot_legend(self, legend):
         self._plot_legend = legend
-        artists = self.graphics.artists
-        if artists is not None:
-            if legend is None:
-                for a in artists:
-                    a.remove_label("")
-            elif legend is True:
-                pass
-            elif isinstance(legend, Styled):
-                for a in artists:
-                    a.set_label(legend.val, **legend.opts)
-            elif Styled.could_be(legend):
-                legend = Styled.construct(legend)
-                for a in artists:
-                    a.set_label(legend.val, **legend.opts)
-            else:
-                for a in artists:
-                    a.set_label(legend)
+
+        if PlotLegend.could_be_legend(legend):
+            self._plot_legend = PlotLegend.construct(legend)
+        else:
+            artists = self.graphics.artists
+            if artists is not None:
+                if legend is None:
+                    for a in artists:
+                        a.remove_label("")
+                elif legend is True:
+                    pass
+                elif isinstance(legend, Styled):
+                    for a in artists:
+                        a.set_label(legend.val, **legend.opts)
+                elif Styled.could_be(legend):
+                    legend = Styled.construct(legend)
+                    for a in artists:
+                        a.set_label(legend.val, **legend.opts)
+                else:
+                    for a in artists:
+                        a.set_label(legend)
 
     # # set axes labels
     # @property
@@ -195,11 +201,13 @@ class GraphicsPropertyManager:
         elif isinstance(x, ticks.Locator):
             set_locator(x)
         elif isinstance(x, (list, tuple)):
-            if len(x) == 2 and isinstance(x[0], (list, tuple)):
-                self.axes.set_xticks(*x, **opts)
-            elif len(x) == 2 and isinstance(x[0], ticks.Locator):
+            if len(x) == 2 and isinstance(x[0], ticks.Locator):
                 set_locator(x[0])
                 set_minor_locator(x[1])
+            if len(x) == 2 and isinstance(x[0], (list, tuple)):
+                set_ticks(*x, **opts)
+            else:
+                set_ticks(x, **opts)
         elif isinstance(x, (float, int)):
             set_ticks(ticks.MultipleLocator(x), **opts)
         elif x is not None:

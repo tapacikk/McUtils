@@ -44,20 +44,21 @@ class CoordinateSet(np.ndarray):
 
     def _validate(self):
         base_dim = self.system.dimension
-        if isinstance(base_dim, int):
-            core_dim = self.shape[-1]
-        else:
-            cdim = self.shape[-len(base_dim):]
-            base_dim = tuple(base_dim)
-            core_dim = tuple( a if a is None else b for a, b in zip(base_dim, cdim) )
-        if base_dim != core_dim:
-            raise CoordinateSystemError(
-                "Dimension of basis {} '{}' and dimension of coordinate set '{}' misaligned".format(
-                    self.system.name,
-                    self.system.dimension,
-                    core_dim
+        if base_dim is not None:
+            if isinstance(base_dim, int):
+                core_dim = self.shape[-1]
+            else:
+                cdim = self.shape[-len(base_dim):]
+                base_dim = tuple(base_dim)
+                core_dim = tuple( a if a is None else b for a, b in zip(base_dim, cdim) )
+            if base_dim != core_dim:
+                raise CoordinateSystemError(
+                    "Dimension of basis {} '{}' and dimension of coordinate set '{}' misaligned".format(
+                        self.system.name,
+                        self.system.dimension,
+                        core_dim
+                    )
                 )
-            )
 
     def __str__(self):
         return "{}({}, {})".format(type(self).__name__, self.system.name, super().__str__())

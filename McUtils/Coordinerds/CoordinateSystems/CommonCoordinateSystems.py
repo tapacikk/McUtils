@@ -172,8 +172,7 @@ class ZMatrixCoordinateSystem(InternalCoordinateSystem):
                 np.arange(ncoords),
                 np.arange(-1, ncoords - 1),
                 np.arange(-2, ncoords - 2),
-                np.arange(-3, ncoords - 3),
-                0
+                np.arange(-3, ncoords - 3)
             )).T
         else:
             normalized_list = [[]] * len(order_list)
