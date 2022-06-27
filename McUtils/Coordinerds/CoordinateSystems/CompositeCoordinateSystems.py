@@ -82,10 +82,13 @@ class CompositeCoordinateSystemConverter(CoordinateSystemConverter):
             raise NotImplementedError("bad value for '{}': {}".format('direction', self.direction))
         return convertser
     def convert(self, coords, **kw):
-        return self.get_conversion()(coords, **kw)
+        if self.system.pointwise:
+            return apply_pointwise(self.get_conversion(), coords, **kw)
+        else:
+            return self.get_conversion()(coords, **kw)
     def convert_many(self, coords, **kw):
         if self.system.pointwise:
-            return apply_pointwise(self.get_conversion(), coords)
+            return apply_pointwise(self.get_conversion(), coords, **kw)
         elif self.system.batched:
             return self.convert(coords, **kw)
         else:

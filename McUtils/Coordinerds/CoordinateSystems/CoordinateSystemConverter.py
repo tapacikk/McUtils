@@ -140,7 +140,8 @@ class CoordinateSystemConverters:
         """
 
         if not self._converters_loaded:
-            self.converter_graph = ConversionGraph(proxy_function=lambda x,y:x.is_compatible(y))
+            proxy_function = lambda x, y: x.is_compatible(x, y)
+            self.converter_graph = ConversionGraph(proxy_function=proxy_function)
 
             from .DefaultConverters import __converters__ as converters
             for conv in converters:
@@ -246,17 +247,27 @@ class CoordinateSystemConverters:
         cls.converters[(system1, system2)] = converter
         if move_to_end:
             cls.converters.move_to_end((system1, system2))
+        graph = cls.converter_graph
         cls.converter_graph.add(system1, system2)
+        for k in cls.converter_graph.keys():
+            if graph.proxy_function(system1, k):
+                cls.converters[(k, system2)] = converter
+                if move_to_end:
+                    cls.converters.move_to_end((k, system2))
+            elif graph.proxy_function(system2, k):
+                cls.converters[(system1, k)] = converter
+                if move_to_end:
+                    cls.converters.move_to_end((system1, k))
 
 class ConversionGraph:
     """
     Pulled from the UnitGraph stuff
     """
 
-    def __init__(self, stuff_to_update = (), proxy_function=None):
+    def __init__(self, stuff_to_update=(), proxy_function=None):
         self._graph = {}
         self.update(stuff_to_update)
-        self.proxy_function = None
+        self.proxy_function = proxy_function
 
     def __contains__(self, item):
         return item in self._graph
@@ -273,6 +284,8 @@ class ConversionGraph:
                     self._graph[node].add(k)
         if not connection in self._graph:
             self._graph[connection] = set()
+    def keys(self):
+        return self._graph.keys()
     def update(self, iterable):
         for connection in iterable:
             self.add(*connection)

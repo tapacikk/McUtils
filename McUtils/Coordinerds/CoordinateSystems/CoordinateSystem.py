@@ -580,8 +580,8 @@ class CoordinateSystem:
         :rtype: str
         """
         return "CoordinateSystem({}, dimension={}, matrix={})".format(self.name, self.dimension, self.matrix)
-
-    def is_compatible(self, system):
+    @classmethod
+    def is_compatible(cls, self, system):
         return (
                 self is system
                 or self.name == system.name

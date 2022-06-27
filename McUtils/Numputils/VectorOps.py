@@ -778,5 +778,10 @@ def polar_to_cartesian(center, v, u, r, a, d):
 #
 #       apply_pointwise
 #
-def apply_pointwise(tf, points, **kwargs):
-    return np.asanyarray(tf(*np.roll(points, 1)), **kwargs).roll(-1)
+def apply_pointwise(tf, points, reroll=None, **kwargs):
+    roll = np.roll(np.arange(points.ndim), 1)
+    new_points = np.transpose(points, roll)
+    vals = np.asanyarray(tf(*new_points, **kwargs))
+    if reroll or (reroll is None and vals.shape == new_points.shape):
+        vals = np.transpose(vals, np.roll(roll, -2))
+    return vals
