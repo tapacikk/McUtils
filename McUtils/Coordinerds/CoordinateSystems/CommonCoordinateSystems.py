@@ -119,7 +119,8 @@ class ZMatrixCoordinateSystem(InternalCoordinateSystem):
             converter_options = opts
         super().__init__(dimension=dimension, coordinate_shape=coordinate_shape, converter_options=converter_options)
         self.jacobian_prep = self.jacobian_prep_coordinates
-    def jacobian_prep_coordinates(self,
+    @staticmethod
+    def jacobian_prep_coordinates(
                                   coord, displacements, values,
                                   dihedral_cutoff=6
                                   ):

@@ -63,6 +63,7 @@ class CompositeCoordinateSystem(CoordinateSystem):
             self.name
         )
 
+
 class CompositeCoordinateSystemConverter(CoordinateSystemConverter):
     def __init__(self, system, direction='forward'):
         self.system = system
@@ -93,3 +94,4 @@ class CompositeCoordinateSystemConverter(CoordinateSystemConverter):
             return self.convert(coords, **kw)
         else:
             return super().convert_many(coords, **kw)
+

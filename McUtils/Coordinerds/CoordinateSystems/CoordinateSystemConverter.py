@@ -167,7 +167,10 @@ class CoordinateSystemConverters:
         """
 
         cls._preload_converters()
-        path = cls.converter_graph.find_path_bfs(system1, system2)
+        if (system1, system2) in cls.converters:
+            path = [(system1, system2)]
+        else:
+            path = cls.converter_graph.find_path_bfs(system1, system2)
         if path is None:
             raise KeyError(
                 "{}: no rules for converting coordinate system {} to {} in {}".format(cls.__name__, system1, system2, [
@@ -180,17 +183,8 @@ class CoordinateSystemConverters:
         elif len(path) == 1:
             converter = cls.converters[path[0]]
         else:
-            conversions = [cls.converters[p] for p in path]
-            def convert_crds(crds, **kwargs):
-                cur = crds
-                for f in conversions:
-                    cur = f(cur, **kwargs)
-                    if isinstance(cur, tuple):
-                        cur, kwargs = cur
-                    else:
-                        kwargs = {}
-                return cur, kwargs
-            return SimpleCoordinateSystemConverter([system1, system2], convert_crds)
+            conversions = [(cls.converters[p], p) for p in path]
+            return ChainedCoordinateSystemConverter([system1, system2], conversions)
 
         #
         # def _get_pathy_conversion(self, src, targ):
@@ -296,18 +290,20 @@ class ConversionGraph:
             if not start in self._graph or not end in self._graph:
                 return None
         else:
-            for k in self._graph:
-                if identity_function(start, k):
-                    start = k
-                    break
-            else:
-                return None
-            for k in self._graph:
-                if identity_function(end, k):
-                    end = k
-                    break
-            else:
-                return None
+            if start not in self._graph:
+                for k in self._graph:
+                    if identity_function(start, k):
+                        start = k
+                        break
+                else:
+                    return None
+            if end not in self._graph:
+                for k in self._graph:
+                    if identity_function(end, k):
+                        end = k
+                        break
+                else:
+                    return None
 
         q = deque() # deque as a FIFO queue
         q.append(start)
@@ -319,6 +315,7 @@ class ConversionGraph:
             for k in self._graph[cur]:
                 if k is end:
                     parents[k] = cur
+                    q = []
                     break
                 elif k not in parents:
                     q.append(k)
@@ -345,6 +342,29 @@ class SimpleCoordinateSystemConverter(CoordinateSystemConverter):
         return self._types
     def convert(self, coords, **kw):
         return self.conversion(coords, **kw)
+    def convert_many(self, coords, **kw):
+        return self.convert(coords, **kw)
+class ChainedCoordinateSystemConverter(CoordinateSystemConverter):
+
+    def __init__(self, types, conversions, **opts):
+        super().__init__(**opts)
+        self._types = types
+        self.conversions = conversions
+    @property
+    def types(self):
+        return self._types
+    def convert(self, crds, **kwargs):
+        cur = crds
+        for f, p in self.conversions:
+            if hasattr(p[0], 'convert_coords') and not isinstance(p[0], type):
+                cur = p[0].convert_coords(cur, p[1], converter=f, **kwargs)
+            else:
+                cur = f(cur, **kwargs)
+            if isinstance(cur, tuple):
+                cur, kwargs = cur
+            else:
+                kwargs = {}
+        return cur, kwargs
     def convert_many(self, coords, **kw):
         return self.convert(coords, **kw)
 

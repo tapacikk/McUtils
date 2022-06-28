@@ -103,7 +103,7 @@ class CoordinateSet(np.ndarray):
             cops = {}
         kw = dict(cops, **kw)
         res = self.system.convert_coords(self, system, **kw)
-        if isinstance(res, tuple):
+        if not isinstance(res, np.ndarray):
             new_coords, ops = res
         else:
             new_coords = res
@@ -167,6 +167,8 @@ class CoordinateSet(np.ndarray):
         if converter_options is None:
             converter_options = {}
         kw = dict(cops, **converter_options)
+        if self.system.coordinate_shape is None:
+            self.system.coordinate_shape = self.shape
         return self.system.jacobian(self,
                                     system,
                                     order=order,
