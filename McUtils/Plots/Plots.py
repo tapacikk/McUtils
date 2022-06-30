@@ -252,7 +252,8 @@ class Plot(Graphics):
 
     known_keys = Graphics.known_keys | {
         'method',
-        'plot_style'
+        'plot_style',
+        'insert_default_styles'
     }
     @classmethod
     def filter_options(cls, opts, allowed=None):

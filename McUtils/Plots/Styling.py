@@ -7,7 +7,8 @@ from .Backends import Backends
 
 __all__ = [
     "Styled",
-    "ThemeManager"
+    "ThemeManager",
+    "PlotLegend"
 ]
 
 
@@ -24,6 +25,77 @@ class Styled:
     @classmethod
     def construct(cls, data):
         return cls(data[0], **data[1])
+
+class PlotLegend(list):
+    known_styles = {"handles", "labels", "loc", "bbox_to_anchor", "ncol", "prop", "fontsize",
+                    "labelcolor", "numpoints", "scatterpoints", "scatteryoffsets", "markerscale",
+                    "markerfirst", "frameon", "fancybox", "shadow", "framealpha", "facecolor",
+                    "edgecolor", "mode", "bbox_transform", "title", "title_fontproperties",
+                    "title_fontsize", "borderpad", "labelspacing", "handlelength", "handleheight",
+                    "handletextpad", "borderaxespad", "columnspacing", "handler_map"}
+    default_styles={'frameon':False}
+    def __init__(self, components, **styles):
+        if isinstance(components, type(self)):
+            self.__init__(list(self), **self.opts)
+        else:
+            super().__init__(components)
+            self.check_styles(styles)
+            for d in self.default_styles - styles.keys():
+                styles[d] = self.default_styles[d]
+            self.opts = styles
+    @classmethod
+    def check_styles(cls, styles):
+        unkown = styles.keys() - cls.known_styles
+        if len(unkown) > 0:
+            raise ValueError("styles {} not known for {}".format(unkown, cls.__name__))
+    @classmethod
+    def could_be_legend(cls, bits):
+        if isinstance(bits, (str, int, float)):
+            return False
+        try:
+            iter(bits)
+        except TypeError:
+            return False
+        return True
+    @classmethod
+    def construct(cls, bits):
+        if isinstance(bits, cls):
+            return bits
+        elif len(bits) == 2 and hasattr(bits[1], 'items') and not hasattr(bits[0], 'items'):
+            bits, opts = bits
+        else:
+            opts = {}
+        bits = [b if not hasattr(b, 'items') else cls.canonicalize_bit(**b) for b in bits]
+        return cls(bits, **opts)
+    @classmethod
+    def construct_line_marker(cls, lw=4, **opts):
+        from matplotlib.lines import Line2D
+        return Line2D([0], [0], lw=lw, **opts)
+    @classmethod
+    def construct_dot_marker(cls, **opts):
+        from matplotlib.patches import Patch
+        return Patch(**opts)
+    @classmethod
+    def load_constructors(cls):
+        return {
+        'line':cls.construct_line_marker,
+        'dot':cls.construct_dot_marker
+    }
+    marker_synonyms={'-':'line', '.':'dot'}
+    @classmethod
+    def canonicalize_bit(cls, marker='-', **opts):
+        if isinstance(marker, str) and marker is cls.marker_synonyms:
+            marker = cls.marker_synonyms[marker]
+        if isinstance(marker, str):
+            return cls.load_constructors()[marker](**opts)
+        else:
+            return marker(**opts)
+    def __repr__(self):
+        return "{}({}, {})".format(
+            type(self).__name__,
+            super().__repr__(),
+            self.opts
+        )
 
 class ThemeManager:
     """
