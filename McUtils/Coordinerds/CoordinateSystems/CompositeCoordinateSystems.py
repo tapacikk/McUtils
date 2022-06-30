@@ -45,7 +45,7 @@ class CompositeCoordinateSystem(CoordinateSystem):
         # # super().__init__()
 
     @classmethod
-    def register(cls, base_system, conversion, inverse_conversion=None, name=None,  batched=None, pointwise=True, **opts):
+    def register(cls, base_system, conversion, inverse_conversion=None, name=None, batched=None, pointwise=True, **opts):
         if (base_system, conversion) not in cls._register_cache:
             system_class = cls(base_system, conversion, inverse_conversion=inverse_conversion, name=name,
                                batched=batched, pointwise=pointwise, **opts)
