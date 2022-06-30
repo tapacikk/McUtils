@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.WireframePlot3D">WireframePlot3D</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L1137)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L1137?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L1138)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L1138?message=Update%20Docs)]
 </div>
 
 Creates a Wireframe mesh plot of 3D data
@@ -30,4 +30,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/WireframePlot3D.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/WireframePlot3D.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/WireframePlot3D.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L1137?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L1138?message=Update%20Docs)

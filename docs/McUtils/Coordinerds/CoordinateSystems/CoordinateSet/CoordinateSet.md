@@ -42,7 +42,7 @@ __array_finalize__(self, coords):
 __str__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L62)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L62?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L63)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L63?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Coordinerds.CoordinateSystems.CoordinateSet.CoordinateSet.__eq__" class="docs-object-method">&nbsp;</a> 
@@ -50,7 +50,7 @@ __str__(self):
 __eq__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L65)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L65?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L66)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L66?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Coordinerds.CoordinateSystems.CoordinateSet.CoordinateSet.multiconfig" class="docs-object-method">&nbsp;</a> 
@@ -71,7 +71,7 @@ Determines whether self.coords represents multiple configurations of the coordin
 transform(self, tf): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L80)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L80?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L81)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L81?message=Update%20Docs)]
 </div>
 
 Applies a transformation to the stored coordinates
@@ -85,7 +85,7 @@ Applies a transformation to the stored coordinates
 convert(self, system, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L92)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L92?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L93)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L93?message=Update%20Docs)]
 </div>
 
 Converts across coordinate systems
@@ -99,7 +99,7 @@ Converts across coordinate systems
 derivatives(self, function, order=1, coordinates=None, result_shape=None, **fd_options): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L112)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L112?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L113)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L113?message=Update%20Docs)]
 </div>
 
 Takes derivatives of `function` with respect to the current geometry
@@ -119,7 +119,7 @@ Takes derivatives of `function` with respect to the current geometry
 jacobian(self, system, order=1, coordinates=None, converter_options=None, all_numerical=False, analytic_deriv_order=None, **fd_options): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L136)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L136?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L137)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet.py#L137?message=Update%20Docs)]
 </div>
 
 Delegates to the jacobian function of the current coordinate system
@@ -168,6 +168,9 @@ Delegates to the jacobian function of the current coordinate system
 - [CartesianToZMatrixMultiJacobian3Timing10](#CartesianToZMatrixMultiJacobian3Timing10)
 - [CartesianToZMatrixMultiJacobian3](#CartesianToZMatrixMultiJacobian3)
 - [CartesianToZMatrixMultiJacobianTargeted](#CartesianToZMatrixMultiJacobianTargeted)
+- [SphericalCoords](#SphericalCoords)
+- [CustomConversion](#CustomConversion)
+- [ChainCustomConversion](#ChainCustomConversion)
 
 <div class="collapsible-section">
  <div class="collapsible-section collapsible-section-header" markdown="1">
@@ -708,6 +711,48 @@ class ConverterTest(TestCase):
         jacob = coord_set.jacobian(ZMatrixCoordinates, stencil=5, coordinates=[[1, 2, 3], None])
         # ArrayPlot(jacob[0], colorbar=True).show()
         self.assertEquals(jacob.shape, (10, 10, 3, 10 - 1, 3))
+```
+#### <a name="SphericalCoords">SphericalCoords</a>
+```python
+    def test_SphericalCoords(self):
+
+        coord_set = CoordinateSet(DataGenerator.multicoords(1, 10))
+        crds = coord_set.convert(SphericalCoordinates, use_rad=False)
+        old = crds.convert(coord_set.system, use_rad=False)
+        newnew = old.convert(SphericalCoordinates, use_rad=False)
+
+        self.assertAlmostEquals(np.sum(newnew - crds)[()], 0.)
+        self.assertAlmostEquals(np.sum(coord_set - old)[()], 0.)
+```
+#### <a name="CustomConversion">CustomConversion</a>
+```python
+    def test_CustomConversion(self):
+
+        def invert(coords, **opts):
+            return -coords, opts
+
+        new = CompositeCoordinateSystem.register(CartesianCoordinates3D, invert, pointwise=False, inverse_conversion=invert)
+        coord_set = CoordinateSet(DataGenerator.multicoords(5, 10))
+        crds = coord_set.convert(new)
+        old = crds.convert(coord_set.system)
+
+        self.assertEquals(np.sum(crds + coord_set), 0.)
+        self.assertEquals(np.sum(coord_set - old), 0.)
+
+        self.assertAlmostEquals(np.sum(coord_set.jacobian(new)[:, 0].reshape(30, 30) + np.eye(30, 30)), 0.)
+```
+#### <a name="ChainCustomConversion">ChainCustomConversion</a>
+```python
+    def test_ChainCustomConversion(self):
+        def invert(coords, **opts):
+            return -coords, opts
+
+        new = CompositeCoordinateSystem.register(SphericalCoordinates, invert, pointwise=False, inverse_conversion=invert)
+        coord_set = CoordinateSet(DataGenerator.multicoords(5, 10))
+        crds = coord_set.convert(new)
+        old = crds.convert(coord_set.system)
+
+        self.assertAlmostEqual(np.sum(coord_set - old)[()], 0.)
 ```
 
  </div>

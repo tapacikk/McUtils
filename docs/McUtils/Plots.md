@@ -303,13 +303,16 @@ Image/animation support and other back end support for 3D graphics (`VTK`) are p
 [ThemeManager](Plots/Styling/ThemeManager.md)   
 </div>
    <div class="col" markdown="1">
-[Image](Plots/Image/Image.md)   
+[PlotLegend](Plots/Styling/PlotLegend.md)   
 </div>
    <div class="col" markdown="1">
-[GraphicsPropertyManager](Plots/Properties/GraphicsPropertyManager.md)   
+[Image](Plots/Image/Image.md)   
 </div>
 </div>
   <div class="row">
+   <div class="col" markdown="1">
+[GraphicsPropertyManager](Plots/Properties/GraphicsPropertyManager.md)   
+</div>
    <div class="col" markdown="1">
 [GraphicsPropertyManager3D](Plots/Properties/GraphicsPropertyManager3D.md)   
 </div>

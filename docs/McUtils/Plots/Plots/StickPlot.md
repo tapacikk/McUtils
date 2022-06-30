@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.StickPlot">StickPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L445)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L445?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L446)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L446?message=Update%20Docs)]
 </div>
 
 A Plot object that plots sticks
@@ -23,7 +23,7 @@ method: str
 plot(self, *params, insert_default_styles=True, **plot_style): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L451)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L451?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L452)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L452?message=Update%20Docs)]
 </div>
 
 Plots a set of data | stores the result
@@ -42,4 +42,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/StickPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/StickPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/StickPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L445?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L446?message=Update%20Docs)

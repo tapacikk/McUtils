@@ -142,7 +142,7 @@ log_print(self, message, *messrest, message_prepper=None, padding=None, newline=
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L346)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L346?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L357)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L357?message=Update%20Docs)]
 </div>
 
  </div>

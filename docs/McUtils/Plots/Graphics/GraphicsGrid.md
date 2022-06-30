@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Graphics.GraphicsGrid">GraphicsGrid</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1394)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1394?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1402)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1402?message=Update%20Docs)]
 </div>
 
 A class for easily building sophisticated multi-panel figures.
@@ -18,13 +18,15 @@ Builds off of `GraphicsBase`.
 
 ```python
 default_style: dict
+layout_keys: set
+known_keys: set
 ```
 <a id="McUtils.Plots.Graphics.GraphicsGrid.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, *args, nrows=2, ncols=2, graphics_class=<class 'McUtils.Plots.Graphics.Graphics'>, figure=None, axes=None, subplot_kw=None, _subplot_init=None, mpl_backend=None, subimage_size=(200, 200), subimage_aspect_ratio='auto', padding=None, spacings=None, **opts): 
+__init__(self, *args, nrows=None, ncols=None, graphics_class=<class 'McUtils.Plots.Graphics.Graphics'>, figure=None, axes=None, subplot_kw=None, _subplot_init=None, mpl_backend=None, subimage_size=(200, 200), subimage_aspect_ratio='auto', padding=None, spacings=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1406)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1406?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1416)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1416?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.GraphicsGrid.set_options" class="docs-object-method">&nbsp;</a> 
@@ -32,7 +34,7 @@ __init__(self, *args, nrows=2, ncols=2, graphics_class=<class 'McUtils.Plots.Gra
 set_options(self, padding=None, spacings=None, background=None, colorbar=None, figure_label=None, **parent_opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1543)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1543?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1581)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1581?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.GraphicsGrid.__iter__" class="docs-object-method">&nbsp;</a> 
@@ -40,7 +42,7 @@ set_options(self, padding=None, spacings=None, background=None, colorbar=None, f
 __iter__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1567)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1567?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1605)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1605?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.GraphicsGrid.__getitem__" class="docs-object-method">&nbsp;</a> 
@@ -48,7 +50,7 @@ __iter__(self):
 __getitem__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1570)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1570?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1608)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1608?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.GraphicsGrid.__setitem__" class="docs-object-method">&nbsp;</a> 
@@ -56,7 +58,7 @@ __getitem__(self, item):
 __setitem__(self, item, val): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1577)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1577?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1615)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1615?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.GraphicsGrid.calc_image_size" class="docs-object-method">&nbsp;</a> 
@@ -64,7 +66,7 @@ __setitem__(self, item, val):
 calc_image_size(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1605)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1605?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1649)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1649?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.GraphicsGrid.image_size" class="docs-object-method">&nbsp;</a> 
@@ -162,7 +164,7 @@ colorbar(self):
 prep_show(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1701)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1701?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1745)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1745?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Graphics.GraphicsGrid.show" class="docs-object-method">&nbsp;</a> 
@@ -170,7 +172,7 @@ prep_show(self):
 show(self, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1710)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1710?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Graphics.py#L1754)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1754?message=Update%20Docs)]
 </div>
 
  </div>
@@ -213,4 +215,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Graphics/GraphicsGrid.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Graphics/GraphicsGrid.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Graphics/GraphicsGrid.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1394?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Graphics.py#L1402?message=Update%20Docs)

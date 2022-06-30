@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Properties.GraphicsPropertyManager">GraphicsPropertyManager</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties.py#L12)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties.py#L12?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties.py#L14)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties.py#L14?message=Update%20Docs)]
 </div>
 
 Manages properties for Graphics objects so that concrete GraphicsBase instances don't need to duplicate code, but
@@ -19,7 +19,7 @@ at the same time things that build off of GraphicsBase don't need to implement a
 __init__(self, graphics, figure, axes, managed=False): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties.py#L18)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties.py#L18?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties.py#L20?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Properties.GraphicsPropertyManager.figure_label" class="docs-object-method">&nbsp;</a> 
@@ -223,4 +223,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Properties/GraphicsPropertyManager.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Properties/GraphicsPropertyManager.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Properties/GraphicsPropertyManager.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties.py#L12?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties.py#L14?message=Update%20Docs)

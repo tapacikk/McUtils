@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.AxisVerticalLinePlot">AxisVerticalLinePlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L593)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L593?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L594)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L594?message=Update%20Docs)]
 </div>
 
 
@@ -31,4 +31,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/AxisVerticalLinePlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/AxisVerticalLinePlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/AxisVerticalLinePlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L593?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L594?message=Update%20Docs)

@@ -25,45 +25,56 @@ Chained conversions are not _currently_ supported, but might well become support
 [CoordinateSystemConverter](Coordinerds/CoordinateSystems/CoordinateSystemConverter/CoordinateSystemConverter.md)   
 </div>
    <div class="col" markdown="1">
-[CartesianCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem.md)   
+[SimpleCoordinateSystemConverter](Coordinerds/CoordinateSystems/CoordinateSystemConverter/SimpleCoordinateSystemConverter.md)   
 </div>
 </div>
   <div class="row">
+   <div class="col" markdown="1">
+[CartesianCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem.md)   
+</div>
    <div class="col" markdown="1">
 [InternalCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/InternalCoordinateSystem.md)   
 </div>
    <div class="col" markdown="1">
 [CartesianCoordinateSystem3D](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem3D.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [CartesianCoordinates3D](Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinates3D.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [SphericalCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/SphericalCoordinateSystem.md)   
 </div>
    <div class="col" markdown="1">
 [SphericalCoordinates](Coordinerds/CoordinateSystems/CommonCoordinateSystems/SphericalCoordinates.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [ZMatrixCoordinateSystem](Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [ZMatrixCoordinates](Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinates.md)   
 </div>
    <div class="col" markdown="1">
 [CoordinateSystem](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystem.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [BaseCoordinateSystem](Coordinerds/CoordinateSystems/CoordinateSystem/BaseCoordinateSystem.md)   
+</div>
+   <div class="col" markdown="1">
+[CoordinateSystemError](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystemError.md)   
+</div>
+   <div class="col" markdown="1">
+[CompositeCoordinateSystem](Coordinerds/CoordinateSystems/CompositeCoordinateSystems/CompositeCoordinateSystem.md)   
 </div>
 </div>
   <div class="row">
    <div class="col" markdown="1">
-[CoordinateSystemError](Coordinerds/CoordinateSystems/CoordinateSystem/CoordinateSystemError.md)   
+[CompositeCoordinateSystemConverter](Coordinerds/CoordinateSystems/CompositeCoordinateSystems/CompositeCoordinateSystemConverter.md)   
 </div>
    <div class="col" markdown="1">
 [CoordinateSet](Coordinerds/CoordinateSystems/CoordinateSet/CoordinateSet.md)   
@@ -131,6 +142,9 @@ Chained conversions are not _currently_ supported, but might well become support
 - [ZMatrixStep](#ZMatrixStep)
 - [CartStep](#CartStep)
 - [CartExpanded](#CartExpanded)
+- [SphericalCoords](#SphericalCoords)
+- [CustomConversion](#CustomConversion)
+- [ChainCustomConversion](#ChainCustomConversion)
 
 <div class="collapsible-section">
  <div class="collapsible-section collapsible-section-header" markdown="1">
@@ -728,6 +742,48 @@ class ConverterTest(TestCase):
         )
         disp = system.displacement(.1)
         self.assertEquals(disp, .1)
+```
+#### <a name="SphericalCoords">SphericalCoords</a>
+```python
+    def test_SphericalCoords(self):
+
+        coord_set = CoordinateSet(DataGenerator.multicoords(1, 10))
+        crds = coord_set.convert(SphericalCoordinates, use_rad=False)
+        old = crds.convert(coord_set.system, use_rad=False)
+        newnew = old.convert(SphericalCoordinates, use_rad=False)
+
+        self.assertAlmostEquals(np.sum(newnew - crds)[()], 0.)
+        self.assertAlmostEquals(np.sum(coord_set - old)[()], 0.)
+```
+#### <a name="CustomConversion">CustomConversion</a>
+```python
+    def test_CustomConversion(self):
+
+        def invert(coords, **opts):
+            return -coords, opts
+
+        new = CompositeCoordinateSystem.register(CartesianCoordinates3D, invert, pointwise=False, inverse_conversion=invert)
+        coord_set = CoordinateSet(DataGenerator.multicoords(5, 10))
+        crds = coord_set.convert(new)
+        old = crds.convert(coord_set.system)
+
+        self.assertEquals(np.sum(crds + coord_set), 0.)
+        self.assertEquals(np.sum(coord_set - old), 0.)
+
+        self.assertAlmostEquals(np.sum(coord_set.jacobian(new)[:, 0].reshape(30, 30) + np.eye(30, 30)), 0.)
+```
+#### <a name="ChainCustomConversion">ChainCustomConversion</a>
+```python
+    def test_ChainCustomConversion(self):
+        def invert(coords, **opts):
+            return -coords, opts
+
+        new = CompositeCoordinateSystem.register(SphericalCoordinates, invert, pointwise=False, inverse_conversion=invert)
+        coord_set = CoordinateSet(DataGenerator.multicoords(5, 10))
+        crds = coord_set.convert(new)
+        old = crds.convert(coord_set.system)
+
+        self.assertAlmostEqual(np.sum(coord_set - old)[()], 0.)
 ```
 
  </div>

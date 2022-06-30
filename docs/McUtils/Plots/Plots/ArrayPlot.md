@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.ArrayPlot">ArrayPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L793)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L793?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L794)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L794?message=Update%20Docs)]
 </div>
 
 Plots an array as an image
@@ -22,7 +22,7 @@ known_styles: set
 __init__(self, *params, plot_style=None, colorbar=None, figure=None, axes=None, subplot_kw=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L800)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L800?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L801)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L801?message=Update%20Docs)]
 </div>
 
  </div>
@@ -37,4 +37,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ArrayPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ArrayPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ArrayPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L793?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L794?message=Update%20Docs)

@@ -36,7 +36,7 @@ __init__(self, converter_options=None, dimension=(None, None), coordinate_shape=
 
 <a id="McUtils.Coordinerds.CoordinateSystems.CommonCoordinateSystems.ZMatrixCoordinateSystem.jacobian_prep_coordinates" class="docs-object-method">&nbsp;</a> 
 ```python
-jacobian_prep_coordinates(self, coord, displacements, values, dihedral_cutoff=6): 
+jacobian_prep_coordinates(coord, displacements, values, dihedral_cutoff=6): 
 ```
 <div class="docs-source-link" markdown="1">
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L122)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L122?message=Update%20Docs)]
@@ -47,7 +47,7 @@ jacobian_prep_coordinates(self, coord, displacements, values, dihedral_cutoff=6)
 canonicalize_order_list(ncoords, order_list): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L158)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L158?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L159)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L159?message=Update%20Docs)]
 </div>
 
 Normalizes the way the ZMatrix coordinates are built out
