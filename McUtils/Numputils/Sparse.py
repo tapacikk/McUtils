@@ -1717,7 +1717,10 @@ class ScipySparseArray(SparseArray):
 
     def _stack_data(self, dats, axis):
         # return self._fast_stack(dats, axis)
-        return sp.hstack(dats) if axis == 1 else sp.vstack(dats)
+        return (
+            sp.hstack(dats)
+            if axis == 1 else sp.vstack(dats)
+        )
 
     # @profile
     def concatenate_2d(self, *others, axis=0):
@@ -1727,6 +1730,8 @@ class ScipySparseArray(SparseArray):
         tot_shape = list(self.shape)
         tot_shape[axis] = sum(a[axis] for a in all_shapes)
 
+        if self.ndim == 1:
+            axis = 1
         return type(self)(
             self._stack_data(dats, axis),
             shape=tot_shape
@@ -1765,11 +1770,11 @@ class ScipySparseArray(SparseArray):
 
         if (
                 self.fmt is sp.csr_matrix and axis == 0
-            or self.fmt is sp.csc_matrix and axis == 1
+                or self.fmt is sp.csc_matrix and axis == 1
         ):
-            return self.concatenate_2d(*others, axis=axis)
+            return self.concatenate_2d(*(o for o in others if o.non_zero_count > 0), axis=axis)
         else:
-            return self.concatenate_coo(*others, axis=axis)
+            return self.concatenate_coo(*(o for o in others if o.non_zero_count > 0), axis=axis)
 
 
     def broadcast_to(self, shape):
