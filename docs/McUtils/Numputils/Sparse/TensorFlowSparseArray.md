@@ -1,6 +1,6 @@
 ## <a id="McUtils.Numputils.Sparse.TensorFlowSparseArray">TensorFlowSparseArray</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2351)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2351?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2356)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2356?message=Update%20Docs)]
 </div>
 
 Provides a SparseArray implementation that uses TensorFlow as the backend
@@ -18,7 +18,7 @@ Provides a SparseArray implementation that uses TensorFlow as the backend
 __init__(self, data, dtype=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2355)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2355?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2360)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2360?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Numputils.Sparse.TensorFlowSparseArray.shape" class="docs-object-method">&nbsp;</a> 
@@ -39,7 +39,7 @@ Provides the shape of the sparse array
 to_state(self, serializer=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2418)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2418?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2423)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2423?message=Update%20Docs)]
 </div>
 
 Provides just the state that is needed to
@@ -54,7 +54,7 @@ Provides just the state that is needed to
 from_state(state, serializer=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2429)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2429?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2434)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2434?message=Update%20Docs)]
 </div>
 
 Loads from the stored state
@@ -68,7 +68,7 @@ Loads from the stored state
 empty(shape, dtype=None, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2440)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2440?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2445)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2445?message=Update%20Docs)]
 </div>
 
 Returns an empty SparseArray with the appropriate shape and dtype
@@ -100,7 +100,7 @@ Returns the row and column indices and vector of
 transpose(self, axes): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2465)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2465?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2470)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2470?message=Update%20Docs)]
 </div>
 
 Returns a transposed version of the tensor
@@ -114,7 +114,7 @@ Returns a transposed version of the tensor
 ascoo(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2477)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2477?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2482)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2482?message=Update%20Docs)]
 </div>
 
 Converts the tensor into a scipy COO matrix...
@@ -126,7 +126,7 @@ Converts the tensor into a scipy COO matrix...
 ascsr(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2484)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2484?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2489)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2489?message=Update%20Docs)]
 </div>
 
 Converts the tensor into a scipy COO matrix...
@@ -138,7 +138,7 @@ Converts the tensor into a scipy COO matrix...
 reshape(self, newshape): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2491)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2491?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2496)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2496?message=Update%20Docs)]
 </div>
 
 Returns a reshaped version of the tensor
@@ -152,7 +152,7 @@ Returns a reshaped version of the tensor
 __truediv__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2503)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2503?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2508)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2508?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Numputils.Sparse.TensorFlowSparseArray.__rtruediv__" class="docs-object-method">&nbsp;</a> 
@@ -160,7 +160,7 @@ __truediv__(self, other):
 __rtruediv__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2506)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2506?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2511)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2511?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Numputils.Sparse.TensorFlowSparseArray.__rmul__" class="docs-object-method">&nbsp;</a> 
@@ -168,7 +168,7 @@ __rtruediv__(self, other):
 __rmul__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2509)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2509?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2514)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2514?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Numputils.Sparse.TensorFlowSparseArray.__mul__" class="docs-object-method">&nbsp;</a> 
@@ -176,7 +176,7 @@ __rmul__(self, other):
 __mul__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2512)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2512?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2517)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2517?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Numputils.Sparse.TensorFlowSparseArray.true_multiply" class="docs-object-method">&nbsp;</a> 
@@ -184,7 +184,7 @@ __mul__(self, other):
 true_multiply(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2515)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2515?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2520)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2520?message=Update%20Docs)]
 </div>
 
 Multiplies self and other
@@ -198,7 +198,7 @@ Multiplies self and other
 dot(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2569)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2569?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse.py#L2574)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2574?message=Update%20Docs)]
 </div>
 
 Takes a regular dot product of self and other
@@ -221,4 +221,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Numputils/Sparse/TensorFlowSparseArray.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Numputils/Sparse/TensorFlowSparseArray.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Numputils/Sparse/TensorFlowSparseArray.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2351?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse.py#L2356?message=Update%20Docs)
