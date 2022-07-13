@@ -2025,18 +2025,18 @@ class ScipySparseArray(SparseArray):
                 if len(b2) < len(b):
                     raise ValueError("sparse array slicing can't duplicate indices")
                 b = b2
+                # print("...", ixs)
                 filter, mapping = self._find_block_alignment(ixs, b)#, sorting)
+                # print("  .", b)
+                # args = np.argsort(sorting)
+                mapping = sorting[mapping]
+                # print("  .", mapping)
+
                 # the filter specifies which indices survive
                 # and the mapping tells us where each index will go
                 # in the final set of indices
                 inds = [ix[filter] for ix in inds]
                 data = data[filter]
-                args = np.argsort(sorting)
-                # if not (sorting == np.arange(len(sorting))).all():
-                #     print(">>>", b, np.argsort(sorting))
-                #     print(">", mapping)
-                #     print(">", args)
-                mapping = args[mapping]
                 inds[i] = mapping[inds[i]]
 
         return data, inds
