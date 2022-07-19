@@ -282,6 +282,32 @@ class CoordinateSystem:
             # print("...wtf", kw['return_derivs'] if 'return_derivs' in kw else 'nooooooo')
             return new_coords
 
+    def rescale(self, scaling, in_place=False):
+        if not in_place:
+            import copy
+            new = copy.copy(self)
+            return new.rescale(scaling, in_place=True)
+        if self.matrix is not None:
+            self.matrix = self.matrix * scaling[np.newaxis, :]
+            if self._inv is not None:
+                self._inv = self._inv / scaling[:, np.newaxis]
+        else:
+            self.matrix = np.diag(scaling)
+        return self
+    def rotate(self, rot, in_place=False):
+        if not in_place:
+            import copy
+            new = copy.copy(self)
+            return new.rotate(rot, in_place=True)
+        if self.matrix is not None:
+            self.matrix = np.dot(self.matrix, rot)
+            if self._inv is not None:
+                self._inv = np.dot(rot, self._inv)
+        else:
+            self.matrix = rot
+        return self
+
+
     def displacement(self, amts):
         """
         Generates a displacement or matrix of displacements based on the vector or matrix amts
