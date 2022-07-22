@@ -1,12 +1,13 @@
 """
 Provides Graphics base classes that can be extended upon
 """
-
-
+import abc
 import platform, os
 # import matplotlib.figure
 # import matplotlib.axes
 import weakref
+
+import numpy as np
 
 from .Properties import GraphicsPropertyManager, GraphicsPropertyManager3D
 from .Styling import Styled, ThemeManager, PlotLegend
@@ -57,6 +58,32 @@ class GraphicsBase(metaclass=ABCMeta):
             parent = cls._figure_mapping[fig]
             return cls._figure_children[parent]
 
+    _axes_mapping = weakref.WeakValueDictionary()
+    _axes_children = weakref.WeakKeyDictionary()
+    @classmethod
+    def resolve_axes_graphics(cls, axes):
+        if axes in cls._axes_mapping:
+            return cls._axes_mapping[axes]
+    @classmethod
+    def add_axes_graphics(cls, axes, graphics):
+        if axes in cls._axes_mapping:
+            parent = cls._axes_mapping[axes]
+            cls._axes_children[parent].append(graphics)
+        else:
+            cls._axes_mapping[axes] = graphics
+            cls._axes_children[graphics] = []
+    @classmethod
+    def remove_axes_mapping(cls, fig):
+        if fig in cls._figure_mapping:
+            parent = cls._figure_mapping[fig]
+            del cls._figure_mapping[fig]
+            del cls._figure_children[parent]
+    @classmethod
+    def get_axes_child_graphics(cls, axes):
+        if axes in cls._axes_mapping:
+            parent = cls._axes_mapping[axes]
+            return cls._axes_children[parent]
+
     opt_keys = {
         'background',
         'axes_labels',
@@ -67,6 +94,7 @@ class GraphicsBase(metaclass=ABCMeta):
         'ticks',
         'ticks_style',
         'ticks_label_style',
+        'axes_bbox',
         'scale',
         'padding',
         'spacings',
@@ -80,6 +108,13 @@ class GraphicsBase(metaclass=ABCMeta):
         'theme',
         'annotations'
     }
+
+    @staticmethod
+    def _split_props_list(props, filter_set):
+        excl = {k: props[k] for k in props.keys() - filter_set}
+        incl = {k: props[k] for k in props.keys() & filter_set}
+        return incl, excl
+
     def _get_def_opt(self, key, val, theme):
         if val is None:
             try:
@@ -99,11 +134,21 @@ class GraphicsBase(metaclass=ABCMeta):
 
     def _update_copy_opt(self, key, val):
         if not self._in_init:
+            has_val = False
             if key not in self._init_opts or self._init_opts[key] is None:
-                if val != self._get_def_opt(key, None, self.theme):
+                has_val = True
+                old = self._get_def_opt(key, None, self.theme)
+            elif key in self._init_opts:
+                has_val = True
+                old = self._init_opts[key]
+            else:
+                old = None
+            if has_val:
+                changed = val != old
+                if isinstance(changed, np.ndarray):
+                    changed = changed.any()
+                if changed:
                     self._init_opts[key] = val
-            elif val != self._init_opts[key]:
-                self._init_opts[key] = val
         # if key in self._init_opts:
         #     print(key, self._init_opts[key])
 
@@ -122,6 +167,7 @@ class GraphicsBase(metaclass=ABCMeta):
         'prop_manager',
         'theme_manager',
         'managed',
+        # 'inset',
         'event_handlers',
         'animated',
         'prolog',
@@ -144,6 +190,7 @@ class GraphicsBase(metaclass=ABCMeta):
                  prop_manager=GraphicsPropertyManager,
                  theme_manager=ThemeManager,
                  managed=None,
+                 # inset=False,
                  strict=True,
                  # annotations=None,
                  **opts
@@ -196,7 +243,7 @@ class GraphicsBase(metaclass=ABCMeta):
         # self.parent = parent
         # self.children = set()#weakref.WeakSet()
 
-        if parent is not None:
+        if parent is not None and (axes is None or parent.axes is axes): # check inset
             # TODO: generalize this to a set of inherited props...
             if image_size is None: # gotta copy in some layout stuff..
                 image_size = parent.image_size
@@ -222,6 +269,7 @@ class GraphicsBase(metaclass=ABCMeta):
             else:
                 managed = False
         self.managed = managed
+        self._inset = None
 
         interactive = self._get_def_opt('interactive', interactive, theme)
         self.interactive = interactive
@@ -259,7 +307,11 @@ class GraphicsBase(metaclass=ABCMeta):
                 self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
         else:
             self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
-        self.add_figure_graphics(self.figure, self)
+        if self.inset:
+            self.add_axes_graphics(self.axes, self)
+        else:
+            self.add_figure_graphics(self.figure, self)
+
 
         if not self.interactive:
             self.pyplot.mpl_disconnect()
@@ -413,7 +465,7 @@ class GraphicsBase(metaclass=ABCMeta):
             from IPython.core.display import display
             mpl_inline = self.plt._backend_mod
             # from matplotlib.backends import backend as mpl_inline
-            print(mpl_inline)
+            # print(mpl_inline)
             # mpl_inline = sys.modules[type(self.plt).__module__]
 
             if close is None:
@@ -480,9 +532,9 @@ class GraphicsBase(metaclass=ABCMeta):
 
         if figure is None:
             figure, axes = self._subplot_init(*args, mpl_backend=self.mpl_backend, figure=self, **kw)
-            # yes axes is overwritten intentionally for now -- not sure how to "reparent" an Axes object
         elif isinstance(figure, GraphicsBase) or all(hasattr(figure, h) for h in ['layout_keys']):
-            axes = figure.axes # type: matplotlib.axes.Axes
+            if axes is None:
+                axes = figure.axes # type: matplotlib.axes.Axes
             figure = figure.figure # type: matplotlib.figure.Figure
             # print("???")
         # print(figure)
@@ -499,11 +551,24 @@ class GraphicsBase(metaclass=ABCMeta):
 
     @property
     def parent(self):
+        if self.inset:
+            return self.resolve_axes_graphics(self.axes)
+        else:
+            return self.resolve_figure_graphics(self.figure)
+    @property
+    def figure_parent(self):
         return self.resolve_figure_graphics(self.figure)
+    @property
+    def inset(self):
+        fp = self.figure_parent
+        return fp is not None and (self.axes is not fp.axes)
     @property
     def children(self):
         if self.parent is self:
-            return self.get_child_graphics(self.figure)
+            if self.inset:
+                return self.get_axes_child_graphics(self.axes)
+            else:
+                return self.get_child_graphics(self.figure)
         else:
             return None
 
@@ -691,7 +756,7 @@ class GraphicsBase(metaclass=ABCMeta):
         :rtype:
         """
         # print(self._init_opts, init_kwargs)
-        parent = self.parent
+        parent = self.figure_parent
         figs = {} if figs is None else figs
         if parent is self:
             # opts = self.get_init_opts(**init_kwargs)
@@ -710,13 +775,15 @@ class GraphicsBase(metaclass=ABCMeta):
         :return:
         :rtype:
         """
-        return type(self)(*self._get_init_args(*init_args), **dict(self._get_init_opts(parent_opts), figure=new, **init_kwargs))
+        return type(self)(
+            *self._get_init_args(*init_args), **dict(self._get_init_opts(parent_opts), figure=new, **init_kwargs)
+        )
     def prep_show(self):
         self.set_options(**self.opts)  # matplotlib is dumb so it makes sense to just reset these again...
-        if self.epilog is not None:
-            self._epilog_graphics = [e.plot(self.axes) for e in self.epilog]
         if self.prolog is not None:
-            self._prolog_graphics = [p.plot(self.axes) for p in self.prolog]
+            self._prolog_graphics = [p.plot(self.axes, graphics=self) for p in self.prolog] # not sure this is doing what it should...
+        if self.epilog is not None:
+            self._epilog_graphics = [e.plot(self.axes, graphics=self) for e in self.epilog]
         if self.tighten:
             self.figure.tight_layout()
         self._shown = True
@@ -874,6 +941,45 @@ class GraphicsBase(metaclass=ABCMeta):
 
         return fig.colorbar(graphics, **kw)
 
+    axes_params = {"adjustable", "agg_filter", "alpha", "anchor", "animated", "aspect",
+                   "autoscale_on", "autoscalex_on", "autoscaley_on", "axes_locator", "axisbelow",
+                   "box_aspect", "clip_box", "clip_on", "clip_path", "facecolor",
+                   "frame_on", "gid", "in_layout", "label", "navigate",
+                   "navigate_mode", "path_effects", "picker", "position",
+                   "prop_cycle", "rasterization_zorder", "rasterized", "sketch_params",
+                   "snap", "title", "transform", "url", "visible", "xbound",
+                   "xlabel", "xlim", "xmargin", "xscale", "xticklabels", "xticks",
+                   "ybound", "ylabel", "ylim", "ymargin", "yscale", "yticklabels",
+                   "yticks", "zorder"} # not sure what to do with these yet...
+    inset_options = dict()
+    axes_keys = set()
+    def create_inset(self, bbox, coordinates='scaled', graphics_class=None, **opts):
+        if hasattr(bbox, 'get_points'):
+            bbox = bbox.get_points()
+        ((lx, by), (rx, ty)) = bbox
+
+        if coordinates == 'absolute':
+            raise NotImplementedError("can't construct inset axes with absolute coordinates")
+        elif coordinates == 'scaled': # scaled to live within the frame
+            ((pl, pr), (pb, pt)) = self.padding
+            w, h = self.image_size
+            ol = pl / w
+            ob = pb / h
+            lx = lx + ol
+            rx = rx + ol
+            by = by + ob
+            ty = ty + ob
+
+        if graphics_class is None:
+            graphics_class = type(self)
+        opts = dict(self.inset_options, **opts)
+        # raise Exception(opts, self.axes_keys)
+        # ax_par, fig_par = self._split_props_list(opts, self.axes_keys)
+
+        # print(lx, by, rx-lx, ty-by)
+        ax = self.figure.add_axes([lx, by, rx-lx, ty-by])
+        return graphics_class(figure=self, axes=ax, **opts)
+
 ########################################################################################################################
 #
 #                                               Graphics
@@ -885,13 +991,13 @@ class Graphics(GraphicsBase):
     default_style = dict(
         theme='mccoy',
         frame=((True, False), (True, False)),
-        aspect_ratio=1,
-        image_size=300,
+        aspect_ratio='auto',
+        image_size=(370, 345),
         padding=((60, 10), (35, 10)),
         interactive=False
     )
 
-    layout_keys = {
+    axes_keys = {
         'plot_label',
         'plot_legend',
         'legend_style'
@@ -902,14 +1008,18 @@ class Graphics(GraphicsBase):
         'ticks',
         'ticks_style',
         'ticks_label_style',
+        'axes_bbox'
+    }
+    figure_keys = {
         'scale',
         'aspect_ratio'
         'image_size',
         'padding',
         'spacings',
         'background',
-        'colorbar',
-    } | GraphicsBase.layout_keys
+        'colorbar'
+    }
+    layout_keys = axes_keys | figure_keys | GraphicsBase.layout_keys
     known_keys = layout_keys
     def set_options(self,
                     axes_labels=None,
@@ -926,11 +1036,13 @@ class Graphics(GraphicsBase):
                     ticks_style=None,
                     ticks_label_style=None,
                     image_size=None,
+                    axes_bbox=None,
                     aspect_ratio=None,
                     background=None,
                     colorbar=None,
                     prolog=None,
                     epilog=None,
+
                     **parent_opts
                     ):
 
@@ -950,6 +1062,7 @@ class Graphics(GraphicsBase):
             ('scale', scale),
             ('aspect_ratio', aspect_ratio),
             ('image_size', image_size),
+            ('axes_bbox', axes_bbox),
             ('padding', padding),
             ('spacings', spacings),
             ('background', background),
@@ -1046,6 +1159,15 @@ class Graphics(GraphicsBase):
         self._prop_manager.scale = value
 
     @property
+    def axes_bbox(self):
+        return self._prop_manager.axes_bbox
+    @axes_bbox.setter
+    def axes_bbox(self, value):
+        # print(">>>", value)
+        self._update_copy_opt('axes_bbox', value)
+        self._prop_manager.axes_bbox = value
+
+    @property
     def aspect_ratio(self):
         return self._prop_manager.aspect_ratio
     @aspect_ratio.setter
@@ -1136,7 +1258,7 @@ class Graphics(GraphicsBase):
             if 'ticks' in self._init_opts:
                 self.ticks = self._init_opts['ticks']
     def prep_show(self):
-        if self.parent is self:
+        if self.figure_parent is self:
             self._prep_show(parent=True)
             for c in self.children:
                 if hasattr(c, '_prep_show'):
@@ -1144,7 +1266,50 @@ class Graphics(GraphicsBase):
                 else:
                     c.prep_show()
         else:
-            self.parent.prep_show()
+            self.figure_parent.prep_show()
+
+    def get_padding_offsets(self):
+        plr = self.plot_range
+        w, h = self.image_size
+        ((pl, pr), (pb, pt)) = self.padding
+        pix_rat_x = (plr[0][1] - plr[0][0]) / (w - (pl + pr))  # pixel to image coordiantes
+        pix_rat_y = (plr[1][1] - plr[1][0]) / (h - (pb + pt))
+        ofl = pix_rat_x * pl
+        ofr = pix_rat_x * pr
+        ofb = pix_rat_y * pb
+        oft = pix_rat_y * pt
+        return [(ofl, ofr), (ofb, oft)]
+    def get_bbox(self):
+        # gives _effective_ image coordinates for the total space taken up by the figure
+        plr = self.plot_range
+        (ofl, ofr), (ofb, oft) = self.get_padding_offsets()
+        return [
+            (plr[0][0] - ofl, plr[1][0] - ofb),
+            (plr[0][1] + ofr, plr[1][1] + oft)
+        ]
+    inset_options = dict(
+        background='#FFFFFF00',
+        frame_style={'color':'#FFFFFF00'},
+        aspect_ratio='auto',
+        ticks=[[], []]
+    )
+    def create_inset(self, bbox, coordinates='absolute', graphics_class=None, **opts):
+        if coordinates == 'absolute':
+            ((lx, rx), (by, ty)) = self.plot_range
+            ((ofl, ofr), (ofb, oft)) = self.get_padding_offsets()
+            w = (rx - lx + ofr + ofl)
+            h = (ty - by + oft + ofb)
+            # get coordinates relative to plot frame
+            ((blx, bby), (brx, bty)) = bbox
+            slx = (ofl+(blx-lx))/w
+            srx = (ofl+(brx-lx))/w
+            sby = (ofb+(bby-by))/h
+            sty = (ofb+(bty-by))/h
+            bbox = [(slx, sby), (srx, sty)]
+            coordinates = 'figure'
+        if graphics_class is None:
+            graphics_class = Graphics
+        return super().create_inset(bbox, coordinates=coordinates, graphics_class=graphics_class, **opts)
 
 ########################################################################################################################
 #
@@ -1248,7 +1413,8 @@ class Graphics3D(Graphics):
         if figure is None:
             figure, axes = self._subplot_init(*args, backend=self._backend, mpl_backend=self.mpl_backend, **kw)
         elif isinstance(figure, GraphicsBase):
-            axes = figure.axes
+            if axes is None:
+                axes = figure.axes
             figure = figure.figure
 
         if axes is None:

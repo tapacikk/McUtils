@@ -145,7 +145,7 @@ class GraphicsPropertyManager:
     @property
     def plot_range(self):
         if self._plot_range is None:
-            pr = (self.axes.get_xlim(), self.axes.get_ylim())
+            pr = (list(sorted(self.axes.get_xlim())), list(sorted(self.axes.get_ylim())))
         else:
             pr = self._plot_range
         return pr
@@ -374,13 +374,17 @@ class GraphicsPropertyManager:
                     ar = 1
             w, h = wh = (wh, ar * wh)
 
-        if w is not None or h is not None:
+        if (
+                (w is not None or h is not None)
+                and not self.managed
+                and not self.graphics.inset
+        ):
             if w is None:
                 w = self._image_size[0]
             if h is None:
                 h = self._image_size[1]
 
-            if w > 72:
+            if w > 72: # refuse to have anything smaller than 1 inch?
                 wi = w / 72
             else:
                 wi = w
@@ -391,23 +395,39 @@ class GraphicsPropertyManager:
             else:
                 hi = h
                 h = 72 * h
-
             self._image_size = (w, h)
-            if not self.managed:
-                # print(w, wi, hi)
-                self.figure.set_size_inches(wi, hi)
+            self.figure.set_size_inches(wi, hi)
+    @property
+    def axes_bbox(self):
+        bbox = self.axes.get_position()
+        if hasattr(bbox, 'get_points'):
+            bbox = bbox.get_points()
+        return bbox
+    @axes_bbox.setter
+    def axes_bbox(self, bbox):
+        # if lx > 72:
+        #     ...
+        # elif by > 72:
+        #     ...
+        if bbox is not None:
+            if hasattr(bbox, 'get_points'):
+                bbox = bbox.get_points()
+            ((lx, by), (rx, ty)) = bbox
+            self.axes.set_position([lx, by, rx, ty])
 
     # set background color
     @property
     def background(self):
         if self._background is None:
-            self._background = self.figure.get_facecolor()
+            if self.graphics.inset:
+                self._background = self.axes.get_facecolor()
+            else:
+                self._background = self.figure.get_facecolor()
         return self._background
-
     @background.setter
     def background(self, bg):
         self._background = bg
-        if not self.managed:
+        if not self.managed and not self.graphics.inset:
             self.figure.set_facecolor(bg)
         self.axes.set_facecolor(bg)
 
@@ -492,9 +512,10 @@ class GraphicsPropertyManager:
         self._padding = ((wx, wy), (hx, hy))
         wx = wx / W; wy = wy / W
         hx = hx / H; hy = hy / H
-        if not self.managed:
+        if not self.managed and not self.graphics.inset:
             # print(wx, wy, hx, hy)
-            self.figure.subplots_adjust(left=wx, right=1 - wy, bottom=hx, top=1 - hy)
+            # print(wx, 1 - wy, hx, 1 - hy)
+            self.figure.subplots_adjust(left=wx, right=1 - wy, bottom=hx, top=1 - hy, hspace=0, wspace=0)
     @property
     def padding_left(self):
         return self._padding[0][0]

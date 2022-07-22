@@ -796,7 +796,7 @@ class ArrayPlot(DataPlot):
     Plots an array as an image
     """
 
-    method = 'imshow',
+    method = 'imshow'
     known_styles = DataPlot.image_params
     def __init__(self, *params,
                  plot_style=None, colorbar=None,
