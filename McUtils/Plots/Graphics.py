@@ -1,13 +1,13 @@
 """
 Provides Graphics base classes that can be extended upon
 """
-import abc
-import platform, os
+
+#TODO: Stop fighting using matplotlib & just supply the ability to also do other things
+#      By now it's a dependency so stop worrying and love the bomb
+
 # import matplotlib.figure
 # import matplotlib.axes
-import weakref
-
-import numpy as np
+import os, weakref, numpy as np, functools
 
 from .Properties import GraphicsPropertyManager, GraphicsPropertyManager3D
 from .Styling import Styled, ThemeManager, PlotLegend
@@ -62,27 +62,31 @@ class GraphicsBase(metaclass=ABCMeta):
     _axes_children = weakref.WeakKeyDictionary()
     @classmethod
     def resolve_axes_graphics(cls, axes):
-        if axes in cls._axes_mapping:
-            return cls._axes_mapping[axes]
+        if hasattr(axes, 'figure'): # ignore GraphicsGrids
+            if axes in cls._axes_mapping:
+                return cls._axes_mapping[axes]
     @classmethod
     def add_axes_graphics(cls, axes, graphics):
-        if axes in cls._axes_mapping:
-            parent = cls._axes_mapping[axes]
-            cls._axes_children[parent].append(graphics)
-        else:
-            cls._axes_mapping[axes] = graphics
-            cls._axes_children[graphics] = []
+        if hasattr(axes, 'figure'):
+            if axes in cls._axes_mapping:
+                parent = cls._axes_mapping[axes]
+                cls._axes_children[parent].append(graphics)
+            else:
+                cls._axes_mapping[axes] = graphics
+                cls._axes_children[graphics] = []
     @classmethod
-    def remove_axes_mapping(cls, fig):
-        if fig in cls._figure_mapping:
-            parent = cls._figure_mapping[fig]
-            del cls._figure_mapping[fig]
-            del cls._figure_children[parent]
+    def remove_axes_mapping(cls, axes):
+        if hasattr(axes, 'figure'):
+            if axes in cls._axes_mapping:
+                parent = cls._axes_mapping[axes]
+                del cls._axes_mapping[axes]
+                del cls._axes_children[parent]
     @classmethod
     def get_axes_child_graphics(cls, axes):
-        if axes in cls._axes_mapping:
-            parent = cls._axes_mapping[axes]
-            return cls._axes_children[parent]
+        if hasattr(axes, 'figure'):
+            if axes in cls._axes_mapping:
+                parent = cls._axes_mapping[axes]
+                return cls._axes_children[parent]
 
     opt_keys = {
         'background',
@@ -149,8 +153,6 @@ class GraphicsBase(metaclass=ABCMeta):
                     changed = changed.any()
                 if changed:
                     self._init_opts[key] = val
-        # if key in self._init_opts:
-        #     print(key, self._init_opts[key])
 
     layout_keys = {
         'figure',
@@ -240,20 +242,21 @@ class GraphicsBase(metaclass=ABCMeta):
         self.mpl_backend = mpl_backend
         if isinstance(figure, GraphicsBase):
             parent = figure
-        # self.parent = parent
-        # self.children = set()#weakref.WeakSet()
-
         if parent is not None and (axes is None or parent.axes is axes): # check inset
             # TODO: generalize this to a set of inherited props...
             if image_size is None: # gotta copy in some layout stuff..
                 image_size = parent.image_size
+            else:
+                parent.image_size = image_size
             if aspect_ratio is None:
                 aspect_ratio = parent.aspect_ratio
+            else:
+                parent.aspect_ratio = aspect_ratio
             if interactive is None:
                 interactive = parent.interactive
+            else:
+                parent.interactive = interactive
             prop_manager = parent._prop_manager
-
-        # print(parent.children)
 
         theme = self._get_def_opt('theme', theme, {})
         self.theme=theme
@@ -302,10 +305,7 @@ class GraphicsBase(metaclass=ABCMeta):
             subplot_kw['figsize'] = (w/72., h/72.)
 
         self.subplot_kw = subplot_kw
-        if theme is not None:
-            with theme_manager.from_spec(theme):
-                self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
-        else:
+        with self.theme_manager.from_spec(self.theme):
             self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
         if self.inset:
             self.add_axes_graphics(self.axes, self)
@@ -464,9 +464,6 @@ class GraphicsBase(metaclass=ABCMeta):
             from matplotlib._pylab_helpers import Gcf
             from IPython.core.display import display
             mpl_inline = self.plt._backend_mod
-            # from matplotlib.backends import backend as mpl_inline
-            # print(mpl_inline)
-            # mpl_inline = sys.modules[type(self.plt).__module__]
 
             if close is None:
                 close = mpl_inline.InlineBackend.instance().close_figures
@@ -536,8 +533,6 @@ class GraphicsBase(metaclass=ABCMeta):
             if axes is None:
                 axes = figure.axes # type: matplotlib.axes.Axes
             figure = figure.figure # type: matplotlib.figure.Figure
-            # print("???")
-        # print(figure)
 
         if axes is None:
             if not hasattr(figure, 'add_subplot'):
@@ -561,7 +556,7 @@ class GraphicsBase(metaclass=ABCMeta):
     @property
     def inset(self):
         fp = self.figure_parent
-        return fp is not None and (self.axes is not fp.axes)
+        return not self.managed and fp is not None and (self.axes is not fp.axes)
     @property
     def children(self):
         if self.parent is self:
@@ -755,7 +750,6 @@ class GraphicsBase(metaclass=ABCMeta):
         :return:
         :rtype:
         """
-        # print(self._init_opts, init_kwargs)
         parent = self.figure_parent
         figs = {} if figs is None else figs
         if parent is self:
@@ -776,7 +770,12 @@ class GraphicsBase(metaclass=ABCMeta):
         :rtype:
         """
         return type(self)(
-            *self._get_init_args(*init_args), **dict(self._get_init_opts(parent_opts), figure=new, **init_kwargs)
+            *self._get_init_args(*init_args),
+            **dict(
+                self._get_init_opts(parent_opts),
+                figure=new,
+                **init_kwargs
+            )
         )
     def prep_show(self):
         self.set_options(**self.opts)  # matplotlib is dumb so it makes sense to just reset these again...
@@ -787,6 +786,7 @@ class GraphicsBase(metaclass=ABCMeta):
         if self.tighten:
             self.figure.tight_layout()
         self._shown = True
+        return self
     def show(self, reshow=False):
         from .VTKInterface import VTKWindow
 
@@ -794,7 +794,6 @@ class GraphicsBase(metaclass=ABCMeta):
             self.figure.show()
         else:
             if reshow or not self._shown:
-                # print(self, self.epilog)
                 self.prep_show()
                 if not self.managed:
                     ni = not self.interactive
@@ -817,11 +816,15 @@ class GraphicsBase(metaclass=ABCMeta):
                 force
                 or self.figure not in self._figure_mapping
                 or self.resolve_figure_graphics(self.figure) is self
+                or self.resolve_axes_graphics(self.axes) is self
         ): # parent manages cleanup
-            if self._mpl_loaded:
-                with self.pyplot as plt:
-                    return plt.close(self.figure)
-            self.remove_figure_mapping(self.figure)
+            if self.inset:
+                self.axes.remove()
+            else:
+                if self._mpl_loaded:
+                    with self.pyplot as plt:
+                        return plt.close(self.figure)
+                self.remove_figure_mapping(self.figure)
 
     def __del__(self):
         try:
@@ -858,6 +861,7 @@ class GraphicsBase(metaclass=ABCMeta):
             kw['facecolor'] = self.background# -_- stupid MPL
         if format is None:
             format = os.path.splitext(where)[1].split('.')[-1]
+        self.prep_show()
         return self.figure.savefig(where,
                     format=format,
                     **kw
@@ -953,6 +957,7 @@ class GraphicsBase(metaclass=ABCMeta):
                    "yticks", "zorder"} # not sure what to do with these yet...
     inset_options = dict()
     axes_keys = set()
+    _axes_padding_offset = [1, 0]
     def create_inset(self, bbox, coordinates='scaled', graphics_class=None, **opts):
         if hasattr(bbox, 'get_points'):
             bbox = bbox.get_points()
@@ -961,14 +966,23 @@ class GraphicsBase(metaclass=ABCMeta):
         if coordinates == 'absolute':
             raise NotImplementedError("can't construct inset axes with absolute coordinates")
         elif coordinates == 'scaled': # scaled to live within the frame
-            ((pl, pr), (pb, pt)) = self.padding
-            w, h = self.image_size
-            ol = pl / w
-            ob = pb / h
-            lx = lx + ol
-            rx = rx + ol
-            by = by + ob
-            ty = ty + ob
+            ((alx, aby), (arx, aty)) = self.axes.bbox.get_points()
+            alx = alx + self._axes_padding_offset[0]
+            arx = arx + self._axes_padding_offset[0]
+            aby = aby + self._axes_padding_offset[1]
+            aty = aty + self._axes_padding_offset[1]
+            w, h = self.figure_parent.image_size
+            # we scale the coordinates to live within the axes screenbox
+            sl = alx / w
+            sr = arx / w
+            sw = (sr - sl)
+            sb = aby / h
+            st = aty / h
+            sh = (st - sb)
+            lx = lx * sw + sl
+            rx = rx * sw + sl
+            by = by * sh + sb
+            ty = ty * sh + sb
 
         if graphics_class is None:
             graphics_class = type(self)
@@ -976,8 +990,8 @@ class GraphicsBase(metaclass=ABCMeta):
         # raise Exception(opts, self.axes_keys)
         # ax_par, fig_par = self._split_props_list(opts, self.axes_keys)
 
-        # print(lx, by, rx-lx, ty-by)
-        ax = self.figure.add_axes([lx, by, rx-lx, ty-by])
+        with self.theme_manager.from_spec(self.theme):
+            ax = self.figure.add_axes([lx, by, rx-lx, ty-by])
         return graphics_class(figure=self, axes=ax, **opts)
 
 ########################################################################################################################
@@ -991,10 +1005,10 @@ class Graphics(GraphicsBase):
     default_style = dict(
         theme='mccoy',
         frame=((True, False), (True, False)),
-        aspect_ratio='auto',
         image_size=(370, 345),
         padding=((60, 10), (35, 10)),
-        interactive=False
+        interactive=False,
+        aspect_ratio='auto'
     )
 
     axes_keys = {
@@ -1163,7 +1177,6 @@ class Graphics(GraphicsBase):
         return self._prop_manager.axes_bbox
     @axes_bbox.setter
     def axes_bbox(self, value):
-        # print(">>>", value)
         self._update_copy_opt('axes_bbox', value)
         self._prop_manager.axes_bbox = value
 
@@ -1180,7 +1193,6 @@ class Graphics(GraphicsBase):
         return self._prop_manager.image_size
     @image_size.setter
     def image_size(self, value):
-        # print(">>>", value)
         self._update_copy_opt('image_size', value)
         self._prop_manager.image_size = value
 
@@ -1267,16 +1279,20 @@ class Graphics(GraphicsBase):
                     c.prep_show()
         else:
             self.figure_parent.prep_show()
+        return self
 
     def get_padding_offsets(self):
-        plr = self.plot_range
-        w, h = self.image_size
+        ((l, r), (b, t)) = self.plot_range
+        # w, h = self.image_size
         ((pl, pr), (pb, pt)) = self.padding
-        pix_rat_x = (plr[0][1] - plr[0][0]) / (w - (pl + pr))  # pixel to image coordiantes
-        pix_rat_y = (plr[1][1] - plr[1][0]) / (h - (pb + pt))
-        ofl = pix_rat_x * pl
+        ((alx, aby), (arx, aty)) = self.axes.bbox.get_points()
+        w = arx - alx
+        h = aty - aby
+        pix_rat_x = (r - l) / w  # pixel to image coordiantes
+        pix_rat_y = (t - b) / h
+        ofl = pix_rat_x * (pl + self._axes_padding_offset[0])
         ofr = pix_rat_x * pr
-        ofb = pix_rat_y * pb
+        ofb = pix_rat_y * (pb + self._axes_padding_offset[1])
         oft = pix_rat_y * pt
         return [(ofl, ofr), (ofb, oft)]
     def get_bbox(self):
@@ -1288,25 +1304,38 @@ class Graphics(GraphicsBase):
             (plr[0][1] + ofr, plr[1][1] + oft)
         ]
     inset_options = dict(
+        image_size='auto',
         background='#FFFFFF00',
-        frame_style={'color':'#FFFFFF00'},
+        frame_style={'linewidth':0},#, 'color':'#FFFFFF00'},
         aspect_ratio='auto',
-        ticks=[[], []]
+        ticks=[[], []],
+        ticks_style={'width':0},
+        ticks_label_style=[{'fontsize':0}, {'fontsize':0}]
     )
     def create_inset(self, bbox, coordinates='absolute', graphics_class=None, **opts):
         if coordinates == 'absolute':
             ((lx, rx), (by, ty)) = self.plot_range
-            ((ofl, ofr), (ofb, oft)) = self.get_padding_offsets()
-            w = (rx - lx + ofr + ofl)
-            h = (ty - by + oft + ofb)
-            # get coordinates relative to plot frame
+            w = rx - lx
+            h = ty - by
             ((blx, bby), (brx, bty)) = bbox
-            slx = (ofl+(blx-lx))/w
-            srx = (ofl+(brx-lx))/w
-            sby = (ofb+(bby-by))/h
-            sty = (ofb+(bty-by))/h
+            slx = ((blx - lx)) / w
+            srx = ((brx - lx)) / w
+            sby = ((bby - by)) / h
+            sty = ((bty - by)) / h
             bbox = [(slx, sby), (srx, sty)]
-            coordinates = 'figure'
+
+            # ((ofl, ofr), (ofb, oft)) = self.get_padding_offsets()
+            # w = (rx - lx + ofr + ofl)
+            # h = (ty - by + oft + ofb)
+            # # get coordinates relative to plot frame
+            # ((blx, bby), (brx, bty)) = bbox
+            # slx = (ofl+(blx-lx))/w
+            # srx = (ofl+(brx-lx))/w
+            # sby = (ofb+(bby-by))/h
+            # sty = (ofb+(bty-by))/h
+            # bbox = [(slx, sby), (srx, sty)]
+            # # now shift to position of axis in total image
+            coordinates = 'scaled'
         if graphics_class is None:
             graphics_class = Graphics
         return super().create_inset(bbox, coordinates=coordinates, graphics_class=graphics_class, **opts)
@@ -1588,7 +1617,7 @@ class GraphicsGrid(GraphicsBase):
                  subplot_kw=None,
                  _subplot_init=None,
                  mpl_backend = None,
-                 subimage_size=(200, 200),
+                 subimage_size=(310, 310),
                  subimage_aspect_ratio='auto',
                  padding=None,
                  spacings=None,
@@ -1649,6 +1678,39 @@ class GraphicsGrid(GraphicsBase):
                 for i, r in enumerate(args):
                     for j, g in enumerate(r):
                         self[i, j] = g
+
+    class GraphicsStack:
+        def __init__(self, parent, graphics):
+            self.parent = parent #type: GraphicsBase
+            self.stack = np.empty_like(graphics, dtype=object)
+            self.stack[:] = graphics
+        def __getitem__(self, item):
+            return self.stack[item]
+        def __setitem__(self, item, value):
+            self.stack[item] = value
+        def _call_iter(self, attr):
+            @functools.wraps(getattr(Graphics, attr))
+            def call(*args, **kwargs):
+                for ax in self.stack.flat:
+                    getattr(ax, attr)(*args, **kwargs)
+            return call
+        def _axes_call_iter(self, attr):
+            ax = next(self.stack.flat).axes
+            @functools.wraps(getattr(ax, attr))
+            def call(*args, **kwargs):
+                for ax in self.stack.flat:
+                    getattr(ax.axes, attr)(*args, **kwargs)
+            return call
+        def __getattr__(self, attr):
+            if attr not in {'stack', 'parent'}: # indicates deletion
+                if hasattr(Graphics, attr):
+                    return self._call_iter(attr)
+                else:
+                    return self._axes_call_iter(attr)
+        def __iter__(self):
+            return self.stack.flat
+            # else:
+            #     raise AttributeError("{} has no attribute {}".format(Graphics.__name__, attr))
 
     def _init_suplots(self,
                       figure, axes, *args,
@@ -1715,7 +1777,8 @@ class GraphicsGrid(GraphicsBase):
                     h += (nrows-1) * sh
                 fig_kw['figsize'] = (w/72., h/72.)
 
-            figure, axes = _subplot_init(*args, nrows = nrows, ncols=ncols, subplot_kw=subplot_kw, figure=self, **fig_kw)
+            figure, axes = _subplot_init(*args, nrows=nrows, ncols=ncols, subplot_kw=subplot_kw, figure=self, **fig_kw)
+            self.add_figure_graphics(figure, self)
 
             if isinstance(axes, matplotlib.axes.Axes):
                 axes = [[axes]]
@@ -1729,18 +1792,19 @@ class GraphicsGrid(GraphicsBase):
             for i in range(nrows):
                 for j in range(ncols):
                     axes[i][j] = graphics_class(figure=figure, axes=axes[i][j], managed=True, **kw)
+            axes = self.GraphicsStack(self, axes)
         elif isinstance(figure, GraphicsGrid):
             axes = figure.axes  # type: matplotlib.axes.Axes
             figure = figure.figure  # type: matplotlib.figure.Figure
 
         if axes is None:
-            axes = [
+            axes = self.GraphicsStack(self, [
                 graphics_class(
                     figure.add_subplot(nrows, ncols, i),
                     managed=True,
                     **kw
                 ) for i in range(nrows * ncols)
-            ]
+            ])
 
         return figure, axes
 
@@ -1769,8 +1833,7 @@ class GraphicsGrid(GraphicsBase):
                 setattr(self, oname, oval)
 
     def __iter__(self):
-        import itertools as ip
-        return ip.chain(*self.axes)
+        return iter(self.axes)
     def __getitem__(self, item):
         try:
             i, j = item
@@ -1783,14 +1846,18 @@ class GraphicsGrid(GraphicsBase):
             i, j = item
         except ValueError:
             if isinstance(val, GraphicsBase):
-                val.change_figure(self.axes[item])
+                self.axes[item] = val.change_figure(self.axes[item], image_size=val.image_size)
             else:
                 self.axes[item] = val
         else:
             if isinstance(val, GraphicsBase):
-                val.change_figure(self.axes[i][j])
+                self.axes[i][j] = val.change_figure(self.axes[i][j], image_size=val.image_size)
             else:
                 self.axes[i][j] = val
+    def set_image(self, pos, val, **opts):
+        pos = tuple(pos) if not isinstance(pos, int) else pos
+        self.axes[pos] = val.change_figure(self.axes[pos], image_size=val.image_size, **opts)
+        return self.axes[pos]
 
     # def __getattr__(self, item):
     #     reraise_error = None
@@ -1814,9 +1881,8 @@ class GraphicsGrid(GraphicsBase):
     # set size
     def calc_image_size(self):
         w=0; h=0
-        for l in self.axes:
-            mh = 0
-            mw = 0
+        for l in self.axes.stack:
+            mh = 0; mw = 0
             for f in l:
                 wh = f.image_size
                 if wh is not None:
@@ -1908,7 +1974,17 @@ class GraphicsGrid(GraphicsBase):
     def colorbar(self, value):
         self._prop_manager.colorbar = value
 
-    def prep_show(self):
+    # def _prep_show(self):
+    #     self.image_size = None
+    #     if self.spacings is not None:
+    #         self.spacings = self.spacings
+    #     if self.padding is not None:
+    #         self.padding = self.padding
+    #     if self.tighten:
+    #         self.figure.tight_layout()
+        # super().prep_show()
+
+    def _prep_show(self, parent=False):
         self.image_size = None
         if self.spacings is not None:
             self.spacings = self.spacings
@@ -1916,10 +1992,18 @@ class GraphicsGrid(GraphicsBase):
             self.padding = self.padding
         if self.tighten:
             self.figure.tight_layout()
+    def prep_show(self):
+        if self.figure_parent is self:
+            self._prep_show(parent=True)
+            for c in self.children:
+                if hasattr(c, '_prep_show'):
+                    c._prep_show(parent=False)
+                else:
+                    c.prep_show()
+        else:
+            self.figure_parent.prep_show()
+        return self
 
-    def show(self, **kwargs):
-        for f in self:
-            if isinstance(f, GraphicsBase):
-                f.prep_show()
-        super().show(**kwargs)
+    # def show(self, **kwargs):
+    #     super().show(**kwargs)
 

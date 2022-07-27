@@ -215,7 +215,7 @@ class Inset(GraphicsPrimitive):
         self._plot_range = plot_range
         self._dimensions = dimensions
         self.offset = offset
-        self._prim = None
+        self._prim_cache = {}
 
     @property
     def plot_range(self):
@@ -257,16 +257,23 @@ class Inset(GraphicsPrimitive):
             return dims
     def get_bbox(self, graphics=None, preserve_aspect=None):
         w, h = self.dimensions
-        if preserve_aspect is None:
+        if preserve_aspect is None and self._dimensions is not None:
             preserve_aspect = self._dimensions[0] is None or self._dimensions[1] is None
         if preserve_aspect and graphics is not None:
             ((lx, rx), (by, ty)) = graphics.plot_range
             gw = (rx - lx)
             gh = (ty - by)
-            if self.dimensions[1] is None:
-                h = h * (gh/gw)
+            ar = graphics.aspect_ratio
+            ((slx, srx), (sby, sty)) = self.plot_range
+            sar = (sty - sby) / (srx - slx)
+            if isinstance(ar, str) and ar == 'auto':
+                w1, h1 = graphics.image_size
+                ar = h1 / w1
+            art = (gh/gw) / ar # the ratio of plot_range aspect to true aspect
+            if self._dimensions[1] is None:
+                h = w * (sar * art)
             else:
-                w = w * (gw/gh)
+                w = h / (sar * art)
 
         ox, oy = self.offset
         x, y = self.pos
@@ -279,7 +286,10 @@ class Inset(GraphicsPrimitive):
     def get_axes(self, graphics, bbox=None, **opts):
         if bbox is None:
             bbox = self.get_bbox()
-        return graphics.create_inset(bbox, **opts)
+        if graphics.figure in self._prim_cache:
+            self._prim_cache[graphics.figure].close()
+        self._prim_cache[graphics.figure] = graphics.create_inset(bbox, **opts)
+        return self._prim_cache[graphics.figure]
 
     def plot(self, axes, *args, graphics=None, **kwargs):
         if isinstance(axes.figure, VTKWindow):
@@ -288,8 +298,8 @@ class Inset(GraphicsPrimitive):
             if graphics is None:
                 graphics = axes
             bbox = self.get_bbox(graphics=graphics)
-            self._prim = self.get_axes(graphics, bbox, **self.opts)
-            prims = [p.change_figure(self._prim) if hasattr(p, 'change_figure') else p.plot(self._prim) for p in self.prims]
+            g = self.get_axes(graphics, bbox, **self.opts)
+            prims = [p.change_figure(g) if hasattr(p, 'change_figure') else p.plot(g) for p in self.prims]
             return prims
 
     # def __del__(self):
