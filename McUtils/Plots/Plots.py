@@ -113,7 +113,12 @@ def _interp2DData(gpts, **opts):
     return xmesh, ymesh, vals.T
 
 def _get_2D_plotdata(func, xrange):
-    if not callable(func):
+    if hasattr(func, 'subs'):
+        from sympy import lambdify
+        sym, xrange = xrange
+        xrange = np.arange(*xrange)
+        fvalues = lambdify([sym], func)(xrange)
+    elif not callable(func):
         fvalues = xrange
         xrange = func
     else:

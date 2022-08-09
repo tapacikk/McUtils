@@ -255,6 +255,14 @@ class Logger:
     @staticmethod
     def split_lines(obj):
         return str(obj).splitlines()
+    @staticmethod
+    def prep_array(obj):
+        import numpy as np
+        with np.printoptions(linewidth=1e8):
+            return str(obj).splitlines()
+    @staticmethod
+    def prep_dict(obj):
+        return ["{k}: {v}".format(k=k, v=v) for k,v in obj.items()]
 
     def log_print(self,
                   message,

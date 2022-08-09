@@ -2025,6 +2025,12 @@ class SymmetricGroupGenerator:
         else:
             indices = np.asanyarray(indices)
 
+        # shortcut for 1D
+        if self.dim == 1:
+            if not smol:
+                indices = np.expand_dims(indices, -1)
+            return indices
+
         big_shp = indices.shape
         if indices.ndim > 1:
             indices = np.reshape(indices, -1)
