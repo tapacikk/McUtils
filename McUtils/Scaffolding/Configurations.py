@@ -235,7 +235,8 @@ class ParameterManager:
         args, _, _, defaults, _, _, _  = inspect.getfullargspec(obj)
         if args is None:
             return None
-        return args[-len(defaults):]
+        ndef = len(defaults) if defaults is not None else 0
+        return tuple(args[-ndef:])
     def get_props(self, obj):
         if isinstance(obj, (list, tuple)):
             return sum(
