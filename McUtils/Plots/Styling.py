@@ -1,7 +1,7 @@
 """
 Defines a helper class Styled to make it easier to style plots and stuff and a ThemeManager to handle all that shiz
 """
-
+import contextlib
 from collections import deque
 from .Backends import Backends
 
@@ -108,7 +108,8 @@ class ThemeManager:
                 'axes.labelsize': 13,
                 'xtick.labelsize':13,
                 'ytick.labelsize':13,
-                'padding': 50
+                'padding': 50,
+                'aspect_ratio': 'auto'
             }
         )
 
@@ -124,6 +125,8 @@ class ThemeManager:
         self.context_manager = None
     @classmethod
     def from_spec(cls, theme):
+        if theme is None:
+            return NoThemeManager()
         if isinstance(theme, (str, dict)):
             theme = [theme]
         if len(theme) > 0:
@@ -249,3 +252,11 @@ class ThemeManager:
     def theme_names(self):
         return self.backend_themes + tuple(self.extra_themes.keys())
 
+class NoThemeManager:
+    """
+    Does nothing but makes code consistent
+    """
+    def __enter__(self):
+        pass
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass

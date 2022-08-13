@@ -1,6 +1,8 @@
 import os
 from .ConfigManagement import ConfigSerializer
 
+raise ImportError("dead file")
+
 __all__ = [ "ParameterManager" ]
 
 class ParameterManager:
