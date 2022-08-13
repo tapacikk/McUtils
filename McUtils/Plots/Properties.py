@@ -312,6 +312,20 @@ class GraphicsPropertyManager:
             if o is not None:
                 a.set(**o)
 
+    ticks_label_base_styles = {
+        'size', 'color',
+        'top', 'left', 'right', 'bottom'
+    }
+    ticks_label_style_remapping={'fontsize':'size', 'fontcolor':'color'}
+    @classmethod
+    def clean_tick_label_styles(cls, k):
+        if k.startswith('label'):
+            k = k[5:]
+        if k in cls.ticks_label_base_styles:
+            k = 'label' + k
+        k = cls.ticks_label_style_remapping.get(k, k)
+        return k
+
     @property
     def ticks_label_style(self):
         return self._ticks_label_style
@@ -324,15 +338,16 @@ class GraphicsPropertyManager:
         except ValueError:
             x, y = ticks_style = (ticks_style, ticks_style)
         self._ticks_label_style = ticks_style
+
         if x is not None:
-            self.axes.set_xticklabels(
-                self.axes.get_xticklabels(),
-                **x
+            self.axes.tick_params(
+                axis='x',
+                **{self.clean_tick_label_styles(k):v for k,v in x.items()}
             )
         if y is not None:
-            self.axes.set_yticklabels(
-                self.axes.get_yticklabels(),
-                **y
+            self.axes.tick_params(
+                axis='y',
+                **{self.clean_tick_label_styles(k):v for k,v in y.items()}
             )
 
     @property
