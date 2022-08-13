@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.DataPlot">DataPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L654)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L654?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L659)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L659?message=Update%20Docs)]
 </div>
 
 Makes a 2D plot of arbitrary data using a plot method that handles that data type
@@ -21,7 +21,7 @@ image_params: set
 __init__(self, *params, plot_style=None, method=None, figure=None, axes=None, subplot_kw=None, colorbar=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L660)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L660?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L665)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L665?message=Update%20Docs)]
 </div>
 
 
@@ -54,4 +54,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/DataPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/DataPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/DataPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L654?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L659?message=Update%20Docs)

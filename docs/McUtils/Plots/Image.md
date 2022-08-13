@@ -10,8 +10,16 @@ Provides hooks for viewing images, mostly through the Matplotlib Image interface
    <div class="col" markdown="1">
 [Image](Image/Image.md)   
 </div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
 </div>
 </div>
+</div>
+
+
 
 ## Examples
 

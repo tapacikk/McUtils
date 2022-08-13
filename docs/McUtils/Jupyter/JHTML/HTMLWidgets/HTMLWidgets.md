@@ -120,6 +120,7 @@ Summary: type
 Sup: type
 Svg: type
 Table: type
+TableHeader: type
 TableBody: type
 TableHeading: type
 TableItem: type

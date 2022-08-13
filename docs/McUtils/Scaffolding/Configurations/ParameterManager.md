@@ -23,12 +23,36 @@ __init__(self, *d, **ops):
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L194)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L194?message=Update%20Docs)]
 </div>
 
+<a id="McUtils.Scaffolding.Configurations.ParameterManager.__getitem__" class="docs-object-method">&nbsp;</a> 
+```python
+__getitem__(self, item): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L203)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L203?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Scaffolding.Configurations.ParameterManager.__setitem__" class="docs-object-method">&nbsp;</a> 
+```python
+__setitem__(self, key, value): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L205)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L205?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Scaffolding.Configurations.ParameterManager.__delitem__" class="docs-object-method">&nbsp;</a> 
+```python
+__delitem__(self, item): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L207)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L207?message=Update%20Docs)]
+</div>
+
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.__getattr__" class="docs-object-method">&nbsp;</a> 
 ```python
 __getattr__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L203)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L203?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L209)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L209?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.__setattr__" class="docs-object-method">&nbsp;</a> 
@@ -36,7 +60,7 @@ __getattr__(self, item):
 __setattr__(self, key, value): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L205)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L205?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L211)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L211?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.__delattr__" class="docs-object-method">&nbsp;</a> 
@@ -44,7 +68,7 @@ __setattr__(self, key, value):
 __delattr__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L210)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L210?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L216)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L216?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.__hasattr__" class="docs-object-method">&nbsp;</a> 
@@ -52,7 +76,7 @@ __delattr__(self, item):
 __hasattr__(self, key): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L212)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L212?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L218)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L218?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.update" class="docs-object-method">&nbsp;</a> 
@@ -60,7 +84,7 @@ __hasattr__(self, key):
 update(self, **ops): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L214)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L214?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L220)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L220?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.keys" class="docs-object-method">&nbsp;</a> 
@@ -68,7 +92,7 @@ update(self, **ops):
 keys(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L217)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L217?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L223)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L223?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.items" class="docs-object-method">&nbsp;</a> 
@@ -76,7 +100,7 @@ keys(self):
 items(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L219)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L219?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L225)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L225?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.save" class="docs-object-method">&nbsp;</a> 
@@ -84,7 +108,7 @@ items(self):
 save(self, file, mode=None, attribute=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L222)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L222?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L228)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L228?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.load" class="docs-object-method">&nbsp;</a> 
@@ -92,7 +116,15 @@ save(self, file, mode=None, attribute=None):
 load(file, mode=None, attribute=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L224)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L224?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L230)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L230?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Scaffolding.Configurations.ParameterManager.extract_kwarg_keys" class="docs-object-method">&nbsp;</a> 
+```python
+extract_kwarg_keys(self, obj): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L234)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L234?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.get_props" class="docs-object-method">&nbsp;</a> 
@@ -100,7 +132,7 @@ load(file, mode=None, attribute=None):
 get_props(self, obj): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L228)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L228?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L240)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L240?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.bind" class="docs-object-method">&nbsp;</a> 
@@ -108,7 +140,7 @@ get_props(self, obj):
 bind(self, obj, props=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L238)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L238?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L259)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L259?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.filter" class="docs-object-method">&nbsp;</a> 
@@ -116,7 +148,15 @@ bind(self, obj, props=None):
 filter(self, obj, props=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L243)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L243?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L262)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L262?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Scaffolding.Configurations.ParameterManager.exclude" class="docs-object-method">&nbsp;</a> 
+```python
+exclude(self, obj, props=None): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L267)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L267?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.serialize" class="docs-object-method">&nbsp;</a> 
@@ -124,7 +164,7 @@ filter(self, obj, props=None):
 serialize(self, file, mode=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L253)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L253?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L273)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L273?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Scaffolding.Configurations.ParameterManager.deserialize" class="docs-object-method">&nbsp;</a> 
@@ -132,7 +172,7 @@ serialize(self, file, mode=None):
 deserialize(file, mode=None, attribute=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L256)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L256?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Configurations.py#L276)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Configurations.py#L276?message=Update%20Docs)]
 </div>
 
  </div>

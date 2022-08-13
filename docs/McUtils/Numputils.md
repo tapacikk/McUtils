@@ -212,8 +212,13 @@ Any lowish-level numerical operations that need to be shared go here.
    <div class="col" markdown="1">
 [downcast_index_array](Numputils/Misc/downcast_index_array.md)   
 </div>
+   <div class="col" markdown="1">
+   
 </div>
 </div>
+</div>
+
+
 
 
 

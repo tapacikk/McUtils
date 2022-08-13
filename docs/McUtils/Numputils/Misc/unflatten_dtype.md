@@ -1,6 +1,6 @@
 # <a id="McUtils.Numputils.Misc.unflatten_dtype">unflatten_dtype</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Misc.py#L91)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Misc.py#L94)]
 </div>
 
 ```python
@@ -26,4 +26,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Numputils/Misc/unflatten_dtype.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Numputils/Misc/unflatten_dtype.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Numputils/Misc/unflatten_dtype.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Misc.py#L91?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Misc.py#L94?message=Update%20Docs)

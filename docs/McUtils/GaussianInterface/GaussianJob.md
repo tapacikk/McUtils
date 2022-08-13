@@ -13,8 +13,13 @@ Defines a symbolic representation of a Gaussian job for batch generation
    <div class="col" markdown="1">
 [GaussianJobArray](GaussianJob/GaussianJobArray.md)   
 </div>
+   <div class="col" markdown="1">
+   
 </div>
 </div>
+</div>
+
+
 
 ## Examples
 # <a id="McUtils.GaussianInterface.GaussianJob">McUtils.GaussianInterface.GaussianJob</a>

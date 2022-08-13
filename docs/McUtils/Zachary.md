@@ -121,8 +121,16 @@ Deals with anything tensor, Taylor expansion, or interpolation related
    <div class="col" markdown="1">
 [TensorExpansionTerms](Zachary/TensorDerivativeConverter/TensorExpansionTerms.md)   
 </div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
 </div>
 </div>
+</div>
+
+
 
 ## Examples
 

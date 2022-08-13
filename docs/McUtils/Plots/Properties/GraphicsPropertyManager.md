@@ -14,6 +14,10 @@ at the same time things that build off of GraphicsBase don't need to implement a
  </div>
  <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
 
+```python
+ticks_label_base_styles: set
+ticks_label_style_remapping: dict
+```
 <a id="McUtils.Plots.Properties.GraphicsPropertyManager.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, graphics, figure, axes, managed=False): 
@@ -94,6 +98,14 @@ frame_style(self):
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties.py#L?message=Update%20Docs)]
 </div>
 
+<a id="McUtils.Plots.Properties.GraphicsPropertyManager.clean_tick_label_styles" class="docs-object-method">&nbsp;</a> 
+```python
+clean_tick_label_styles(k): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties.py#L320)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties.py#L320?message=Update%20Docs)]
+</div>
+
 <a id="McUtils.Plots.Properties.GraphicsPropertyManager.ticks_label_style" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
@@ -116,6 +128,15 @@ aspect_ratio(self):
 ```python
 @property
 image_size(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties.py#L?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Plots.Properties.GraphicsPropertyManager.axes_bbox" class="docs-object-method">&nbsp;</a> 
+```python
+@property
+axes_bbox(self): 
 ```
 <div class="docs-source-link" markdown="1">
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties.py#L?message=Update%20Docs)]

@@ -17,7 +17,20 @@ Sets up a general Interpolator class that looks like Mathematica's Interpolating
 [ProductGridInterpolator](Interpolator/ProductGridInterpolator.md)   
 </div>
 </div>
+  <div class="row">
+   <div class="col" markdown="1">
+   
 </div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+</div>
+
+
 
 ## Examples
 

@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Primitives.Disk">Disk</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L29)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L29?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L33)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L33?message=Update%20Docs)]
 </div>
 
 
@@ -18,15 +18,23 @@
 __init__(self, position=(0, 0), radius=1, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L30)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L30?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L34)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L34?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Plots.Primitives.Disk.get_bbox" class="docs-object-method">&nbsp;</a> 
+```python
+get_bbox(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L40)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L40?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Primitives.Disk.plot" class="docs-object-method">&nbsp;</a> 
 ```python
-plot(self, graphics, *args, zdir=None, **kwargs): 
+plot(self, axes, *args, graphics=None, zdir=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L36)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L36?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L43)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L43?message=Update%20Docs)]
 </div>
 
  </div>
@@ -41,4 +49,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Primitives/Disk.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Primitives/Disk.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Primitives/Disk.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L29?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L33?message=Update%20Docs)

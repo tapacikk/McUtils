@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.HorizontalFilledPlot">HorizontalFilledPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L517)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L517?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L522)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L522?message=Update%20Docs)]
 </div>
 
 
@@ -31,4 +31,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/HorizontalFilledPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/HorizontalFilledPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/HorizontalFilledPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L517?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L522?message=Update%20Docs)

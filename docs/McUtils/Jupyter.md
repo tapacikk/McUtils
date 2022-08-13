@@ -206,71 +206,84 @@ Defines a set of miscellaneous helper utilities that are commonly used across pr
 </div>
   <div class="row">
    <div class="col" markdown="1">
+[Table](Jupyter/Apps/Interfaces/Table.md)   
+</div>
+   <div class="col" markdown="1">
 [Flex](Jupyter/Apps/Interfaces/Flex.md)   
 </div>
    <div class="col" markdown="1">
 [Control](Jupyter/Apps/Controls/Control.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [InputField](Jupyter/Apps/Controls/InputField.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [StringField](Jupyter/Apps/Controls/StringField.md)   
 </div>
    <div class="col" markdown="1">
 [Slider](Jupyter/Apps/Controls/Slider.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [Checkbox](Jupyter/Apps/Controls/Checkbox.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [RadioButton](Jupyter/Apps/Controls/RadioButton.md)   
 </div>
    <div class="col" markdown="1">
 [Switch](Jupyter/Apps/Controls/Switch.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [TextArea](Jupyter/Apps/Controls/TextArea.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [Selector](Jupyter/Apps/Controls/Selector.md)   
 </div>
    <div class="col" markdown="1">
 [VariableDisplay](Jupyter/Apps/Controls/VariableDisplay.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [FunctionDisplay](Jupyter/Apps/Controls/FunctionDisplay.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [MenuSelect](Jupyter/Apps/Controls/MenuSelect.md)   
 </div>
    <div class="col" markdown="1">
 [DropdownSelect](Jupyter/Apps/Controls/DropdownSelect.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [ProgressBar](Jupyter/Apps/Controls/ProgressBar.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [App](Jupyter/Apps/Apps/App.md)   
 </div>
    <div class="col" markdown="1">
 [Manipulator](Jupyter/Apps/Apps/Manipulator.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [MoleculeGraphics](Jupyter/MoleculeGraphics/MoleculeGraphics.md)   
 </div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
 </div>
 </div>
+</div>
+
+
 
 
 

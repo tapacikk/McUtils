@@ -289,27 +289,30 @@ Image/animation support and other back end support for 3D graphics (`VTK`) are p
 </div>
   <div class="row">
    <div class="col" markdown="1">
+[Inset](Plots/Primitives/Inset.md)   
+</div>
+   <div class="col" markdown="1">
 [EventHandler](Plots/Interactive/EventHandler.md)   
 </div>
    <div class="col" markdown="1">
 [Animator](Plots/Interactive/Animator.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [Styled](Plots/Styling/Styled.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [ThemeManager](Plots/Styling/ThemeManager.md)   
 </div>
    <div class="col" markdown="1">
 [PlotLegend](Plots/Styling/PlotLegend.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [Image](Plots/Image/Image.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [GraphicsPropertyManager](Plots/Properties/GraphicsPropertyManager.md)   
 </div>
@@ -317,7 +320,20 @@ Image/animation support and other back end support for 3D graphics (`VTK`) are p
 [GraphicsPropertyManager3D](Plots/Properties/GraphicsPropertyManager3D.md)   
 </div>
 </div>
+  <div class="row">
+   <div class="col" markdown="1">
+   
 </div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+</div>
+
+
 
 
 

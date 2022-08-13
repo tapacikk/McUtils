@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Primitives.Text">Text</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L70)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L70?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L90)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L90?message=Update%20Docs)]
 </div>
 
 
@@ -15,18 +15,26 @@
 
 <a id="McUtils.Plots.Primitives.Text.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, txt, pos, **opts): 
+__init__(self, txt, pos, bbox=((1, 1), (1, 1)), **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L71)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L71?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L91)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L91?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Plots.Primitives.Text.get_bbox" class="docs-object-method">&nbsp;</a> 
+```python
+get_bbox(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L96)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L96?message=Update%20Docs)]
 </div>
 
 <a id="McUtils.Plots.Primitives.Text.plot" class="docs-object-method">&nbsp;</a> 
 ```python
-plot(self, graphics, *args, **kwargs): 
+plot(self, axes, *args, graphics=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L75)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L75?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Primitives.py#L101)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L101?message=Update%20Docs)]
 </div>
 
  </div>
@@ -41,4 +49,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Primitives/Text.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Primitives/Text.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Primitives/Text.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L70?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Primitives.py#L90?message=Update%20Docs)

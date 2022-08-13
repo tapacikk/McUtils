@@ -39,7 +39,20 @@ Provides access to the JHTML interface for building quality Jupyter interfaces
 [Bootstrap5Widgets](JHTML/BootstrapWidgets/Bootstrap5Widgets.md)   
 </div>
 </div>
+  <div class="row">
+   <div class="col" markdown="1">
+   
 </div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+</div>
+
+
 
 
 

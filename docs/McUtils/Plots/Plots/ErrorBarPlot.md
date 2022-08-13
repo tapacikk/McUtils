@@ -1,6 +1,6 @@
 ## <a id="McUtils.Plots.Plots.ErrorBarPlot">ErrorBarPlot</a> 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L432)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L432?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L437)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L437?message=Update%20Docs)]
 </div>
 
 Inherits from `Plot`.
@@ -32,4 +32,4 @@ ___
 [Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Plots/Plots/ErrorBarPlot.md) <br/>
 [Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ErrorBarPlot.md) or 
 [Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ErrorBarPlot.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L432?message=Update%20Docs)
+[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L437?message=Update%20Docs)

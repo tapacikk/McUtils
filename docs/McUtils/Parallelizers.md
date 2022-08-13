@@ -48,7 +48,20 @@ the `Parallelizer` object itself.
 [SharedMemoryList](Parallelizers/SharedMemory/SharedMemoryList.md)   
 </div>
 </div>
+  <div class="row">
+   <div class="col" markdown="1">
+   
 </div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+</div>
+
+
 
 ## Examples
 The simplest parallelism is just parallelizing with `multiprocessing` over a single function

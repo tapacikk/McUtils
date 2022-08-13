@@ -117,12 +117,28 @@ split_lines(obj):
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L255)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L255?message=Update%20Docs)]
 </div>
 
+<a id="McUtils.Scaffolding.Logging.Logger.prep_array" class="docs-object-method">&nbsp;</a> 
+```python
+prep_array(obj): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L258)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L258?message=Update%20Docs)]
+</div>
+
+<a id="McUtils.Scaffolding.Logging.Logger.prep_dict" class="docs-object-method">&nbsp;</a> 
+```python
+prep_dict(obj): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L263)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L263?message=Update%20Docs)]
+</div>
+
 <a id="McUtils.Scaffolding.Logging.Logger.log_print" class="docs-object-method">&nbsp;</a> 
 ```python
 log_print(self, message, *messrest, message_prepper=None, padding=None, newline=None, log_level=None, metainfo=None, print_function=None, print_options=None, sep=None, end=None, file=None, flush=None, preformatter=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L259)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L259?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L267)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L267?message=Update%20Docs)]
 </div>
 
 
@@ -142,7 +158,7 @@ log_print(self, message, *messrest, message_prepper=None, padding=None, newline=
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L357)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L357?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging.py#L365)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging.py#L365?message=Update%20Docs)]
 </div>
 
  </div>
