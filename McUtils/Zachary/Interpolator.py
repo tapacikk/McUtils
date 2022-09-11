@@ -10,7 +10,8 @@ from .Mesh import Mesh, MeshType
 __all__ = [
     "Interpolator",
     "Extrapolator",
-    "ProductGridInterpolator"
+    "ProductGridInterpolator",
+    "UnstructuredGridInterpolator"
 ]
 
 
@@ -246,6 +247,231 @@ class UnstructuredGridInterpolator(BasicInterpolator):
         :rtype: UnstructuredGridInterpolator
         """
         raise NotImplementedError("derivatives not implemented for unstructured grids")
+
+class MultiCenteredRBF(interpolate.RBFInterpolator):
+
+    def __init__(self, y, d,
+                 parameterized_kernel:callable,
+                 neighbors=5,
+                 smoothing=0.0,
+                 degree=None):
+        if neighbors == None:
+            raise NotImplementedError("not implemented for infinite neighbors")
+        super().__init__(y, d,
+                         kernel='linear',
+                         epsilon=1.0,
+                         smoothing=smoothing,
+                         degree=degree
+                         )
+        self.kernel = parameterized_kernel
+
+    @staticmethod
+    def kernel_vector(x, y, kernel_func, out):
+        """Evaluate RBFs, with centers at `y`, at the point `x`."""
+        for i in range(y.shape[0]):
+            out[i] = kernel_func(np.linalg.norm(x - y[i]))
+
+    @staticmethod
+    def polynomial_vector(x, powers, out):
+        """Evaluate monomials, with exponents from `powers`, at the point `x`."""
+        for i in range(powers.shape[0]):
+            out[i] = np.prod(x ** powers[i])
+
+    @staticmethod
+    def kernel_matrix(x, kernel_func, out):
+        """Evaluate RBFs, with centers at `x`, at `x`."""
+        for i in range(x.shape[0]):
+            for j in range(i + 1):
+                out[i, j] = kernel_func(np.linalg.norm(x[i] - x[j]))
+                out[j, i] = out[i, j]
+
+    @staticmethod
+    def polynomial_matrix(x, powers, out):
+        """Evaluate monomials, with exponents from `powers`, at `x`."""
+        for i in range(x.shape[0]):
+            for j in range(powers.shape[0]):
+                out[i, j] = np.prod(x[i] ** powers[j])
+
+    @classmethod
+    def _kernel_matrix(cls, x, kernel_func):
+        """Return RBFs, with centers at `x`, evaluated at `x`."""
+        out = np.empty((x.shape[0], x.shape[0]), dtype=float)
+        cls.kernel_matrix(x, kernel_func, out)
+        return out
+
+    @classmethod
+    def _polynomial_matrix(cls, x, powers):
+        """Return monomials, with exponents from `powers`, evaluated at `x`."""
+        out = np.empty((x.shape[0], powers.shape[0]), dtype=float)
+        cls.polynomial_matrix(x, powers, out)
+        return out
+
+    # custom RBF evaluation to use a different basis function at each
+    # mesh point
+    @classmethod
+    def _build_system(self, y, d, smoothing, kernel_func, epsilon, powers):
+        """Build the system used to solve for the RBF interpolant coefficients.
+        """
+        p = d.shape[0]
+        s = d.shape[1]
+        r = powers.shape[0]
+
+        # Shift and scale the polynomial domain to be between -1 and 1
+        mins = np.min(y, axis=0)
+        maxs = np.max(y, axis=0)
+        shift = (maxs + mins) / 2
+        scale = (maxs - mins) / 2
+        # The scale may be zero if there is a single point or all the points have
+        # the same value for some dimension. Avoid division by zero by replacing
+        # zeros with ones.
+        scale[scale == 0.0] = 1.0
+
+        yeps = y * epsilon
+        yhat = (y - shift) / scale
+
+        # Transpose to make the array fortran contiguous. This is required for
+        # dgesv to not make a copy of lhs.
+        lhs = np.empty((p + r, p + r), dtype=float).T
+        self.kernel_matrix(yeps, kernel_func, lhs[:p, :p])
+        self.polynomial_matrix(yhat, powers, lhs[:p, p:])
+        lhs[p:, :p] = lhs[:p, p:].T
+        lhs[p:, p:] = 0.0
+        for i in range(p):
+            lhs[i, i] += smoothing[i]
+
+        # Transpose to make the array fortran contiguous.
+        rhs = np.empty((s, p + r), dtype=float).T
+        rhs[:p] = d
+        rhs[p:] = 0.0
+
+        return lhs, rhs, shift, scale
+
+    def _evaluate(self, x, y, kernel_func, epsilon, powers, shift, scale, coeffs):
+        """Evaluate the RBF interpolant at `x`.
+
+        Parameters
+        ----------
+        x : (Q, N) float ndarray
+            Evaluation point coordinates.
+        y : (P, N) float ndarray
+            Data point coordinates.
+        kernel : callable
+            The kernel to evaluate
+        epsilon : float
+            Shape parameter.
+        powers : (R, N) int ndarray
+            The exponents for each monomial in the polynomial.
+        shift : (N,) float ndarray
+            Shifts the polynomial domain for numerical stability.
+        scale : (N,) float ndarray
+            Scales the polynomial domain for numerical stability.
+        coeffs : (P + R, S) float ndarray
+            Coefficients for each RBF and monomial.
+
+        Returns
+        -------
+        (Q, S) float ndarray
+
+        """
+        q = x.shape[0]
+        p = y.shape[0]
+        r = powers.shape[0]
+        s = coeffs.shape[1]
+
+        yeps = y * epsilon
+        xeps = x * epsilon
+        xhat = (x - shift) / scale
+
+        out = np.zeros((q, s), dtype=float)
+        vec = np.empty((p + r,), dtype=float)
+        for i in range(q):
+            self.kernel_vector(xeps[i], yeps, kernel_func, vec[:p])
+            self.polynomial_vector(xhat[i], powers, vec[p:])
+            # Compute the dot product between coeffs and vec. Do not use np.dot
+            # because that introduces build complications with BLAS (see
+            # https://github.com/serge-sans-paille/pythran/issues/1346)
+            for j in range(s):
+                for k in range(p + r):
+                    out[i, j] += coeffs[k, j] * vec[k]
+
+        return out
+
+    def __call__(self, x):
+        """
+        Evaluate the interpolant at `x`.
+        A minimal edit on the basic `RBFInterpolator.__call__` scheme
+
+        Parameters
+        ----------
+        x : (Q, N) array_like
+            Evaluation point coordinates.
+
+        Returns
+        -------
+        (Q, ...) ndarray
+            Values of the interpolant at `x`.
+
+        """
+
+
+        x = np.asarray(x, dtype=float, order="C")
+        if x.ndim != 2:
+            raise ValueError("`x` must be a 2-dimensional array.")
+
+        nx, ndim = x.shape
+        if ndim != self.y.shape[1]:
+            raise ValueError(
+                "Expected the second axis of `x` to have length "
+                f"{self.y.shape[1]}."
+                )
+
+        if self.neighbors is None:
+            out = self._evaluate(
+                x, self.y, self.kernel, self.epsilon, self.powers, self._shift,
+                self._scale, self._coeffs
+                )
+        else:
+            # Get the indices of the k nearest observation points to each
+            # evaluation point.
+            _, yindices = self._tree.query(x, self.neighbors)
+            if self.neighbors == 1:
+                # `KDTree` squeezes the output when neighbors=1.
+                yindices = yindices[:, None]
+
+            # Multiple evaluation points may have the same neighborhood of
+            # observation points. Make the neighborhoods unique so that we only
+            # compute the interpolation coefficients once for each
+            # neighborhood.
+            yindices = np.sort(yindices, axis=1)
+            yindices, inv = np.unique(yindices, return_inverse=True, axis=0)
+            # `inv` tells us which neighborhood will be used by each evaluation
+            # point. Now we find which evaluation points will be using each
+            # neighborhood.
+            xindices = [[] for _ in range(len(yindices))]
+            for i, j in enumerate(inv):
+                xindices[j].append(i)
+
+            out = np.empty((nx, self.d.shape[1]), dtype=float)
+            for xidx, yidx in zip(xindices, yindices):
+                # `yidx` are the indices of the observations in this
+                # neighborhood. `xidx` are the indices of the evaluation points
+                # that are using this neighborhood.
+                xnbr = x[xidx]
+                ynbr = self.y[yidx]
+                dnbr = self.d[yidx]
+                snbr = self.smoothing[yidx]
+                shift, scale, coeffs = self._build_and_solve_system(
+                    ynbr, dnbr, snbr, self.kernel, self.epsilon, self.powers,
+                    )
+
+                out[xidx] = self._evaluate(
+                    xnbr, ynbr, self.kernel, self.epsilon, self.powers, shift,
+                    scale, coeffs
+                    )
+
+        out = out.view(self.d_dtype)
+        out = out.reshape((nx,) + self.d_shape)
+        return out
 
 class ExtrapolatorType(enum.Enum):
     Default='Automatic'
