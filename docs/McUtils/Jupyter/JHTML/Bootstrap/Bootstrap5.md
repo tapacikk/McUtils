@@ -1,36 +1,40 @@
 ## <a id="McUtils.Jupyter.JHTML.Bootstrap.Bootstrap5">Bootstrap5</a> 
+
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/Bootstrap.py#L215)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/Bootstrap.py#L215?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/Bootstrap.py#L215)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/Bootstrap.py#L215?message=Update%20Docs)]
 </div>
+
+
+
+
+
+
 
 
 
 <div class="collapsible-section">
  <div class="collapsible-section collapsible-section-header" markdown="1">
- 
-### <a class="collapse-link" data-toggle="collapse" href="#methods">Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
-
+## <a class="collapse-link" data-toggle="collapse" href="#methods" markdown="1"> Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
  </div>
- <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
-
-```python
-Icon: type
-Pill: type
-Accordion: type
-AccordionItem: type
-AccordionCollapse: type
-AccordionBody: type
-Carousel: type
-CarouselInner: type
-CarouselItem: type
-Collapse: type
-CardBody: type
-CardHeader: type
-CardFooter: type
-CardImage: type
-Card: type
+ <div class="collapsible-section collapsible-section-body collapse show" id="methods" markdown="1">
+ ```python
+Icon: BoostrapIcon
+Pill: Pill
+Accordion: Accordion
+AccordionItem: AccordionItem
+AccordionCollapse: AccordionCollapse
+AccordionBody: AccordionBody
+Carousel: Carousel
+CarouselInner: CarouselInner
+CarouselItem: CarouselItem
+Collapse: Collapse
+CardBody: CardBody
+CardHeader: CardHeader
+CardFooter: CardFooter
+CardImage: CardImage
+Card: Card
 ```
-
 
  </div>
 </div>
@@ -38,10 +42,64 @@ Card: type
 
 
 
-___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/Bootstrap.py#L215?message=Update%20Docs)
+
+
+
+
+
+
+
+---
+
+
+<div markdown="1" class="text-secondary">
+<div class="container">
+  <div class="row">
+   <div class="col" markdown="1">
+**Feedback**   
+</div>
+   <div class="col" markdown="1">
+**Examples**   
+</div>
+   <div class="col" markdown="1">
+**Templates**   
+</div>
+   <div class="col" markdown="1">
+**Documentation**   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/JHTML/Bootstrap/Bootstrap5.md)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/Bootstrap.py#L215?message=Update%20Docs)   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+</div>
+</div>

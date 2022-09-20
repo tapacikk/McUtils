@@ -1,21 +1,26 @@
 ## <a id="McUtils.Scaffolding.Serializers.HDF5Serializer">HDF5Serializer</a> 
+
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L658)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L658?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L658)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L658?message=Update%20Docs)]
 </div>
 
 Defines a serializer that can prep/dump python data to HDF5.
 To minimize complexity, we always use NumPy & Pseudopickle as an interface layer.
 This restricts what we can serialize, but generally in insignificant ways.
 
+
+
+
+
+
+
 <div class="collapsible-section">
  <div class="collapsible-section collapsible-section-header" markdown="1">
- 
-### <a class="collapse-link" data-toggle="collapse" href="#methods">Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
-
+## <a class="collapse-link" data-toggle="collapse" href="#methods" markdown="1"> Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
  </div>
- <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
-
-```python
+ <div class="collapsible-section collapsible-section-body collapse show" id="methods" markdown="1">
+ ```python
 default_extension: str
 ```
 <a id="McUtils.Scaffolding.Serializers.HDF5Serializer.__init__" class="docs-object-method">&nbsp;</a> 
@@ -23,160 +28,123 @@ default_extension: str
 __init__(self, allow_pickle=True, psuedopickler=None, converters=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L665)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L665?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers/HDF5Serializer.py#L665)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers/HDF5Serializer.py#L665?message=Update%20Docs)]
 </div>
+
 
 <a id="McUtils.Scaffolding.Serializers.HDF5Serializer.convert" class="docs-object-method">&nbsp;</a> 
 ```python
 convert(self, data): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L680)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L680?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers/HDF5Serializer.py#L680)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers/HDF5Serializer.py#L680?message=Update%20Docs)]
 </div>
-
 Converts data into format that can be serialized easily
-- `data`: `Any`
-    >No description...
-- `:returns`: `_`
-    >No description...
+  - `data`: `Any`
+    > 
+  - `:returns`: `_`
+    >
+
 
 <a id="McUtils.Scaffolding.Serializers.HDF5Serializer.serialize" class="docs-object-method">&nbsp;</a> 
 ```python
 serialize(self, file, data, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L818)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L818?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers/HDF5Serializer.py#L818)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers/HDF5Serializer.py#L818?message=Update%20Docs)]
 </div>
+
 
 <a id="McUtils.Scaffolding.Serializers.HDF5Serializer.deconvert" class="docs-object-method">&nbsp;</a> 
 ```python
 deconvert(self, data): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L830)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L830?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers/HDF5Serializer.py#L830)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers/HDF5Serializer.py#L830?message=Update%20Docs)]
 </div>
-
 Converts an HDF5 Dataset into a NumPy array or Group into a dict
-- `data`: `Any`
-    >No description...
-- `:returns`: `_`
-    >No description...
+  - `data`: `Any`
+    > 
+  - `:returns`: `_`
+    >
+
 
 <a id="McUtils.Scaffolding.Serializers.HDF5Serializer.deserialize" class="docs-object-method">&nbsp;</a> 
 ```python
 deserialize(self, file, key=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers.py#L855)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L855?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Serializers/HDF5Serializer.py#L855)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers/HDF5Serializer.py#L855?message=Update%20Docs)]
 </div>
-
- </div>
-</div>
-
-
-
-<div class="collapsible-section">
- <div class="collapsible-section collapsible-section-header" markdown="1">
-### <a class="collapse-link" data-toggle="collapse" href="#tests">Tests</a> <a class="float-right" data-toggle="collapse" href="#tests"><i class="fa fa-chevron-down"></i></a>
- </div>
-<div class="collapsible-section collapsible-section-body collapse show" id="tests" markdown="1">
-
-- [HDF5Serialization](#HDF5Serialization)
-- [HDF5PseudoPickleSerialization](#HDF5PseudoPickleSerialization)
-
-<div class="collapsible-section">
- <div class="collapsible-section collapsible-section-header" markdown="1">
-#### <a class="collapse-link" data-toggle="collapse" href="#test-setup">Setup</a> <a class="float-right" data-toggle="collapse" href="#test-setup"><i class="fa fa-chevron-down"></i></a>
- </div>
- <div class="collapsible-section collapsible-section-body collapse" id="test-setup" markdown="1">
-
-Before we can run our examples we should get a bit of setup out of the way.
-Since these examples were harvested from the unit tests not all pieces
-will be necessary for all situations.
-```python
-from Peeves.TestUtils import *
-from McUtils.Scaffolding import *
-import McUtils.Parsers as parsers
-from unittest import TestCase
-import numpy as np, io, os, sys, tempfile as tmpf
-```
-
-All tests are wrapped in a test class
-```python
-class ScaffoldingTests(TestCase):
-    class DataHolderClass:
-        def __init__(self, **keys):
-            self.data = keys
-        def to_state(self, serializer=None):
-            return self.data
-        @classmethod
-        def from_state(cls, state, serializer=None):
-            return cls(**state)
-```
-
  </div>
 </div>
 
-#### <a name="HDF5Serialization">HDF5Serialization</a>
-```python
-    def test_HDF5Serialization(self):
-        tmp = io.BytesIO()
-        serializer = HDF5Serializer()
 
-        data = [1, 2, 3]
-        serializer.serialize(tmp, data)
-        loaded = serializer.deserialize(tmp)
-        self.assertEquals(loaded.tolist(), data)
 
-        serializer.serialize(tmp, {
-            "blebby": {
-                "frebby": {
-                    "clebby":data
-                }
-            }
-        })
-        loaded = serializer.deserialize(tmp, key='blebby')
-        self.assertEquals(loaded['frebby']['clebby'].tolist(), data)
 
-        mixed_data = [
-            [1, 2, 3],
-            "garbage",
-            {"temps":[1., 2., 3.]}
-            ]
-        serializer.serialize(tmp, dict(mixed_data=mixed_data))
 
-        loaded = serializer.deserialize(tmp, key='mixed_data')
-        self.assertEquals(mixed_data, [
-            loaded[0].tolist(),
-            loaded[1].tolist().decode('utf-8'),
-            {k:v.tolist() for k,v in loaded[2].items()}
-        ])
-```
-#### <a name="HDF5PseudoPickleSerialization">HDF5PseudoPickleSerialization</a>
-```python
-    def test_HDF5PseudoPickleSerialization(self):
 
-        from McUtils.Numputils import SparseArray
 
-        tmp = io.BytesIO()
-        serializer = HDF5Serializer()
 
-        data = SparseArray.from_diag([1, 2, 3, 4])
 
-        serializer.serialize(tmp, data)
-        tmp.seek(0)
-        loaded = serializer.deserialize(tmp)
 
-        self.assertTrue(np.allclose(loaded.asarray(), data.asarray()))
-```
 
- </div>
+
+---
+
+
+<div markdown="1" class="text-secondary">
+<div class="container">
+  <div class="row">
+   <div class="col" markdown="1">
+**Feedback**   
 </div>
-
-___
-
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Scaffolding/Serializers/HDF5Serializer.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Scaffolding/Serializers/HDF5Serializer.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Scaffolding/Serializers/HDF5Serializer.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Scaffolding/Serializers/HDF5Serializer.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L658?message=Update%20Docs)
+   <div class="col" markdown="1">
+**Examples**   
+</div>
+   <div class="col" markdown="1">
+**Templates**   
+</div>
+   <div class="col" markdown="1">
+**Documentation**   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Scaffolding/Serializers/HDF5Serializer.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Scaffolding/Serializers/HDF5Serializer.md)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Scaffolding/Serializers/HDF5Serializer.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Scaffolding/Serializers/HDF5Serializer.md)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Serializers.py#L658?message=Update%20Docs)   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+</div>
+</div>

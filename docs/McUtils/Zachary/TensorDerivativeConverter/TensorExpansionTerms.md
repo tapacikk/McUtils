@@ -1,6 +1,8 @@
 ## <a id="McUtils.Zachary.TensorDerivativeConverter.TensorExpansionTerms">TensorExpansionTerms</a> 
+
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L11)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L11?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L821)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L821?message=Update%20Docs)]
 </div>
 
 A friend of DumbTensor which exists
@@ -10,78 +12,130 @@ for expressing derivatives specifically in the context of
 doing the coordinate transformations we need to do.
 Everything here is 1 indexed since that's how I did the OG math
 
+
+
+
+
+
+
 <div class="collapsible-section">
  <div class="collapsible-section collapsible-section-header" markdown="1">
- 
-### <a class="collapse-link" data-toggle="collapse" href="#methods">Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
-
+## <a class="collapse-link" data-toggle="collapse" href="#methods" markdown="1"> Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
  </div>
- <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
-
-```python
-TensorExpansionTerm: ABCMeta
-SumTerm: ABCMeta
-ScalingTerm: ABCMeta
-PowerTerm: ABCMeta
-FlippedTerm: ABCMeta
-AxisShiftTerm: ABCMeta
-ContractionTerm: ABCMeta
-QXTerm: ABCMeta
-XVTerm: ABCMeta
-QXVTerm: ABCMeta
-BasicContractionTerm: ABCMeta
-InverseTerm: ABCMeta
-TraceTerm: ABCMeta
-DeterminantTerm: ABCMeta
+ <div class="collapsible-section collapsible-section-body collapse show" id="methods" markdown="1">
+ ```python
+QXTerm: QXTerm
+XVTerm: XVTerm
+QXVTerm: QXVTerm
+BasicContractionTerm: BasicContractionTerm
 ```
 <a id="McUtils.Zachary.TensorDerivativeConverter.TensorExpansionTerms.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, qx_terms, xv_terms, qxv_terms=None, base_qx=None, base_xv=None, q_name='Q', v_name='V'): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L20)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L20?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter/TensorExpansionTerms.py#L830)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter/TensorExpansionTerms.py#L830?message=Update%20Docs)]
 </div>
 
+  - `qx_terms`: `Iterable[np.ndarray]`
+    > 
+  - `xv_terms`: `Iterable[np.ndarray]`
+    >
 
-- `qx_terms`: `Iterable[np.ndarray]`
-    >No description...
-- `xv_terms`: `Iterable[np.ndarray]`
-    >No description...
 
 <a id="McUtils.Zachary.TensorDerivativeConverter.TensorExpansionTerms.QX" class="docs-object-method">&nbsp;</a> 
 ```python
 QX(self, n): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L37)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L37?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter/TensorExpansionTerms.py#L847)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter/TensorExpansionTerms.py#L847?message=Update%20Docs)]
 </div>
+
 
 <a id="McUtils.Zachary.TensorDerivativeConverter.TensorExpansionTerms.XV" class="docs-object-method">&nbsp;</a> 
 ```python
 XV(self, m): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L39)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L39?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter/TensorExpansionTerms.py#L849)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter/TensorExpansionTerms.py#L849?message=Update%20Docs)]
 </div>
+
 
 <a id="McUtils.Zachary.TensorDerivativeConverter.TensorExpansionTerms.QXV" class="docs-object-method">&nbsp;</a> 
 ```python
 QXV(self, n, m): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter.py#L41)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L41?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/TensorDerivativeConverter/TensorExpansionTerms.py#L851)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter/TensorExpansionTerms.py#L851?message=Update%20Docs)]
 </div>
-
  </div>
 </div>
 
 
 
 
-___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L11?message=Update%20Docs)
+
+
+
+
+
+
+
+---
+
+
+<div markdown="1" class="text-secondary">
+<div class="container">
+  <div class="row">
+   <div class="col" markdown="1">
+**Feedback**   
+</div>
+   <div class="col" markdown="1">
+**Examples**   
+</div>
+   <div class="col" markdown="1">
+**Templates**   
+</div>
+   <div class="col" markdown="1">
+**Documentation**   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/TensorDerivativeConverter/TensorExpansionTerms.md)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/TensorDerivativeConverter.py#L821?message=Update%20Docs)   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+</div>
+</div>

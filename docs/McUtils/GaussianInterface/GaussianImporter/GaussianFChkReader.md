@@ -1,21 +1,26 @@
 ## <a id="McUtils.GaussianInterface.GaussianImporter.GaussianFChkReader">GaussianFChkReader</a> 
+
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L151)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L151?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L151)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L151?message=Update%20Docs)]
 </div>
 
 Implements a stream based reader for a Gaussian .fchk file. Pretty generall I think. Should be robust-ish.
 One place to change things up is convenient parsers for specific commonly pulled parts of the fchk
 
+
+
+
+
+
+
 <div class="collapsible-section">
  <div class="collapsible-section collapsible-section-header" markdown="1">
- 
-### <a class="collapse-link" data-toggle="collapse" href="#methods">Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
-
+## <a class="collapse-link" data-toggle="collapse" href="#methods" markdown="1"> Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
  </div>
- <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
-
-```python
-GaussianFChkReaderException: type
+ <div class="collapsible-section collapsible-section-body collapse " id="methods" markdown="1">
+ ```python
+GaussianFChkReaderException: GaussianFChkReaderException
 registered_components: dict
 common_names: dict
 to_common_name: dict
@@ -27,69 +32,88 @@ fchk_re: Pattern
 read_header(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L161)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L161?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L161)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L161?message=Update%20Docs)]
 </div>
-
 Reads the header and skips the stream to where we want to be
-- `:returns`: `str`
-    >the header
+  - `:returns`: `str`
+    > t
+h
+e
+ 
+h
+e
+a
+d
+e
+r
+
 
 <a id="McUtils.GaussianInterface.GaussianImporter.GaussianFChkReader.get_next_block_params" class="docs-object-method">&nbsp;</a> 
 ```python
 get_next_block_params(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L171)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L171?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L171)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L171?message=Update%20Docs)]
 </div>
-
 Pulls the tag of the next block, the type, the number of bytes it'll be,
-        and if it's a single-line block it'll also spit back the block itself
-- `:returns`: `dict`
-    >No description...
+and if it's a single-line block it'll also spit back the block itself
+  - `:returns`: `dict`
+    >
+
 
 <a id="McUtils.GaussianInterface.GaussianImporter.GaussianFChkReader.get_block" class="docs-object-method">&nbsp;</a> 
 ```python
 get_block(self, name=None, dtype=None, byte_count=None, value=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L237)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L237?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L237)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L237?message=Update%20Docs)]
 </div>
-
 Pulls the next block by first pulling the block tag
-- `:returns`: `_`
-    >No description...
+  - `:returns`: `_`
+    >
+
 
 <a id="McUtils.GaussianInterface.GaussianImporter.GaussianFChkReader.skip_block" class="docs-object-method">&nbsp;</a> 
 ```python
 skip_block(self, name=None, dtype=None, byte_count=None, value=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L263)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L263?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L263)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L263?message=Update%20Docs)]
 </div>
-
 Skips the next block
-- `:returns`: `_`
-    >No description...
+  - `:returns`: `_`
+    >
+
 
 <a id="McUtils.GaussianInterface.GaussianImporter.GaussianFChkReader.parse" class="docs-object-method">&nbsp;</a> 
 ```python
 parse(self, keys=None, default='raise'): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L273)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L273?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L273)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L273?message=Update%20Docs)]
 </div>
+
 
 <a id="McUtils.GaussianInterface.GaussianImporter.GaussianFChkReader.read_props" class="docs-object-method">&nbsp;</a> 
 ```python
 read_props(file, keys): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter.py#L340)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L340?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L340)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter/GaussianFChkReader.py#L340?message=Update%20Docs)]
 </div>
-
  </div>
 </div>
 
+
+
+
+## Examples
 ```python
 
 def test_Fchk(self):
@@ -159,10 +183,60 @@ def test_FchkMasses(self):
 ```
 
 
-___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L151?message=Update%20Docs)
+
+
+
+---
+
+
+<div markdown="1" class="text-secondary">
+<div class="container">
+  <div class="row">
+   <div class="col" markdown="1">
+**Feedback**   
+</div>
+   <div class="col" markdown="1">
+**Examples**   
+</div>
+   <div class="col" markdown="1">
+**Templates**   
+</div>
+   <div class="col" markdown="1">
+**Documentation**   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/GaussianInterface/GaussianImporter/GaussianFChkReader.md)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L151?message=Update%20Docs)   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+</div>
+</div>

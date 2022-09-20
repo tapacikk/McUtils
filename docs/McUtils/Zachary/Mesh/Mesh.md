@@ -1,55 +1,65 @@
 ## <a id="McUtils.Zachary.Mesh.Mesh">Mesh</a> 
+
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L22)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L22?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L22)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L22?message=Update%20Docs)]
 </div>
 
 A general Mesh class representing data points in n-dimensions
 in either a structured, unstructured, or semi-structured manner.
 Exists mostly to provides a unified interface to difference FD and Surface methods.
 
+
+
+
+
+
+
 <div class="collapsible-section">
  <div class="collapsible-section collapsible-section-header" markdown="1">
- 
-### <a class="collapse-link" data-toggle="collapse" href="#methods">Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
-
+## <a class="collapse-link" data-toggle="collapse" href="#methods" markdown="1"> Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
  </div>
- <div class="collapsible-section collapsible-section-body collapse" id="methods" markdown="1">
-
-```python
-MeshError: type
-MeshType: EnumMeta
+ <div class="collapsible-section collapsible-section-body collapse show" id="methods" markdown="1">
+ ```python
+MeshError: MeshError
+MeshType: MeshType
 ```
 <a id="McUtils.Zachary.Mesh.Mesh.__new__" class="docs-object-method">&nbsp;</a> 
 ```python
 __new__(cls, data, mesh_type=None, allow_indeterminate=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L35)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L35?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L35)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L35?message=Update%20Docs)]
 </div>
 
+  - `griddata`: `np.ndarray`
+    > the raw grid-point data the mesh uses
+  - `mesh_type`: `None | str`
+    > the type of mesh we have
+  - `opts`: `Any`
+    >
 
-- `griddata`: `np.ndarray`
-    >the raw grid-point data the mesh uses
-- `mesh_type`: `None | str`
-    >the type of mesh we have
-- `opts`: `Any`
-    >No description...
 
 <a id="McUtils.Zachary.Mesh.Mesh.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, *args, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L63)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L63?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L63)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L63?message=Update%20Docs)]
 </div>
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.__array_finalize__" class="docs-object-method">&nbsp;</a> 
 ```python
 __array_finalize__(self, mesh): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L67)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L67?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L67)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L67?message=Update%20Docs)]
 </div>
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.mesh_spacings" class="docs-object-method">&nbsp;</a> 
 ```python
@@ -57,8 +67,10 @@ __array_finalize__(self, mesh):
 mesh_spacings(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L83)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L83?message=Update%20Docs)]
 </div>
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.subgrids" class="docs-object-method">&nbsp;</a> 
 ```python
@@ -66,8 +78,10 @@ mesh_spacings(self):
 subgrids(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L88)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L88?message=Update%20Docs)]
 </div>
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.dimension" class="docs-object-method">&nbsp;</a> 
 ```python
@@ -75,12 +89,13 @@ subgrids(self):
 dimension(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L98)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L98?message=Update%20Docs)]
 </div>
-
 Returns the dimension of the grid (not necessarily ndim)
-- `:returns`: `int`
-    >No description...
+  - `:returns`: `int`
+    >
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.npoints" class="docs-object-method">&nbsp;</a> 
 ```python
@@ -88,12 +103,13 @@ Returns the dimension of the grid (not necessarily ndim)
 npoints(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L106)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L106?message=Update%20Docs)]
 </div>
-
 Returns the number of gridpoints in the mesh
-- `:returns`: `int`
-    >No description...
+  - `:returns`: `int`
+    >
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.gridpoints" class="docs-object-method">&nbsp;</a> 
 ```python
@@ -101,104 +117,172 @@ Returns the number of gridpoints in the mesh
 gridpoints(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L115)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L115?message=Update%20Docs)]
 </div>
-
 Returns the flattened set of gridpoints for a structured tensor grid and otherwise just returns the gridpoints
-- `:returns`: `_`
-    >No description...
+  - `:returns`: `_`
+    >
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.get_npoints" class="docs-object-method">&nbsp;</a> 
 ```python
 get_npoints(g): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L124)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L124?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L124)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L124?message=Update%20Docs)]
 </div>
-
 Returns the number of gridpoints in the grid
-- `g`: `np.ndarray`
-    >No description...
-- `:returns`: `int`
-    >No description...
+  - `g`: `np.ndarray`
+    > 
+  - `:returns`: `int`
+    >
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.get_gridpoints" class="docs-object-method">&nbsp;</a> 
 ```python
 get_gridpoints(g): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L134)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L134?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L134)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L134?message=Update%20Docs)]
 </div>
-
 Returns the gridpoints in the grid
-- `g`: `np.ndarray`
-    >No description...
-- `:returns`: `int`
-    >No description...
+  - `g`: `np.ndarray`
+    > 
+  - `:returns`: `int`
+    >
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.get_mesh_subgrids" class="docs-object-method">&nbsp;</a> 
 ```python
 get_mesh_subgrids(grid, tol=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L145)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L145?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L145)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L145?message=Update%20Docs)]
 </div>
-
 Returns the subgrids for a mesh
-- `grid`: `Any`
-    >No description...
-- `tol`: `Any`
-    >No description...
-- `:returns`: `_`
-    >No description...
+  - `grid`: `Any`
+    > 
+  - `tol`: `Any`
+    > 
+  - `:returns`: `_`
+    >
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.get_mesh_spacings" class="docs-object-method">&nbsp;</a> 
 ```python
 get_mesh_spacings(grid, tol=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L173)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L173?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L173)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L173?message=Update%20Docs)]
 </div>
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.get_mesh_type" class="docs-object-method">&nbsp;</a> 
 ```python
 get_mesh_type(grid, check_product_grid=True, check_regular_grid=True, tol=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L204)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L204?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L204)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L204?message=Update%20Docs)]
 </div>
-
 Determines what kind of grid we're working with
-- `grid`: `np.ndarray`
-    >No description...
-- `:returns`: `MeshType`
-    >mesh_type
+  - `grid`: `np.ndarray`
+    > 
+  - `:returns`: `MeshType`
+    > m
+e
+s
+h
+_
+t
+y
+p
+e
+
 
 <a id="McUtils.Zachary.Mesh.Mesh.RegularMesh" class="docs-object-method">&nbsp;</a> 
 ```python
 RegularMesh(*mesh_specs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh.py#L300)/[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L300?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L300)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L300?message=Update%20Docs)]
 </div>
-
 Builds a grid from multiple linspace arguments,
-        basically insuring it's structured (if non-Empty)
-- `mesh_specs`: `Any`
-    >No description...
-- `:returns`: `_`
-    >No description...
-
+basically insuring it's structured (if non-Empty)
+  - `mesh_specs`: `Any`
+    > 
+  - `:returns`: `_`
+    >
  </div>
 </div>
 
 
 
 
-___
 
-[Edit Examples](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Zachary/Mesh/Mesh.md) or 
-[Create New Examples](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/Mesh/Mesh.md) <br/>
-[Edit Template](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/Mesh/Mesh.md) or 
-[Create New Template](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/Mesh/Mesh.md) <br/>
-[Edit Docstrings](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L22?message=Update%20Docs)
+
+
+
+
+
+
+
+---
+
+
+<div markdown="1" class="text-secondary">
+<div class="container">
+  <div class="row">
+   <div class="col" markdown="1">
+**Feedback**   
+</div>
+   <div class="col" markdown="1">
+**Examples**   
+</div>
+   <div class="col" markdown="1">
+**Templates**   
+</div>
+   <div class="col" markdown="1">
+**Documentation**   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Zachary/Mesh/Mesh.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Zachary/Mesh/Mesh.md)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/Mesh/Mesh.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/Mesh/Mesh.md)   
+</div>
+   <div class="col" markdown="1">
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh.py#L22?message=Update%20Docs)   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
+</div>
+</div>
+</div>
+</div>
