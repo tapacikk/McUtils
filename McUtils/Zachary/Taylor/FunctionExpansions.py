@@ -31,7 +31,7 @@ class FunctionExpansion:
                  transforms=None,
                  center=None,
                  ref=0,
-                 weight_coefficients=True
+                 weight_coefficients=False
                  ):
         """
         :param derivatives: Derivatives of the function being expanded
@@ -49,17 +49,27 @@ class FunctionExpansion:
         # raise NotImplementedError("doesn't deal with higher-order expansions properly yet")
         self._derivs = self.FunctionDerivatives(derivatives, weight_coefficients)
         self._center = np.asanyarray(center) if center is not None else center
-        self.ref = np.asanyarray(center) if not isinstance(ref, (int, float, np.integer, np.floating)) else ref
+        self.ref = np.asanyarray(ref) if not isinstance(ref, (int, float, np.integer, np.floating)) else ref
         if transforms is None:
             self._transf = None
         else:
             # transformation matrices from cartesians to internals
             self._transf = self.CoordinateTransforms(transforms)
         self._tensors = None
-
+    @property
+    def center(self):
+        return self._center
     @property
     def is_multiexpansion(self):
         return self._derivs[0].ndim > 1
+    @classmethod
+    def multiexpansion(cls, *expansions):
+        return cls(
+            list(zip(*[e.expansion_tensors for e in expansions])),
+            center=np.asanyarray([e.center for e in expansions]),
+            ref=np.asanyarray([e.ref for e in expansions]),
+            weight_coefficients=False
+        )
     @classmethod
     def expand_function(cls,
                         f, point,
@@ -95,7 +105,6 @@ class FunctionExpansion:
                 transforms = [point.jacobian(basis, order=i) for i in range(order)]
             else:
                 transforms = None
-
         return cls(dts, center=point, ref=ref, transforms=transforms, weight_coefficients=weight_coefficients)
 
     @property
@@ -137,8 +146,8 @@ class FunctionExpansion:
             if center.ndim == 1:
                 center = center[np.newaxis]
             else:
-                center = center[:, np.newaxis, :]
-                coords = coords[np.newaxis]
+                center = center[np.newaxis, :, :]
+                coords = coords[:, np.newaxis]
             disp = coords - center
 
 
@@ -233,3 +242,46 @@ class FunctionExpansion:
             return self.derivs[i]
         def __len__(self):
             return len(self.derivs)
+
+    def deriv(self, which=None):
+        """
+        Computes the derivative(s) of the expansion(s) with respect to the
+        supplied coordinates (`which=None` means compute the gradient)
+
+        :param which:
+        :type which:
+        :return:
+        :rtype:
+        """
+
+        expansions = self.expansion_tensors
+        smol = isinstance(which, int)
+        if smol:
+            which = [which]
+        elif which is None:
+            which = list(range(expansions[0].shape[-1]))
+
+        res = []
+        cls = type(self)
+        for i in which:
+            derivs = []
+            for j,e in enumerate(expansions):
+                # need to know the shift dims?.... ?
+                base_slice = tuple(slice(None, None, None) for _ in range(j+1))
+                red = 0
+                for k in range(j+1):
+                    s = (...,) + base_slice[:k] + (i,) + base_slice[k+1:]
+                    red = red + e[s]
+                derivs.append(red)
+            res.append(cls(
+                derivs[1:],
+                ref=derivs[0],
+                center=self._center,
+                weight_coefficients=False
+            ))
+        return cls.multiexpansion(*res)
+
+
+
+
+

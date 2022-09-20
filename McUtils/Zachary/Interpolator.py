@@ -1,11 +1,13 @@
 """
 Sets up a general Interpolator class that looks like Mathematica's InterpolatingFunction class
 """
+import typing
 
 import numpy as np, abc, enum
 import scipy.interpolate as interpolate
 import scipy.spatial as spat
 from .Mesh import Mesh, MeshType
+from ..Numputils import vec_outer
 
 __all__ = [
     "Interpolator",
@@ -248,230 +250,147 @@ class UnstructuredGridInterpolator(BasicInterpolator):
         """
         raise NotImplementedError("derivatives not implemented for unstructured grids")
 
-class MultiCenteredRBF(interpolate.RBFInterpolator):
+class RBFInterpolator:
+    """
+    Provides a flexible RBF interpolator that also allows
+    for matching function derivatives
+    """
 
-    def __init__(self, y, d,
-                 parameterized_kernel:callable,
-                 neighbors=5,
-                 smoothing=0.0,
-                 degree=None):
-        if neighbors == None:
-            raise NotImplementedError("not implemented for infinite neighbors")
-        super().__init__(y, d,
-                         kernel='linear',
-                         epsilon=1.0,
-                         smoothing=smoothing,
-                         degree=degree
-                         )
-        self.kernel = parameterized_kernel
 
+
+    def __init__(self,
+                 pts, values, *derivatives,
+                 kernel:typing.Union[callable,dict],
+                 auxiliary_basis=None,
+                 extra_degree=-1
+                 ):
+
+        pts = np.asanyarray(pts)
+        if pts.ndim == 1:
+            pts = pts[:, np.newaxis]
+        self.grid, self.grid_shifts, self.grid_scaling = self.renormalize_grid(pts)
+        self.tree = spat.KDTree(self.grid)
+        self.vals, self.val_shift, self.val_scaling = values
+        self.derivs = derivatives
+        if not isinstance(kernel, dict):
+            kernel = {'function':kernel}
+        if 'derivatives' not in kernel:
+            kernel['derivatives'] = None
+        self.kernel = kernel
+        if not isinstance(auxiliary_basis, dict):
+            auxiliary_basis = {'function':auxiliary_basis}
+        if 'derivatives' not in auxiliary_basis:
+            auxiliary_basis['derivatives'] = None
+        self.aux_poly = auxiliary_basis
+        self.extra_degree = extra_degree
+
+    def renormalize_grid(self, pts):
+        dim_slices = np.transpose(pts)
+        mins = [np.min(x) for x in dim_slices]
+        maxs = [np.max(x) for x in dim_slices]
+        scalings = [M-m for M,m in zip(mins, maxs)]
+        rescaled_slices = [(x-m)/s for x,m,s in zip(dim_slices, mins, scalings)]
+        return np.transpose(rescaled_slices), mins, scalings
+    def renormalize_values(self, values):
+        min = np.min(values)
+        scaling = np.max(values) - min
+        return (values-min)/scaling, min, scaling
+    def renomalize_derivs(self, derivs):
+        #TODO: rescale, handle coordinate transforms, and take upper triangles
+        ...
+
+    # @staticmethod
+    # def _poly_eval
     @staticmethod
-    def kernel_vector(x, y, kernel_func, out):
-        """Evaluate RBFs, with centers at `y`, at the point `x`."""
-        for i in range(y.shape[0]):
-            out[i] = kernel_func(np.linalg.norm(x - y[i]))
+    def _eval_poly(pts, order, var=None, var_deriv=None, deriv_order=0):
+        #  use direct product expansion of terms & corresponding derivs!
+        #       decreasese requested nominal order and allows for better fits
+        #       and potentially more stable extrapolation?
+        ndim = pts.shape[-1]
 
+        # if var is not None:
+        #     pts = var(pts)
+
+        # TODO: add in custom vars with derivs
+        res = [[] for _ in range(deriv_order+1)]
+        for d in range(deriv_order+1):
+            x = pts
+            I = np.broadcast_to(np.eye(ndim)[np.newaxis], (pts.shape[0], ndim, ndim))
+            if d == 0: # add in initial terms
+                res[d].append(x)
+            elif d == 1:
+                res[d].append(I)
+            else:
+                res[d].append(0)
+            for i in range(d-1):  # add in zero tensors
+                res[d].append(0)
+            for i in range(d, order-1): # everything below is handled or zeros
+                # evaluate basic monomial terms
+                x = np.expand_dims(x, 1)  # npts x 1 ... [i times]  x ndim
+                A = np.expand_dims(res[d][-1], -1) # npts x ndim x ... [(d+1)*i times] x 1
+                X_i = A * pts
+                if d > 0:
+                    # we have the expr d_k X^N = d_k X^(N-1) * x + k d_(k-1) X^(N-1) * I
+                    I = np.expand_dims(I, 1) # npts x 1 x ... x ndim x ndim
+                    B = res[d-1][i-1] # npts x ndim x ...[d * i-1 times] x 1 x 1
+                    X_i += d * np.expand_dims(B, -1)
+                res[d].append(X_i)
+        return res
     @staticmethod
-    def polynomial_vector(x, powers, out):
-        """Evaluate monomials, with exponents from `powers`, at the point `x`."""
-        for i in range(powers.shape[0]):
-            out[i] = np.prod(x ** powers[i])
-
-    @staticmethod
-    def kernel_matrix(x, kernel_func, out):
-        """Evaluate RBFs, with centers at `x`, at `x`."""
-        for i in range(x.shape[0]):
-            for j in range(i + 1):
-                out[i, j] = kernel_func(np.linalg.norm(x[i] - x[j]))
-                out[j, i] = out[i, j]
-
-    @staticmethod
-    def polynomial_matrix(x, powers, out):
-        """Evaluate monomials, with exponents from `powers`, at `x`."""
-        for i in range(x.shape[0]):
-            for j in range(powers.shape[0]):
-                out[i, j] = np.prod(x[i] ** powers[j])
-
+    def _eval_r_derivs(pts, order):
+        ...
     @classmethod
-    def _kernel_matrix(cls, x, kernel_func):
-        """Return RBFs, with centers at `x`, evaluated at `x`."""
-        out = np.empty((x.shape[0], x.shape[0]), dtype=float)
-        cls.kernel_matrix(x, kernel_func, out)
-        return out
+    def _poly(cls, order):
+        def p(pts):
+            return cls._eval_poly(pts, order, ...)
+        return p
+    def evaluate_poly_matrix(self, pts, degree, deriv_order=0, poly_origin=0.5, include_constant_term=True):
+        #TODO: include deriv order and merge all at once
+        fn = self.aux_poly['function']
+        pts = pts - poly_origin
+        blocks = ([np.ones((len(pts), 1))] if include_constant_term else []) + [
+            fn(o)(pts, deriv_order=deriv_order)
+            for o in range(1, degree+1)
+        ]
+        return np.concatenate(blocks, axis=1)
+    def evaluate_rbf_matrix(self, pts, centers, deriv_order=0, zero_tol=1e-8):
+        displacements_matrix = np.reshape(pts[:, np.newaxis, :] - centers[np.newaxis, :, :], (-1, centers.shape[-1]))
+        distance_mat = np.linalg.norm(displacements_matrix, axis=1)
+        rbf_vals = self.kernel['function'](distance_mat)
+        res = [rbf_vals]
+        # Now include derivs
+        der_fun = self.kernel['derivatives']
+        # There _must_ be a removable singularity at zero and no singularities anywhere else
+        zero_pos = np.where(np.abs(distance_mat) < zero_tol)
+        distance_mat[zero_pos] = 1 # to avoid the singularity
+        displacements_matrix[zero_pos] += 1/np.power(displacements_matrix.shape[-1]) # to avoid the singularity
+        coord_transf = self._eval_r_derivs(displacements_matrix, deriv_order)
+        for d in range(1, deriv_order):
+            dvals = der_fun(d)(distance_mat) #type:np.ndarray
+            dvals[..., zero_pos] = der_fun(d)(0)
+            res.append(dvals)
+        # Finally transform coordinates
+        raise NotImplementedError("...")
+    def construct_matrix(self, pts,
+                         deriv_order=0, zero_tol=1e-8,
+                         poly_origin=0.5, include_constant_term=True
+                         ):
+        rbf_mats = self.evaluate_rbf_matrix(pts, self.grid, deriv_order=deriv_order, zero_tol=zero_tol)
+        pol_mats = self.evaluate_poly_matrix(pts, self.grid, poly_origin=poly_origin, include_constant_term=include_constant_term, deriv_order=deriv_order)
 
-    @classmethod
-    def _polynomial_matrix(cls, x, powers):
-        """Return monomials, with exponents from `powers`, evaluated at `x`."""
-        out = np.empty((x.shape[0], powers.shape[0]), dtype=float)
-        cls.polynomial_matrix(x, powers, out)
-        return out
+    def setup_system(self):
+        M = self.construct_matrix(self.grid)
 
-    # custom RBF evaluation to use a different basis function at each
-    # mesh point
-    @classmethod
-    def _build_system(self, y, d, smoothing, kernel_func, epsilon, powers):
-        """Build the system used to solve for the RBF interpolant coefficients.
-        """
-        p = d.shape[0]
-        s = d.shape[1]
-        r = powers.shape[0]
-
-        # Shift and scale the polynomial domain to be between -1 and 1
-        mins = np.min(y, axis=0)
-        maxs = np.max(y, axis=0)
-        shift = (maxs + mins) / 2
-        scale = (maxs - mins) / 2
-        # The scale may be zero if there is a single point or all the points have
-        # the same value for some dimension. Avoid division by zero by replacing
-        # zeros with ones.
-        scale[scale == 0.0] = 1.0
-
-        yeps = y * epsilon
-        yhat = (y - shift) / scale
-
-        # Transpose to make the array fortran contiguous. This is required for
-        # dgesv to not make a copy of lhs.
-        lhs = np.empty((p + r, p + r), dtype=float).T
-        self.kernel_matrix(yeps, kernel_func, lhs[:p, :p])
-        self.polynomial_matrix(yhat, powers, lhs[:p, p:])
-        lhs[p:, :p] = lhs[:p, p:].T
-        lhs[p:, p:] = 0.0
-        for i in range(p):
-            lhs[i, i] += smoothing[i]
-
-        # Transpose to make the array fortran contiguous.
-        rhs = np.empty((s, p + r), dtype=float).T
-        rhs[:p] = d
-        rhs[p:] = 0.0
-
-        return lhs, rhs, shift, scale
-
-    def _evaluate(self, x, y, kernel_func, epsilon, powers, shift, scale, coeffs):
-        """Evaluate the RBF interpolant at `x`.
-
-        Parameters
-        ----------
-        x : (Q, N) float ndarray
-            Evaluation point coordinates.
-        y : (P, N) float ndarray
-            Data point coordinates.
-        kernel : callable
-            The kernel to evaluate
-        epsilon : float
-            Shape parameter.
-        powers : (R, N) int ndarray
-            The exponents for each monomial in the polynomial.
-        shift : (N,) float ndarray
-            Shifts the polynomial domain for numerical stability.
-        scale : (N,) float ndarray
-            Scales the polynomial domain for numerical stability.
-        coeffs : (P + R, S) float ndarray
-            Coefficients for each RBF and monomial.
-
-        Returns
-        -------
-        (Q, S) float ndarray
-
-        """
-        q = x.shape[0]
-        p = y.shape[0]
-        r = powers.shape[0]
-        s = coeffs.shape[1]
-
-        yeps = y * epsilon
-        xeps = x * epsilon
-        xhat = (x - shift) / scale
-
-        out = np.zeros((q, s), dtype=float)
-        vec = np.empty((p + r,), dtype=float)
-        for i in range(q):
-            self.kernel_vector(xeps[i], yeps, kernel_func, vec[:p])
-            self.polynomial_vector(xhat[i], powers, vec[p:])
-            # Compute the dot product between coeffs and vec. Do not use np.dot
-            # because that introduces build complications with BLAS (see
-            # https://github.com/serge-sans-paille/pythran/issues/1346)
-            for j in range(s):
-                for k in range(p + r):
-                    out[i, j] += coeffs[k, j] * vec[k]
-
-        return out
-
-    def __call__(self, x):
-        """
-        Evaluate the interpolant at `x`.
-        A minimal edit on the basic `RBFInterpolator.__call__` scheme
-
-        Parameters
-        ----------
-        x : (Q, N) array_like
-            Evaluation point coordinates.
-
-        Returns
-        -------
-        (Q, ...) ndarray
-            Values of the interpolant at `x`.
-
-        """
+    def get_neighborhood(self):
+        ...
+    def eval(self, pts, deriv_order=0):
+        ...
 
 
-        x = np.asarray(x, dtype=float, order="C")
-        if x.ndim != 2:
-            raise ValueError("`x` must be a 2-dimensional array.")
 
-        nx, ndim = x.shape
-        if ndim != self.y.shape[1]:
-            raise ValueError(
-                "Expected the second axis of `x` to have length "
-                f"{self.y.shape[1]}."
-                )
 
-        if self.neighbors is None:
-            out = self._evaluate(
-                x, self.y, self.kernel, self.epsilon, self.powers, self._shift,
-                self._scale, self._coeffs
-                )
-        else:
-            # Get the indices of the k nearest observation points to each
-            # evaluation point.
-            _, yindices = self._tree.query(x, self.neighbors)
-            if self.neighbors == 1:
-                # `KDTree` squeezes the output when neighbors=1.
-                yindices = yindices[:, None]
 
-            # Multiple evaluation points may have the same neighborhood of
-            # observation points. Make the neighborhoods unique so that we only
-            # compute the interpolation coefficients once for each
-            # neighborhood.
-            yindices = np.sort(yindices, axis=1)
-            yindices, inv = np.unique(yindices, return_inverse=True, axis=0)
-            # `inv` tells us which neighborhood will be used by each evaluation
-            # point. Now we find which evaluation points will be using each
-            # neighborhood.
-            xindices = [[] for _ in range(len(yindices))]
-            for i, j in enumerate(inv):
-                xindices[j].append(i)
 
-            out = np.empty((nx, self.d.shape[1]), dtype=float)
-            for xidx, yidx in zip(xindices, yindices):
-                # `yidx` are the indices of the observations in this
-                # neighborhood. `xidx` are the indices of the evaluation points
-                # that are using this neighborhood.
-                xnbr = x[xidx]
-                ynbr = self.y[yidx]
-                dnbr = self.d[yidx]
-                snbr = self.smoothing[yidx]
-                shift, scale, coeffs = self._build_and_solve_system(
-                    ynbr, dnbr, snbr, self.kernel, self.epsilon, self.powers,
-                    )
-
-                out[xidx] = self._evaluate(
-                    xnbr, ynbr, self.kernel, self.epsilon, self.powers, shift,
-                    scale, coeffs
-                    )
-
-        out = out.view(self.d_dtype)
-        out = out.reshape((nx,) + self.d_shape)
-        return out
 
 class ExtrapolatorType(enum.Enum):
     Default='Automatic'

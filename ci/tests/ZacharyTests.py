@@ -151,7 +151,7 @@ class ZacharyTests(TestCase):
 
     #region FD
     # @dataGenTest
-    @debugTest
+    @validationTest
     def test_finite_difference(self):
 
         sin_grid = np.linspace(0, 2 * np.pi, 200)
@@ -216,7 +216,7 @@ class ZacharyTests(TestCase):
                 self.print_error(n, ord, errs)
             self.assertLess(errs[1], .05 / ord)
 
-    @debugTest
+    @validationTest
     def test_FD2D(self):
 
         print_error = False
@@ -851,6 +851,12 @@ class ZacharyTests(TestCase):
         # raise Exception(gamdQQ_I_new.array.T, gamdQQ_I[0])
         self.assertTrue(np.allclose(gamdQQ_I_new.array.T, gamdQQ_I))
 
+    @debugTest
+    def test_TensorDerivatives(self):
+        a = TensorExpression.CoordinateVectorTerm(name='a')
+        fa = TensorExpression.ScalarFunctionTerm(a)
+        raise Exception(fa.dQ().dQ().simplify())
+
     #endregion Tensor Derivatives
 
     #region Function expansions
@@ -911,16 +917,19 @@ class ZacharyTests(TestCase):
             return np.prod(np.sin(pt), axis=ax)
 
         point = np.array([.5, .5], dtype=dtype)
+        disp = .01
         exp1 = FunctionExpansion.expand_function(sin_xy, point, function_shape=((2,), 0), order=4, stencil=6)
-        exp2 = FunctionExpansion.expand_function(sin_xy, point+.1, function_shape=((2,), 0), order=4, stencil=6)
-        exp3 = FunctionExpansion.expand_function(sin_xy, point-.1, function_shape=((2,), 0), order=4, stencil=6)
+        exp2 = FunctionExpansion.expand_function(sin_xy, point-disp, function_shape=((2,), 0), order=4, stencil=6)
+        exp3 = FunctionExpansion.expand_function(sin_xy, point+disp, function_shape=((2,), 0), order=4, stencil=6)
+        exp4 = FunctionExpansion.expand_function(sin_xy, point+2*disp, function_shape=((2,), 0), order=4, stencil=6)
+        multi = FunctionExpansion.multiexpansion(exp1, exp2, exp3, exp4)
 
-        multi = FunctionExpansion(
-            list(zip(exp1.expansion_tensors, exp2.expansion_tensors, exp3.expansion_tensors)),
-            center=[point, point+.1, point-.1]
-        )
+        d1 = exp1.deriv()
+        raise Exception(d1)
 
-        raise Exception(multi([point, point+.1, point-.1]))
+        raise Exception( multi([exp1.center, exp2.center, exp3.center, exp4.center]) )
+
+
 
 
         #
