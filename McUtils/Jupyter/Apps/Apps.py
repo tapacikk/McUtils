@@ -65,15 +65,18 @@ class Manipulator(WidgetInterface):
     def initialize(self):
         self.output.update()
 
-class AppThemeManager:
+class App(Component):
     """
-    Provides a manager for component
+    Provides a framework for making Jupyter Apps with the
+    elements built out in the Interfaces package
     """
+    _app_stack=[]
     themes = {
         'primary':{
             'header':{
                 'wrapper': {'cls': ['navbar-dark', 'bg-secondary', 'border-bottom']}
             },
+            'toolbar':{'cls':['form-check', 'bg-light', 'border-bottom']},
             'sidebar':{
                 'classes':['bg-light', 'border-end', 'h-100'],
                 'styles':{},
@@ -96,14 +99,16 @@ class AppThemeManager:
         }
     }
     @classmethod
-    def resolve_style(cls, component):
-        ...
-class App(Component):
-    """
-    Provides a framework for making Jupyter Apps with the
-    elements built out in the Interfaces package
-    """
-    _app_stack=[]
+    def merge_themes(cls, theme_1, theme_2):
+        new = theme_1.copy()
+        for k in theme_2:
+            if k in new and isinstance(new[k], dict):
+                new[k] = cls.merge_themes(new[k], theme_2[k])
+            else:
+                new[k] = theme_2[k]
+        return new
+
+
     def __init__(self,
                  body=None,
                  header=None,
@@ -123,7 +128,7 @@ class App(Component):
         self.vars = DefaultVars.resolve() if vars is None else vars
         self.output = JHTML.OutputArea(autoclear=True) if output is None else output
         self.capture_output = self._parent is None if capture_output is None else capture_output
-        self.theme = AppThemeManager.themes[theme]
+        self.theme = self.themes[theme] if isinstance(theme, str) else self.merge_themes(self.themes['primary'], theme)
         self._body = [None, body]
         self._header = [None, header]
         self._footer = [None, footer]
@@ -298,29 +303,26 @@ class App(Component):
             )
         return sidebar
 
-    @classmethod
-    def construct_toolbar_item(cls, item):
+    def construct_toolbar_item(self, item):
         if isinstance(item, dict):
             item = item.copy()
             var = item['var']
             del item['var']
             item = Control.construct(var, **item)
         return item
-    toolbar_opts=dict(cls=['form-check', 'bg-light', 'border-bottom'])
-    @classmethod
-    def construct_toolbar(cls, toolbar, **opts):
+    def construct_toolbar(self, toolbar, **opts):
         if not (isinstance(toolbar, (list, tuple, Component)) or hasattr(toolbar, 'to_widget') or hasattr(toolbar, 'to_tree')):
             toolbar = [toolbar]
         if isinstance(toolbar, (list, tuple)):
             if isinstance(toolbar[0], (list, tuple)):
                 toolbar = Grid(
-                    [[cls.construct_toolbar_item(h) for h in row] for row in toolbar],
-                    **dict(cls.toolbar_opts, **opts)
+                    [[self.construct_toolbar_item(h) for h in row] for row in toolbar],
+                    **dict(self.theme['toolbar'], **opts)
                 )
             else:
                 toolbar = JHTML.Div(
-                    [cls.construct_toolbar_item(h) for h in toolbar],
-                    **dict(cls.toolbar_opts, **opts)
+                    [self.construct_toolbar_item(h) for h in toolbar],
+                    **dict(self.theme['toolbar'], **opts)
                 )
         return toolbar
 
@@ -441,11 +443,15 @@ class App(Component):
     def to_jhtml(self):
         return self.construct_layout().to_jhtml()
 class SettingsPane(App):
-    toolbar_opts=dict(cls=['form-check'])
+    themes = {
+        'primary': App.merge_themes(
+            App.themes['primary'],
+            {'toolbar': dict(cls=['form-check'])}
+        )
+    }
     def __init__(self, settings, cls=None, **opts):
         super().__init__(
             toolbar=settings,
             cls=cls,
             **opts
         )
-
