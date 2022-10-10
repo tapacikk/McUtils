@@ -1,9 +1,26 @@
 
-import abc, weakref, uuid
-import itertools
+import abc, weakref, uuid, traceback as tb
+import sys
+
+from .types import *
 
 from ..JHTML import JHTML, DefaultOutputArea
 from ..JHTML.WidgetTools import JupyterAPIs, frozendict
+
+class JHTMLConversionError(Exception):
+    """
+    Represents an error in converting to JHTML
+    """
+    def __init__(self, widgets, cause, tb, message="failed to convert to JHTML:\n{}"):
+        self.widgets = widgets
+        self.base_cause = cause
+        self.base_tb = tb
+        self.message_template = message
+        super().__init__(self.format_message())
+    def format_message(self):
+        widget_chain = "\n".join(("  >> " if i > 0 else "") + repr(w) for i,w in enumerate(self.widgets))
+        cause = "\n".join(tb.format_exception(None, self.base_cause, self.base_tb, limit=-3))
+        return self.message_template.format(widget_chain + "\n" + cause)
 
 __all__ = [
     "WidgetInterface",
@@ -58,6 +75,11 @@ __all__ = [
 __reload_hook__ = ["..JHTML", "..WidgetTools"]
 
 class WidgetInterface(metaclass=abc.ABCMeta):
+    """
+    Provides the absolute minimum necessary for hooking
+    an interface that creates an `ipywidget` into the
+    Jupyter display runtime
+    """
     @abc.abstractmethod
     def to_widget(self):
         ...
@@ -195,7 +217,13 @@ class Component(WidgetInterface):
             self._parents.add(parent)
         if self._widget_cache is None:
             with DefaultOutputArea(self.debug_pane):
-                self._widget_cache = self.to_jhtml()
+                try:
+                    self._widget_cache = self.to_jhtml()
+                except JHTMLConversionError as e:
+                    raise JHTMLConversionError(e.widgets + [self], e.base_cause, e.base_tb) from None
+                except:
+                    _, e, tb = sys.exc_info()
+                    raise JHTMLConversionError([self], e, tb) from None
                 self._widget_cache.component = self
             # self._widget_cache.to_widget.observe(self.set_value, )
         return self._widget_cache
@@ -207,21 +235,108 @@ class Component(WidgetInterface):
         for w in self._parents:
             w.invalidate_cache()
 class WrapperComponent(Component):
-    wrapper = JHTML.Div
-    wrapper_classes = []
-    def __init__(self, items, wrapper=None, wrapper_classes=None, cls=None, **attrs):
+    """
+    Extends the base component interface to allow for the
+    construction of interesting compound interfaces (using `JHTML.Compound`).
+    Takes a `dict` of `wrappers` naming the successive levels of the interface
+    along with a `theme` that provides style declarations for each level.
+
+    Used primarily to create `Bootstrap`-based interfaces.
+    """
+    wrappers = dict(wrapper=JHTML.Div)
+    theme = dict(wrapper={'cls': []})
+    def __init__(self,
+                 items: ElementType,
+                 wrappers=None,
+                 theme=None,
+                 extend_base_theme=True,
+                 **attrs):
+
         self.items, attrs = self.manage_items(items, attrs)
-        if 'cls' in attrs:
-            extra_classes = attrs['cls']
-            del attrs['cls']
+
+        if wrappers is None:
+            wrappers = self.wrappers
+        self.wrappers = wrappers
+
+        wrappers = list(wrappers.items())
+
+        self.theme = self.manage_theme(theme, extend_base_theme=extend_base_theme)
+        self.theme[wrappers[0][0]] = self.merge_themes(self.theme.get(wrappers[0][0], {}), attrs)
+        if len(wrappers) > 1:
+            attrs = {'wrapper_attrs':self.theme}
+            self.wrapper = JHTML.Compound(*[
+                (key, wrapper)
+                for i, (key, wrapper)
+                in enumerate(wrappers)
+            ])
         else:
-            extra_classes = []
-        super().__init__(**attrs)
-        if wrapper is not None:
-            self.wrapper = wrapper
-        if wrapper_classes is not None:
-            self.wrapper_classes = wrapper_classes
-        self.wrapper_classes = self.wrapper_classes + JHTML.manage_class(cls) + JHTML.manage_class(extra_classes)
+            attrs = self.theme[wrappers[0][0]]
+            self.wrapper = wrappers[0][1]
+        super().__init__(**attrs) # need to delegate attr updates to the theme...
+
+        # self.item_attrs = theme.get(item[0], {})
+        # self.item = item[-1]
+    def handle_variants(self, theme):
+        if 'variant' in theme or 'base-cls' in theme:
+            theme = theme.copy()
+            cls = theme.get('cls', [])
+            if isinstance(cls, str):
+                cls = cls.split()
+            theme['cls'] = list(cls) + [theme.get('base-cls', cls[0] if len(cls) > 0 else "")+"-"+theme.get('variant', '')]
+            try:
+                del theme['variant']
+            except KeyError:
+                pass
+            try:
+                del theme['base-cls']
+            except KeyError:
+                pass
+        return theme
+    def manage_theme(self, theme, extend_base_theme=True):
+        if theme is None:
+            theme = self.theme
+        theme = theme.copy()
+        if extend_base_theme:
+            for k,v in self.theme.items():
+                if k in theme:
+                    theme[k] = self.merge_themes(v, theme[k])
+                else:
+                    theme[k] = self.theme[k].copy()
+        return theme
+    @classmethod
+    def merge_themes(cls, theme: 'None|dict', attrs:dict, merge_keys=('cls',)):
+        """
+        Needs to handle cases where a `theme` is provided
+        which includes things like `cls` declarations and then the
+        `attrs` may also include `cls` declarations and the `attrs`
+        declarations get appended to the theme
+        """
+
+        if theme is None:
+            theme = {}
+        theme = theme.copy()
+
+        kinter = theme.keys() & attrs.keys()
+        if merge_keys is not None:
+            kinter = kinter & set(merge_keys)
+
+        for k in attrs:
+            if k in kinter:
+                if isinstance(theme[k], str):
+                    theme[k] = theme[k].split()
+                if isinstance(attrs[k], str):
+                    attrs[k] = attrs[k].split()
+                if attrs[k] is None:
+                    attrs[k] = []
+                if isinstance(theme[k], dict):
+                    theme[k] = cls.merge_themes(theme[k], attrs[k], merge_keys=None)
+                else:
+                    theme[k] = theme[k] + attrs[k]
+            else:
+                theme[k] = attrs[k]
+
+        return theme
+
     @classmethod
     def manage_items(cls, items, attrs):
         if isinstance(items, dict):
@@ -236,7 +351,7 @@ class WrapperComponent(Component):
             attrs = dict(attrs, **items[1])
             items = items[0]
         if (
-                isinstance(items, str)
+                isinstance(items, (str, int, float))
                 or hasattr(items, 'to_tree')
                 or hasattr(items, 'to_widget')
         ):
@@ -254,80 +369,84 @@ class WrapperComponent(Component):
         if where is None:
             where = len(self.items)
         self.items.insert(where, child)
-
-    def add_component_class(self, *cls):
-        new = self.wrapper_classes.copy()
-        for c in cls:
-            for y in JHTML.manage_class(c):
-                if y not in new:
-                    new.append(y)
-        self.wrapper_classes = new
-    def remove_component_class(self, *cls):
-        new = self.wrapper_classes.copy()
-        for c in cls:
-            for y in JHTML.manage_class(c):
-                try:
-                    new.remove(y)
-                except ValueError:
-                    pass
-        self.wrapper_classes = new
+    # def add_component_class(self, *cls):
+    #     if 'cls' not in self.attrs:
+    #         base_cls = None
+    #     self.add
+    #         self.attrs['cls'] =
+    #     new = self.wrapper_classes.copy()
+    #     for c in cls:
+    #         for y in JHTML.manage_class(c):
+    #             if y not in new:
+    #                 new.append(y)
+    #     self.wrapper_classes = new
+    # def remove_component_class(self, *cls):
+    #     new = self.wrapper_classes.copy()
+    #     for c in cls:
+    #         for y in JHTML.manage_class(c):
+    #             try:
+    #                 new.remove(y)
+    #             except ValueError:
+    #                 pass
+    #     self.wrapper_classes = new
 
     def wrap_items(self, items):
-        return self.wrapper(*items, cls=self.wrapper_classes, **self.attrs)
+        if isinstance(self.wrappers, JHTML.Compound):
+            attrs = self.attrs.copy()
+            wrapper_attrs = self.attrs.get('wrapper_attrs', {}).copy()
+            for k,v in wrapper_attrs:
+                wrapper_attrs[k] = self.handle_variants(v.copy())
+            del attrs['wrapper_attrs']
+            return self.wrapper(*items, wrapper_attrs=wrapper_attrs, **attrs)
+        else:
+            return self.wrapper(*items, **self.handle_variants(self.attrs))
     def to_jhtml(self, parent=None):
         return self.wrap_items(self.items)
 class Container(WrapperComponent):
-    subwrappers = None
-    subwrapper_classes = None
-    item = JHTML.Span
-    item_classes = []
-    def __init__(self, items,
-                 wrapper=None, wrapper_classes=None,
-                 subwrappers=None, subwrapper_classes=None,
-                 item=None, item_classes=None, item_attrs=None,
-                 cls=None,
-                 **attrs):
+    """
+    Extends the base `WrapperComponent` to include a final
+    `items` spec for cases where there is a base wrapper and a set of items,
+    e.g. a list group which has the `list-group` outer class and a set of `list-items` inside.
+    """
+    wrappers = dict(wrapper=JHTML.Div, item=JHTML.Span)
+    theme = dict(wrapper={'cls':[]}, item={'cls':[]})
+    def __init__(self,
+                 items: ElementType,
+                 wrappers: dict = None,
+                 **attrs) -> None:
+
+        if wrappers is None:
+            wrappers = self.wrappers
+        self.wrappers = wrappers
+
+        wrappers = list(wrappers.items())
+        if len(wrappers) == 1:
+            wrappers.append([JHTML.Span, {}])
+        item = wrappers[-1]
+        wrappers = dict(wrappers[:-1])
+
 
         self._items = None
         items, attrs = self.manage_items(items, attrs)
-        if subwrappers is None:
-            subwrappers = self.subwrappers
-        if subwrapper_classes is None:
-            subwrapper_classes = self.subwrapper_classes
-        if subwrappers is not None:
-            if wrapper is None:
-                wrapper = self.wrapper
-            if wrapper_classes is not None:
-                self.wrapper_classes = wrapper_classes
-            if subwrapper_classes is None:
-                subwrapper_classes = [None]*len(subwrappers)
-            if len(subwrappers) != len(subwrapper_classes):
-                raise ValueError("mismatch between number of subwrappers and wrapper classes")
-
-            wrapper = JHTML.Compound(
-                JHTML.Styled(wrapper, cls=self.wrapper_classes + JHTML.manage_class(cls), **attrs),
-                *(
-                    JHTML.Styled(sw, cls=JHTML.manage_class(sc))
-                    for sw, sc in zip(subwrappers, subwrapper_classes)
-                  )
-            )
-            self.wrapper_classes = JHTML.manage_class(subwrapper_classes[-1])
-            super().__init__(None, wrapper=wrapper)
-        else:
-            super().__init__(None, cls=cls, wrapper=wrapper, wrapper_classes=wrapper_classes, **attrs)
+        super().__init__(None, wrappers=wrappers, **attrs)
         self._items = items
 
-        if item is not None:
-            self.item = item
-        if item_classes is not None:
-            self.item_classes = item_classes
-        if item_attrs is None:
-            item_attrs = {}
-        if 'cls' in item_attrs:
-            item_attrs = item_attrs.copy()
-            self.item_classes = self.item_classes + JHTML.manage_class(item_attrs['cls'])
-            del item_attrs['cls']
-        self.item_attrs = item_attrs
+        self.item_attrs = self.theme.get(item[0], {}).copy()
+        self.item = item[-1]
+
+        if isinstance(self.item, dict): # a way to specify a subtheme
+            item_wrappers = list(self.item.items())
+            item_theme = self.item_attrs
+            if len(item_wrappers) > 1:
+                self.item_attrs = {k[0]:item_theme.get(k[0], {}) for k in item_wrappers}
+                self.item = JHTML.Compound(*[
+                    (key, wrapper)
+                    for i, (key, wrapper)
+                    in enumerate(item_wrappers)
+                ])
+            else:
+                self.item_attrs = item_theme.get(wrappers[0][1], {})
+                self.item = item_wrappers[0][1]
 
     @property
     def items(self):
@@ -336,10 +455,22 @@ class Container(WrapperComponent):
     def items(self, items):
         if self._items is not None:
             raise ValueError("can't set items")
-    def _create_dict_item(self, body=None, cls=None, **extra):
-        return self.item(body, cls=self.item_classes + JHTML.manage_class(cls), **dict(self.item_attrs, **extra))
+    def _create_dict_item(self, body=None, **extra):
+        if isinstance(self.item, JHTML.Compound):
+            wrapper_attrs = self.item_attrs.copy()
+            for k, v in wrapper_attrs.items():
+                wrapper_attrs[k] = self.handle_variants(v)
+            n, _ = self.item.destructure_wrapper(self.item.base) # get base name
+            if n is not None:
+                wrapper_attrs[n] = self.merge_themes(wrapper_attrs.get(n, {}), extra)
+            return self.item(body, wrapper_attrs=wrapper_attrs)
+        else:
+            return self.item(body, **self.merge_themes(self.handle_variants(self.item_attrs), extra))
     def _create_base_item(self, body):
-        return self.item(body, cls=self.item_classes, **self.item_attrs)
+        if isinstance(self.item, JHTML.Compound):
+            return self.item(body, wrapper_attrs=self.item_attrs)
+        else:
+            return self.item(body, **self.item_attrs)
     def create_item(self, i, **kw):
         if isinstance(i, dict):
             if 'raw' in i:
@@ -358,7 +489,30 @@ class Container(WrapperComponent):
         super().update_widget_child(key, self.create_item(value))
     def insert_widget_child(self, where, child):
         super().insert_widget_child(where, self.create_item(child))
-
+class ComponentContainer(WrapperComponent):
+    components = {}
+    def __init__(self, component_args:dict=None, component_kwargs:dict=None,components=None, **attrs):
+        super().__init__([], **attrs)
+        if components is None:
+            components = {}
+        self.components = dict(self.components, **components)
+        self.component_args = component_args if component_args is not None else {}
+        self.component_kwargs = component_kwargs if component_kwargs is not None else {}
+    def create_components(self):
+        return {
+            k:c(
+                *self.component_args.get(k, []),
+                theme=self.theme.get(k, {}),
+                **self.component_kwargs.get(k, {})
+            )
+            for k,c in self.components.items()
+            if not (len(self.component_args.get(k, [])) == 1 and len(self.component_kwargs.get(k, [])) == 0 and self.component_args.get(k, [])[0] is None) # components to ignore
+        }
+    def handle_variants(self, theme):
+        return theme
+    def wrap_items(self, items):
+        items = list(self.create_components().values())
+        return super().wrap_items(items)
 class ModifierComponent(Component):
     modifiers = None
     def __init__(self, base=None, **modifiers):
@@ -387,7 +541,8 @@ class ModifierComponent(Component):
         return base
 
 class Button(WrapperComponent):
-    wrapper = JHTML.Bootstrap.Button
+    wrappers = dict(button=JHTML.Bootstrap.Button)
+    theme = dict(button={'cls':['btn'], 'variant':'primary'})
     def __init__(self, body, action=None, event_handlers=None, **kwargs):
         if event_handlers is None:
             event_handlers = {}
@@ -429,25 +584,23 @@ class Button(WrapperComponent):
                     self.action(*args)
 
 class Spinner(WrapperComponent):
-    def __init__(self, variant="border", body=None, cls=None, **attrs):
+    wrappers = {'spinner':JHTML.Div}
+    theme = {'spinner':{'cls':[], 'base-cls':'spinner', 'variant':'border'}}
+    def __init__(self, body=None, role='status', **attrs):
         """
-        <div class="spinner-border text-primary" role="status">
-  <span class="visually-hidden">Loading...</span>
-</div>
         :param variant:
         :type variant:
         :param attrs:
         :type attrs:
         """
-        cls = JHTML.manage_class(cls) + ['spinner-'+variant]
         if body is None:
             body = JHTML.Span("Loading...", cls="visually-hidden")
-        super().__init__(body, cls=cls, **attrs)
+        super().__init__(body, role=role, **attrs)
 
 class Progress(WrapperComponent):
-    wrapper_classes = ['progress']
-    subwrapper_classes = ['progress-bar']
-    def __init__(self, value=0, label=None, cls=None, **attrs):
+    wrappers = {'wrapper':JHTML.Div, 'bar':None}
+    theme = {'wrapper':{'cls':['progress']}, 'bar':{'cls':['progress-bar']}}
+    def __init__(self, value=0, label=None, wrappers=None, **attrs):
         items = []
         if label is True:
             label = str(value) + "%"
@@ -455,13 +608,16 @@ class Progress(WrapperComponent):
             label = None
         if label is not None:
             items.append(label)
+        if wrappers is None:
+            wrappers = self.wrappers.copy()
+        if 'bar' not in wrappers:
+            wrappers['bar'] = None
+        if wrappers['bar'] is None:
+            wrappers['bar'] = JHTML.Styled(JHTML.Div, width=str(value)+"%", dynamic=True)
         super().__init__(
             items,
-            wrapper=JHTML.Compound(
-                ('container', JHTML.Styled(JHTML.Div, cls=JHTML.manage_class(cls) + self.wrapper_classes, **attrs)),
-                ('bar', JHTML.Styled(JHTML.Div, width=str(value)+"%", dynamic=True))
-            ),
-            wrapper_classes = self.subwrapper_classes
+            wrappers=wrappers,
+            **attrs
         )
     @property
     def container(self):
@@ -473,10 +629,9 @@ class Progress(WrapperComponent):
         self.container[attr] = val
 
 #region Menus
-
 class MenuComponent(Container):
-    def __init__(self, items, item_attrs=None, cls=None, **attrs):
-        super().__init__(items, item_attrs=item_attrs, cls=cls, **attrs)
+    def __init__(self, items:ElementType, **attrs):
+        super().__init__(items, **attrs)
         self._item_map = {}
     def create_item(self, item, **kw):
         item = super().create_item(item, **kw)
@@ -486,120 +641,163 @@ class MenuComponent(Container):
             self._item_map[item.attrs['id']] = item
         return item
 class ListGroup(MenuComponent):
-    item_classes = ['list-group-item', 'list-group-item-action']
-    wrapper_classes = ['list-group', 'list-group-flush']
+    theme = {
+        'wrapper':{'cls':['list-group', 'list-group-flush']},
+        'item':{'cls':['list-group-item', 'list-group-item-action']}
+    }
 class ButtonGroup(MenuComponent):
-    item = JHTML.Bootstrap.Button
-    wrapper_classes = ['btn-group']
+    wrappers = {
+        'wrapper':JHTML.Div,
+        'item':Button
+    }
+    theme = {
+        'wrapper':{'cls':['btn-group']}
+    }
 class DropdownList(MenuComponent):
-    wrapper = JHTML.Ul
-    wrapper_classes = ['dropdown-menu']
-    item = JHTML.Compound(JHTML.Li, JHTML.Anchor)
-    item_classes = ['dropdown-item']
+    wrappers = {
+        'wrapper': JHTML.Ul,
+        'item': {'list-item':JHTML.Li, 'link':JHTML.Anchor}
+    }
+    theme = {
+        'wrapper': {'cls': ['dropdown-menu']},
+        'item': {'list-item':{}, 'link':{'cls': ['dropdown-item']}},
+    }
     def create_item(self, item, **kw):
-        item = super().create_item(item, **kw)
-        if 'action' in item:
+        if isinstance(item, dict) and 'action' in item:
             item = item.copy()
             item['event_handlers'] = {'click':item['action']}
             del item['action']
+        item = super().create_item(item, **kw)
         return item
-class Dropdown(MenuComponent):
-    wrapper_classes = ['dropdown']
-    toggle_classes = ['dropdown-toggle']
-    toggle = JHTML.Styled(JHTML.Button, data_bs_toggle='dropdown')
-    List = DropdownList
-    def __init__(self, header, actions, toggle_attrs=None, **attrs):
-        self.header = header
-        self.toggle_attrs = {} if toggle_attrs is None else toggle_attrs
-        if 'cls' in self.toggle_attrs:
-            self.toggle_attrs = self.toggle_attrs.copy()
-            self.toggle_classes = self.toggle_classes + JHTML.manage_class(self.toggle_attrs['cls'])
-            del self.toggle_attrs['cls']
-        self.dlist = DropdownList(actions, **attrs) if not hasattr(actions, 'to_widget') else actions
-        super().__init__([], **attrs)
-    def wrap_items(self, items):
-        items = [
-            self.toggle(self.header, cls=self.toggle_classes, **self.toggle_attrs),
-            self.dlist
-        ]
-        return super().wrap_items(items)
+class Dropdown(ComponentContainer):
+    components = {
+        'toggle':Button,
+        'list':DropdownList
+    }
+    theme = {
+        'wrapper':{'cls':['dropdown']},
+        'toggle':{'button':{'cls':['dropdown-toggle'], 'data-bs-toggle':'dropdown'}}
+    }
+    def __init__(self, header:ElementType, actions:ElementType, **attrs):
+        super().__init__(
+            {
+                'toggle':(header,),
+                'list':(self.prep_actions(actions),)
+            },
+            **attrs
+        )
+    def prep_actions(self, actions):
+        if isinstance(actions, dict):
+            acts = []
+            for k,v in actions.items():
+                if isinstance(v, tuple) and len(v) == 2 and isinstance(v[1], dict):
+                    v, opts = v
+                else:
+                    opts = {}
+                acts.append(dict(opts, body=k, action=v))
+            actions = acts
+        return actions
 
 class Navbar(MenuComponent):
-    wrapper = JHTML.Nav
-    wrapper_classes = ['navbar', 'navbar-expand']
-    subwrappers = [JHTML.Div, JHTML.Div]
-    subwrapper_classes = [['container-fluid'], ['navbar-nav']]
-    item = JHTML.Anchor
-    item_classes = ['nav-link']
+    wrappers = {
+        'wrapper':JHTML.Nav,
+        'container':JHTML.Div,
+        'nav':JHTML.Div,
+        'item':JHTML.Anchor
+    }
+    theme = {
+        'wrapper': {'cls':['navbar', 'navbar-expand']},
+        'container': {'cls':['container-fluid']},
+        'nav': {'cls':['navbar-nav']},
+        'item': {'cls':['nav-link']}
+    }
 class Sidebar(MenuComponent):
-    wrapper = JHTML.Nav
-    wrapper_classes = ['nav', 'flex-column']
-    # subwrappers = [JHTML.Div, JHTML.Div]
-    # subwrapper_classes = [['container-fluid'], ['navbar-nav']]
-    item = JHTML.Compound(
-        JHTML.Styled(JHTML.Li, cls='nav-item'),
-        JHTML.Anchor
-    )
-    item_classes = ['nav-link']
+    wrappers = {
+        'wrapper': JHTML.Nav,
+        'item': {'list-item':JHTML.Li, 'link':JHTML.Anchor}
+    }
+    theme = {
+        'wrapper': {'cls': ['nav', 'flex-column']},
+        'item': {
+            'list-item': {'cls': ['nav-item']},
+            'link': {'cls': ['nav-link']}
+        }
+    }
 
 class Pagination(MenuComponent):
-    wrapper = JHTML.Nav
-    subwrappers = [JHTML.Ul]
-    subwrapper_classes = [['pagination']]
-    item = JHTML.Compound(
-        JHTML.Styled(JHTML.Li, cls='page-item'),
-        JHTML.Anchor
-    )
-    item_classes = ['page-link']
+    wrappers = {
+        'wrapper': JHTML.Nav,
+        'container': JHTML.Ul,
+        'item': {'page-item': JHTML.Li, 'link': JHTML.Anchor}
+    }
+    theme = {
+        'wrapper': {'cls': []},
+        'container': {'cls': ['pagination']},
+        'item': {
+            'page-item': {'cls': ['page-item']},
+            'link': {'cls': ['page-link']}
+        }
+    }
 
 
 def short_uuid(len=6):
     return str(uuid.uuid4()).replace("-", "")[:len]
 
 class Carousel(MenuComponent):
-    wrapper = JHTML.Div
-    wrapper_classes = ['carousel']
-    subwrappers = [JHTML.Div]
-    subwrapper_classes = ['carousel-inner']
-    item = JHTML.Div
-    item_classes = ['carousel-item', 'bg-secondary', 'text-light']
-    def __init__(self, items, include_controls=True, data_bs_ride='carousel', **attrs):
+    wrappers = {
+        'wrapper': JHTML.Div,
+        'inner': JHTML.Div,
+        'item': JHTML.Div
+    }
+    theme = {
+        'wrapper': {'cls': ['carousel']},
+        'inner': {'cls': ['carousel-inner']},
+        'item': {'cls': ['carousel-item']}
+    }
+    def __init__(self, items, include_controls=True, data_bs_ride='carousel', interval=None, **attrs):
         self.include_controls = include_controls
         self._active_made = False
         self.base_name = 'carousel-' + short_uuid()
+        self.interval = interval
         super().__init__(items, id=self.base_name, data_bs_ride=data_bs_ride, **attrs)
-    def create_item(self, item, cls=None, data_bs_interval="10000000000", **kw):
+    def create_item(self, item, cls=None, data_bs_interval=None, **kw):
+        cls = JHTML.manage_class(cls)
         if not self._active_made:
-            cls = JHTML.manage_class(cls) + ['active']
+            cls = cls + ['active']
             self._active_made = True
+        if data_bs_interval is None:
+            data_bs_interval = str(self.interval) if self.interval is not None else "10000000000"
         return super().create_item(item, cls=cls, data_bs_interval=data_bs_interval, **kw)
+    def next_button(self, body=None, cls='carousel-control-next', **kwargs):
+        return JHTML.Button(
+                    JHTML.Span(cls='carousel-control-next-icon') if body is None else body,
+                    **self.merge_themes(dict(cls=cls, data_bs_target='#'+self.base_name, data_bs_slide='next'), kwargs)
+                )
+    def prev_button(self, body=None, cls='carousel-control-prev', **kwargs):
+        return JHTML.Button(
+            JHTML.Span(cls='carousel-control-prev-icon') if body is None else body,
+            **self.merge_themes(
+                dict(cls=cls, data_bs_target='#' + self.base_name, data_bs_slide='prev'),
+                kwargs
+            )
+        )
     def wrap_items(self, items):
         base = super().wrap_items(items)
         if self.include_controls:
-            base.append(
-                JHTML.Button(
-                    JHTML.Span(cls='carousel-control-prev-icon'),
-                    cls='carousel-control-prev', data_bs_target='#'+self.base_name, data_bs_slide='prev'
-                )
-            )
-
-            base.append(
-                JHTML.Button(
-                    JHTML.Span(cls='carousel-control-next-icon'),
-                    cls='carousel-control-next', data_bs_target='#'+self.base_name, data_bs_slide='next'
-                )
-            )
+            base.append(self.prev_button())
+            base.append(self.next_button())
         return base
 
 
 class TabList(MenuComponent):
-    wrapper = JHTML.Ul
-    wrapper_classes = ['nav', 'nav-tabs']
-    item = JHTML.Compound(
-        JHTML.Styled(JHTML.Li, cls='nav-item'),
-        JHTML.Button
-    )
-    item_classes = ['nav-link']
+    wrappers = {
+        'wrapper': JHTML.Ul,
+        'item': {'list-item':JHTML.Li, 'tab-button':JHTML.Button}
+    }
+    theme = {
+        'wrapper': {'cls':['nav'], 'variant':'tabs'},
+        'item': {'list-item': {'cls':['nav-item']}, 'tab-button': {'cls':['nav-link']}}
+    }
     def __init__(self, *args, base_name=None, role="tablist", **kwargs):
         if base_name is None:
             base_name = 'tabs-' + str(uuid.uuid1()).replace("-", "")[:5]
@@ -607,16 +805,29 @@ class TabList(MenuComponent):
         self._active = None
         super().__init__(*args, role=role, **kwargs)
     def create_item(self, item, cls=None, **kw):
+        # cls = JHTML.manage_class(cls)
+        # if not self._active_made:
+        #     cls = cls + ['active']
+        #     self._active_made = True
+        # if data_bs_interval is None:
+        #     data_bs_interval = str(self.interval) if self.interval is not None else "10000000000"
+        # return super().create_item(item, cls=cls, data_bs_interval=data_bs_interval, **kw)
+        cls = JHTML.manage_class(cls)
         item, _ = item
         item_id = self.base_name+"-"+item.replace(' ', '')
         if self._active is None:
-            cls = JHTML.manage_class(cls) + ['active']
+            cls = cls + ['active']
             self._active = item_id
         return super().create_item(item, id=item_id+'-tab', cls=cls, data_bs_target='#'+item_id, data_bs_toggle='tab', **kw)
 class TabPane(MenuComponent):
-    wrapper_classes = ['tab-content']
-    item = JHTML.Div
-    item_classes = ['tab-pane']
+    wrappers = {
+        'wrapper': JHTML.Div,
+        'item': JHTML.Div
+    }
+    theme = {
+        'wrapper': {'cls': ['tab-content']},
+        'item': {'cls': ['tab-pane']}
+    }
     def __init__(self, *args, base_name=None, **kwargs):
         if base_name is None:
             base_name = 'tabs-' + short_uuid()
@@ -626,29 +837,37 @@ class TabPane(MenuComponent):
     def create_item(self, item, cls=None, **kw):
         key, item = item
         item_id = self.base_name+"-"+key.replace(' ', '')
+        cls = JHTML.manage_class(cls)
         if self._active is None:
-            cls = JHTML.manage_class(cls) + ['active']
+            cls = cls + ['active']
             self._active = item_id
         item = super().create_item(item, id=item_id, role='tabpanel', cls=cls, **kw)
         return item
-class Tabs(MenuComponent):
-    wrapper_classes = []
-    # toggle_classes = ['dropdown-toggle']
-    # toggle = JHTML.Styled(JHTML.Bootstrap.Button, data_bs_toggle='dropdown')
+class Tabs(ComponentContainer):
+    components = {
+        'list':TabList,
+        'pane':TabPane
+    }
+    theme = {
+        'pane':{},
+        'list': {}
+    }
     def __init__(self, tabs, base_name=None, **attrs):
         if base_name is None:
             base_name = 'tabs-' + str(uuid.uuid1()).replace("-", "")[:5]
         if isinstance(tabs, dict):
             tabs = tabs.items()
-        self.tab_list = TabList(tabs, id=base_name, base_name=base_name)
-        self.panes = TabPane(tabs, id=base_name+'Content', base_name=base_name)
-        super().__init__([], **attrs)
-    def wrap_items(self, items):
-        items = [
-            self.tab_list,
-            self.panes
-        ]
-        return super().wrap_items(items)
+        super().__init__(
+            {
+                'list': (tabs,),
+                'pane': (tabs,)
+            },
+            {
+                'list':dict(id=base_name, base_name=base_name),
+                'pane':dict(id=base_name, base_name=base_name)
+            },
+            **attrs
+        )
 
 class AccordionHeader(Container):
     wrapper_classes = ['accordion-header']
@@ -697,89 +916,118 @@ class Accordion(MenuComponent):
         return super().create_item([header, body])
 
 class OpenerHeader(Container):
-    wrapper_classes = ['collapse-header']
-    item = JHTML.Button
-    item_classes = ['accordion-button']
+    wrappers = {
+        'wrapper':JHTML.Div,
+        'item':Button
+    }
+    theme = {
+        'wrapper':{'cls':['collapse-header']},
+        'item':{'cls':['accordion-button']},
+    }
     def __init__(self, key, base_name=None, **kw):
         self.base_name = base_name
         super().__init__([key], id=self.base_name+'-heading', **kw)
     def create_item(self, i, **kw):
         return super().create_item(i, type='button', data_bs_toggle='collapse', data_bs_target='#'+self.base_name+'-collapse')
 class OpenerBody(Container):
-    wrapper_classes = ['collapse']
-    item = JHTML.Div
-    item_classes = ['collapse-body']
+    wrappers = {
+        'wrapper': JHTML.Div,
+        'item': JHTML.Div
+    }
+    theme = {
+        'wrapper': {'cls': ['collapse']},
+        'item': {'cls': ['collapse-body']},
+    }
     def __init__(self, key, base_name=None, **kw):
         self.base_name = base_name
         super().__init__([key], id=self.base_name+'-collapse', **kw)#, data_bs_parent='#'+parent_name, **kw)
 class Opener(MenuComponent):
-    wrapper_classes = ['opener']
-    item = JHTML.Div
-    item_classes = ['opener-item']
-    header_classes = []
-    def __init__(self, items, base_name=None, header_classes=None, **attrs):
+    wrappers = {
+        'wrapper':JHTML.Div,
+        'item':JHTML.Div
+    }
+    theme = {
+        'wrapper':{'cls':['opener']},
+        'item':{'cls':['opener-item']},
+        'header':{},
+        'body':{}
+    }
+    def __init__(self, items, base_name=None, **attrs):
         if base_name is None:
             base_name = 'opener-' + short_uuid()
         self.base_name = base_name
         if isinstance(items, dict):
             items = items.items()
-        # self._active = None
-        if header_classes is not None:
-            self.header_classes = JHTML.manage_class(header_classes)
         super().__init__(items, id=self.base_name, **attrs)
-    def create_item(self, item, cls=None, **kw):
+    def create_item(self, item, open=False, **kw):
         key, item = item
         item_id = self.base_name + "-" + short_uuid(3)
-        cls = JHTML.manage_class(cls)
-        # if self._active is None:
-        #     cls = cls + ['show']
-        #     self._active = item_id
-        #     header_cls = None
-        # else:
-        header_cls = ['collapsed']
 
-        header = OpenerHeader(key, base_name=item_id,
-                              item_attrs={'cls':self.header_classes + header_cls}
-                              # wrapper_classes=self.header_classes
-                              )
-        body = OpenerBody(item, base_name=item_id, cls=cls, **kw)
+        ht = self.theme.get('header', {}).copy()
+        ht['wrapper'] = self.merge_themes(
+            ht.get('wrapper', {}),
+            {'cls':['collapsed'] if not open else []}
+        )
+        ht['item'] = self.merge_themes(
+            ht.get('item', {}),
+            {'cls': ['collapsed'] if not open else []}
+        )
+
+        header = OpenerHeader(key, base_name=item_id, theme=ht)
+        body = OpenerBody(item, base_name=item_id,
+                          theme=self.theme.get('body', {}),
+                          **kw
+                          )
         return super().create_item([header, body])
 
 class Breadcrumb(MenuComponent):
-    wrapper = JHTML.Nav
-    subwrappers = [JHTML.Ol]
-    subwrapper_classes = ['breadcrumb']
-    item = JHTML.Li
-    item_classes = ['breadcrumb-item']
+    wrappers = {
+        'wrapper':JHTML.Nav,
+        'list':JHTML.Ol,
+        'item':JHTML.Li
+    }
+    theme = {
+        'wrapper': {'cls':[]},
+        'list': {'cls':['breadcrumb']},
+        'item': {'cls':['breadcrumb-item']}
+    }
 
 class CardBody(WrapperComponent):
-    wrapper = JHTML.Bootstrap.CardBody
+    wrappers = {'wrapper':JHTML.Bootstrap.CardBody}
 class CardHeader(WrapperComponent):
-    wrapper = JHTML.Bootstrap.CardHeader
+    wrappers = {'wrapper':JHTML.Bootstrap.CardHeader}
 class CardFooter(WrapperComponent):
-    wrapper = JHTML.Bootstrap.CardHeader
-class Card(WrapperComponent):
-    wrapper = JHTML.Bootstrap.Card
+    wrappers = {'wrapper':JHTML.Bootstrap.CardFooter}
+class Card(ComponentContainer):
+    wrappers = {'wrapper':JHTML.Bootstrap.Card}
+    components = {
+        'header':CardHeader,
+        'body':CardBody,
+        'footer':CardFooter,
+    }
     def __init__(self,
+                 *args,
                  header=None,
                  body=None,
                  footer=None,
                  **attrs
                  ):
-        items = []
-        if header is not None:
-            header = CardHeader(header)
-            items.append(header)
-        self.header = header
-        if body is not None:
-            body = CardBody(body)
-            items.append(body)
-        self.body = body
-        if footer is not None:
-            footer = CardFooter(footer)
-            items.append(footer)
-        self.footer = footer
-        super().__init__(items, **attrs)
+        if len(args) == 3:
+            header, body, footer = args
+        elif len(args) == 2:
+            header, body = args
+        elif len(args) == 1:
+            body, = args
+        elif len(args) > 0:
+            raise NotImplementedError("too many body args")
+        super().__init__(
+            {
+                'header':(header,),
+                'body':(body,),
+                'footer':(footer,)
+            },
+            **attrs
+        )
 
 class Modal(Container):
     wrapper_classes = ['modal', 'fade']
@@ -793,6 +1041,8 @@ class Modal(Container):
                  tabindex=-1,
                  **attrs
                  ):
+
+        raise NotImplementedError("needs ComponentContainer update")
         items = []
         if header is not None:
             header = ModalHeader(header)
@@ -822,15 +1072,18 @@ class Modal(Container):
     def close_button(self):
         return JHTML.Button(cls='btn-close', data_bs_dismiss='modal')
 class ModalHeader(WrapperComponent):
-    wrapper_classes = ['modal-header']
+    wrappers = {'wrapper':JHTML.Div}
+    theme = {'wrapper':{'cls':['modal-header']}}
     def __init__(self, items, **attrs):
         items, attrs = self.manage_items(items, attrs)
         items.append(Modal.close_button())
         super().__init__(items, **attrs)
 class ModalFooter(WrapperComponent):
-    wrapper_classes = ['modal-footer']
+    wrappers = {'wrapper':JHTML.Div}
+    theme = {'wrapper':{'cls':['modal-footer']}}
 class ModalBody(WrapperComponent):
-    wrapper_classes = ['modal-body']
+    wrappers = {'wrapper':JHTML.Div}
+    theme = {'wrapper':{'cls':['modal-body']}}
 
 class Offcanvas(Container):
     wrapper_classes = ['offcanvas', 'ps-4', 'pt-5', 'pb-5']
@@ -843,6 +1096,7 @@ class Offcanvas(Container):
                  placement='start',
                  **attrs
                  ):
+        raise NotImplementedError("needs ComponentContainer update")
         items = []
         if header is not None:
             header = OffcanvasHeader(header)
@@ -869,17 +1123,19 @@ class Offcanvas(Container):
     def close_button(self):
         return JHTML.Button(cls='btn-close', data_bs_dismiss='offcanvas')
 class OffcanvasHeader(WrapperComponent):
-    wrapper_classes = ['offcanvas-header', 'm-2', 'border-bottom']
+    wrappers = {'wrapper':JHTML.Div}
+    theme = {'wrapper':{'cls':['offcanvas-header', 'm-2', 'border-bottom']}}
     def __init__(self, items, **attrs):
         items, attrs = self.manage_items(items, attrs)
         items.append(Offcanvas.close_button())
         super().__init__(items, **attrs)
 class OffcanvasBody(WrapperComponent):
-    wrapper_classes = ['offcanvas-body']
+    wrappers = {'wrapper':JHTML.Div}
+    theme = {'wrapper':{'cls':['offcanvas-body']}}
 
 class Spacer(WrapperComponent):
-    wrapper = JHTML.Span
-    wrapper_classes = ['me-auto']
+    wrappers = {'wrapper':JHTML.Span}
+    theme = {'wrapper':{'cls':['me-auto']}}
     def __init__(self, items=None, **kwargs):
         if items is None:
             items = []
@@ -894,7 +1150,12 @@ el.toast.show();
 """
 )
 class ToastBody(WrapperComponent):
-    wrapper_classes = ['toast-body']
+    wrappers = {
+        'wrapper':JHTML.Div
+    }
+    theme = {
+        'wrapper': {'cls':['toast-body']}
+    }
     def __init__(self, items, include_controls=False, cls=None, **attrs):
         if include_controls:
             cls = JHTML.manage_class(cls) + ['d-flex']
@@ -902,14 +1163,24 @@ class ToastBody(WrapperComponent):
             items.extend([Spacer(), Toast.close_button()])
         super().__init__(items, cls=cls, **attrs)
 class ToastHeader(WrapperComponent):
-    wrapper_classes = ['toast-header']
+    wrappers = {
+        'wrapper':JHTML.Div
+    }
+    theme = {
+        'wrapper': {'cls':['toast-header']}
+    }
     def __init__(self, items, include_controls=True, **attrs):
         if include_controls:
             items, attrs = self.manage_items(items, attrs)
             items.extend([Spacer(), Toast.close_button()])
         super().__init__(items, **attrs)
 class Toast(WrapperComponent):
-    wrapper_classes = ['toast']
+    wrappers = {
+        'wrapper':JHTML.Div
+    }
+    theme = {
+        'wrapper': {'cls':['toast']}
+    }
     def __init__(self,
                  header=None,
                  body=None,
@@ -921,6 +1192,7 @@ class Toast(WrapperComponent):
                  onevents=None,
                  **attrs
                  ):
+        raise NotImplementedError("needs update")
         attrs['role'] = role
         items = []
         only_body = header is not None and body is None
@@ -965,7 +1237,12 @@ class Toast(WrapperComponent):
         self.remove_class('show')
         self.add_class('hide')
 class ToastContainer(WrapperComponent):
-    wrapper_classes = ['toast-container']
+    wrappers = {
+        'wrapper':JHTML.Div
+    }
+    theme = {
+        'wrapper': {'cls':['toast-container']}
+    }
     def __init__(self, items=None, **kwargs):
         if items is None:
             items = []
@@ -1334,7 +1611,7 @@ class Grid(Layout):
                  alignment=None, justification=None,
                  row_spacing=None, col_spacing=None,
                  item_attrs=None,
-                 row_height='1fr',
+                 row_height='auto',
                  column_width='1fr',
                  **attrs
                  ):
@@ -1405,7 +1682,7 @@ class Grid(Layout):
         if cols is not None:
             if isinstance(col_width, str) and ' ' not in col_width:
                 settings['grid-template-columns'] = 'repeat({cols}, {width})'.format(cols=cols, width=col_width) if isinstance(cols, int) else cols
-            elif isinstance(row_height, str):
+            elif isinstance(col_width, str):
                 settings['grid-template-columns'] = col_width
             else:
                 settings['grid-template-columns'] = " ".join(col_width)
@@ -1415,7 +1692,7 @@ class Grid(Layout):
             settings['justify-items'] = justification
         if row_gap is not None:
             settings['row-gap'] = row_gap
-        if row_gap is not None:
+        if col_gap is not None:
             settings['column-gap'] = col_gap
         return settings
     def get_layout_styles(self):

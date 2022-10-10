@@ -313,14 +313,17 @@ class FunctionDisplay(Component):
         self.out = pane
         self.fn = fn
         self.vars = InterfaceVars(*vars) if not isinstance(vars, InterfaceVars) else vars
+    def link_vars(self, *var):
+        self.update = self.update  # weakref patch
+        for v in self.vars:
+            v.callbacks.add(self.update)
+            v.link(self)
+        self.vars.callbacks.add(self.link_vars)
     def to_widget(self, parent=None):
         needs_link = self._widget_cache is None
         widg = super().to_widget(parent=parent)
         if needs_link:
-            self.update = self.update # weakref patch
-            for v in self.vars:
-                v.callbacks.add(self.update)
-                v.link(self)
+            self.link_vars()
         return widg
     def observe(self, fn, names=None):
         if self._widget_cache is None:

@@ -790,21 +790,29 @@ class JHTML:
                     return self.dict[item]
                 else:
                     return self.list[item]
-        def __call__(self, *args, **kwargs):
+        def __call__(self, *args, wrapper_attrs=None, **kwargs):
             cache = []
             names = {}
+            if wrapper_attrs is None:
+                wrapper_attrs = {}
             cwd = self.CompoundWrapperData(cache, names)
             n,w = self.destructure_wrapper(self.base)
-            base = w(*args, **kwargs)
+            base = w(*args, **kwargs, **wrapper_attrs.get(n, {}))
             if n is not None:
                 names[n] = base
             cache.append(base)
             base.compound_wrapper_data = cwd
             for c in reversed(self.classes):
                 n, c = self.destructure_wrapper(c)
-                base = c(base)
+                base = c(base, **wrapper_attrs.get(n, {}))
                 if n is not None:
                     names[n] = base
                 cache.append(base)
                 base.compound_wrapper_data = cwd
             return base
+        def __repr__(self):
+            return "{name}({spacing}{objs}{spacing})".format(
+                name=type(self).__name__,
+                objs=",\n    ".join(repr(x) for x in self.classes+(self.base,)),
+                spacing="\n    " if len(self.classes) > 0 else ""
+            )

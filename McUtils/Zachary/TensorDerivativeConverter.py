@@ -729,7 +729,10 @@ class TensorExpression:
         def rank(self):
             return 1
         def asarray(self, print_terms=False):
-            raise NotImplementedError("Need explicit vector values for this to work")
+            if self._arr is None:
+                raise NotImplementedError("Need explicit vector values for this to work")
+            else:
+                return self._arr
         def reduce_terms(self, check_arrays=False):
             return self
         def to_string(self):
@@ -749,7 +752,10 @@ class TensorExpression:
         def rank(self):
             return 2
         def asarray(self, print_terms=False):
-            raise NotImplementedError("Need explicit vector values for this to work")
+            if self._arr is None:
+                raise NotImplementedError("Need explicit vector values for this to work")
+            else:
+                return self._arr
         def reduce_terms(self, check_arrays=False):
             return self
         def to_string(self):
