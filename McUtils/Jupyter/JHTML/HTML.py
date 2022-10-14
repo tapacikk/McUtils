@@ -6,6 +6,7 @@ __all__ = [
     "CSS"
 ]
 
+from ...Misc import mixedmethod
 from .Enums import Options
 from .WidgetTools import frozendict
 
@@ -686,6 +687,11 @@ class HTML:
             display = JupyterAPIs.get_display_api()
             wrapper = HTML.Div(self, cls='jhtml')
             return display.display(display.HTML(wrapper.tostring()))
+        @mixedmethod
+        def _ipython_pinfo_(self):
+            from ...Docs import jdoc
+            return jdoc(self)
+
         def make_class_list(self):
             self._attrs['class'] = self._attrs['class'].split()
         def add_class(self, *cls, copy=True):
@@ -1072,9 +1078,20 @@ class HTML:
 
     @classmethod
     def convert(cls, etree:ElementTree.Element, strip=True, converter=None, **extra_attrs):
+        import copy
+
         if converter is None:
             converter = cls.convert
-        children = [converter(x, strip=strip) for x in etree]
+        children = []
+        for x in etree:
+            if x.tail is not None:
+                x = copy.copy(x)
+                t = x.tail
+                x.tail = None
+                children.append(converter(x, strip=strip))
+                children.append(t)
+            else:
+                children.append(converter(x, strip=strip))
         text = etree.text
         if text is not None:
             if isinstance(text, str):
@@ -1090,9 +1107,9 @@ class HTML:
         tag = etree.tag
 
         elems = (
-                [t.strip() if strip else t for t in text]
+                [t.strip("\n") if strip else t for t in text]
                 + children
-                + [t.strip() if strip else t for t in tail]
+                + [t.strip("\n") if strip else t for t in tail]
         )
         if strip:
             elems = [e for e in elems if not isinstance(e, str) or len(e) > 0]
@@ -1108,14 +1125,24 @@ class HTML:
         return tag_class(*elems, **dict(extra_attrs, **attrs))
 
     @classmethod
-    def parse(cls, str, strict=True, strip=True, converter=None):
+    def parse(cls, str, strict=True, strip=True, fallback=None, converter=None):
         if strict:
             etree = ElementTree.fromstring(str)
         else:
             try:
                 etree = ElementTree.fromstring(str)
-            except ElementTree.ParseError:
-                return HTML.Span(str)
+            except ElementTree.ParseError as e:
+                # print('no element found' in e.args[0])
+                if 'junk after document element' in e.args[0]:
+                    try:
+                        return cls.parse('<div>\n\n'+str+'\n\n</div>', strict=True, strip=strip, fallback=fallback, converter=converter)
+                    except ElementTree.ParseError:
+                        if fallback is None:
+                            fallback = HTML.Span
+                        return fallback(str)
+                if fallback is None:
+                    fallback = HTML.Span
+                return fallback(str)
 
         if converter is None:
             converter = cls.convert

@@ -18,3 +18,9 @@ from .Runner import *; from .Runner import __all__ as exposed
 __all__ += exposed
 from .SharedMemory import *; from .SharedMemory import __all__ as exposed
 __all__ += exposed
+
+def _ipython_pinfo_():
+    from ..Docs import jdoc
+    import sys
+
+    return jdoc(sys.modules[__name__])

@@ -8,7 +8,8 @@ __all__ = [
 class TemplateWriter:
     """
     A general class that can take a directory layout and apply template parameters to it
-    Very unsophisticated but workable
+    Very unsophisticated but workable. For a more sophisticated take that walks through
+    object trees, see `TemplateEngine`.
     """
 
     ignored_files = [".DS_Store"]

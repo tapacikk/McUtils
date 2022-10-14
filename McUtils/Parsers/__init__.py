@@ -2,6 +2,7 @@
 Utilities for writing parsers of structured text.
 An entirely standalone package which is used extensively by `GaussianInterface`.
 Three main threads are handled:
+
 1. A `FileStreamer` interface which allows for efficient searching for blocks of text
    in large files with no pattern matching
 2. A `Regex` interface that provides declarative tools for building and manipulating a regular expression

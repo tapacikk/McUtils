@@ -853,9 +853,11 @@ class ZacharyTests(TestCase):
 
     @debugTest
     def test_TensorDerivatives(self):
-        a = TensorExpression.CoordinateVectorTerm(name='a')
-        fa = TensorExpression.ScalarFunctionTerm(a)
-        raise Exception(fa.dQ().dQ().simplify())
+        a = TensorExpression.CoordinateVectorTerm(name='a', array=np.array([1, 1]))
+        fa = TensorExpression.ScalarFunctionTerm(a,
+                                                 f={'function':np.sin, 'derivatives':lambda o:lambda a:((-1)**o)*(np.sin(a) if o%2==0 else np.cos(a))},
+                                                 name='sin')
+        raise Exception(fa.array)
 
     #endregion Tensor Derivatives
 

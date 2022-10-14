@@ -5,6 +5,7 @@ from ..JHTML import JHTML, DefaultOutputArea, JupyterAPIs
 
 __all__ = [
     "Var",
+    "DefaultVars",
     "InterfaceVars",
     "VariableSynchronizer",
     "VariableNamespace",
@@ -80,10 +81,11 @@ SettingChecker.checkers.append(FloatRangeChecker)
 
 class InterfaceVars:
     _cache_stack = []
-    def __init__(self, *vars):
+    def __init__(self, *vars, callbacks=None):
         vars = [Var(x) for x in vars]
         self._var_set = set(vars)
         self.var_list = vars
+        self.callbacks = set(callbacks) if callbacks is not None else set()
     @classmethod
     def active_vars(cls):
         if len(cls._cache_stack) > 0:
@@ -102,11 +104,29 @@ class InterfaceVars:
         if var not in self._var_set:
             self.var_list.append(var)
             self._var_set.add(var)
+            for c in self.callbacks:
+                c(self)
     def __enter__(self):
         self._cache_stack.append(self)
         return self.var_list
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._cache_stack.pop()
+    def __repr__(self):
+        return "{}({})".format(type(self).__name__, ", ".join(s.name for s in self._var_set))
+class DefaultVars:
+    _var_stack = []
+    def __init__(self, vars:InterfaceVars=None):
+        self.vars = InterfaceVars() if vars is None else vars
+    def __enter__(self):
+        self._var_stack.append(self)
+        self.vars.__enter__()
+        return self.vars
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._var_stack.pop()
+        self.vars.__exit__(exc_type, exc_val, exc_tb)
+    @classmethod
+    def resolve(cls):
+        return InterfaceVars() if len(cls._var_stack) == 0 else cls._var_stack[-1].vars
 class VariableNamespace:
     _namespace_cache = weakref.WeakValueDictionary()
     def __init__(self, name=None, dedupe=True):
