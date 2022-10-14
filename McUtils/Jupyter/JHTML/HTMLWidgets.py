@@ -1,5 +1,5 @@
 
-import weakref
+import weakref, io
 from .HTML import CSS, HTML
 from .WidgetTools import JupyterAPIs, DefaultOutputArea
 
@@ -390,6 +390,26 @@ class ActiveHTMLWrapper:
         return JupyterAPIs.get_display_api().display(wrapper.elem)
     def _ipython_display_(self):
         return self.display()
+    def get_mime_bundle(self):
+        w = HTMLWidgets.Div(self, cls='jhtml').elem
+        plaintext = repr(self)
+        if len(plaintext) > 110:
+            plaintext = plaintext[:110] + '…'
+        data = {
+            'text/plain': plaintext,
+        }
+        if w._view_name is not None:
+            # The 'application/vnd.jupyter.widget-view+json' mimetype has not been registered yet.
+            # See the registration process and naming convention at
+            # http://tools.ietf.org/html/rfc6838
+            # and the currently registered mimetypes at
+            # http://www.iana.org/assignments/media-types/media-types.xhtml.
+            data['application/vnd.jupyter.widget-view+json'] = {
+                'version_major': 2,
+                'version_minor': 0,
+                'model_id': w._model_id
+            }
+        return data
 
     @staticmethod
     def _handle_event(e, event_handlers, self):
@@ -1074,6 +1094,7 @@ class HTMLWidgets:
         def __init__(self, *elements, max_messages=None, autoclear=False, event_handlers=None, cls=None, **styles):
             if len(elements) == 1 and isinstance(elements, (list, tuple)):
                 elements = elements[0]
+            self._call_depth = 0
             self.autoclear = autoclear
             self.max_messages = max_messages
             self.output = JupyterAPIs.get_widgets_api().Output()
@@ -1082,21 +1103,62 @@ class HTMLWidgets:
         def print(self, *args, **kwargs):
             with self:
                 print(*args, **kwargs)
-        def show_output(self, *args):
+        def show_output(self, *args, **kwargs):
             with self:
-                JupyterAPIs().display_api.display(*args)
+                return JupyterAPIs().display_api.display(*args, **kwargs)
+
+        def _get_display_data(self, args):
+            outs = []
+            for output in args:
+                # Jupyter Widgets is broken so we need to patch...
+                if hasattr(output, 'savefig'):
+                    buf = io.BytesIO()
+                    output.savefig(buf, format='png')
+                    output = JupyterAPIs.get_display_api().Image(buf.getvalue())
+                if output is not None:
+                    if hasattr(output, 'get_mime_bundle'):
+                        outs.append({
+                            'output_type': 'display_data',
+                            'data': output.get_mime_bundle(),
+                            'metadata': {}
+                        })
+                    else:
+                        if isinstance(output, str):
+                            outs.append({
+                                'output_type': 'display_data',
+                                'data': {'text/plain':output},
+                                'metadata': {}
+                            })
+                        else:
+                            fmt = JupyterAPIs.get_shell_instance().display_formatter.format
+                            data, metadata = fmt(output)
+                            outs.append({
+                                'output_type': 'display_data',
+                                'data': data,
+                                'metadata': metadata
+                            })
+            return outs
+
+        def show_buffered(self, *args):
+            self.output.outputs += tuple(self._get_display_data(args))
+        def set_output(self, *args):
+            # with self.output:
+            self.output.outputs = tuple(self._get_display_data(args))
         def show_raw(self, *args):
             with self:
                 api = JupyterAPIs().display_api
                 api.publish_display_data(*({'text/plain': t} if isinstance(t, str) else t for t in args))
                 # api.display(*(api.TextDisplayObject(t) for t in args))
-        def clear(self):
-            self.output.clear_output()
+        def clear(self, wait=False):
+            self.output.clear_output(wait=wait)
+            self.output.outputs = ()
         def __enter__(self):
-            if self.autoclear:
-                self.output.clear_output()
+            if self._call_depth < 1 and self.autoclear:
+                self.clear(wait=True)
+            self._call_depth += 1
             return self.output.__enter__()
         def __exit__(self, exc_type, exc_val, exc_tb):
+            self._call_depth = max(self._call_depth-1, 0)
             if self.max_messages is not None:
                 n = self.max_messages
                 if len(self.output.outputs) > n:
@@ -1107,5 +1169,7 @@ class HTMLWidgets:
                     if msg.count('\n') > n:
                         msg = "\n".join(msg.splitlines()[-n:]) + "\n"
                         out_dict['text'] = msg
-                    self.output.outputs = (out_dict,)
+                    with self.output:
+                        self.output.outputs = (out_dict,)
+                        self.output._flush()
             return self.output.__exit__(exc_type, exc_val, exc_tb)

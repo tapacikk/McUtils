@@ -13,11 +13,16 @@ class JupyterAPIs:
     @classmethod
     def load_api(cls):
         try:
+            import IPython.core.interactiveshell as shell
+        except ImportError:
+            shell = None
+        try:
             import IPython.core.display as display
         except ImportError:
             display = None
         try:
             import ipywidgets as widgets
+            widgets.Output
         except ImportError:
             widgets = None
         try:
@@ -28,8 +33,16 @@ class JupyterAPIs:
         cls._apis = (
             display,
             widgets,
-            events
+            events,
+            shell
         )
+
+    @classmethod
+    def get_shell_api(cls):
+        return cls._apis[3]
+    @classmethod
+    def get_shell_instance(cls):
+        return cls.get_shell_api().InteractiveShell.instance()
 
     @classmethod
     def get_display_api(cls):
@@ -60,6 +73,15 @@ class JupyterAPIs:
     @property
     def events_api(self):
         return self.get_events_api()
+
+    # @classmethod
+    # def raw_html(cls, html):
+    #     return cls.get_widgets_api().HTML(html)
+    # @classmethod
+    # def raw_markdown(cls, markdown):
+    #     out = cls.get_widgets_api().Output()
+    #     out.append_display_data(cls.get_display_api().Markdown(markdown))
+    #     return out
 
 class DefaultOutputArea:
     _output_area_stack = []

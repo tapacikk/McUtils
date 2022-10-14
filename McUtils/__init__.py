@@ -32,5 +32,6 @@ __all__ = [
     "Scaffolding",
     "Parallelizers",
     "Jupyter",
-    "Misc"
+    "Misc",
+    "Docs"
 ]

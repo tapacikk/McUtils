@@ -2,12 +2,14 @@
 __all__ = [
     "App",
     "SettingsPane",
-    "Manipulator"
+    "Manipulator",
 ]
 
 import types, typing
+
+import numpy as np
+
 from ..JHTML import JHTML, DefaultOutputArea#, HTML, ActiveHTMLWrapper
-from ..JHTML.WidgetTools import JupyterAPIs
 from .Interfaces import *
 from .Controls import Control, FunctionDisplay
 from .Variables import WidgetControl, InterfaceVars, DefaultVars
@@ -47,23 +49,47 @@ __reload_hook__ = ['..JHTML', '.Interfaces', '.Controls', '.Variables']
 #         for v in self.vars:
 #             v.callbacks.add(self.update)
 #         return self.output
-class Manipulator(WidgetInterface):
-    def __init__(self, func, *controls):
+class Manipulator(Card):
+
+    theme = Card.merge_themes(
+        Card.theme,
+        {
+            'controls': {},
+            'output': {}
+        }
+    )
+    def __init__(self, func, *controls, debounce=None, autoclear=True, **etc):
+        super().__init__(**etc)
         self.controls = [self.canonicalize_control(c) for c in controls]
         vars = [c.var for c in self.controls]
-        self.output = FunctionDisplay(func, vars)
+        self.output = FunctionDisplay(func, vars, debounce=debounce, autoclear=autoclear, **self.theme.get('output', {}))
+        body = Flex(
+            [
+                self.output,
+                Flex(self.controls, direction='column', **self.theme.get('controls', {}))
+            ],
+            direction='column'
+        )
+        self.component_args['body'] = (body,)
     @classmethod
     def canonicalize_control(cls, settings):
         if isinstance(settings, (WidgetControl, Control)):
             return settings
         else:
-            return WidgetControl(settings[0], **settings[1])
-    def to_widget(self):
-        widgets = JupyterAPIs.get_widgets_api()
-        elems = [c.to_widget() for c in self.controls] + [self.output.to_widget()]
-        return widgets.VBox(elems)
+            var, settings = settings
+            if not isinstance(settings, dict):
+                if isinstance(settings, (list, tuple)) and isinstance(settings[0], (int, float, np.integer, np.floating)):
+                    settings = {'range':settings}
+                else:
+                    settings = {'value':settings}
+            # try:
+            control = Control.construct(var, **settings)
+            # except:
+            #     control = WidgetControl(var, **settings)
+
+            return control
     def initialize(self):
-        self.output.update()
+        self.output.update(None)
 
 class App(Component):
     """

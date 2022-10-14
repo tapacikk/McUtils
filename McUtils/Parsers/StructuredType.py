@@ -247,6 +247,7 @@ class DisappearingTypeClass(StructuredType):
         self.is_disappearing = True
         super().__init__(None)
 DisappearingType = DisappearingTypeClass() # redefinition but it should be a singleton anyway
+DisappearingType.__name__ = 'DisappearingType'
 
 
 """

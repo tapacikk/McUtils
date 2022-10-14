@@ -6,6 +6,7 @@ import sys, os, types, importlib, inspect
 __all__ = [
     "ModuleReloader",
     "NotebookExporter",
+    "patch_pinfo"
 ]
 
 __reload_hook__ = ['.NBExporter']
@@ -288,3 +289,32 @@ class NotebookExporter:
             md.write(body)
 
         return out_md
+
+# class DefaultExplorerInterface:
+#     def ...
+# class Explorer:
+#     """
+#     Provides a uniform interface for exploring what objects can do.
+#     Hooks into the Jupyter runtime to provide nice interfaces
+#     and has support for
+#     """
+#     def __init__(self, obj):
+#         self.obj = obj
+#
+#     def _ipython_display_(self):
+#         raise NotImplementedError("...")
+
+def patch_pinfo():
+    from IPython.core.oinspect import Inspector
+    from IPython.core.display import display
+
+    if not hasattr(Inspector, '_og_pinfo'):
+        Inspector._og_pinfo = Inspector.pinfo
+
+    def pinfo(self, obj, oname='', formatter=None, info=None, detail_level=0, enable_html_pager=True):
+        if hasattr(obj, '_ipython_pinfo_'):
+            display(obj._ipython_pinfo_())
+        else:
+            return Inspector._og_pinfo(self, obj, oname=oname, formatter=formatter, info=info, detail_level=detail_level, enable_html_pager=enable_html_pager)
+
+    Inspector.pinfo = pinfo

@@ -6,6 +6,7 @@ __all__ = [
     "ArgumentType",
     "ArrayType",
     "PointerType",
+    "PrimitiveType",
     "RealType",
     "IntType",
     "BoolType",

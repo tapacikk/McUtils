@@ -1,9 +1,9 @@
 
 import abc, weakref, uuid, traceback as tb
 import sys
-
 from .types import *
 
+from ...Misc import mixedmethod
 from ..JHTML import JHTML, DefaultOutputArea
 from ..JHTML.WidgetTools import JupyterAPIs, frozendict
 
@@ -17,14 +17,15 @@ class JHTMLConversionError(Exception):
         self.base_tb = tb
         self.message_template = message
         super().__init__(self.format_message())
-    def format_message(self):
+    def format_message(self, limit=10):
         widget_chain = "\n".join(("  >> " if i > 0 else "") + repr(w) for i,w in enumerate(self.widgets))
-        cause = "\n".join(tb.format_exception(None, self.base_cause, self.base_tb, limit=-3))
+        cause = "\n".join(tb.format_exception(None, self.base_cause, self.base_tb, limit=-limit))
         return self.message_template.format(widget_chain + "\n" + cause)
 
 __all__ = [
     "WidgetInterface",
     "Component",
+    "WrapperComponent",
     "Container",
     "MenuComponent",
     "ListGroup",
@@ -47,6 +48,7 @@ __all__ = [
     "Opener",
     "OpenerHeader",
     "OpenerBody",
+    "CardOpener",
     "Modal",
     "ModalHeader",
     "ModalBody",
@@ -91,6 +93,12 @@ class WidgetInterface(metaclass=abc.ABCMeta):
         self.initialize()
     def display(self):
         self._ipython_display_()
+    def get_mime_bundle(self):
+        return self.to_widget().get_mime_bundle()
+    @mixedmethod
+    def _ipython_pinfo_(self):
+        from ...Docs import jdoc
+        return jdoc(self)
 
 class Component(WidgetInterface):
     """
@@ -351,7 +359,7 @@ class WrapperComponent(Component):
             attrs = dict(attrs, **items[1])
             items = items[0]
         if (
-                isinstance(items, (str, int, float))
+                isinstance(items, (str, int, float, JupyterAPIs.get_widgets_api().Widget))
                 or hasattr(items, 'to_tree')
                 or hasattr(items, 'to_widget')
         ):
@@ -952,16 +960,19 @@ class Opener(MenuComponent):
         'header':{},
         'body':{}
     }
-    def __init__(self, items, base_name=None, **attrs):
+    def __init__(self, items, base_name=None, open=False, **attrs):
         if base_name is None:
             base_name = 'opener-' + short_uuid()
         self.base_name = base_name
+        self.default_open=open
         if isinstance(items, dict):
             items = items.items()
         super().__init__(items, id=self.base_name, **attrs)
-    def create_item(self, item, open=False, **kw):
+    def create_item(self, item, open=None, **kw):
         key, item = item
         item_id = self.base_name + "-" + short_uuid(3)
+        if open is None:
+            open = self.default_open
 
         ht = self.theme.get('header', {}).copy()
         ht['wrapper'] = self.merge_themes(
@@ -973,12 +984,25 @@ class Opener(MenuComponent):
             {'cls': ['collapsed'] if not open else []}
         )
 
+        bt = self.theme.get('body', {}).copy()
+        bt['wrapper'] = self.merge_themes(
+            bt.get('wrapper', {}),
+            {'cls': [] if not open else ['show']}
+        )
+
         header = OpenerHeader(key, base_name=item_id, theme=ht)
-        body = OpenerBody(item, base_name=item_id,
-                          theme=self.theme.get('body', {}),
-                          **kw
-                          )
+        body = OpenerBody(item, base_name=item_id, theme=bt, **kw)
         return super().create_item([header, body])
+class CardOpener(Opener):
+    theme = {
+        'wrapper': {'cls': ['opener', 'card', 'border-top-0']},
+        'item': {'cls': ['opener-item']},
+        "header": {
+            'wrapper': {'cls': ['card-header', 'p-0', 'border-bottom-0', 'border-top']},
+            'item': {'cls': ['text-dark', 'bg-transparent']}
+        },
+        "body": {'wrapper': {'cls': ['card-body']}}
+    }
 
 class Breadcrumb(MenuComponent):
     wrappers = {
@@ -1873,7 +1897,7 @@ class Flex(Layout):
         if alignment is not None:
             settings['align-items'] = alignment
         if justification is not None:
-            settings['justify-items'] = justification
+            settings['justify-content'] = justification
         if content_alignment is not None:
             settings['align-content'] = content_alignment
         return settings

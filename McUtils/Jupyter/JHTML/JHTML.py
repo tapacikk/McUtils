@@ -33,6 +33,14 @@ class JHTML:
     APIs = JupyterAPIs
     DefaultOutputArea = DefaultOutputArea
 
+    # RawHTML = JupyterAPIs.raw_html
+    @classmethod
+    def Markdown(cls, text):
+        import markdown
+        html_string = markdown.markdown(text, extensions=['fenced_code'])
+        # print(html_string)
+        return cls.parse(html_string, strict=False, strip=False)
+
     def __init__(self, context=None,
                  include_bootstrap=False,
                  expose_classes=False,
@@ -196,8 +204,8 @@ class JHTML:
         return base
 
     @classmethod
-    def parse(cls, src, event_handlers=None, dynamic=None, track_value=None, strict=True, **attrs):
-        base = HTML.parse(src, strict=strict, converter=cls.convert)
+    def parse(cls, src, event_handlers=None, dynamic=None, track_value=None, strict=True, fallback=None, **attrs):
+        base = HTML.parse(src, strict=strict, fallback=fallback, converter=cls.convert)
         _debugPrint = False if '_debugPrint' not in attrs else attrs['_debugPrint']
         trackInput = False if 'trackInput' not in attrs else attrs['trackInput']
         if isinstance(base, HTML.XMLElement) and (

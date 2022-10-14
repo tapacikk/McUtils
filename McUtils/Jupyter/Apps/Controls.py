@@ -1,5 +1,7 @@
 
 import abc, uuid, numpy as np
+import asyncio, traceback, sys
+
 from ..JHTML import JHTML
 
 from .Interfaces import Component, ListGroup, Dropdown, Progress
@@ -82,6 +84,8 @@ class Control(Component):
                 return cls.control_types['Slider']
             else:
                 raise NotImplementedError("can't infer control type for 'field_type' {}".format(field_type))
+        elif 'range' in ignored:
+            return cls.control_types['Slider']
         else:
             raise NotImplementedError("can't infer control type without 'field_type'")
 
@@ -129,7 +133,24 @@ class StringField(InputField):
 Control.control_types['StringField'] = StringField
 class Slider(InputField):
     base_cls = ['form-range']
-    def __init__(self, var, type='range', value=None, **attrs):
+    def __init__(self, var, type='range', value=None, range=None, **attrs):
+        if range is not None:
+            if value is None:
+                value = range[0]
+            min = attrs.get('min', None)
+            if min is None:
+                min = range[0]
+            max = attrs.get('max', None)
+            if max is None:
+                max = range[1]
+            step = attrs.get('step', None)
+            if step is None:
+                step = (max-min) / 25 if len(range) == 2 else range[2]
+            attrs.update(
+                min=min,
+                max=max,
+                step=step
+            )
         if value is not None and not isinstance(value, str):
             value = str(value)
         super().__init__(var, type=type, value=value, **attrs)
@@ -290,28 +311,26 @@ class VariableDisplay(Control):
         return self.var.value
     def set_value(self):
         val = self.var.value
-        if val is not None:
-            if isinstance(val, str):
-                if val == "":
-                    self.out.clear()
-                else:
-                    self.out.print(val)
-            else:
-                self.out.show_output(val)
-        else:
+        if val is None or isinstance(val, str) and val == "":
             self.out.clear()
+        else:
+            self.out.set_output(val)
     def update(self, e):
         self.set_value()
     def to_jhtml(self):
-        self.set_value()
+        with self.out:
+            self.set_value()
         return self.out
 class FunctionDisplay(Component):
-    def __init__(self, fn, vars, pane=None, autoclear=True, **attrs):
+    def __init__(self, fn, vars, pane=None, autoclear=True, debounce=None, **attrs):
         super().__init__()
         if pane is None:
             pane = JHTML.OutputArea(autoclear=autoclear, **attrs)
         self.out = pane
         self.fn = fn
+        self.debounce = debounce
+        self._delayed_executor = None
+        # self._executions = []
         self.vars = InterfaceVars(*vars) if not isinstance(vars, InterfaceVars) else vars
     def link_vars(self, *var):
         self.update = self.update  # weakref patch
@@ -329,15 +348,34 @@ class FunctionDisplay(Component):
         if self._widget_cache is None:
             raise ValueError("not initialized")
         return self._widget_cache.to_widget().observe(fn, names=names)
-    def update(self, e):
-        with self.out:
-            res = self.fn(event=e, pane=self, **self.vars.dict)
-            if isinstance(res, str):
-                self.out.print(res)
-            elif res is not None:
-                self.out.show_output(res)
+
+    # directly from the jupyter docs
+    async def _delayed_update(self, event):
+        await asyncio.sleep(self.debounce)
+        return self._update(event)
+    def update(self, event):
+        try:
+            if self.debounce is not None:
+                if self._delayed_executor is not None:
+                    self._delayed_executor.cancel()
+                self._delayed_executor = asyncio.ensure_future(self._delayed_update(event))
+            else:
+                self._update(event)
+        except:
+            with self.out:
+                _, _, tb = sys.exc_info()
+                traceback.print_tb(tb)
+
+    def _update(self, e):
+        res = self.fn(event=e, pane=self, **self.vars.dict)
+        self._last_res = res
+        if res is not None:
+            self.out.set_output(res)
+            self._delayed_executor = None
+
     def to_jhtml(self):
-        self.update(None)
+        with self.out:
+            self._update(None)
         return self.out
 
 class ProgressBar(Control):
