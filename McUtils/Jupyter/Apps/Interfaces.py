@@ -30,6 +30,7 @@ __all__ = [
     "MenuComponent",
     "ListGroup",
     "Button",
+    "LinkButton",
     "Spinner",
     "Progress",
     "ButtonGroup",
@@ -559,6 +560,7 @@ class Button(WrapperComponent):
             event_handlers['click'] = action
         else:
             event_handlers['click'] = self._eval
+        self._eval_lock = None
         super().__init__(
             body,
             event_handlers=event_handlers,
@@ -579,17 +581,24 @@ class Button(WrapperComponent):
             if self._widget_cache is not None:
                 self._widget_cache.add_event(click=self._eval)
     def _eval(self, *args):
-        if self.action is not None:
+        if self.action is not None and self._eval_lock is None:
+            self._eval_lock = True
             w = self.to_widget()
             try:
                 pane = w.debug_pane
             except AttributeError:
                 pane = None
-            if pane is None:
-                self.action(*args)
-            else:
-                with pane:
+            try:
+                if pane is None:
                     self.action(*args)
+                else:
+                    with pane:
+                        self.action(*args)
+            finally:
+                self._eval_lock = None
+class LinkButton(Button):
+    wrappers = dict(button=JHTML.Anchor)
+    theme = dict(button={'cls':[]})
 
 class Spinner(WrapperComponent):
     wrappers = {'spinner':JHTML.Div}

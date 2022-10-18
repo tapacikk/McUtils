@@ -258,12 +258,46 @@ class ObjectHandler(metaclass=abc.ABCMeta):
             # not totally sure this will work...
             modspec = self.obj.__name__.rsplit(".", 1)[0]
         else:
-            modspec = self.obj.__module__
+            try:
+                modspec = self.obj.__module__
+            except AttributeError:
+                modspec = type(self.obj).__module__
 
         if modspec == "":
             return None
 
         return self.walker.resolve_object(modspec)
+
+    def resolve_relative_obj(self, spec:str):
+
+        if '.' == spec[0]:
+            n = 0
+            while spec[0] == ".":
+                n += 1
+                spec = spec[1:]
+            if isinstance(self.obj, types.ModuleType):
+                # not totally sure this will work...
+                modspec = self.obj.__name__
+            else:
+                try:
+                    modspec = self.obj.__module__
+                except AttributeError:
+                    modspec = type(self.obj).__module__
+            modspec = modspec.rsplit(".", n)[0]
+            o = self.walker.resolve_object(modspec+"."+spec)
+        else:
+            bits = spec.split(".")
+            try:
+                o = getattr(self.obj, bits[0])
+            except AttributeError:
+                try:
+                    modspec = self.obj.__module__
+                except AttributeError:
+                    modspec = type(self.obj).__module__
+                o = getattr(self.walker.resolve_object(modspec), bits[0])
+            for s in bits[1:]:
+                o = getattr(o, s)
+        return o
 
     @property
     def children(self):

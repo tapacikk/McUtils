@@ -380,7 +380,8 @@ class HTML:
 
     keyword_replacements = {
         'cls': 'class',
-        'use_for': 'for'
+        'use_for': 'for',
+        'custom_type': 'is'
     }
     @classmethod
     def clean_key(cls, k):

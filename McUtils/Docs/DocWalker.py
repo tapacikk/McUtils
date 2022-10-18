@@ -2,7 +2,10 @@
 Provides a class that will walk through a set of objects & their children, as loaded into memory, and will generate Markdown for each.
 The actual object Markdown is written by the things in the `Writers` module.
 """
-import os, types, collections, inspect, importlib, re
+import os, types, collections, inspect, importlib, re, uuid
+import subprocess
+import sys
+
 from ..Misc.TemplateEngine import *
 from ..Misc import mixedmethod
 from .ExamplesParser import ExamplesParser
@@ -118,21 +121,33 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
                 'function.md':self.function_browser,
                 'method.md':self.method_browser,
             }
+        self.id = str(uuid.uuid4())
+        self.pane = None
         super().__init__(templates,
                          ignore_missing=ignore_missing,
                          formatter_class=formatter_class,
                          ignore_paths=ignore_paths
                          )
-    @classmethod
-    def clean_params(cls, params):
+
+    def clean_params(self, params):
         return {
             k: v for k, v in
             params.items()
             if not (v is None or isinstance(v, str) and len(v) == 0)
         }
+    def prep_pars(self, writer, pars):
+        from ..Jupyter import JHTML
 
-    @classmethod
-    def format_parameters_table(cls, parameters):
+        return {
+            JHTML.SubsubsubHeading(k):
+                (
+                    JHTML.Markdown(v) if k in {'Details', 'Examples'}
+                    else self.format_related_links(writer, v) if k in {'Related'}
+                    else v
+                )
+                for k, v in pars.items()
+        }
+    def format_parameters_table(self, parameters):
         from ..Jupyter import JHTML, Flex
 
         return Flex(
@@ -148,9 +163,7 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
             ],
             direction='column'
         )
-
-    @classmethod
-    def format_props_table(cls, props):
+    def format_props_table(self, writer, props):
         from ..Jupyter import JHTML, Flex
 
         return Flex(
@@ -161,8 +174,30 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
             direction='column'
         )
 
-    @classmethod
-    def index_browser(cls,
+    def format_related_links(self, writer, related):
+        from ..Jupyter import JHTML, LinkButton, Var
+
+        _cache = set()
+        def _get_docs(x):
+            try:
+                o = writer.resolve_relative_obj(x.strip())
+                if o not in _cache:
+                    _cache.add(o) # debounce
+                return jdoc(o, engine=self)
+            except Exception as e:
+                import traceback
+                return "\n".join(traceback.format_tb(sys.exc_info()[2])+[str(e)])
+
+        return JHTML.List([
+            JHTML.Li(
+                LinkButton(
+                    x.strip(),
+                    lambda *_,x=x,**__:Var('current_pane', namespace=self.id).set_value(_get_docs(x))
+                )
+            ) for x in related.split(",")
+        ])
+
+    def index_browser(self,
                       index_files=None,
                       details=None,
                       related=None,
@@ -171,22 +206,26 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
                       _self=None,
                       **kw
                       ):
-        from ..Jupyter import JHTML, Flex, Opener
+        from ..Jupyter import JHTML, Flex, Opener, VariableDisplay
         body = [
                 JHTML.Markdown(description),
                 *index_files
             ]
-        params = cls.clean_params({
+        params = self.clean_params({
                 'Details': details,
                 'Examples': examples,
                 'Related': related
             })
         if len(params) > 0:
             body.append(Opener(params))
-        return Flex(body, direction='column')
+        disp = Flex(body, direction='column')
+        if self.pane is None:
+            self.pane = VariableDisplay('current_pane', value=disp, namespace=self.id)
+            return self.pane
+        else:
+            return disp
 
-    @classmethod
-    def module_browser(cls,
+    def module_browser(self,
                        members=None,
                        name=None,
                        id=None,
@@ -199,10 +238,12 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
                        _self=None,
                        **kw
                        ):
-        from ..Jupyter import JHTML, Flex, Opener, CardOpener, Button, VariableDisplay, Var
+        from ..Jupyter import JHTML, Flex, Opener, CardOpener, Button, LinkButton, VariableDisplay, Var
 
         body = [
-            JHTML.SubsubHeading(JHTML.Code("module"), " ", name),
+            JHTML.SubsubHeading(JHTML.Code("module"), " ",
+                                LinkButton(name, lambda *_,**__:subprocess.call(['open', _self.obj.__file__]))
+                                ),
             JHTML.Markdown(description),
             CardOpener({
                 JHTML.Bold(k.split(".")[-1]):
@@ -214,9 +255,8 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
                             Var(k, namespace=id),
                             value=Button("Click to load...",
                                          lambda *_, k=k, **__: Var(k, namespace=id).set_value(
-                                             jdoc(getattr(_self.obj, k.split(".")[-1]))
-                                         )
-                                         )
+                                             jdoc(getattr(_self.obj, k.split(".")[-1]), engine=self)
+                                         ))
                         )
                     })['output']
                 for k in members.keys()
@@ -226,7 +266,7 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
         # print(
         #     [_self.tree[k] for k in members.keys()]
         # )
-        params = cls.clean_params({
+        params = self.clean_params({
             # 'ID': id,
             JHTML.SubsubsubHeading('Details'): details,
             JHTML.SubsubsubHeading('Examples'): examples,
@@ -246,8 +286,7 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
     #         JHTML.Code()
     #     ])
 
-    @classmethod
-    def class_browser(cls,
+    def class_browser(self,
                       id=None,
                       name=None,
                       related=None,
@@ -260,35 +299,37 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
                       examples=None,
                       tests=None,
                       details=None,
+                      _self=None,
                       **_
                       ):
-        from ..Jupyter import JHTML, Flex, Opener
+        from ..Jupyter import JHTML, Flex, Opener, LinkButton
 
         body = [
-                JHTML.SubsubHeading(JHTML.Code("class"), " ", name),
-                JHTML.Markdown(description) if description is not None and len(description) > 0 else ""
+            JHTML.SubsubHeading(JHTML.Code("class"), " ",
+                                LinkButton(name, lambda *_, **__: subprocess.call(['open', sys.modules[_self.obj.__module__].__file__]))
+                                ),
+            JHTML.Markdown(description) if description is not None and len(description) > 0 else ""
         ]
         if len(props) > 0:
-            body.append(cls.format_props_table(props))
+            body.append(self.format_props_table(_self, props))
         if len(parameters) > 0:
-            body.append(cls.format_parameters_table(parameters))
+            body.append(self.format_parameters_table(parameters))
         body.extend(m.handle() for m in methods)
 
-        sections = {
-            JHTML.SubsubsubHeading(k): JHTML.Markdown(v) for k, v in
-            cls.clean_params({
+        sections = self.prep_pars(
+            _self,
+            self.clean_params({
                 # 'ID': id,
                 'Details': details,
                 'Examples': examples,
                 'Related': related,
-            }).items()
-        }
+            })
+        )
         if len(sections) > 0:
             body.append(Opener(sections))
         return Flex(body, direction='column')
 
-    @classmethod
-    def method_browser(cls,
+    def method_browser(self,
                        id=None,
                        name=None,
                        decorator=None,
@@ -320,10 +361,10 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
         body = Flex(
             [
                 JHTML.Markdown(description) if description is not None and len(description.strip()) > 0 else "",
-                cls.format_parameters_table(parameters),
+                self.format_parameters_table(parameters),
                 Opener({
                     JHTML.SubsubsubHeading(k): JHTML.Markdown(v) for k, v in
-                    cls.clean_params({
+                    self.clean_params({
                         # 'ID': id,
                         'Details': details,
                         'Examples': examples
@@ -340,24 +381,22 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
             'body':{'wrapper':{'cls':['ps-3']}}
         })
 
-
-    @classmethod
-    def object_browser(cls,
-                      id=None,
-                      name=None,
-                      related=None,
-                      out_file=None,
-                      lineno=None,
-                      parameters=None,
-                      props=None,
-                      description=None,
-                      methods=None,
-                      examples=None,
-                      tests=None,
-                      details=None,
+    def object_browser(self,
+                       id=None,
+                       name=None,
+                       related=None,
+                       out_file=None,
+                       lineno=None,
+                       parameters=None,
+                       props=None,
+                       description=None,
+                       methods=None,
+                       examples=None,
+                       tests=None,
+                       details=None,
                        _self=None,
-                      **_
-                      ):
+                       **_
+                       ):
         from ..Jupyter import JHTML, Flex, Opener
 
         return Flex(
@@ -367,7 +406,7 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
                 str(parameters),
                 Opener({
                     JHTML.SubsubsubHeading(k): JHTML.Markdown(v) for k, v in
-                    cls.clean_params({
+                    self.clean_params({
                         # 'ID': id,
                         'Details': details,
                         'Examples': examples
@@ -377,23 +416,22 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
             direction='column'
         )
 
-    @classmethod
-    def function_browser(cls,
-                       id=None,
-                       name=None,
-                       decorator=None,
-                       signature=None,
-                       related=None,
-                       out_file=None,
-                       lineno=None,
-                       parameters=None,
-                       props=None,
-                       description=None,
-                       examples=None,
-                       tests=None,
-                       details=None,
-                       **_
-                       ):
+    def function_browser(self,
+                         id=None,
+                         name=None,
+                         decorator=None,
+                         signature=None,
+                         related=None,
+                         out_file=None,
+                         lineno=None,
+                         parameters=None,
+                         props=None,
+                         description=None,
+                         examples=None,
+                         tests=None,
+                         details=None,
+                         **_
+                         ):
         from ..Jupyter import JHTML, Flex, Opener
 
         return Flex(
@@ -409,14 +447,14 @@ class InteractiveTemplateEngine(TemplateInterfaceEngine):
                     )),
                     JHTML.Div(
                         JHTML.Markdown(description) if description is not None and len(description.strip()) > 0 else "",
-                        cls.format_parameters_table(parameters),
+                        self.format_parameters_table(parameters),
                         cls='ps-3'
                     ),
                     cls='ps-4'
                 ),
                 Opener({
                     JHTML.SubsubsubHeading(k): JHTML.Markdown(v) for k, v in
-                    cls.clean_params({
+                    self.clean_params({
                         # 'ID': id,
                         'Details': details,
                         'Examples': examples
@@ -602,7 +640,11 @@ class DocObjectTemplateHandler(DocTemplateHandler):
             tests = TestExamplesFormatter(tests).get_template_parameters()
         return tests
 class ModuleWriter(DocTemplateHandler):
-    """A writer targeted to a module object. Just needs to write the Module metadata."""
+    """
+    A writer targeted to a module object. Just needs to write the Module metadata.
+
+    :related: DocWalker
+    """
     template = 'module.md'
     def __init__(self, obj, **kwargs):
         if isinstance(obj, str):
@@ -652,7 +694,11 @@ class ModuleWriter(DocTemplateHandler):
         return (mod.__all__ if hasattr(mod, '__all__') else [])
 
 class ClassWriter(DocObjectTemplateHandler):
-    """A writer targeted to a class"""
+    """
+    A writer targeted to a class
+
+    :related: DocWalker
+    """
 
     template = 'class.md'
     def load_methods(self, function_writer=None):
@@ -735,6 +781,9 @@ class ClassWriter(DocObjectTemplateHandler):
 class FunctionWriter(DocObjectTemplateHandler):
     """
     Writer to dump functions to file
+
+    :related: DocWalker
+
     """
 
     template = 'function.md'
@@ -814,6 +863,9 @@ class ObjectWriter(DocObjectTemplateHandler):
     Writes general objects to file.
     Basically a fallback to support singletons and things
     of that nature.
+
+    :related: DocWalker
+
     """
 
     template = 'object.md'
@@ -870,6 +922,9 @@ class IndexWriter(DocTemplateHandler):
     Writes an index file with all of the
     written documentation files.
     Needs some work to provide more useful info by default.
+
+    :related: DocWalker
+
     """
     template = 'index.md'
 
@@ -993,7 +1048,7 @@ class DocWalker(TemplateWalker):
         return jdoc(cls)
 
 
-def jdoc(obj, max_depth=1):
+def jdoc(obj, max_depth=1, engine=None):
     """
     provides documentation in a Jupyter-friendly environment
 
@@ -1032,5 +1087,6 @@ def jdoc(obj, max_depth=1):
 
     """
     return DocWalker(
-        description=""
+        description="",
+        engine=engine
     ).write([obj], max_depth=max_depth)
