@@ -155,8 +155,25 @@ class ActiveHTMLModel extends base_1.DOMWidgetModel {
         let handlers = this.get('jsHandlers');
         let debug = this.get('_debugPrint');
         let _ihandlers = this.get('_ihandlers');
+        if (handlers.hasOwnProperty("src") &&
+            (!_ihandlers.hasOwnProperty("src") || _ihandlers["src"] != handlers["src"])) {
+            _ihandlers["src"] = handlers["src"];
+            if (debug) {
+                console.log('loading API from source', handlers["src"]);
+            }
+            // Ugly TypeScript hack to keep the dynamic import semantics we need
+            // for reliable loading
+            let imp = eval("import(\"" + handlers["src"] + "\")");
+            imp.then((mod) => {
+                for (let m in mod) {
+                    if (mod[m] instanceof Function) {
+                        _ihandlers[m] = [null, mod[m]];
+                    }
+                }
+            });
+        }
         for (let h in handlers) {
-            if (handlers.hasOwnProperty(h)) {
+            if (h != "src" && handlers.hasOwnProperty(h)) {
                 let hash = this._stringHash(handlers[h]);
                 if ((!_ihandlers.hasOwnProperty(h)) ||
                     (_ihandlers[h][0] !== hash)) {
@@ -167,6 +184,7 @@ class ActiveHTMLModel extends base_1.DOMWidgetModel {
                 }
             }
         }
+        return Promise.resolve();
     }
     _handle_comm_msg(msg) {
         const data = msg.content.data;
@@ -205,7 +223,7 @@ class ActiveHTMLModel extends base_1.DOMWidgetModel {
             }
         }
         if (fn !== null) {
-            fn.call(this, event, this, ActiveHTMLView.handlerContext);
+            return fn.call(this, event, this, ActiveHTMLView.handlerContext);
         }
         else {
             throw new Error("couldn't find handler " + method);
@@ -1017,4 +1035,4 @@ module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","descr
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.950f05f0927eac55615b.js.map
+//# sourceMappingURL=lib_widget_js.59ff3a40738b73735aca.js.map

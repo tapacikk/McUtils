@@ -24,6 +24,7 @@ class ActiveHTMLWrapper:
                  event_handlers=None,
                  javascript_handles=None,
                  onevents=None,
+                 data=None,
                  debug_pane=None,
                  track_value=None,
                  continuous_update=None,
@@ -173,6 +174,9 @@ class ActiveHTMLWrapper:
 
         if len(attributes) > 0:
             attrs['elementAttributes'] = attributes
+
+        if data is not None:
+            attrs['exportData'] = data
 
         self.elem = HTMLElement(**attrs)
         self.link(self.elem)
@@ -1047,10 +1051,10 @@ class HTMLWidgets:
         return tag_class.from_HTML(html, event_handlers=event_handlers, debug_pane=debug_pane, **props)
 
     class JavascriptAPI(ActiveHTMLWrapper):
-        def __init__(self, safety_wrap=True, **javascript_handles):
+        def __init__(self, safety_wrap=True, _debugPrint=False, **javascript_handles):
             if safety_wrap:
-                javascript_handles = {k:self.safety_wrap(v) for k,v in javascript_handles.items()}
-            super().__init__(javascript_handles=javascript_handles)
+                javascript_handles = {k:self.safety_wrap(v) if k!="src" else v for k,v in javascript_handles.items()}
+            super().__init__(javascript_handles=javascript_handles, _debugPrint=_debugPrint)
         safety_template="try{{\n{body}\n}} catch(error) {{ console.log(error); alert('An error occurred: ' + error.toString() + '; check console for details') }}"
         def safety_wrap(self, v):
             return self.safety_template.format(body=v)
