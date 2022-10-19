@@ -60,6 +60,11 @@ class ActiveHTMLWrapper:
                 self._handle_api = javascript_handles
                 attrs['jsAPI'] = javascript_handles.elem
             else:
+                if javascript_handles is not None and 'api' in javascript_handles:
+                    javascript_handles = javascript_handles.copy()
+                    self._handle_api = javascript_handles['api']
+                    attrs['jsAPI'] = javascript_handles['api'].elem
+                    del javascript_handles['api']
                 attrs['jsHandlers'] = javascript_handles
 
         if self.base is not None:
@@ -1053,7 +1058,7 @@ class HTMLWidgets:
     class JavascriptAPI(ActiveHTMLWrapper):
         def __init__(self, safety_wrap=True, _debugPrint=False, **javascript_handles):
             if safety_wrap:
-                javascript_handles = {k:self.safety_wrap(v) if k!="src" else v for k,v in javascript_handles.items()}
+                javascript_handles = {k:self.safety_wrap(v) if k not in {"api", "src"} else v for k,v in javascript_handles.items()}
             super().__init__(javascript_handles=javascript_handles, _debugPrint=_debugPrint)
         safety_template="try{{\n{body}\n}} catch(error) {{ console.log(error); alert('An error occurred: ' + error.toString() + '; check console for details') }}"
         def safety_wrap(self, v):
