@@ -112,15 +112,32 @@ class LayoutManagerWidget extends widgets_1.Widget {
     }
 }
 class ActiveHTMLModel extends base_1.DOMWidgetModel {
-    // _ihandlers: Record<string, [number, any]>;
-    // constructor() {
-    //     super();
-    // }
+    constructor() {
+        super(...arguments);
+        // _ihandlers: Record<string, [number, any]>;
+        // constructor() {
+        //     super();
+        // }
+        this._is_ready = false;
+        this._apiMod = null;
+        this._apiLoader = null;
+    }
     initialize(attributes, options) {
         super.initialize(attributes, options);
         // this._ihandlers= {};
-        this._updateHandlers();
-        this.on('change:jsHandlers', this._updateHandlers, this);
+        this.ready();
+    }
+    ready() {
+        if (!this._is_ready) {
+            return this._updateHandlers().then(() => {
+                this.on('change:jsHandlers', this._updateHandlers, this);
+                this._is_ready = true;
+                return this;
+            });
+        }
+        else {
+            return Promise.resolve(this);
+        }
     }
     defaults() {
         return Object.assign(Object.assign({}, super.defaults()), { _model_name: ActiveHTMLModel.model_name, _model_module: ActiveHTMLModel.model_module, _model_module_version: ActiveHTMLModel.model_module_version, _view_name: ActiveHTMLModel.view_name, _view_module: ActiveHTMLModel.view_module, _view_module_version: ActiveHTMLModel.view_module_version, tagName: 'div', children: [], classList: [], innerHTML: "", textContent: "", _bodyType: "", _debugPrint: false, styleDict: {}, elementAttributes: {}, id: "", value: "", trackInput: false, continuousUpdate: true, eventPropertiesDict: {}, defaultEventProperties: [
@@ -151,12 +168,11 @@ class ActiveHTMLModel extends base_1.DOMWidgetModel {
         }
         return hash;
     }
-    _updateHandlers() {
-        let handlers = this.get('jsHandlers');
-        let debug = this.get('_debugPrint');
+    _setHandlers(handlers) {
         let _ihandlers = this.get('_ihandlers');
+        let debug = this.get('_debugPrint');
         for (let h in handlers) {
-            if (handlers.hasOwnProperty(h)) {
+            if (h != "src" && handlers.hasOwnProperty(h)) {
                 let hash = this._stringHash(handlers[h]);
                 if ((!_ihandlers.hasOwnProperty(h)) ||
                     (_ihandlers[h][0] !== hash)) {
@@ -166,6 +182,47 @@ class ActiveHTMLModel extends base_1.DOMWidgetModel {
                     _ihandlers[h] = [hash, this._defineHandler(h, handlers[h])];
                 }
             }
+        }
+    }
+    static _needsAPILoad(curMod, handlers, _ihandlers) {
+        return (handlers.hasOwnProperty("src") &&
+            curMod !== handlers["src"] &&
+            (!_ihandlers.hasOwnProperty("src") || _ihandlers["src"] != handlers["src"]));
+    }
+    _updateHandlers() {
+        let handlers = this.get('jsHandlers');
+        let debug = this.get('_debugPrint');
+        let _ihandlers = this.get('_ihandlers');
+        let imp = null;
+        if (ActiveHTMLModel._needsAPILoad(this._apiMod, handlers, _ihandlers)) {
+            if (debug) {
+                console.log('loading API from source', handlers["src"]);
+            }
+            // Ugly TypeScript hack to keep the dynamic import semantics we need
+            // for reliable loading
+            imp = eval("import(\"" + handlers["src"] + "\")");
+        }
+        if (imp !== null) {
+            this._apiLoader = imp.then((mod) => {
+                for (let m in mod) {
+                    if (mod[m] instanceof Function) {
+                        _ihandlers[m] = [null, mod[m]];
+                    }
+                }
+                this._apiMod = handlers["src"];
+                _ihandlers["src"] = handlers["src"];
+            }).then(() => {
+                this._setHandlers(handlers);
+                this._apiLoader = null;
+                return _ihandlers;
+            });
+        }
+        if (this._apiLoader !== null && typeof this._apiLoader !== "undefined") {
+            return this._apiLoader;
+        }
+        else {
+            this._setHandlers(handlers);
+            return Promise.resolve(_ihandlers);
         }
     }
     _handle_comm_msg(msg) {
@@ -190,25 +247,40 @@ class ActiveHTMLModel extends base_1.DOMWidgetModel {
         return Object.assign({ target: this, type: name, stopPropagation: function () { } }, ops); // a hack only so we can use the same interface for custom events
     }
     callHandler(method, event) {
-        let handlers = this.get('_ihandlers');
+        return ActiveHTMLModel.callModelHandler(method, event, this, this);
+    }
+    static callModelHandler(method, event, model, target) {
+        let handlers = model.get('_ihandlers');
         let fn = null;
         if (handlers.hasOwnProperty(method)) {
             fn = handlers[method][1];
-        }
-        else {
-            let api = this.get('jsAPI');
-            if (api !== null) {
-                handlers = api.get("_ihandlers");
-                if (handlers.hasOwnProperty(method)) {
-                    fn = handlers[method][1];
-                }
+            if (fn !== null) {
+                let val = fn.call(target, event, target, ActiveHTMLView.handlerContext);
+                return Promise.resolve(val);
+            }
+            else {
+                throw new Error("handler " + method + " is null");
             }
         }
-        if (fn !== null) {
-            fn.call(this, event, this, ActiveHTMLView.handlerContext);
-        }
         else {
-            throw new Error("couldn't find handler " + method);
+            let api = model.get('jsAPI');
+            if (api !== null) {
+                return api.ready().then((api) => {
+                    handlers = api.get('_ihandlers');
+                    if (handlers.hasOwnProperty(method)) {
+                        fn = handlers[method][1];
+                    }
+                    if (fn !== null) {
+                        return fn.call(target, event, target, ActiveHTMLView.handlerContext);
+                    }
+                    else {
+                        throw new Error("couldn't find API method " + method);
+                    }
+                });
+            }
+            else {
+                throw new Error("couldn't find handler or API method " + method);
+            }
         }
     }
 }
@@ -695,7 +767,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         });
     }
     updateEvents() {
-        return this.setEvents().then(() => this.removeEvents);
+        return this.setEvents().then(() => this.removeEvents());
     }
     _registerOnHandler(key, listeners) {
         if (!this._currentOnHandlers.hasOwnProperty(key)) {
@@ -743,7 +815,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         });
     }
     updateOnHandlers() {
-        return this.setOnHandlers().then(() => this.removeOnHandlers);
+        return this.setOnHandlers().then(() => this.removeOnHandlers());
     }
     _calloninit() {
         if (!this._initted) {
@@ -921,26 +993,7 @@ class ActiveHTMLView extends base_1.DOMWidgetView {
         }
     }
     callHandler(method, event) {
-        let handlers = this.model.get('_ihandlers');
-        let fn = null;
-        if (handlers.hasOwnProperty(method)) {
-            fn = handlers[method][1];
-        }
-        else {
-            let api = this.model.get('jsAPI');
-            if (api !== null) {
-                handlers = api.get("_ihandlers");
-                if (handlers.hasOwnProperty(method)) {
-                    fn = handlers[method][1];
-                }
-            }
-        }
-        if (fn !== null) {
-            fn.call(this, event, this, ActiveHTMLView.handlerContext);
-        }
-        else {
-            throw new Error("couldn't find handler " + method);
-        }
+        return ActiveHTMLModel.callModelHandler(method, event, this.model, this);
     }
     dummyEvent(name, ops = {}) {
         return Object.assign({ target: this.el, type: name, stopPropagation: function () { } }, ops); // a hack only so we can use the same interface for custom events
@@ -1017,4 +1070,4 @@ module.exports = JSON.parse('{"name":"ActiveHTMLWidget","version":"0.1.0","descr
 /***/ })
 
 }]);
-//# sourceMappingURL=lib_widget_js.950f05f0927eac55615b.js.map
+//# sourceMappingURL=lib_widget_js.211a0992bac58d84b14c.js.map

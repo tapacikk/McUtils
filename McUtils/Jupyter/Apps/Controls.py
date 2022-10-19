@@ -30,8 +30,8 @@ __reload_hook__ = ['.Interfaces', '.Variables']
 #region JHTML Controls
 class Control(Component):
     layout_orientation = 'row'
-    def __init__(self, var):
-        self.var = Var(var)
+    def __init__(self, var, namespace=None):
+        self.var = Var(var, namespace=namespace)
         self._widget_cache = None
         super().__init__()
     def to_widget(self, parent=None):
@@ -300,8 +300,8 @@ class Selector(ChangeTracker):
         return field
 Control.control_types['Selector'] = Selector
 class VariableDisplay(Control):
-    def __init__(self, var, value=None, pane=None, autoclear=True, **attrs):
-        super().__init__(var)
+    def __init__(self, var, value=None, pane=None, autoclear=True, namespace=None, **attrs):
+        super().__init__(var, namespace=namespace)
         if pane is None:
             pane = JHTML.OutputArea(autoclear=autoclear, **attrs)
         self.out = pane

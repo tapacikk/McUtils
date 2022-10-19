@@ -1,5 +1,5 @@
 
-import weakref, io
+import weakref, io, asyncio, threading, time
 from .HTML import CSS, HTML
 from .WidgetTools import JupyterAPIs, DefaultOutputArea
 
@@ -24,6 +24,7 @@ class ActiveHTMLWrapper:
                  event_handlers=None,
                  javascript_handles=None,
                  onevents=None,
+                 data=None,
                  debug_pane=None,
                  track_value=None,
                  continuous_update=None,
@@ -55,10 +56,15 @@ class ActiveHTMLWrapper:
 
         self._handle_api = None
         if javascript_handles is not None:
-            if isinstance(javascript_handles, ActiveHTMLWrapper):
+            if hasattr(javascript_handles, 'javascript_handles'):
                 self._handle_api = javascript_handles
                 attrs['jsAPI'] = javascript_handles.elem
             else:
+                if javascript_handles is not None and 'api' in javascript_handles:
+                    javascript_handles = javascript_handles.copy()
+                    self._handle_api = javascript_handles['api']
+                    attrs['jsAPI'] = javascript_handles['api'].elem
+                    del javascript_handles['api']
                 attrs['jsHandlers'] = javascript_handles
 
         if self.base is not None:
@@ -173,6 +179,9 @@ class ActiveHTMLWrapper:
 
         if len(attributes) > 0:
             attrs['elementAttributes'] = attributes
+
+        if data is not None:
+            attrs['exportData'] = data
 
         self.elem = HTMLElement(**attrs)
         self.link(self.elem)
@@ -757,6 +766,13 @@ class ActiveHTMLWrapper:
         self.elem.send_state('styleDict')
 
     @property
+    def data(self):
+        return self.elem.exportData
+    @data.setter
+    def data(self, d:dict):
+        self.elem.exportData = d
+
+    @property
     def event_handlers(self):
         return {
             k: self._event_handlers[k] if self._event_handlers[k] is not None else v
@@ -780,6 +796,10 @@ class ActiveHTMLWrapper:
                     v['notify'] = True
                 else:
                     self._event_handlers[c] = None
+                if len(v) > 0:
+                    ed[c] = v
+                else:
+                    ed[c] = None
             elif isinstance(v, str):
                 ed[c] = v
                 self._event_handlers[c] = None
@@ -805,8 +825,100 @@ class ActiveHTMLWrapper:
         if len(self.elem.eventPropertiesDict) == 0:
             self.elem.reset_callbacks()
 
-    def call(self, method, buffers=None, **content):
-        return self.elem.call(method, content=content, buffers=buffers)
+    _message_waiting_semaphores = {}
+    @staticmethod
+    def _on_msg(msg, callback, current_event):
+        def on_msg(e, self, msg=msg, callback=callback, current_event=current_event):
+            res = None
+            if callback is not None:
+                res = callback(e, self)
+            if current_event is not None:
+                current_event()
+            self._message_waiting_semaphores[msg] = [False, res]
+        return on_msg
+    async def _wait_for_message(self, msg, poll_interval=.05):
+        # self._message_waiting_semaphores[msg] = [False, list(self.elem._callbacks.callbacks)]
+        while self._message_waiting_semaphores.get(msg, [True, None])[0]:
+            await asyncio.sleep(poll_interval)
+    async def wait_for_message(self, msg, callback, suppress_others=False, timeout=1, poll_interval=.05):
+        self._message_waiting_semaphores[msg] = [True, None]
+        og_listener = self.event_handlers.get(msg, None)
+        current_event = og_listener if not suppress_others else callback
+        if not suppress_others:
+            if isinstance(current_event, str):
+                current_event = {'method':current_event}
+            elif not isinstance(current_event, dict):
+                current_event = {'callback':current_event}
+            else:
+                current_event = current_event.copy()
+            current_event['callback'] = self._on_msg(msg, callback, current_event['callback'])
+        self.add_event(
+            **{msg:current_event}
+        )
+        # print(self._event_handlers)
+        try:
+            await asyncio.wait_for(asyncio.create_task(self._wait_for_message(msg, poll_interval=poll_interval)), timeout=timeout)
+            res = self._message_waiting_semaphores[msg][1]
+        finally:
+            self._message_waiting_semaphores[msg][1] = None
+            if og_listener is None:
+                self.remove_event(msg)
+            else:
+                self.add_event(**{msg: og_listener})
+        # del self._message_waiting_semaphores[msg]
+        return res
+    def call(self, method, buffers=None, return_message=None, callback=None, timeout=1, poll_interval=0.05, suppress_others=False, **content):
+        if return_message is not None:
+            fut = asyncio.ensure_future(
+                self.wait_for_message(return_message, callback, timeout=timeout, poll_interval=poll_interval, suppress_others=suppress_others)
+            )
+        base = self.elem.call(method, content=content, buffers=buffers)
+        if return_message is not None:
+            return fut
+        return base
+    def _setup_thread_listener(self, msg, callback, suppress_others=False):
+        self._message_waiting_semaphores[msg] = [True, None]
+        og_listener = self.event_handlers.get(msg, None)
+        current_event = og_listener if not suppress_others else callback
+        if not suppress_others:
+            if isinstance(current_event, str):
+                current_event = {'method': current_event}
+            elif not isinstance(current_event, dict):
+                current_event = {'callback': current_event}
+            else:
+                current_event = current_event.copy()
+            current_event['callback'] = self._on_msg(msg, callback, current_event['callback'])
+        self.add_event(
+            **{msg: current_event}
+        )
+    def _wait_for_thread_message(self, msg, poll_interval=.05):
+        while self._message_waiting_semaphores.get(msg, [True, None])[0]:
+            time.sleep(poll_interval)
+    def _wait_for_result(self, msg, og_listener, timeout=1, poll_interval=.05):
+        try:
+            # just here to allow the coroutines to work while the thread thinks...
+            t = threading.Thread(target=self._wait_for_thread_message, args=(msg,), kwargs=dict(poll_interval=poll_interval))
+            t.start()
+            t.join(timeout)
+            if t.is_alive():
+                self._message_waiting_semaphores[msg][0] = False
+                raise TimeoutError("didn't get a result")
+            res = self._message_waiting_semaphores[msg][1]
+        finally:
+            self._message_waiting_semaphores[msg][1] = None
+            if og_listener is None:
+                self.remove_event(msg)
+            else:
+                self.add_event(**{msg: og_listener})
+        # del self._message_waiting_semaphores[msg]
+        return res
+    def _thread_call(self, method, buffers=None, return_message=None, callback=None, timeout=1, poll_interval=0.05, suppress_others=False, **content):
+        if return_message is not None:
+            og_listener = self._setup_thread_listener(return_message, callback, suppress_others=suppress_others)
+        base = self.elem.call(method, content=content, buffers=buffers)
+        if return_message is not None:
+            return self._wait_for_result(return_message, og_listener, timeout=timeout, poll_interval=poll_interval)
+        return base
     def add_javascript(self, **methods):
         ed = self.javascript_handles
         if isinstance(ed, ActiveHTMLWrapper):
@@ -852,6 +964,10 @@ class ActiveHTMLWrapper:
                     v['notify'] = True
                 else:
                     self._event_handlers[c] = None
+                if len(v) > 0:
+                    ed[c] = v
+                else:
+                    ed[c] = None
             elif isinstance(v, str):
                 ed[c] = v
                 self._event_handlers[c] = None
@@ -940,10 +1056,10 @@ class HTMLWidgets:
         return tag_class.from_HTML(html, event_handlers=event_handlers, debug_pane=debug_pane, **props)
 
     class JavascriptAPI(ActiveHTMLWrapper):
-        def __init__(self, safety_wrap=True, **javascript_handles):
+        def __init__(self, safety_wrap=True, _debugPrint=False, **javascript_handles):
             if safety_wrap:
-                javascript_handles = {k:self.safety_wrap(v) for k,v in javascript_handles.items()}
-            super().__init__(javascript_handles=javascript_handles)
+                javascript_handles = {k:self.safety_wrap(v) if k not in {"api", "src"} else v for k,v in javascript_handles.items()}
+            super().__init__(javascript_handles=javascript_handles, _debugPrint=_debugPrint)
         safety_template="try{{\n{body}\n}} catch(error) {{ console.log(error); alert('An error occurred: ' + error.toString() + '; check console for details') }}"
         def safety_wrap(self, v):
             return self.safety_template.format(body=v)
