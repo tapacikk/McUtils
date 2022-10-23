@@ -150,8 +150,7 @@ class FunctionExpansion:
                 coords = coords[:, np.newaxis]
             disp = coords - center
 
-
-        expansions = []
+        expansions=[]
         for i, tensr in enumerate(self.expansion_tensors):
             # contract the tensor by the displacements until it's completely reduced
             tensr = np.broadcast_to(tensr[np.newaxis], (disp.shape[0],) + tensr.shape)
@@ -166,12 +165,12 @@ class FunctionExpansion:
             expansions.append(contraction)
 
         if len(cshape) == 1:
-            expansions = np.squeeze(expansions)
+            expansions = [np.squeeze(e) for e in expansions]
         elif len(cshape) > 2:
-            expansions = np.reshape(expansions, cshape[:-1])
+            expansions = [np.reshape(e, cshape[:-1]) for e in expansions]
 
         return expansions
-    def expand(self, coords, squeeze = True):
+    def expand(self, coords, squeeze=True):
         """Returns a numerical value for the expanded coordinates
 
         :param coords:
@@ -271,7 +270,9 @@ class FunctionExpansion:
                 red = 0
                 for k in range(j+1):
                     s = (...,) + base_slice[:k] + (i,) + base_slice[k+1:]
-                    red = red + e[s]
+                    red = red + e[s] # this iteration is how we get the different multiples...?
+                    # and even though it seems like it makes off diagonal mat els contribute too much
+                    # this is actually correct!
                 derivs.append(red)
             res.append(cls(
                 derivs[1:],
@@ -280,6 +281,39 @@ class FunctionExpansion:
                 weight_coefficients=False
             ))
         return cls.multiexpansion(*res)
+
+    @classmethod
+    def from_indices(cls, inds, ref=0, expansion_order=None, ndim=None, symmetrize=True, **opts):
+        if isinstance(inds, dict):
+            inds = tuple(inds.items())
+        ref = ref
+        if ndim is None or expansion_order is None:
+            if ndim is None:
+                ndim = 0
+            if expansion_order is None:
+                expansion_order = 0
+            for (i, v) in inds: # prescan to get tensor dimensions
+                if len(i) == 0:
+                    continue
+                expansion_order = max(expansion_order, len(i))
+                ndim = max(ndim, max(i)+1)
+        t = [np.zeros((ndim,)*n) for n in range(1, expansion_order+1)]
+        for (i, v) in inds:
+            if len(i) == 0:
+                ref = v
+                continue
+            tens = t[len(i)-1]
+            if symmetrize:
+                for p in itertools.permutations(i):
+                    tens[p] = v
+            else:
+                tens[i] = v
+        return cls(
+            t,
+            ref=ref,
+            **opts
+        )
+
 
 
 

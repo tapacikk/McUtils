@@ -8,6 +8,7 @@ import scipy.interpolate as interpolate
 import scipy.spatial as spat
 from .Mesh import Mesh, MeshType
 from ..Numputils import vec_outer
+from .TensorDerivativeConverter import TensorExpression
 
 __all__ = [
     "Interpolator",
@@ -250,6 +251,40 @@ class UnstructuredGridInterpolator(BasicInterpolator):
         """
         raise NotImplementedError("derivatives not implemented for unstructured grids")
 
+# class _PolyFitManager:
+#     """
+#     Provides ways to evaluate polynomials
+#     fast and get matrices of terms to fit
+#     """
+#     def __init__(self, order, ndim):
+#         self.order = order
+#         self.ndim = ndim
+#         self._expr = None
+#     @property
+#     def perms(self):
+#         from ..Combinatorics import SymmetricGroupGenerator
+#
+#         if self._perms is None:
+#             # move this off to cached classmethod
+#             # since there are restricted numbers of (order, ndim) pairs
+#             sn = SymmetricGroupGenerator(self.ndim)
+#             self._perms = sn.get_terms(list(range(self.order+1)))
+#         return self._perms
+#     def eval_poly_mat(self, coords):
+#         """
+#
+#         :param coords: shape=(npts, ndim)
+#         :type coords: np.ndarray
+#         :return:
+#         :rtype:
+#         """
+#         return np.power(coords[:, np.newaxis, :], self.perms[np.newaxis])
+#     def eval_poly_mat_deriv(self, which):
+#         which, counts = np.unique(which, return_counts=True)
+#         perm_inds = self.perms[:, which]
+#         shift_perms = perm_inds - counts[np.newaxis, :] # new monom orders
+
+
 class RBFInterpolator:
     """
     Provides a flexible RBF interpolator that also allows
@@ -301,49 +336,52 @@ class RBFInterpolator:
 
     # @staticmethod
     # def _poly_eval
-    @staticmethod
-    def _eval_poly(pts, order, var=None, var_deriv=None, deriv_order=0):
-        #  use direct product expansion of terms & corresponding derivs!
-        #       decreasese requested nominal order and allows for better fits
-        #       and potentially more stable extrapolation?
-        ndim = pts.shape[-1]
+    # @staticmethod
+    # def _eval_poly(pts, order, var=None, var_deriv=None, deriv_order=0):
+    #     #  use direct product expansion of terms & corresponding derivs!
+    #     #       decreasese requested nominal order and allows for better fits
+    #     #       and potentially more stable extrapolation?
+    #     ndim = pts.shape[-1]
+    #
+    #     # if var is not None:
+    #     #     pts = var(pts)
+    #
+    #     # TODO: add in custom vars with derivs
+    #     res = [[] for _ in range(deriv_order+1)]
+    #     for d in range(deriv_order+1):
+    #         x = pts
+    #         I = np.broadcast_to(np.eye(ndim)[np.newaxis], (pts.shape[0], ndim, ndim))
+    #         if d == 0: # add in initial terms
+    #             res[d].append(x)
+    #         elif d == 1:
+    #             res[d].append(I)
+    #         else:
+    #             res[d].append(0)
+    #         for i in range(d-1):  # add in zero tensors
+    #             res[d].append(0)
+    #         for i in range(d, order-1): # everything below is handled or zeros
+    #             # evaluate basic monomial terms
+    #             x = np.expand_dims(x, 1)  # npts x 1 ... [i times]  x ndim
+    #             A = np.expand_dims(res[d][-1], -1) # npts x ndim x ... [(d+1)*i times] x 1
+    #             X_i = A * pts
+    #             if d > 0:
+    #                 # we have the expr d_k X^N = d_k X^(N-1) * x + k d_(k-1) X^(N-1) * I
+    #                 I = np.expand_dims(I, 1) # npts x 1 x ... x ndim x ndim
+    #                 B = res[d-1][i-1] # npts x ndim x ...[d * i-1 times] x 1 x 1
+    #                 X_i += d * np.expand_dims(B, -1)
+    #             res[d].append(X_i)
+    #     return res
+    # @staticmethod
+    # def _eval_r_derivs(pts, order):
+    #     ...
+    # @classmethod
+    # def _poly(cls, order):
+    #     def p(pts):
+    #         return cls._eval_poly(pts, order, ...)
+    #     return p
+    def _poly_exprs(self, ndim, order, deriv_order):
+        base_expr = TensorExpression.OuterPowerTerm(TensorExpression.CoordinateVector(ndim))
 
-        # if var is not None:
-        #     pts = var(pts)
-
-        # TODO: add in custom vars with derivs
-        res = [[] for _ in range(deriv_order+1)]
-        for d in range(deriv_order+1):
-            x = pts
-            I = np.broadcast_to(np.eye(ndim)[np.newaxis], (pts.shape[0], ndim, ndim))
-            if d == 0: # add in initial terms
-                res[d].append(x)
-            elif d == 1:
-                res[d].append(I)
-            else:
-                res[d].append(0)
-            for i in range(d-1):  # add in zero tensors
-                res[d].append(0)
-            for i in range(d, order-1): # everything below is handled or zeros
-                # evaluate basic monomial terms
-                x = np.expand_dims(x, 1)  # npts x 1 ... [i times]  x ndim
-                A = np.expand_dims(res[d][-1], -1) # npts x ndim x ... [(d+1)*i times] x 1
-                X_i = A * pts
-                if d > 0:
-                    # we have the expr d_k X^N = d_k X^(N-1) * x + k d_(k-1) X^(N-1) * I
-                    I = np.expand_dims(I, 1) # npts x 1 x ... x ndim x ndim
-                    B = res[d-1][i-1] # npts x ndim x ...[d * i-1 times] x 1 x 1
-                    X_i += d * np.expand_dims(B, -1)
-                res[d].append(X_i)
-        return res
-    @staticmethod
-    def _eval_r_derivs(pts, order):
-        ...
-    @classmethod
-    def _poly(cls, order):
-        def p(pts):
-            return cls._eval_poly(pts, order, ...)
-        return p
     def evaluate_poly_matrix(self, pts, degree, deriv_order=0, poly_origin=0.5, include_constant_term=True):
         #TODO: include deriv order and merge all at once
         fn = self.aux_poly['function']

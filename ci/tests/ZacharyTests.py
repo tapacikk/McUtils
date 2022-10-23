@@ -852,12 +852,95 @@ class ZacharyTests(TestCase):
         self.assertTrue(np.allclose(gamdQQ_I_new.array.T, gamdQQ_I))
 
     @debugTest
+    def test_ExplicitPoly(self):
+        a = FunctionExpansion.from_indices(
+            {
+                (): 1,
+                (0,): 2
+            },
+            ndim=2
+        )
+        self.assertTrue(np.allclose(
+            a([
+                [[1, 2], [.5, 2]],
+                [[1, 3], [.5, 3]],
+                [[1, 4], [.5, 4]]
+            ]),
+            np.array([
+                [3, 2],
+                [3, 2],
+                [3, 2],
+            ])
+        ))
+
+    @debugTest
     def test_TensorDerivatives(self):
-        a = TensorExpression.CoordinateVectorTerm(name='a', array=np.array([1, 1]))
-        fa = TensorExpression.ScalarFunctionTerm(a,
-                                                 f={'function':np.sin, 'derivatives':lambda o:lambda a:((-1)**o)*(np.sin(a) if o%2==0 else np.cos(a))},
-                                                 name='sin')
-        raise Exception(fa.array)
+        # a = TensorExpression.TermVector([TensorExpression.CoordinateTerm(0, 2), TensorExpression.CoordinateTerm(1, 2)])
+        def plus_1(x):
+            return x+1
+        crds = TensorExpression.ScalarFunctionTerm(
+            TensorExpression.CoordinateVector(2, name="coord_vec"),
+            f={'function':plus_1, 'derivatives':lambda inds: (lambda *_:1) if isinstance(inds, int) or len(inds) == 1 else (lambda *_:0)},
+
+        )
+        expr = TensorExpression.OuterPowerTerm(crds, 2)
+
+        e2 = TensorExpression.OuterPowerTerm(
+            TensorExpression.ScalarFunctionTerm(
+                TensorExpression.CoordinateVector([1, 2], name="coord_vec"),
+                f={'function': plus_1,
+                   'derivatives': lambda inds: (lambda *_: 1) if isinstance(inds, int) or len(inds) == 1 else (
+                       lambda *_: 0)},
+
+            ), 2)
+        self.assertTrue(np.allclose(
+            TensorExpression(expr.dQ(), coord_vec=np.array([1, 2])).eval(),
+            e2.dQ().array
+        ))
+
+        nv = TensorExpression.VectorNormTerm(TensorExpression.CoordinateVector(2, name="coord_vec"))
+        self.assertEquals(TensorExpression(nv, coord_vec=np.array([1, 2])).eval(), np.linalg.norm([1, 2]))
+        self.assertTrue(np.allclose(
+            TensorExpression(nv.dQ().dQ(), coord_vec=np.array([1, 2])).eval(),
+            [
+                [0.357771, -0.178885],
+                [-0.178885, 0.0894427]
+            ]
+        ))
+
+        np.random.seed(0)
+        crd = np.random.rand(5)
+        wat = TensorExpression.VectorNormTerm(
+            TensorExpression.CoordinateVector(5, name="coord_vec")
+        )
+        crd_vals = TensorExpression.ArrayStack((3,), np.array([crd, crd, crd]))
+        res = TensorExpression(wat, coord_vec=crd_vals).eval()
+        self.assertEquals(res.shape, (3,))
+        wat_d = wat.dQ()
+        dq_res = TensorExpression(wat_d, coord_vec=crd_vals).eval()
+        self.assertEquals(dq_res.shape, (3, 5))
+        slow_mode = np.array([
+            TensorExpression(wat_d, coord_vec=x).eval()
+            for x in crd_vals.array
+        ])
+        self.assertTrue(np.allclose(dq_res, slow_mode))
+
+        wat_dd = wat.dQ().dQ()
+        dqq_res = TensorExpression(wat_dd, coord_vec=crd_vals).eval()
+        self.assertEquals(dqq_res.shape, (3, 5, 5))
+        slow_mode = np.array([
+            TensorExpression(wat_dd, coord_vec=x).eval()
+            for x in crd_vals.array
+        ])
+        self.assertTrue(np.allclose(dqq_res, slow_mode))
+
+
+
+
+        # fa = TensorExpression.ScalarFunctionTerm(a,
+        #                                          f={'function':np.sin, 'derivatives':lambda o:lambda a:((-1)**o)*(np.sin(a) if o%2==0 else np.cos(a))},
+        #                                          name='sin')
+        # raise Exception(fa.array)
 
     #endregion Tensor Derivatives
 
@@ -910,7 +993,50 @@ class ZacharyTests(TestCase):
         self.assertEquals(exp(point), exp.ref)
         self.assertLess(np.linalg.norm(test - ref), .01)
 
-    @debugTest
+    @validationTest
+    def test_ExpansionDerivs(self):
+        dtype = np.float32
+
+        def sin_xy(pt):
+            ax = -1 if pt.ndim > 1 else 0
+            return np.prod(np.sin(pt), axis=ax)
+
+        point = np.array([.5], dtype=dtype)
+        disp = .01
+        exp1 = FunctionExpansion.expand_function(sin_xy, point, function_shape=((1,), 0), order=4, stencil=6)
+        poly_coeffs = np.array([exp1.expansion_tensors[i].flatten() for i in range(4)]).flatten()
+        dpoly_coeffs = np.array([exp1.deriv().expansion_tensors[i].flatten() for i in range(3)]).flatten()
+        dpoly2_coeffs = np.array([exp1.deriv().deriv().expansion_tensors[i].flatten() for i in range(2)]).flatten()
+        self.assertTrue(dpoly_coeffs[0] == 2*poly_coeffs[1])
+        self.assertTrue(dpoly2_coeffs[0] == 2 * 3 * poly_coeffs[2])
+        self.assertTrue(dpoly2_coeffs[1] == 3 * 4 * poly_coeffs[3])
+
+        def sin_xy_d(pt):
+            return np.array([
+                np.cos(pt[..., 0]) * np.sin(pt[..., 1]),
+                np.sin(pt[..., 0]) * np.cos(pt[..., 1])
+                ]).T
+
+        exp2D = FunctionExpansion.expand_function(sin_xy, np.array([.5, -.5]),
+                                                  function_shape=((2,), 0),
+                                                  order=7,
+                                                  stencil=11)
+        self.assertLess(
+            np.linalg.norm(
+                exp2D.deriv()([
+                    exp2D.center,
+                    exp2D.center - disp,
+                    exp2D.center + disp,
+                ]) -
+                sin_xy_d(np.array([
+                    exp2D.center,
+                    exp2D.center - disp,
+                    exp2D.center + disp,
+                ]))
+            ),
+            .005)
+
+    @validationTest
     def test_MultiExpansion(self):
         dtype = np.float32
 
@@ -927,9 +1053,11 @@ class ZacharyTests(TestCase):
         multi = FunctionExpansion.multiexpansion(exp1, exp2, exp3, exp4)
 
         d1 = exp1.deriv()
-        raise Exception(d1)
 
-        raise Exception( multi([exp1.center, exp2.center, exp3.center, exp4.center]) )
+        exp1([exp1.center, exp2.center, exp3.center, exp4.center])
+        d1([exp1.center, exp2.center, exp3.center, exp4.center])
+
+        multi([exp1.center, exp2.center, exp3.center, exp4.center])
 
 
 

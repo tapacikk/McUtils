@@ -1,5 +1,6 @@
 
-import abc, numpy as np, typing
+import abc, numpy as np, typing, weakref
+from ..Numputils import vec_outer, vec_tensordot
 
 __all__ = [
     'TensorDerivativeConverter',
@@ -9,10 +10,10 @@ __all__ = [
 
 
 class TensorExpression:
-    def __init__(self, expr:'TensorExpression.Term', vars:dict=None):
+    def __init__(self, expr:'TensorExpression.Term', **vars):
         self.expr = expr
         self.vars = vars
-    def eval(self, subs:dict=None):
+    def eval(self, subs:dict=None, print_terms=False):
         if subs is None:
             subs = self.vars
         if subs is None:
@@ -20,16 +21,26 @@ class TensorExpression:
         prims = self.primitives
         cache = {}
         names = {p.name:p for p in prims}
+        _ac = TensorExpression.Term._array_cache
+        TensorExpression.Term._array_cache = _ac.copy()
         for k in subs.keys() & names.keys():
             p = names[k]
             v = subs[k]
-            cache[p] = p._arr
-            p._arr = v
+            cache[p] = TensorExpression.Term._array_cache.get(p, None)
+            TensorExpression.Term._array_cache[p] = v
         try:
-            return self.expr.array
+            res = self.expr.asarray(print_terms=print_terms)
         finally:
-            for p,v in cache.items():
-                p._arr = v
+            TensorExpression.Term._array_cache = _ac
+            # for p,v in cache.items():
+            #     if v is None:
+            #         del TensorExpression.Term._array_cache[p]
+            #     else:
+            #         TensorExpression.Term._array_cache[p] = v
+
+        if isinstance(res, TensorExpression.ArrayStack):
+            res = res.array
+        return res
     @property
     def primitives(self):
         return self.get_prims()
@@ -38,20 +49,169 @@ class TensorExpression:
         visited = set()
         while bfs_queue:
             e = bfs_queue.pop()
-            bfs_queue.extend(e.children)
+            bfs_queue.extend(c for c in e.children if isinstance(c, TensorExpression.Term))
             callback(e)
             visited.add(e)
     def get_prims(self):
         kids = set()
         def add_if_prim(e):
-            if len(e.children) == 0:
+            if isinstance(e, TensorExpression.Term) and len(e.children) == 0:
                 kids.add(e)
         self.walk(add_if_prim)
         return kids
     def __repr__(self):
         return '{}({})'.format(type(self).__name__, self.expr)
-    
+
+    class ArrayStack:
+        __slots__ = ['stack_shape', 'array']
+        def __init__(self, shape, array):
+            """
+            :param shape: shape of the stack of arrays to thread over
+            :type shape:
+            :param array:
+            :type array:
+            """
+            self.array = array
+            self.stack_shape = shape
+        @staticmethod
+        def _make_broadcastable(a1, a2, offset):
+            if a1.ndim < a2.ndim:
+                for _ in range(a2.ndim - a1.ndim):
+                    a1 = np.expand_dims(a1, -1)
+            elif a2.ndim < a1.ndim:
+                for _ in range(a1.ndim - a2.ndim):
+                    a2 = np.expand_dims(a2, offset)
+            return a1, a2
+        @classmethod
+        def _pad_shape(cls, arr, other, stack_shape):
+            ogs = other.shape
+            for _ in stack_shape:
+                other = np.expand_dims(other, 0)
+            other = np.broadcast_to(other, stack_shape + ogs)
+            return cls._make_broadcastable(arr, other, len(stack_shape))
+        def __add__(self, other):
+            if isinstance(other, TensorExpression.ArrayStack):
+                a1, a2 = self._make_broadcastable(
+                    self.array,
+                    other.array,
+                    other.stack_dim
+                )
+                return type(self)(self.stack_shape, a1+a2)
+            elif isinstance(other, (int, float, np.integer, np.floating)):
+                return type(self)(self.stack_shape, self.array + other)
+            else:
+                arr, other = self._pad_shape(self.array, other, self.stack_shape)
+                return type(self)(self.stack_shape, arr + other)
+        def __mul__(self, other):
+            if isinstance(other, TensorExpression.ArrayStack):
+                a1, a2 = self._make_broadcastable(
+                    self.array,
+                    other.array,
+                    other.stack_dim
+                )
+                return type(self)(self.stack_shape, a1 * a2)
+            elif isinstance(other, (int, float, np.integer, np.floating)):
+                return type(self)(self.stack_shape, self.array * other)
+            else:
+                # print(">>>", self.array.shape, other.shape, self.stack_shape)
+                arr, other = self._pad_shape(self.array, other, self.stack_shape)
+                # print(arr.shape, other.shape, "<<<")
+                return type(self)(self.stack_shape, arr * other)
+        def __rmul__(self, other):
+            return self*other
+        def __pos__(self):
+            return self
+        def __neg__(self):
+            return -1 * self
+        def __truediv__(self, other):
+            if isinstance(other, TensorExpression.ArrayStack):
+                a1, a2 = self._make_broadcastable(
+                    self.array,
+                    other.array,
+                    other.stack_dim
+                )
+                return type(self)(self.stack_shape, a1 / a2)
+            elif isinstance(other, (int, float, np.integer, np.floating)):
+                return type(self)(self.stack_shape, self.array / other)
+            else:
+                arr, other = self._pad_shape(self.array, other, self.stack_shape)
+                return type(self)(self.stack_shape, arr / other)
+        def __rtruediv__(self, other):
+            return other * self.flip()
+        def flip(self):
+            return type(self)(self.stack_shape, 1/self.array)
+
+        def __pow__(self, power, modulo=None):
+            if isinstance(power, TensorExpression.ArrayStack):
+                a1, a2 = self._make_broadcastable(
+                    self.array,
+                    power.array,
+                    power.stack_dim
+                )
+                return type(self)(self.stack_shape, a1 ** a2)
+            elif isinstance(power, (int, float, np.integer, np.floating)):
+                return type(self)(self.stack_shape, self.array ** power)
+            else:
+                arr, power = self._pad_shape(self.array, power, self.stack_shape)
+                return type(self)(self.stack_shape, arr ** power)
+
+        @property
+        def stack_dim(self):
+            return len(self.stack_shape)
+        @property
+        def shape(self):
+            return self.array.shape[self.stack_dim:]
+        @property
+        def ndim(self):
+            return self.array.ndim - self.stack_dim
+        def expand_dims(self, where):
+            if isinstance(where, int):
+                where = [where]
+            t = self.array
+            offset = self.stack_dim
+            for i in where:
+                if i >= 0:
+                    i = offset + i
+                t = np.expand_dims(t, i)
+            return type(self)(self.stack_shape, t)
+
+        def moveaxis(self, i, j):
+            offset = self.stack_dim
+            if i >= 0:
+                i = offset + i
+            if j >= 0:
+                j = offset + j
+            return type(self)(self.stack_shape, np.moveaxis(self.array, i, j))
+        def tensordot(self, other, axes=None):
+            if isinstance(other, TensorExpression.ArrayStack):
+                other = other.array
+            else:
+                ogs = other.shape
+                for _ in range(self.stack_dim):
+                    other = np.expand_dims(other, 0)
+                other = np.broadcast_to(other, self.stack_shape + ogs)
+            return type(self)(self.stack_shape, vec_tensordot(self.array, other, axes=axes))
+
+        def outer(self, other):
+            if isinstance(other, TensorExpression.ArrayStack):
+                other = other.array
+            else:
+                ogs = other.shape
+                for _ in range(self.stack_dim):
+                    other = np.expand_dims(other, 0)
+                other = np.broadcast_to(other, self.stack_shape + ogs)
+            return type(self)(self.stack_shape, vec_outer(self.array, other))
+
+        def __repr__(self):
+            return "{}({},\n{}\n)".format(
+                type(self).__name__,
+                self.stack_shape,
+                self.array
+            )
+
     class Term(metaclass=abc.ABCMeta):
+        _array_cache = weakref.WeakKeyDictionary()
+        # for keeping track of array vals for eval
         def __init__(self, array=None, name=None):
             self._arr = array
             self.name = name
@@ -70,18 +230,39 @@ class TensorExpression:
                 new_term.name = 'dQ({})'.format(self.name)
             return new_term
         @abc.abstractmethod
-        def asarray(self, **kwargs) -> np.ndarray:
+        def array_generator(self, **kwargs) -> np.ndarray:
             raise NotImplementedError("base class")
-        @property
-        def array(self):
-            if self._arr is None:
+        def __hash__(self):
+            return hash(self.name if self.name is not None else str(id(self)) + self.to_string())
+        def __eq__(self, other):
+            return type(self) is type(other) and hash(self) == hash(other)
+        def asarray(self, print_terms=False, **kw):
+            if self in self._array_cache:  # this allows me to share arrays as long as the hash is right
+                return self._array_cache[self]
+            else:
                 try:
-                    self._arr = self.asarray()
+                    res = self.array_generator(print_terms=print_terms, **kw)
                 except TensorExpansionError:
                     raise
                 except Exception as e:
                     raise TensorExpansionError('failed to convert {} to an array'.format(self))
-            return self._arr
+                else:
+                    if print_terms:
+                        print(self)
+                        print(res)
+                    return res
+        @property
+        def array(self):
+            if self not in self._array_cache: # this allows me to share arrays as long as the hash is right
+                if self._arr is None:
+                    try:
+                        self._arr = self.array_generator()
+                    except TensorExpansionError:
+                        raise
+                    except Exception as e:
+                        raise TensorExpansionError('failed to convert {} to an array'.format(self))
+                self._array_cache[self] = self._arr
+            return self._array_cache[self]
         @array.setter
         def array(self, arr):
             self._arr = arr
@@ -130,14 +311,14 @@ class TensorExpression:
             return TensorExpression.ScalingTerm(self, other)
         def __rmul__(self, other):
             return TensorExpression.ScalingTerm(self, other)
-    
+
         def __pos__(self):
             return self
         def __neg__(self):
             return -1 * self
         def flip(self):
             raise NotImplementedError("base class")
-    
+
         def divided(self):
             if self.ndim > 0:
                 raise ValueError("term {} isn't a scalar".format(self))
@@ -153,63 +334,68 @@ class TensorExpression:
                 return other.__truediv__(self)
             else:
                 return TensorExpression.ScalingTerm(self.divided(), other)
-    
+
         def dot(self, other, i, j):
             return TensorExpression.ContractionTerm(self, i, j, other)
-    
+
         def shift(self, i, j):
             if i < 1 or j < 1 or i == j:
                 return self
             else:
                 return TensorExpression.AxisShiftTerm(self, i, j)
-    
+
         def det(self):
             return TensorExpression.DeterminantTerm(self)
-    
+
         def tr(self, axis1=1, axis2=2):
             return TensorExpression.TraceTerm(self, axis1=axis1, axis2=axis2)
-    
+
         def inverse(self):
             return TensorExpression.InverseTerm(self)
-    
+
         def __invert__(self):
             return self.inverse()
-    
-        def __hash__(self):
-            return hash(str(self))
-    
-        def __eq__(self, other):
-            return str(self) == str(other)
-    
+
+        # def __hash__(self):
+        #     return hash(str(self))
+
+        # def __eq__(self, other):
+        #     return str(self) == str(other)
+
     class SumTerm(Term):
-        def __init__(self, *terms: 'TensorExpression.Term', array=None):
-            super().__init__(array=array)
+        def __init__(self, *terms: 'TensorExpression.Term', array=None, name=None):
+            super().__init__(array=array, name=name)
             self.terms = terms
         def get_children(self):
             return self.terms
         def deriv(self):
             return type(self)(*(s.dQ() for s in self.terms))
-    
-        def asarray(self, print_terms=False):
+
+        def array_generator(self, print_terms=False):
             all_terms = [(i, s.asarray(print_terms=print_terms)) for i, s in enumerate(self.terms)]
             clean_terms = [s for s in all_terms if
                            not (isinstance(s[1], (int, float, np.integer, np.floating)) and s[1] == 0)]
+            shp = None
             for s in clean_terms:
-                if s[1].shape != clean_terms[0][1].shape:
+                if shp is None:
+                    shp = s[1].shape
+                if s[1].shape != shp:
                     raise Exception(
                         "this term is bad {} in {} (shape {} instead of shape {})".format(self.terms[s[0]], self,
                                                                                           s[1].shape,
                                                                                           clean_terms[0][1].shape
                                                                                           ))
             clean_terms = [c[1] for c in clean_terms]
-            try:
-                return np.sum(clean_terms, axis=0)
-            except:
-                raise Exception(clean_terms)
-    
+            # try:
+            s = sum(clean_terms[1:], clean_terms[0])
+            # except:
+            #     raise Exception(clean_terms)
+            # else:
+            return s
+
         def rank(self):
             return self.terms[0].ndim
-    
+
         def reduce_terms(self, check_arrays=False):
             full_terms = []
             cls = type(self)
@@ -221,10 +407,10 @@ class TensorExpression:
                     full_terms.append(t)
             full_terms = list(sorted(full_terms, key=lambda t: str(t)))  # canonical sorting is string sorting b.c. why not
             return type(self)(*full_terms, array=self._arr)
-    
+
         def to_string(self):
             return '+'.join(str(x) for x in self.terms)
-    
+
         def substitute(self, other):
             """substitutes other in to the sum by matching up all necessary terms"""
             if isinstance(other, TensorExpression.SumTerm):
@@ -241,8 +427,8 @@ class TensorExpression:
                 my_terms.append(other)
                 return type(self)(*my_terms)
     class ScalingTerm(Term):
-        def __init__(self, term: 'TensorExpression.Term', scaling, array=None):
-            super().__init__(array=array)
+        def __init__(self, term: 'TensorExpression.Term', scaling, array=None, name=None):
+            super().__init__(array=array, name=name)
             self.scaling = scaling
             self.term = term
         def get_children(self):
@@ -255,27 +441,34 @@ class TensorExpression:
             else:
                 scale_dim = 0
             return scale_dim + self.term.ndim
-        def asarray(self, print_terms=False):
+        def array_generator(self, print_terms=False):
             scaling = self.scaling
             if isinstance(self.scaling, TensorExpression.Term):
                 scaling = scaling.asarray(print_terms=print_terms)
-            if isinstance(scaling, np.ndarray):
+            if isinstance(scaling, (np.ndarray, TensorExpression.ArrayStack)): # really doing an outer product...
                 term = self.term.asarray(print_terms=print_terms)
                 if scaling.ndim > 0 and term.ndim > 0:
                     og_term_dim = term.ndim
-                    for i in range(scaling.ndim):
-                        term = np.expand_dims(term, -1)
-                    for i in range(og_term_dim):
-                        scaling = np.expand_dims(scaling, 0)
+                    if isinstance(term, TensorExpression.ArrayStack):
+                        term = term.expand_dims([-1]*scaling.ndim)
+                    else:
+                        for i in range(scaling.ndim):
+                            term = np.expand_dims(term, -1)
+                    if isinstance(scaling, TensorExpression.ArrayStack):
+                        scaling = scaling.expand_dims([0]*og_term_dim)
+                    else:
+                        for i in range(og_term_dim):
+                            scaling = np.expand_dims(scaling, 0)
             else:
                 term = self.term.asarray(print_terms=print_terms)
-            return scaling * term
-    
+            arr = scaling * term
+            return arr
+
         def to_string(self):
             meh_1 = '({})'.format(self.scaling) if isinstance(self.scaling, TensorExpression.SumTerm) else self.scaling
             meh_2 = '({})'.format(self.term) if isinstance(self.term, TensorExpression.SumTerm) else self.term
             return '{}*{}'.format(meh_1, meh_2)
-    
+
         def reduce_terms(self, check_arrays=False):
             scaling = self.scaling
             if isinstance(self.scaling, TensorExpression.Term):
@@ -290,37 +483,39 @@ class TensorExpression:
                 return 0
             else:
                 return type(self)(self.term.simplify(check_arrays=check_arrays), scaling, array=self._arr)
-    
+
         def deriv(self):
             term = type(self)(self.term.dQ(), self.scaling)
             if isinstance(self.scaling, TensorExpression.Term):
                 ugh2 = type(self)(self.term, self.scaling.dQ())
                 term += ugh2
             return term
-    class PowerTerm(Term):
+    class ScalarPowerTerm(Term):
         """
-        Represents x^n. Only can get valid derivatives for scalar terms. Beware of that.
+        Represents x^n.
+        Only can get valid derivatives for scalar terms.
+        Beware of that.
         """
-        def __init__(self, term: 'TensorExpression.Term', pow, array=None):
-            super().__init__(array=array)
+        def __init__(self, term: 'TensorExpression.Term', pow, array=None, name=None):
+            super().__init__(array=array, name=name)
             self.term = term
             self.pow = pow
             if self.term.ndim > 0:
                 raise ValueError("can't do this pops")
         def get_children(self):
             return [self.pow, self.term]
-    
+
         def rank(self):
             return self.term.rank()
-    
-        def asarray(self, print_terms=False):
+
+        def array_generator(self, print_terms=False):
             wat = self.term.asarray(print_terms=print_terms)
             out = wat ** self.pow
             return out
-    
+
         def to_string(self):
             return '({}**{})'.format(self.term, self.pow)
-    
+
         def reduce_terms(self, check_arrays=False):
             if self.pow == 1:
                 return self.term.simplify(check_arrays=check_arrays)
@@ -329,31 +524,30 @@ class TensorExpression:
             elif self.pow == -1:
                 return TensorExpression.FlippedTerm(self.term.simplify(check_arrays=True), array=self._arr)
             else:
-                return TensorExpression.PowerTerm(self.term.simplify(check_arrays=check_arrays), self.pow,
-                                                      array=self._arr)
-    
+                return TensorExpression.ScalarPowerTerm(self.term.simplify(check_arrays=check_arrays), self.pow,
+                                                        array=self._arr)
         def deriv(self):
             return TensorExpression.ScalingTerm(
                 self.pow * self.term.dQ(),
-                TensorExpression.PowerTerm(self.term, self.pow - 1)
+                TensorExpression.ScalarPowerTerm(self.term, self.pow - 1)
             )
-    class FlippedTerm(PowerTerm):
+    class FlippedTerm(ScalarPowerTerm):
         """
         Represents 1/x. Only can get valid derivatives for scalar terms. Beware of that.
         """
-    
+
         def __init__(self, term: 'TensorExpression.Term', pow=-1, array=None):
             super().__init__(term, -1, array=array)
         def get_children(self):
             return [self.term]
-    
+
         def to_string(self):
             return '1/{}'.format(self.term)
-    
-        def asarray(self, print_terms=False):
+
+        def array_generator(self, print_terms=False):
             out = 1 / self.term.asarray(print_terms=print_terms)
             return out
-    
+
         def reduce_terms(self, check_arrays=False):
             if isinstance(self.term, TensorExpression.FlippedTerm):
                 wat = self.term.term.simplify(check_arrays=check_arrays)
@@ -362,8 +556,8 @@ class TensorExpression:
             else:
                 return super().reduce_terms(check_arrays=check_arrays)
     class AxisShiftTerm(Term):
-        def __init__(self, term: 'TensorExpression.Term', start: int, end: int, array=None):
-            super().__init__(array=array)
+        def __init__(self, term: 'TensorExpression.Term', start: int, end: int, array=None, name=None):
+            super().__init__(array=array, name=name)
             self.term = term
             self.a = start
             self.b = end
@@ -371,20 +565,23 @@ class TensorExpression:
             return [self.term]
         def deriv(self):
             return type(self)(self.term.dQ(), self.a + 1, self.b + 1)
-    
-        def asarray(self, print_terms=False):
+
+        def array_generator(self, print_terms=False):
             t = self.term.asarray(print_terms=print_terms)
             if isinstance(t, (int, float, np.integer, np.floating)) and t == 0:
                 return 0
             else:
-                return np.moveaxis(self.term.array, self.a - 1, self.b - 1)
-    
+                if isinstance(t, TensorExpression.ArrayStack):
+                    return t.moveaxis(self.a-1, self.b-1)
+                else:
+                    return np.moveaxis(t, self.a - 1, self.b - 1)
+
         def rank(self):
             return self.term.ndim
-    
+
         def to_string(self):
             return '{{{}#{}->{}}}'.format(self.term, self.a, self.b)
-    
+
         def reduce_terms(self, check_arrays=False):
             """We simplify over the possible swap classes"""
             cls = type(self)
@@ -451,22 +648,81 @@ class TensorExpression:
                     self._check_simp(new)
             else:
                 new = self
-    
+
             return new
+
+    class OuterTerm(Term):
+        """
+        Provides an outer product
+        """
+        def __init__(self,
+                     a: 'TensorExpression.Term',
+                     b: 'TensorExpression.Term',
+                     array=None, name=None
+                     ):
+            super().__init__(array=array, name=name)
+            self.a = a
+            self.b = b
+        def get_children(self):
+            return [self.a, self.b]
+        def rank(self):
+            return self.a.rank() + self.b.rank()
+        def array_generator(self, print_terms=False):
+            a = self.a.asarray(print_terms=print_terms)
+            b = self.b.asarray(print_terms=print_terms)
+            og_bdim = b.ndim
+            if isinstance(b, TensorExpression.ArrayStack):
+                b = b.expand_dims([-1]*a.ndim)
+            else:
+                for i in range(a.ndim):
+                    b = np.expand_dims(b, -1)
+
+            if isinstance(a, TensorExpression.ArrayStack):
+                a = a.expand_dims([-1]*og_bdim)
+            else:
+                for i in range(og_bdim):
+                    a = np.expand_dims(a, 0)
+            return a * b
+        def to_string(self):
+            meh_1 = '({})'.format(self.a) if isinstance(self.a, TensorExpression.SumTerm) else self.a
+            meh_2 = '({})'.format(self.b) if isinstance(self.b, TensorExpression.SumTerm) else self.b
+            return '{}<x>{}'.format(meh_1, meh_2)
+
+        def reduce_terms(self, check_arrays=False):
+            return self
+
+        # def reduce_terms(self, check_arrays=False):
+        #     scaling = self.a
+        #     if isinstance(self.scaling, TensorExpression.Term):
+        #         scaling = scaling.simplify(check_arrays=check_arrays)
+        #     if isinstance(scaling, (int, float, np.integer, np.floating)) and scaling == 1:
+        #         return self.term.simplify(check_arrays=check_arrays)
+        #     elif (
+        #             (isinstance(scaling, (int, float, np.integer, np.floating)) and scaling == 0)
+        #             or
+        #             (isinstance(self.term, (int, float, np.integer, np.floating)) and self.term == 0)
+        #     ):
+        #         return 0
+        #     else:
+        #         return type(self)(self.term.simplify(check_arrays=check_arrays), scaling, array=self._arr)
+
+        def deriv(self):
+            return type(self)(self.a.dQ(), self.b) + type(self)(self.a, self.b.dQ())
+
     class ContractionTerm(Term):
         def __init__(self, left: 'TensorExpression.Term',
                      i: typing.Union[int, typing.Iterable[int]],
                      j: typing.Union[int, typing.Iterable[int]],
-                     right: 'TensorExpression.Term', array=None):
-            super().__init__(array=array)
+                     right: 'TensorExpression.Term', array=None, name=None):
+            super().__init__(array=array, name=name)
             self.left = left
             self.i = i
             self.j = j
             self.right = right
         def get_children(self):
             return [self.left, self.right]
-    
-        def asarray(self, print_terms=False):
+
+        def array_generator(self, print_terms=False):
             t1 = self.left.asarray(print_terms=print_terms)
             t2 = self.right.asarray(print_terms=print_terms)
             if isinstance(t1, (int, float, np.integer, np.floating)) and t1 == 0:
@@ -485,18 +741,28 @@ class TensorExpression:
                     j = j - 1
                 else:
                     j = [x - 1 for x in j]
-                try:
-                    return np.tensordot(t1, t2, axes=[i, j])
-                except:
-                    raise TensorExpansionError(
-                        'failed to contract {}[{}]x{}[{}] for {} and {}'.format(t1.shape, i, t2.shape, j, self.left,
-                                                                                self.right))
+                if isinstance(t1, TensorExpression.ArrayStack):
+                    return t1.tensordot(t2, axes=[i, j])
+                elif isinstance(t2, TensorExpression.ArrayStack):
+                    ogs = t1.shape
+                    for _ in range(t2.stack_dim):
+                        t1 = np.expand_dims(t1, 0)
+                    t1 = np.broadcast_to(t1, t2.stack_shape + ogs)
+                    t1 = TensorExpression.ArrayStack(t2.stack_shape, t1)
+                    return t1.tensordot(t2, axes=[i, j])
+                else:
+                    try:
+                        return np.tensordot(t1, t2, axes=[i, j])
+                    except:
+                        raise TensorExpansionError(
+                            'failed to contract {}[{}]x{}[{}] for {} and {}'.format(t1.shape, i, t2.shape, j, self.left,
+                                                                                    self.right))
                 # except (ValueError, IndexError):
                 #     raise ValueError("failed to execute {}".format(self))
-    
+
         def rank(self):
             return self.left.ndim + self.right.ndim - 2
-    
+
         def deriv(self):
             return (
                     type(self)(self.left.dQ(),
@@ -511,10 +777,10 @@ class TensorExpression:
                 self.right.dQ()
             ).shift(self.left.ndim - (0 if isinstance(self.j, (int, np.integer)) else len(self.j) - 1), 1)
             )
-    
+
         def to_string(self):
             return '<{}:{},{}:{}>'.format(self.left, self.i, self.j, self.right)
-    
+
         def reduce_terms(self, check_arrays=False):
             cls = type(self)
             left = self.left.simplify(check_arrays=check_arrays)
@@ -543,7 +809,7 @@ class TensorExpression:
                     new = cls(left, a, b, t).shift(n - 1 + i, n - 1 + j)
                     if check_arrays:
                         self._check_simp(new)
-    
+
             elif isinstance(left, TensorExpression.AxisShiftTerm):
                 # I flip the names just so it agrees with my math...
                 t = left.term
@@ -587,64 +853,74 @@ class TensorExpression:
             else:
                 new = cls(self.left.simplify(check_arrays=check_arrays), self.i, self.j,
                           self.right.simplify(check_arrays=check_arrays), array=self._arr)
-    
+
             if new._arr is None:
                 new._arr = self._arr
-    
+
             return new
-    
+
     # fancier terms
     class InverseTerm(Term):
-        def __init__(self, term: 'TensorExpression.Term', array=None):
-            super().__init__(array=array)
+        def __init__(self, term: 'TensorExpression.Term', array=None, name=None):
+            super().__init__(array=array, name=name)
             self.term = term
 
         def get_children(self):
             return [self.term]
-    
+
         def rank(self):
             return self.term.rank()
-    
-        def asarray(self, print_terms=False):
-            arr = np.linalg.inv(self.term.asarray(print_terms=print_terms))
-            if print_terms:
-                print(self)
-                print(arr)
+
+        def array_generator(self, print_terms=False):
+            t = self.term.asarray(print_terms=print_terms)
+            stack_shape = None
+            if isinstance(t, TensorExpression.ArrayStack):
+                stack_shape = t.stack_shape
+                t = t.array
+            arr = np.linalg.inv(t)
+            if stack_shape is not None:
+                arr = TensorExpression.ArrayStack(stack_shape, arr)
             return arr
-    
+
         def to_string(self):
             return '({}^-1)'.format(self.term)
-    
+
         def reduce_terms(self, check_arrays=False):
             return type(self)(self.term.simplify(check_arrays=check_arrays), array=self._arr)
-    
+
         def deriv(self):
             dq = self.term.dQ()
             sub = self.dot(dq, self.ndim, 2).shift(self.ndim, 1)  # self.dot(self.term.dQ(), self.ndim, 2)
             return -sub.dot(self, sub.ndim, 1)  # .shift(self.ndim, 1)
     class TraceTerm(Term):
-        def __init__(self, term: 'TensorExpression.Term', axis1=1, axis2=2, array=None):
-            super().__init__(array=array)
+        def __init__(self, term: 'TensorExpression.Term', axis1=1, axis2=2, array=None, name=None):
+            super().__init__(array=array, name=name)
             self.term = term
             self.axis1 = axis1
             self.axis2 = axis2
 
         def get_children(self):
             return [self.term]
-    
+
         def rank(self):
             return self.term.ndim - 2
-    
-        def asarray(self, print_terms=False):
-            arr = np.trace(self.term.asarray(print_terms=print_terms), axis1=self.axis1 - 1, axis2=self.axis2 - 1)
-            if print_terms:
-                print(self)
-                print(arr)
+
+        def array_generator(self, print_terms=False):
+            t = self.term.asarray(print_terms=print_terms)
+            stack_shape = None
+            offset = 0
+            if isinstance(t, TensorExpression.ArrayStack):
+                stack_shape = t.stack_shape
+                offset = len(stack_shape)
+                t = t.array
+            arr = np.trace(t, axis1=offset + self.axis1 - 1, axis2=offset + self.axis2 - 1)
+            if stack_shape is not None:
+                arr = TensorExpression.ArrayStack(stack_shape, arr)
             return arr
-    
+
         def to_string(self):
             return 'Tr[{},{}+{}]'.format(self.term, self.axis1, self.axis2)
-    
+
         def reduce_terms(self, check_arrays=False):
             simp = self.term.simplify(check_arrays=check_arrays)
             if isinstance(simp, TensorExpression.SumTerm):
@@ -667,20 +943,28 @@ class TensorExpression:
             else:
                 new = type(self)(simp, axis1=self.axis1, axis2=self.axis2, array=self._arr)
             return new
-    
+
         def deriv(self):
             wat = self.term.dQ()
             return type(self)(wat, axis1=self.axis1 + 1, axis2=self.axis2 + 1)
     class DeterminantTerm(Term):
-        def __init__(self, term: 'TensorExpression.Term', array=None):
-            super().__init__(array=array)
+        def __init__(self, term: 'TensorExpression.Term', array=None, name=None):
+            super().__init__(array=array, name=name)
             self.term = term
         def get_children(self):
             return [self.term]
         def rank(self):
             return 0
-        def asarray(self, print_terms=False):
-            return np.linalg.det(self.term.asarray(print_terms=print_terms))
+        def array_generator(self, print_terms=False):
+            t = self.term.asarray(print_terms=print_terms)
+            stack_shape = None
+            if isinstance(t, TensorExpression.ArrayStack):
+                stack_shape = t.stack_shape
+                t = t.array
+            arr = np.linalg.det(t)
+            if stack_shape is not None:
+                arr = TensorExpression.ArrayStack(stack_shape, arr)
+            return arr
         def to_string(self):
             return '|{}|'.format(self.term)
         def reduce_terms(self, check_arrays=False):
@@ -703,65 +987,77 @@ class TensorExpression:
             #     tr = tr.shift(self.term.ndim-1, 1)
             return tr
     class VectorNormTerm(Term):
-        def __init__(self, term: 'TensorExpression.Term', array=None, axis=-1):
-            super().__init__(array=array)
+        def __init__(self, term: 'TensorExpression.Term', array=None, name=None, axis=-1):
+            super().__init__(array=array, name=name)
             self.term = term
             self.axis = axis
         def get_children(self):
             return [self.term]
         def rank(self):
             return self.term.rank() - 1
-        def asarray(self, print_terms=False):
-            return np.linalg.norm(self.term.asarray(print_terms=print_terms), axis=self.axis)
+        def array_generator(self, print_terms=False):
+            t = self.term.asarray(print_terms=print_terms)
+            stack_shape = None
+            offset = 0
+            if isinstance(t, TensorExpression.ArrayStack):
+                stack_shape = t.stack_shape
+                offset = len(stack_shape)
+                t = t.array
+            ax = (self.axis + offset) if self.axis >= 0 else self.axis
+            arr = np.linalg.norm(t, axis=ax)
+            # arr = np.ones(arr.shape) if isinstance(arr, np.ndarray) else arr
+            if stack_shape is not None:
+                arr = TensorExpression.ArrayStack(stack_shape, arr)
+            return arr
         def to_string(self):
             return '||{}||'.format(self.term)
         def reduce_terms(self, check_arrays=False):
             return type(self)(self.term.simplify(check_arrays=check_arrays), array=self._arr)
         def deriv(self):
             return self.term / self
-    
-    class CoordinateVectorTerm(Term):
-        def __init__(self, name='x', array=None):
-            super().__init__(array=array)
-            self.name = name
-        def get_children(self):
-            return []
-        def rank(self):
-            return 1
-        def asarray(self, print_terms=False):
-            if self._arr is None:
-                raise NotImplementedError("Need explicit vector values for this to work")
-            else:
-                return self._arr
-        def reduce_terms(self, check_arrays=False):
-            return self
-        def to_string(self):
-            return self.name
-        def deriv(self):
-            if self._arr is not None:
-                arr = np.diag(self.array)
-            else:
-                arr = None
-            return TensorExpression.ConstantMatrixTerm(name='dQ({})'.format(self.name), array=arr)
-    class ConstantMatrixTerm(Term):
-        def __init__(self, name='I', array=None):
-            super().__init__(array=array)
-            self.name = name
-        def get_children(self):
-            return []
-        def rank(self):
-            return 2
-        def asarray(self, print_terms=False):
-            if self._arr is None:
-                raise NotImplementedError("Need explicit vector values for this to work")
-            else:
-                return self._arr
-        def reduce_terms(self, check_arrays=False):
-            return self
-        def to_string(self):
-            return self.name
-        def deriv(self):
-            return 0
+
+    # class CoordinateVectorTerm(Term):
+    #     def __init__(self, name='x', array=None):
+    #         super().__init__(array=array)
+    #         self.name = name
+    #     def get_children(self):
+    #         return []
+    #     def rank(self):
+    #         return 1
+    #     def asarray(self, print_terms=False):
+    #         if self._arr is None:
+    #             raise NotImplementedError("Need explicit vector values for this to work")
+    #         else:
+    #             return self._arr
+    #     def reduce_terms(self, check_arrays=False):
+    #         return self
+    #     def to_string(self):
+    #         return self.name
+    #     def deriv(self):
+    #         if self._arr is not None:
+    #             arr = np.diag(self.array)
+    #         else:
+    #             arr = None
+    #         return TensorExpression.ConstantMatrixTerm(name='dQ({})'.format(self.name), array=arr)
+    # class ConstantMatrixTerm(Term):
+    #     def __init__(self, name='I', array=None):
+    #         super().__init__(array=array, name=name)
+    #         self.name = name
+    #     def get_children(self):
+    #         return []
+    #     def rank(self):
+    #         return 2
+    #     def asarray(self, print_terms=False):
+    #         if self._arr is None:
+    #             raise NotImplementedError("Need explicit vector values for this to work")
+    #         else:
+    #             return self._arr
+    #     def reduce_terms(self, check_arrays=False):
+    #         return self
+    #     def to_string(self):
+    #         return self.name
+    #     def deriv(self):
+    #         return 0
     class ScalarFunctionTerm(Term):
         def __init__(self, term, name='f', f=None, array=None, derivative_order=0):
             super().__init__(array=array)
@@ -775,19 +1071,27 @@ class TensorExpression:
             return [self.term]
         def rank(self):
             return 0
-        def asarray(self, print_terms=False):
+        def array_generator(self, print_terms=False):
+            t = self.term.asarray(print_terms=print_terms)
+            stack_shape = None
+            if isinstance(t, TensorExpression.ArrayStack):
+                stack_shape = t.stack_shape
+                t = t.array
             if self.func is None:
                 raise NotImplementedError("need concrete function to evaluate")
             if self.deriv_order == 0:
                 f = self.func['function']
                 if f is None:
                     raise NotImplementedError("need concrete function to evaluate")
-                return f(self.term.array)
+                res = f(t)
             else:
                 df = self.func['derivatives']
                 if df is None:
                     raise NotImplementedError("need concrete derivatives to evaluate")
-                return df(self.deriv_order)(self.term.array)
+                res = df(self.deriv_order)(t)
+            if stack_shape is not None:
+                res = TensorExpression.ArrayStack(stack_shape, res)
+            return res
         def to_string(self):
             return (
                 "{}({})".format(self.fname, self.term)
@@ -804,17 +1108,169 @@ class TensorExpression:
                 self.term, name=self.fname, f=self.func, array=None,
                 derivative_order=self.deriv_order+1
             )
+    class ConstantArray(Term):
+        """
+        Square tensor of constants (squareness assumed, not checked)
+        """
+        def __init__(self, array, name=None):
+            super().__init__(array=np.asanyarray(array), name=name)
+        def get_children(self):
+            return []
+        def rank(self):
+            return self._arr.ndim
+        def array_generator(self, print_terms=False):
+            return self._arr
+        def to_string(self):
+            return str(self._arr)
+        def deriv(self):
+            if isinstance(self._arr, TensorExpression.ArrayStack):
+                return type(self)(TensorExpression.ArrayStack(
+                    self._arr.stack_shape,
+                    np.zeros(self._arr.shape + (self._arr.shape[-1],))
+                ))
+            else:
+                return type(self)(
+                    np.zeros(self._arr.shape + (self._arr.shape[-1],))
+                )
+        def reduce_terms(self, check_arrays=False):
+            return self
+    class IdentityMatrix(ConstantArray):
+        def __init__(self, ndim, name="I"):
+            super().__init__(np.eye(ndim), name=name)
+
+    class OuterPowerTerm(Term):
+        """
+        Represents a matrix-power type term
+        """
+        def __init__(self, base:'TensorExpression.Term', pow:int, array=None, name=None):
+            if pow<1:
+                raise NotImplementedError("???")
+            super().__init__(array=array, name=name)
+            self.base = base
+            self.pow = pow
+        def get_children(self):
+            return self.base.get_children()
+        def rank(self):
+            return self.base.rank() * self.pow
+        def array_generator(self, print_terms=False):
+            base_arr = arr = self.base.asarray(print_terms=print_terms)
+            for i in range(self.pow-1):
+                arr = np.outer(arr, base_arr) if not isinstance(arr, TensorExpression.ArrayStack) else arr.outer(base_arr)
+            return arr
+        def to_string(self):
+            return "{}({}, {})".format(type(self).__name__, self.base, self.pow)
+        def deriv(self):
+            if self.pow > 2:
+                return TensorExpression.OuterTerm(type(self)(self.base, self.pow-1), self.base).dQ()
+            elif self.pow == 2:
+                return TensorExpression.OuterTerm(self.base, self.base).dQ()
+            else:
+                return self.base.dQ()
+        def reduce_terms(self, check_arrays=False):
+            return self
+    class TermVector(Term):
+        def __init__(self, *terms:'TensorExpression.Term|List[TensorExpression.Term]', array=None, name=None):
+            if len(terms) == 1 and not isinstance(terms[0], TensorExpression.Term):
+                terms = terms[0]
+            self.terms = terms
+            super().__init__(array=array, name=name)
+        def get_children(self):
+            return self.terms
+        def rank(self):
+            r = self.terms[0].rank()
+            if all(t.rank() == r for t in self.terms):
+                return r+1
+            else:
+                return 1
+        def array_generator(self, print_terms=False):
+            return np.array([
+                t.asarray(print_terms=print_terms) for t in self.terms
+            ])
+        def to_string(self):
+            return str(self.terms)
+        def deriv(self):
+            return type(self)([
+                t.deriv() for t in self.terms
+            ])
+        def reduce_terms(self, check_arrays=False):
+            return self
+    class CoordinateVector(Term):
+        def __init__(self, vals_array, array=None, name=None):
+            if not isinstance(vals_array, int) and array is None:
+                if isinstance(vals_array, np.ndarray) or isinstance(vals_array[0], (int, float, np.integer, np.floating)):
+                    vals_array = np.asanyarray(vals_array)
+                    array = vals_array
+            super().__init__(array=array, name=name)
+            self.base_array = vals_array
+        def get_children(self):
+            if isinstance(self.base_array, (int, np.integer)):
+                return []
+            elif not isinstance(self.base_array, np.ndarray):
+                return list(self.base_array)
+            else:
+                return []
+        def rank(self):
+            return 1
+        def array_generator(self, print_terms=False):
+            if isinstance(self.base_array, (np.ndarray, TensorExpression.ArrayStack)):
+                return self.base_array
+            else:
+                raise Exception("need explicit array")
+        def to_string(self):
+            return "{}({})".format(type(self).__name__, self.base_array)
+        def deriv(self):
+            if isinstance(self.base_array, int):
+                return TensorExpression.IdentityMatrix(self.base_array)
+            else:
+                return TensorExpression.IdentityMatrix(len(self.base_array))
+        def reduce_terms(self, check_arrays=False):
+            return self
+    class CoordinateTerm(Term):
+        def __init__(self,
+                     idx:int,
+                     vec:'TensorExpression.CoordinateVector',
+                     array=None, name=None
+                     ):
+            super().__init__(array=array, name=name)
+            self.vec = vec
+            self.idx = idx
+        def get_children(self):
+            return []
+        def rank(self):
+            return 0
+        def array_generator(self, print_terms=False):
+            return self.vec.asarray(print_terms=print_terms)[self.idx]
+        def to_string(self):
+            return "{}({}, {})".format(type(self).__name__, self.vec, self.idx)
+        def deriv(self):
+            vec = np.zeros(len(self.vec.base_array))
+            vec[self.idx] = 1
+            return TensorExpression.ConstantArray(vec)
+        def reduce_terms(self, check_arrays=False):
+            return self
     class PolynomialTerm(Term):
-        def __init__(self, expansion:'Taylor.FunctionExpansion', coords:'TensorExpression.CoordinateVectorTerm'=None, array=None):
-            super().__init__(array=array)
+        def __init__(self,
+                     expansion:'Taylor.FunctionExpansion',
+                     coords:'TensorExpression.TermVector'=None,
+                     array=None, name=None
+                     ):
+            super().__init__(array=array, name=name)
             self.expansion = expansion
             self.coords = coords
         def get_children(self):
             return [self.coords]
         def rank(self):
             return 0
-        def asarray(self, print_terms=False):
-            return self.expansion(self.coords.array)
+        def array_generator(self, print_terms=False):
+            arr = self.coords.asarray(print_terms=print_terms)
+            stack_shape = None
+            if isinstance(arr, TensorExpression.ArrayStack):
+                stack_shape = arr.stack_shape
+                arr = arr.array
+            res = self.expansion(arr)
+            if stack_shape is not None:
+                res = TensorExpression.ArrayStack(stack_shape, res)
+            return res
         def to_string(self):
             return "{}({})".format(self.expansion, self.coords)
         def deriv(self):
@@ -866,7 +1322,7 @@ class TensorExpansionTerms:
             return []
         def deriv(self):
             return type(self)(self.terms, self.n + 1)
-        def asarray(self, print_terms=False):
+        def array_generator(self, print_terms=False):
             if self.n == 0:
                 return self.terms.base_qx
             else:
@@ -902,7 +1358,7 @@ class TensorExpansionTerms:
                 return self.terms.QXV(1, self.m)
             else:
                 return TensorExpression.ContractionTerm(self.terms.QX(1), 2, 1, self.terms.XV(self.m + 1))
-        def asarray(self, print_terms=False):
+        def array_generator(self, print_terms=False):
             if self.m == 0:
                 return self.terms.base_qx
             else:
@@ -927,7 +1383,7 @@ class TensorExpansionTerms:
         def deriv(self):
             return type(self)(self.terms, self.n + 1, self.m)
 
-        def asarray(self, print_terms=False):
+        def array_generator(self, print_terms=False):
             return self.terms.qxv_terms[self.n - 1][self.m - 1]
 
         def rank(self):
@@ -978,11 +1434,8 @@ class TensorExpansionTerms:
                 )
             )
 
-        def asarray(self, print_terms=False):
+        def array_generator(self, print_terms=False):
             arr = np.tensordot(self.terms.qx_terms[self.n - 1], self.terms.xv_terms[self.m - 1], axes=[self.i, self.j])
-            if print_terms:
-                print(self)
-                print(arr)
             return arr
 
         def rank(self):
