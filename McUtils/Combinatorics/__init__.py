@@ -45,3 +45,5 @@ SymmetricGroupGenerator(9).get_terms([1, 2, 3, 4])
 __all__ = []
 from .Permutations import *; from .Permutations import __all__ as exposed
 __all__ += exposed
+from .Sequences import *; from .Sequences import __all__ as exposed
+__all__ += exposed

@@ -851,7 +851,7 @@ class ZacharyTests(TestCase):
         # raise Exception(gamdQQ_I_new.array.T, gamdQQ_I[0])
         self.assertTrue(np.allclose(gamdQQ_I_new.array.T, gamdQQ_I))
 
-    @debugTest
+    @validationTest
     def test_ExplicitPoly(self):
         a = FunctionExpansion.from_indices(
             {
@@ -873,9 +873,10 @@ class ZacharyTests(TestCase):
             ])
         ))
 
-    @debugTest
+    @validationTest
     def test_TensorDerivatives(self):
         # a = TensorExpression.TermVector([TensorExpression.CoordinateTerm(0, 2), TensorExpression.CoordinateTerm(1, 2)])
+
         def plus_1(x):
             return x+1
         crds = TensorExpression.ScalarFunctionTerm(
@@ -933,6 +934,36 @@ class ZacharyTests(TestCase):
             for x in crd_vals.array
         ])
         self.assertTrue(np.allclose(dqq_res, slow_mode))
+
+        pts = np.array([[-0.32498609, -0.29857954],
+                        [-0.29112237, -0.48247142],
+                        [-0.19237367, -0.28342343],
+                        [-0.40490118, -0.2155546],
+                        [-0.31110323, -0.10724408]])
+        pts = TensorExpression.ArrayStack((5,), pts)
+
+        term = TensorExpression.OuterPowerTerm(
+            TensorExpression.CoordinateVector(2, name="pts"),
+            2
+        )
+
+        # self.assertEquals(TensorExpression(term, pts=pts).eval().shape, (5, 2, 2))
+        self.assertEquals(TensorExpression(term.dQ(), pts=pts).eval().shape, (5, 2, 2, 2))
+
+        pts = np.array([[-0.32498609, -0.29857954],
+                        [-0.29112237, -0.48247142],
+                        [-0.19237367, -0.28342343],
+                        [-0.40490118, -0.2155546],
+                        [-0.31110323, -0.10724408]])
+        pts = TensorExpression.ArrayStack((5,), pts)
+
+        term = TensorExpression.OuterPowerTerm(
+            TensorExpression.CoordinateVector(2, name="pts"),
+            3
+        )
+
+        # self.assertEquals(TensorExpression(term, pts=pts).eval().shape, (5, 2, 2))
+        self.assertEquals(TensorExpression(term, pts=pts).eval().shape, (5, 2, 2, 2))
 
 
 
@@ -1103,19 +1134,9 @@ class ZacharyTests(TestCase):
 
     #endregion
 
-    #region Interpolation
-    # @inactiveTest
-    # def test_Interpolator1D(self):
-    #
-    #     sin_grid = np.arange(0, 1, .1)
-    #     sin_vals = np.sin(sin_grid)
-    #     reg_interp = RegularGridInterpolator(sin_grid, sin_vals)
-    #     raise NotImplementedError("need to finish test")
-    #
-    #     d2 = reg_interp.derivative(2)
+    # region Interpolation
 
-
-    #region Mesh
+    # region Mesh
 
     @validationTest
     def test_LinSpaceMesh(self):
@@ -1294,7 +1315,6 @@ class ZacharyTests(TestCase):
 
         g.show()
 
-
     @validationTest
     def test_InterpolatorExtrapolator1D(self):
 
@@ -1370,7 +1390,92 @@ class ZacharyTests(TestCase):
             np.max(np.abs(interp_vals - test_vals))
         ))
 
+    @debugTest
+    def test_RBFInterpolator(self):
 
+        # 1D
+        np.random.seed(0)
+        npts = 50
+        ndim = 1
+        pts = np.random.uniform(size=(npts, ndim))
+        vals = np.product(np.sin(pts), axis=1)
+        dvals_x = np.cos(pts[:, 0])
+
+        interp = RBFDInterpolator(
+            pts,
+            vals,
+            np.array([dvals_x]).T,
+            extra_degree=2,
+            kernel='thin_plate_spline'
+        )
+
+        self.assertEquals(interp.grid.shape, (npts, ndim))
+        self.assertLessEqual(np.max(interp.grid), 1)
+        self.assertLessEqual(np.max(interp.vals), 1)
+        self.assertGreaterEqual(np.min(interp.grid), 0)
+        self.assertGreaterEqual(np.min(interp.vals), 0)
+
+        self.assertTrue(np.allclose(
+            interp(pts[:2], deriv_order=0, neighbors=5),
+            np.product(np.sin(pts[:2]), axis=1)
+        ), msg="bad interpolation at interpolation points")
+
+        dervs = interp(pts[:2], deriv_order=1, neighbors=5)[1][0]
+        self.assertTrue(np.allclose(
+            interp(pts[:2], deriv_order=1, neighbors=5)[1][0],
+            np.array([dvals_x]).T[:2]
+        ), msg="bad deriv interpolation at interpolation points \n{} \nvs\n {}".format(dervs,
+                                                                                       np.array([dvals_x]).T[
+                                                                                       :2]))
+
+        self.assertLess(
+            np.linalg.norm(
+                interp(pts[:2] + .05, deriv_order=0, neighbors=5) -
+                np.product(np.sin(pts[:2]), axis=1)
+            ),
+            .2)
+
+        np.random.seed(0)
+        npts = 50
+        ndim = 2
+        pts = np.random.uniform(size=(npts, ndim))
+        vals = np.product(np.sin(pts), axis=1)
+        dvals_x = np.sin(pts[:, 0])*np.cos(pts[:, 1])
+        dvals_y = np.sin(pts[:, 1])*np.cos(pts[:, 0])
+
+        interp = RBFDInterpolator(
+            pts,
+            vals,
+            np.array([dvals_x, dvals_y]).T,
+            extra_degree=2,
+            kernel='thin_plate_spline'
+        )
+
+        self.assertEquals(interp.grid.shape, (npts, 2))
+        self.assertLessEqual(np.max(interp.grid), 1)
+        self.assertLessEqual(np.max(interp.vals), 1)
+        self.assertGreaterEqual(np.min(interp.grid), 0)
+        self.assertGreaterEqual(np.min(interp.vals), 0)
+
+        self.assertTrue(np.allclose(
+            interp(pts[:2], deriv_order=0, neighbors=5),
+            np.product(np.sin(pts[:2]), axis=1)
+        ),msg="bad interpolation at interpolation points")
+
+        dervs = interp(pts[:2], deriv_order=1, neighbors=5)[1][0]
+        self.assertTrue(np.allclose(
+            interp(pts[:2], deriv_order=1, neighbors=5)[1][0],
+            np.array([dvals_x, dvals_y]).T[:2]
+        ),msg="bad deriv interpolation at interpolation points \n{} \nvs\n {}".format(dervs, np.array([dvals_x, dvals_y]).T[:2]))
+
+        self.assertLess(
+            np.linalg.norm(
+                interp(pts[:2] + .05, deriv_order=0, neighbors=5) -
+                np.product(np.sin(pts[:2]), axis=1)
+            ),
+            .2)
+
+        # raise Exception(interp(pts[:2], deriv_order=1, neighbors=5))
 
 
     #endregion
