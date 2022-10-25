@@ -404,7 +404,10 @@ class RBFDInterpolator:
         )
     @staticmethod
     def triu_num(ndim, rank):
-        return math.comb(rank+(ndim-1), ndim)
+        if ndim == 1:
+            return 1
+        else:
+            return math.comb(rank+(ndim-1), (ndim-1))
 
     @staticmethod
     def gaussian(r, e=1):
@@ -614,9 +617,19 @@ class RBFDInterpolator:
 
         # now reshape to turn into full mats
         npts = len(centers)
+
+        # print("...")
+        # print([a.shape for a in flat_expr_vals])
+        flat_expr_vals = [
+            np.moveaxis(
+                a.reshape((len(pts), len(centers)) + a.shape[1:]),
+                1, -1
+            )
+            for a in flat_expr_vals
+        ]
         mat = np.concatenate(
             [
-                np.moveaxis(a, 0, -1).reshape((-1, npts))
+                a.reshape((-1, npts))
                 for a in flat_expr_vals
             ],
             axis=0
@@ -655,7 +668,7 @@ class RBFDInterpolator:
                 len(vals)
             ))
         # TODO: compute the appropriate deriv order to match the vals and derivs
-        derivs = [np.moveaxis(d, 0, -1).flatten() for d in derivs]
+        derivs = [d.flatten() for d in derivs]
         nder = len(derivs)
         vals = np.concatenate([vals]+derivs, axis=0)
 
@@ -681,7 +694,8 @@ class RBFDInterpolator:
             vals = np.concatenate([vals, np.zeros(len(M) - len(vals))])
         # with np.printoptions(linewidth=1e8):
         #     print(centers)
-        #     print(M.shape)
+        #     print(M)
+        #     print(vals[:, np.newaxis])
         if solver == "least_squares":
             w_data = np.linalg.lstsq(M, vals)  # , rcond=None)
         else:
@@ -745,6 +759,10 @@ class RBFDInterpolator:
                     derivs
                 )
 
+                # print(vals_inds)
+                # print(vals)
+                # print(derivs)
+
                 w, degree = self.solve_system(grid, vals, derivs)
 
                 self._pos_cache[k] = (w, grid, degree, scaling_data)
@@ -753,6 +771,8 @@ class RBFDInterpolator:
             sub_pts = scaling_data.apply_renormalization(pts[pts_inds])
             M = self.construct_matrix(sub_pts, grid, degree=degree, deriv_order=deriv_order)
             v = np.dot(M, w[0])
+            # print("--"*20)
+            # print(v)
             val_sets[pts_inds] = scaling_data.reverse_value_renormalization(v[:len(sub_pts)])
             if deriv_order > 0: # derivatives
                 offset = len(sub_pts)
@@ -761,6 +781,7 @@ class RBFDInterpolator:
                 for o in range(1, 1+deriv_order):
                     num = self.triu_num(ndim, o)
                     dvs.append(v[offset:offset+num])
+                    # print(dvs[-1])
                     offset += num
                 dvs = scaling_data.reverse_derivative_renormalization(dvs)
                 if der_sets is None:
