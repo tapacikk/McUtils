@@ -1,7 +1,7 @@
 from ..LazyTensors import Tensor
 from .Derivatives import FiniteDifferenceDerivative
 from ...Coordinerds import CoordinateSet, CoordinateSystem
-from ..TensorDerivativeConverter import TensorDerivativeConverter
+from ..Symbolic import TensorDerivativeConverter
 from ...Numputils import vec_tensordot
 import numpy as np, itertools
 

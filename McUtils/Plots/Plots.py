@@ -10,7 +10,8 @@ import matplotlib.axes
 __all__ = [
     "Plot", "DataPlot", "ArrayPlot", "TensorPlot",
     "Plot2D", "ListPlot2D",
-    "Plot3D", "ListPlot3D"
+    "Plot3D", "ListPlot3D",
+    "CompositePlot"
 ]
 
 ######################################################################################################
@@ -399,8 +400,8 @@ class CompositePlot:
         for p in self.plots[1:]:
             p.change_figure(base)
         return base
-    def show(self):
-        self._ref = self.merge(interactive=True, **self.kwargs)
+    def show(self, interactive=True):
+        self._ref = self.merge(interactive=interactive, **self.kwargs)
         # self._ref.pyplot.mpl_connect()
         self._ref.show()
     def _ipython_display_(self):

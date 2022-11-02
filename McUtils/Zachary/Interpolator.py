@@ -3,14 +3,16 @@ Sets up a general Interpolator class that looks like Mathematica's Interpolating
 """
 
 import itertools, typing, dataclasses
+import sys
+
 import numpy as np, abc, enum, math
 import scipy.interpolate as interpolate
 import scipy.optimize
 import scipy.spatial as spat
 from .Mesh import Mesh, MeshType
-from ..Numputils import vec_outer
-from ..Combinatorics import StirlingS1
-from .TensorDerivativeConverter import TensorExpression
+from ..Numputils import vec_outer, unique as nput_unique
+# from ..Combinatorics import StirlingS1
+from .Symbolic import TensorExpression
 
 __all__ = [
     "Interpolator",
@@ -296,25 +298,42 @@ class RBFDInterpolator:
 
     def __init__(self,
                  pts, values, *derivatives,
-                 kernel:typing.Union[callable,dict],
+                 kernel:typing.Union[callable,dict]='thin_plate_spline',
+                 kernel_options=None,
                  auxiliary_basis=None,
-                 extra_degree=0
+                 extra_degree=0,
+                 clustering_radius=.01,
+                 monomial_basis=True
                  ):
 
         pts = np.asanyarray(pts)
+        values = np.asarray(values)
+        derivatives = [np.asanyarray(d) for d in derivatives]
         if pts.ndim == 1:
             pts = pts[:, np.newaxis]
+        # if clustering_radius is None:
+        #     clustering_radius = .01**(1/pts.shape[-1])
+        if clustering_radius is not None and clustering_radius >= 0:
+            pts, values, derivatives = self.decluster_data(pts, values, derivatives, clustering_radius)
         self.grid = pts
         self.tree = spat.KDTree(self.grid)
         self._pos_cache = {}
-        self.vals = np.asarray(values)
-        self.derivs = [np.asanyarray(d) for d in derivatives]
+        self.vals = values
+        self.derivs = derivatives
         if isinstance(kernel, str):
             kernel = self.default_kernels[kernel]
         if not isinstance(kernel, dict):
             kernel = {'function':kernel}
         if 'derivatives' not in kernel:
             kernel['derivatives'] = None
+        if 'zero_handler' not in kernel:
+            kernel['zero_handler'] = None
+        if kernel_options is not None:
+            kernel['function'] = lambda r,fn=kernel['function'],opt=kernel_options:fn(r,**opt)
+            if kernel['derivatives'] is not None:
+                kernel['derivatives'] = lambda n, fn=kernel['derivatives'],opt=kernel_options: (lambda r,d=fn(n):d(r, **opt))
+            if kernel['zero_handler'] is not None:
+                kernel['zero_handler'] = lambda n,ndim,fn=kernel['zero_handler'],opt=kernel_options: (lambda r,d=fn(n, ndim):d(r, **opt))
         self.kernel = kernel
         if not isinstance(auxiliary_basis, dict):
             auxiliary_basis = {'function':auxiliary_basis}
@@ -322,6 +341,40 @@ class RBFDInterpolator:
             auxiliary_basis['derivatives'] = None
         self.aux_poly = auxiliary_basis
         self.extra_degree = extra_degree
+        self.monomial_basis = monomial_basis
+
+        self._expr_cache = {}
+
+        self._globint = None
+
+    @classmethod
+    def decluster_data(cls, pts, vals, derivs, radius):
+        rpts, _, _ = cls.RescalingData.renormalize_grid(pts)
+        dmat = np.linalg.norm(
+            rpts[:, np.newaxis, :] - rpts[np.newaxis, :, :],
+            axis=2
+        )
+        rad_pos = np.where(dmat<radius)
+        non_diag = rad_pos[0] < rad_pos[1]
+        rad_pos = (rad_pos[0][non_diag], rad_pos[1][non_diag])
+        if len(rad_pos[0]) == 0:
+            return pts, vals, derivs
+        # for p in rad_pos
+        # sort_pos = np.lexsort((rad_pos[1], rad_pos[0]))
+        # rad_pos = (rad_pos[0][sort_pos], rad_pos[1][sort_pos])
+        kill_pos = set()
+        for r,k in zip(*rad_pos):
+            if r not in kill_pos:
+                kill_pos.add(k)
+        kill_pos = np.array(list(kill_pos))
+
+        mask = np.full(len(pts), True)
+        mask[kill_pos] = False
+        pts = pts[mask]
+        vals = vals[mask]
+        derivs = [d[mask] for d in derivs]
+
+        return pts, vals, derivs
 
     @dataclasses.dataclass
     class RescalingData:
@@ -380,17 +433,45 @@ class RBFDInterpolator:
         def reverse_value_renormalization(self, vs):
             return vs * self.vals_scaling + self.vals_shift
 
-        def reverse_derivative_renormalization(self, derivs):
+        def reverse_derivative_renormalization(self, derivs, reshape=True):
             ders = []
+            npts = None
+            ndim = len(self.grid_scaling)
             for n, values in enumerate(derivs):
+
+                # we assume we have npts x (ndim,)*n so we reshape
+                if npts is None: # we start with 1D
+                    npts = len(values) / ndim
+                    npp = int(npts)
+                    if npts != npp:
+                        raise ValueError("wtf")
+                    npts = npp
+
+                k = n+1
+
+                shp = (npts,) + (ndim,) * k
+                if reshape:
+                    if np.prod(shp)==len(values):
+                        values = values.reshape(shp)
+                    else:
+                        a = np.zeros(shp)
+                        inds = (slice(None, None, None),)+RBFDInterpolator.triu_inds(ndim, k)
+                        a[inds] = values
+                        values = a
+                else:
+                    values = values.reshape((npts, -1))
+
                 values = values * self.vals_scaling
-                ndim = len(self.grid_scaling)
                 grid_scaling = self.grid_scaling
                 gs = grid_scaling
-                for d in range(n):
+                for d in range(n): # for a small performance boost I can avoid doing this repeatedly
                     gs = np.expand_dims(gs, 0)
                     grid_scaling = grid_scaling[..., np.newaxis] * gs
-                values = values / grid_scaling
+                if reshape:
+                    values = values / grid_scaling
+                else:
+                    inds = RBFDInterpolator.triu_inds(ndim, k)
+                    values = values / grid_scaling[inds]
                 # inds = (slice(None, None, None),) + tuple(
                 #     np.array(list(itertools.combinations_with_replacement(range(ndim), r=n + 1))).T
                 # )
@@ -447,8 +528,8 @@ class RBFDInterpolator:
         return deriv
 
     @staticmethod
-    def thin_plate_spline(r, n=3):
-        return r**n * (1 if n%2 == 1 else np.log(r+1))
+    def thin_plate_spline(r, o=3):
+        return r**o * (1 if o%2 == 1 else np.log(r+1))
     @staticmethod
     def thin_plate_spline_derivative(n: int):
         def deriv(r, o=3):
@@ -488,13 +569,19 @@ class RBFDInterpolator:
             }
         }
 
-    def _poly_exprs(self, ndim:int, order:int, deriv_order:int):
-        base_expr = TensorExpression.OuterPowerTerm(TensorExpression.CoordinateVector(ndim, name='coord_vec'), order)
-        exprs = [base_expr]
-        for _ in range(deriv_order):
-            exprs.append(exprs[-1].dQ())
-        return exprs
-    def evaluate_poly_matrix(self, pts, degree, deriv_order=0, poly_origin=0.5, include_constant_term=True):
+    def _poly_exprs(self, ndim:int, order:int, deriv_order:int, monomials=True):
+        k = (ndim, order, deriv_order)
+        if k not in self._expr_cache:
+            if monomials:
+                base_expr = TensorExpression.ScalarPowerTerm(TensorExpression.CoordinateVector(ndim, name='coord_vec'), order)
+            else:
+                base_expr = TensorExpression.OuterPowerTerm(TensorExpression.CoordinateVector(ndim, name='coord_vec'), order)
+            exprs = [base_expr]
+            for _ in range(deriv_order):
+                exprs.append(exprs[-1].dQ())
+            self._expr_cache[k] = exprs
+        return self._expr_cache[k]
+    def evaluate_poly_matrix(self, pts, degree, deriv_order=0, poly_origin=0.5, include_constant_term=True, monomials=True):
         #TODO: include deriv order and merge all at once
         # fn = self.aux_poly['function']
         pts = pts - poly_origin
@@ -513,12 +600,13 @@ class RBFDInterpolator:
                     if include_constant_term else
                     []
                 ) +
-                [self._poly_exprs(ndim, d, deriv_order) for d in range(1, degree + 1)]
+                [self._poly_exprs(ndim, d, deriv_order, monomials=monomials) for d in range(1, degree + 1)]
         )
         # print(">>>", pts)
+        crds = TensorExpression.ArrayStack((len(pts),), pts)
         vals = [ # evaluate poly values & derivs at each order in a dumb, kinda inefficient way? (for now)
             [
-                TensorExpression(e, coord_vec=TensorExpression.ArrayStack((len(pts),), pts)).eval()
+                TensorExpression(e, coord_vec=crds).eval()
                 for e in exp_list
             ]
             for exp_list in exprs
@@ -532,7 +620,10 @@ class RBFDInterpolator:
             if not include_constant_term or o > 0:
                 if not include_constant_term:
                     o = o+1
-                power_inds = self.triu_inds(ndim, o)#tuple(np.array(list(itertools.combinations_with_replacement(range(ndim), r=o))).T)
+                if monomials:
+                    power_inds = ()
+                else:
+                    power_inds = self.triu_inds(ndim, o)#tuple(np.array(list(itertools.combinations_with_replacement(range(ndim), r=o))).T)
                 pis = (slice(None, None, None),) + power_inds
                 flat_vals[0].append(v_list[0][pis])
                 # power_reps = (slice(None, None, None),)*o
@@ -562,6 +653,21 @@ class RBFDInterpolator:
         #     print(mat)
         # raise Exception(...)
         return mat
+    def _rbf_exprs(self, ndim, deriv_order):
+        k = (ndim, deriv_order)
+        if k not in self._expr_cache:
+            exprs = [
+                TensorExpression.ScalarFunctionTerm(
+                    TensorExpression.VectorNormTerm(
+                        TensorExpression.CoordinateVector(ndim, name="pts")
+                    ),
+                    f=self.kernel
+                )
+            ]
+            for _ in range(deriv_order):
+                exprs.append(exprs[-1].dQ())
+            self._expr_cache[k] = exprs
+        return self._expr_cache[k]
     def evaluate_rbf_matrix(self, pts, centers, deriv_order=0, zero_tol=1e-8):
         displacements = np.reshape(pts[:, np.newaxis, :] - centers[np.newaxis, :, :], (-1, centers.shape[-1]))
         distances = np.linalg.norm(displacements, axis=1)
@@ -571,19 +677,10 @@ class RBFDInterpolator:
 
         # now we evaluate the norm term...
         ndim = displacements.shape[-1]
-        exprs = [
-            TensorExpression.ScalarFunctionTerm(
-                TensorExpression.VectorNormTerm(
-                    TensorExpression.CoordinateVector(ndim, name="pts")
-                ),
-                f=self.kernel
-            )
-        ]
-        for _ in range(deriv_order):
-            exprs.append(exprs[-1].dQ())
+        crds = TensorExpression.ArrayStack((len(displacements),), displacements)
         expr_vals = [
-            TensorExpression(e, pts=TensorExpression.ArrayStack((len(displacements),), displacements)).eval()
-            for e in exprs
+            TensorExpression(e, pts=crds).eval()
+            for e in self._rbf_exprs(ndim, deriv_order)
         ]
         flat_expr_vals = [expr_vals[0]]
         for n, d in enumerate(expr_vals[1:]):  # need utri inds
@@ -644,16 +741,21 @@ class RBFDInterpolator:
                          zero_tol=1e-8, # not really intended to be changed...
                          poly_origin=0.5, # can be set at the class level
                          include_constant_term=True, # can be set at the class level
-                         force_square=False
+                         force_square=False,
+                         monomials=True
                          ):
         if degree > 0:
-            pol_mats = self.evaluate_poly_matrix(pts, degree, poly_origin=poly_origin, include_constant_term=include_constant_term, deriv_order=deriv_order)
+            pol_mats = self.evaluate_poly_matrix(pts, degree,
+                                                 poly_origin=poly_origin,
+                                                 include_constant_term=include_constant_term,
+                                                 deriv_order=deriv_order,
+                                                 monomials=monomials)
         else:
             pol_mats = None
         rbf_mats = self.evaluate_rbf_matrix(pts, centers, deriv_order=deriv_order, zero_tol=zero_tol)
         if pol_mats is not None:
             rbf_mats = np.concatenate([rbf_mats, pol_mats], axis=1)
-        if force_square and rbf_mats.shape[1] > rbf_mats.shape[0]: # force it to be square
+        if force_square and rbf_mats.shape[1] > rbf_mats.shape[0]: # force it to be square by including extra polys
             curl = rbf_mats.shape[0]
             neel = rbf_mats.shape[1]
             disp = neel-curl
@@ -661,7 +763,7 @@ class RBFDInterpolator:
             rbf_mats[curl:, :curl] = rbf_mats[:curl, -disp:].T
         return rbf_mats
 
-    def solve_system(self, centers, vals, derivs:list, solver='solve'):#'least_squares'):
+    def solve_system(self, centers, vals, derivs:list, solver='least_squares', return_data=False):
         if len(vals) != len(centers):
             raise ValueError("need same number of interpolation points and values (got {} and {})".format(
                 len(centers),
@@ -681,14 +783,15 @@ class RBFDInterpolator:
             ndim = centers.shape[-1]
             target_extra = 1 + len(centers)*sum(self.triu_num(ndim, k) for k in range(1, nder+1))
             cur = 0
-            for degree in range(1, nder*10):# not sure where I need to stop?
-                cur = cur + self.triu_num(ndim, degree)
+            for degree in range(1, nder*20):# not sure where I need to stop?
+                cur = cur + (self.triu_num(ndim, degree) if not self.monomial_basis else ndim)
                 if cur >= target_extra:
                     break
 
         M = self.construct_matrix(centers, centers,
                                   degree=degree+self.extra_degree,
                                   deriv_order=nder,
+                                  monomials=self.monomial_basis,
                                   force_square=True) # deriv_order and degree collaborate to get a square matrix...?
         if len(M) > len(vals):
             vals = np.concatenate([vals, np.zeros(len(M) - len(vals))])
@@ -697,11 +800,16 @@ class RBFDInterpolator:
         #     print(M)
         #     print(vals[:, np.newaxis])
         if solver == "least_squares":
-            w_data = np.linalg.lstsq(M, vals)  # , rcond=None)
+            w_data = np.linalg.lstsq(M, vals, rcond=None)
         else:
             w_data = np.linalg.solve(M, vals)#, rcond=None)
             w_data = (w_data,)
-        return w_data, degree+self.extra_degree
+
+        if return_data:
+            data = (M, )
+            return w_data, degree+self.extra_degree, data
+        else:
+            return w_data, degree+self.extra_degree
 
     def get_neighborhood(self, pts, *, neighbors):
         _, yindices = self.tree.query(pts, k=neighbors)
@@ -714,92 +822,288 @@ class RBFDInterpolator:
     def create_neighbor_groups(self, inds, merge_limit=3):
         #TODO: lots of optimizations here, cutting down on loops, making use of sorting
         #      not doing useless setdiffs, etc.
-        inds, subinds = np.unique(inds, axis=0, return_index=True)
+        # _, sorting, subinds = nput_unique(inds, axis=0, return_index=True)
+        inds, sorting, counts = nput_unique(inds, axis=0, return_counts=True)
+        subinds = np.split(sorting, np.cumsum(counts))[:-1]
+        # raise Exception(nput_unique(inds, axis=0, return_index=True))
         allowed_diffs = len(inds[0]) - merge_limit
         if allowed_diffs > 0:
             groups = []
             idx_mapping = []
             for i,idx in zip(subinds, inds):
                 for n,g in enumerate(groups):
-                    diff = np.setdiff1d(g, idx, assume_unique=True)
+                    diff = np.setdiff1d(idx, g, assume_unique=True)
                     if len(diff) < allowed_diffs:
-                        groups[n] = np.concatenate(np.sort([g, diff]))
-                        idx_mapping[n].append(i)
+                        groups[n] = np.sort(np.concatenate([g, diff]))
+                        idx_mapping[n] = np.concatenate([idx_mapping[n], i])
                         break
                 else:
                     groups.append(idx)
-                    idx_mapping.append([i])
+                    idx_mapping.append(i)
         else:
             groups = inds
-            idx_mapping = subinds[:, np.newaxis]
+            idx_mapping = subinds
+        # print(np.cumsum(counts),
+        #       idx_mapping)
 
         return groups, idx_mapping
 
-    def eval(self, pts, deriv_order=0, neighbors=3, merge_neighbors=3):
+    class InterpolationData:
+        __slots__ = ['weights', 'centers', 'degree', 'scaling_data', 'solver_data']
+        def __init__(self, w, grid, degree, scaling_data, solver_data=None):
+            self.weights = w
+            self.centers = grid
+            self.degree = degree
+            self.scaling_data = scaling_data
+            self.solver_data = solver_data
+        # def eval(self, *args, **kwargs):
+        #     grid = self.grid[vals_inds]
+        #     vals = self.vals[vals_inds]
+        #     derivs = [d[vals_inds] for d in self.derivs]
+        #
+        #     grid, vals, derivs, scaling_data = self.RescalingData.initialize_subgrid_data(
+        #         grid,
+        #         vals,
+        #         derivs
+        #     )
+        #
+        #     # print(vals_inds)
+        #     # print(vals)
+        #     # print(derivs)
+        #
+        #     w, degree = self.solve_system(grid, vals, derivs)
+        #
+        #     self._pos_cache[k] = (w, grid, degree, scaling_data)
+
+    def construct_evaluation_matrix(self, pts, data, deriv_order=0):
+        """
+        :param pts:
+        :type pts:
+        :param data:
+        :type data:
+        :param deriv_order:
+        :type deriv_order:
+        :return:
+        :rtype:
+        """
+
+        scaling_data = data.scaling_data
+        # w = data.weights
+        degree = data.degree
+        centers = data.centers
+
+        sub_pts = scaling_data.apply_renormalization(pts)
+        M = self.construct_matrix(sub_pts, centers, degree=degree, deriv_order=deriv_order, monomials=self.monomial_basis)
+        return M
+
+    def apply_interpolation(self, pts, data, reshape_derivatives=True, deriv_order=0):
+        """
+
+        :param pts:
+        :type pts:
+        :param data:
+        :type data:
+        :param deriv_order:
+        :type deriv_order:
+        :return:
+        :rtype:
+        """
+
+        scaling_data = data.scaling_data
+        w = data.weights
+        degree = data.degree
+        centers = data.centers
+
+        sub_pts = scaling_data.apply_renormalization(pts)
+        M = self.construct_matrix(sub_pts, centers, degree=degree, deriv_order=deriv_order, monomials=self.monomial_basis)
+        v = np.dot(M, w[0])
+
+        npts = len(sub_pts)
+        vals = scaling_data.reverse_value_renormalization(v[:npts])
+        dvs = []
+        if deriv_order > 0:  # derivatives
+            offset = npts
+            ndim = pts.shape[-1]
+            for o in range(1, 1 + deriv_order):
+                num = npts * self.triu_num(ndim, o)
+                dvs.append(v[offset:offset + num])
+                # print(dvs[-1])
+                offset += num
+            # print(">>>", pts_inds, dvs)
+            dvs = scaling_data.reverse_derivative_renormalization(dvs, reshape=reshape_derivatives)
+
+        return vals, dvs
+
+    def construct_interpolation(self, inds, solver_data=False):
+        grid = self.grid[inds]
+        vals = self.vals[inds]
+        derivs = [d[inds] for d in self.derivs]
+
+        grid, vals, derivs, scaling_data = self.RescalingData.initialize_subgrid_data(
+            grid,
+            vals,
+            derivs
+        )
+
+        res = self.solve_system(grid, vals, derivs, return_data=solver_data)
+        if solver_data:
+            w, degree, data = res
+        else:
+            w, degree = res
+            data = None
+
+        new = self.InterpolationData(w, grid, degree, scaling_data, solver_data=data)
+        return new
+
+    class Interpolator:
+        __slots__ = ['data', 'parent']
+        def __init__(self, data:'RBFDInterpolator.InterpolationData', parent:'RBFDInterpolator'):
+            self.data = data
+            self.parent = parent
+        def __call__(self, pts, deriv_order=0, reshape_derivatives=True):
+            pts = np.asanyarray(pts)
+            smol = pts.ndim == 1
+            if smol:
+                pts = pts[np.newaxis]
+            vals, ders = self.parent.apply_interpolation(pts, self.data,
+                                                   deriv_order=deriv_order,
+                                                   reshape_derivatives=reshape_derivatives
+                                                   )
+
+            if deriv_order > 0:
+                return [vals] + ders
+            else:
+                return vals
+
+        def matrix(self, pts, deriv_order=0):
+            pts = np.asanyarray(pts)
+            smol = pts.ndim == 1
+            if smol:
+                pts = pts[np.newaxis]
+            return self.parent.construct_evaluation_matrix(pts, self.data, deriv_order=deriv_order)
+
+    def nearest_interpolation(self, pts, neighbors=15, solver_data=False, interpolator=True):
+        """
+
+        :param pts:
+        :type pts:
+        :param neighbors:
+        :type neighbors:
+        :param solver_data:
+        :type solver_data:
+        :param interpolator:
+        :type interpolator:
+        :return:
+        :rtype: RBFDInterpolator.Interpolator|RBFDInterpolator.InterpolationData
+        """
+        pts = np.asanyarray(pts)
+        smol = pts.ndim == 1
+        if smol:
+            pts = pts[np.newaxis]
+        inds = self.get_neighborhood(pts, neighbors=neighbors)
+        dats = [self.construct_interpolation(i, solver_data=solver_data) for i in inds]
+        if interpolator:
+            dats = [self.Interpolator(d, self) for d in dats]
+        if smol:
+            dats = dats[0]
+        return dats
+
+    def eval(self, pts, deriv_order=0, neighbors=15, merge_neighbors=5, reshape_derivatives=True):
         pts = np.asanyarray(pts)
         if pts.ndim == 1:
             pts = pts[np.newaxis]
+
         ind_grps, pts_grps = self.create_neighbor_groups(
             self.get_neighborhood(pts, neighbors=neighbors),
             merge_limit=merge_neighbors
         )
+        # print(ind_grps, pts_grps)
 
         val_sets = np.empty(len(pts))
         der_sets = None
         for pts_inds, vals_inds in zip(pts_grps, ind_grps): # we need to evaluate this entire loop for each point......
             k = tuple(vals_inds)
             if k not in self._pos_cache:
-                grid = self.grid[vals_inds]
-                vals = self.vals[vals_inds]
-                derivs = [d[vals_inds] for d in self.derivs]
-
-                grid, vals, derivs, scaling_data = self.RescalingData.initialize_subgrid_data(
-                    grid,
-                    vals,
-                    derivs
-                )
-
-                # print(vals_inds)
-                # print(vals)
-                # print(derivs)
-
-                w, degree = self.solve_system(grid, vals, derivs)
-
-                self._pos_cache[k] = (w, grid, degree, scaling_data)
-
-            w, grid, degree, scaling_data = self._pos_cache[k]
-            sub_pts = scaling_data.apply_renormalization(pts[pts_inds])
-            M = self.construct_matrix(sub_pts, grid, degree=degree, deriv_order=deriv_order)
-            v = np.dot(M, w[0])
-            # print("--"*20)
-            # print(v)
-            val_sets[pts_inds] = scaling_data.reverse_value_renormalization(v[:len(sub_pts)])
-            if deriv_order > 0: # derivatives
-                offset = len(sub_pts)
-                dvs = []
-                ndim = pts.shape[-1]
-                for o in range(1, 1+deriv_order):
-                    num = self.triu_num(ndim, o)
-                    dvs.append(v[offset:offset+num])
-                    # print(dvs[-1])
-                    offset += num
-                dvs = scaling_data.reverse_derivative_renormalization(dvs)
-                if der_sets is None:
-                    der_sets = [
-                        np.empty((len(pts),) + d.shape)
-                        for d in dvs
-                    ]
-                for n,d in enumerate(dvs):
-                    der_sets[n][pts_inds] = d
+                self._pos_cache[k] = self.construct_interpolation(vals_inds)
+            vals, ders = self.apply_interpolation(pts[pts_inds], self._pos_cache[k], deriv_order=deriv_order, reshape_derivatives=reshape_derivatives)
+            val_sets[pts_inds] = vals
+            if der_sets is None:
+                der_sets = [
+                    np.empty((len(pts),) + d.shape[1:])
+                    for d in ders
+                ]
+            for n, d in enumerate(ders):
+                der_sets[n][pts_inds] = d
 
         if deriv_order > 0:
-            return val_sets, der_sets
+            return [val_sets] + der_sets
         else:
             return val_sets
 
+    def __call__(self, pts, deriv_order=0, neighbors=15, merge_neighbors=5, reshape_derivatives=True):
+        return self.eval(pts, deriv_order=deriv_order, neighbors=neighbors, merge_neighbors=merge_neighbors, reshape_derivatives=reshape_derivatives)
 
-    def __call__(self, pts, deriv_order=0, neighbors=5):
-        return self.eval(pts, deriv_order=deriv_order, neighbors=neighbors)
+    @property
+    def global_interpolator(self):
+        if self._globint is None:
+            self._globint = self.Interpolator(
+                self.construct_interpolation(np.arange(len(self.grid))),
+                self
+            )
+        return self._globint
+
+
+    @classmethod
+    def create_function_interpolation(cls,
+                                      pts,
+                                      fn,
+                                      *derivatives,
+                                      derivative_order=None,
+                                      function_shape=None,
+                                      **opts):
+        from ..Scaffolding import ParameterManager
+        from .Taylor import FiniteDifferenceDerivative
+
+        if derivative_order is None:
+            derivative_order = len(derivatives)
+        vals = fn(pts)
+        dvals = []
+        for n,d in enumerate(derivatives):
+            if n < derivative_order:
+                dvals.append(d(pts))
+            else:
+                break
+
+        if pts.ndim == 1:
+            input_shape = 0
+        else:
+            input_shape = pts.shape[-1]
+
+        opts = ParameterManager(opts)
+        if len(dvals) < derivative_order:
+            fd_opts = opts.filter(FiniteDifferenceDerivative)
+            base_deriv_order = len(derivatives)
+            fdd = FiniteDifferenceDerivative(
+                derivatives[-1] if base_deriv_order > 0 else fn,
+                function_shape=(input_shape, 0) if function_shape is None else function_shape
+            )
+
+            deriv_tensors = fdd.derivatives(
+                center=pts,
+                **fd_opts
+            ).compute_derivatives(list(range(1, derivative_order - base_deriv_order + 1)))
+
+            dvals.extend(
+                np.moveaxis(a, 0, -1) for a in deriv_tensors[base_deriv_order:]
+            )
+
+        return cls(
+            pts,
+            vals,
+            *dvals,
+            **opts.exclude(FiniteDifferenceDerivative)
+        )
+
 
 class ExtrapolatorType(enum.Enum):
     Default='Automatic'

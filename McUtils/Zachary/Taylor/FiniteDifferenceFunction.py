@@ -110,7 +110,7 @@ class FiniteDifferenceFunction:
     @classmethod
     def regular_difference(cls,
                            order,
-                           mesh_spacing = None,
+                           mesh_spacing=None,
                            accuracy=2,
                            stencil=None,
                            end_point_accuracy=2,

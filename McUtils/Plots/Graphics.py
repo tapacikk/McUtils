@@ -1109,6 +1109,14 @@ class Graphics(GraphicsBase):
         self._prop_manager.plot_legend = value
 
     @property
+    def legend_style(self):
+        return self._prop_manager.legend_style
+    @legend_style.setter
+    def legend_style(self, value):
+        self._update_copy_opt('legend_style', value)
+        self._prop_manager.legend_style = value
+
+    @property
     def axes_labels(self):
         return self._prop_manager.axes_labels
     @axes_labels.setter
@@ -1348,6 +1356,10 @@ class Graphics3D(Graphics):
     """Extends the standard matplotlib 3D plotting to use all the Graphics extensions"""
 
     opt_keys = GraphicsBase.opt_keys | {'view_settings'}
+    known_keys = Graphics.opt_keys | {'animate'}
+
+    # layout_keys = axes_keys | figure_keys | GraphicsBase.layout_keys
+    # known_keys = layout_keys
 
     def __init__(self, *args,
                  figure=None,
@@ -1411,13 +1423,13 @@ class Graphics3D(Graphics):
             super().load_mpl()
 
     @staticmethod
-    def _subplot_init(*args, backend = Backends.MPL, mpl_backend=None, graphics=None, **kw):
+    def _subplot_init(*args, backend=Backends.MPL, mpl_backend=None, figure=None, **kw):
         if backend == Backends.VTK:
             from .VTKInterface import VTKWindow
             window = VTKWindow()
             return window, window
         else:
-            with graphics.pyplot as plt:
+            with figure.pyplot as plt:
                 subplot_kw = {"projection": '3d'}
                 if 'subplot_kw' in kw:
                     subplot_kw = dict(subplot_kw, **kw['subplot_kw'])
@@ -1440,8 +1452,8 @@ class Graphics3D(Graphics):
         """
 
         if figure is None:
-            figure, axes = self._subplot_init(*args, backend=self._backend, mpl_backend=self.mpl_backend, **kw)
-        elif isinstance(figure, GraphicsBase):
+            figure, axes = self._subplot_init(*args, backend=self._backend, mpl_backend=self.mpl_backend, figure=self, **kw)
+        elif isinstance(figure, GraphicsBase) or all(hasattr(figure, h) for h in ['layout_keys']):
             if axes is None:
                 axes = figure.axes
             figure = figure.figure
@@ -1450,7 +1462,12 @@ class Graphics3D(Graphics):
             if self._backend == Backends.MPL:
                 axes = figure
             else:
-                axes = figure.add_subplot(1, 1, 1, projection='3d')
+                if not hasattr(figure, 'add_subplot'):
+                    figure = figure.figure
+                if not hasattr(figure, 'axes'):
+                    axes = figure.add_subplot(1, 1, 1, projection='3d')
+                else:
+                    axes = figure.axe
 
         return figure, axes
 
@@ -1555,7 +1572,7 @@ class Graphics3D(Graphics):
     # set plot ranges
     @property
     def ticks(self):
-        return self._ticks
+        return self._prop_manager.ticks
     @ticks.setter
     def ticks(self, value):
         self._prop_manager.ticks = value
@@ -1576,7 +1593,7 @@ class Graphics3D(Graphics):
 
     @property
     def aspect_ratio(self):
-        return self._aspect_ratio
+        return None#self._aspect_ratio
     @aspect_ratio.setter
     def aspect_ratio(self, ar):
         pass

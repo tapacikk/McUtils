@@ -18,6 +18,18 @@ class FiniteDifferenceDerivative:
     The potential for optimization undoubtedly exists, but the idea is to provide as _simple_ an interface as possible.
     Robustification needs to be done, but is currently used in `CoordinateSystem.jacobian` to good effect.
     """
+    __props__ = (
+        'function_shape',
+        'displacement_function',
+        'prep',
+        'lazy',
+        'mesh_spacing',
+        'stencil',
+        'accuracy',
+        'cache_evaluations',
+        'parallelizer',
+        'logger'
+    )
     def __init__(self,
                  f,
                  function_shape=(0, 0),
@@ -45,7 +57,8 @@ class FiniteDifferenceDerivative:
     def __call__(self, *args, **opts):
         return self.derivatives(*args, **opts)
 
-    def derivatives(self, center,
+    def derivatives(self,
+                    center,
                     displacement_function=None,
                     prep=None,
                     lazy=None,
@@ -116,6 +129,17 @@ class DerivativeGenerator:
     The lower-level class that takes the entire high-level spec and converts it into derivatives.
     Allows indexing for memory efficiency
     """
+    __props__ = (
+        'displacement_function',
+        'prep',
+        'lazy',
+        'mesh_spacing',
+        'stencil',
+        'accuracy',
+        'cache_evaluations',
+        'parallelizer',
+        'logger'
+    )
     def __init__(self,
                  f_spec,
                  center,
@@ -544,7 +568,7 @@ class DerivativeGenerator:
         for spec, disp_data, fd_data in self._get_fd_data(specs):
             yield self._get_single_deriv(spec, disp_data, fd_data, return_coords)
 
-    def _get_specs(self, order, pos = (), coordinates = None):
+    def _get_specs(self, order, pos=(), coordinates=None):
         """
         We compute the positions defined by the total order of the derivative as they would show up in the total tensor
         If a given block of derivatives is specified **[NOTE: I didn't finish this docstring and have no idea what it was supposed to say...]**
@@ -562,6 +586,8 @@ class DerivativeGenerator:
             coordinates = np.arange(np.product(self.coord_shape))
         elif not isinstance(coordinates[0], (int, np.integer)):
             coordinates = self._fidx(coordinates)
+
+        # print(coordinates, self._fidx, self.coord_shape)
 
         pos = [slice(None, None, None) if a is None else a for a in pos]
         if len(pos) == order and all(isinstance(i, (int, np.integer)) for i in pos):

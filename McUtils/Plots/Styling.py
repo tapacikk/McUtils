@@ -84,7 +84,7 @@ class PlotLegend(list):
     marker_synonyms={'-':'line', '.':'dot'}
     @classmethod
     def canonicalize_bit(cls, marker='-', **opts):
-        if isinstance(marker, str) and marker is cls.marker_synonyms:
+        if isinstance(marker, str) and marker in cls.marker_synonyms:
             marker = cls.marker_synonyms[marker]
         if isinstance(marker, str):
             return cls.load_constructors()[marker](**opts)
