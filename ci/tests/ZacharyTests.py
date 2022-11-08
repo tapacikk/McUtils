@@ -2,7 +2,7 @@
 # because of the way multiprocessing works we need this to avoid crashes
 try:
     from Peeves.TestUtils import *
-    from Peeves import BlockProfiler
+    from Peeves import BlockProfiler, Timer
 except:
     pass
 from unittest import TestCase
@@ -1711,74 +1711,12 @@ class ZacharyTests(TestCase):
         sym = Symbols('xyz')
         e = sym.cos(sym.x)
         d = e.deriv()
-        raise Exception(
-            e([1, 2, 3]),
-            d([1, 2, 3]),
-            np.cos([1, 2, 3]),
-            np.sin([1, 2, 3])
-        )
 
-        expr = sym.cos(sym.x)**2 + sym.cos(sym.y)**2
-
-        der = expr.deriv()
-        print(der.functions[0])
-        raise Exception(der.functions[0].functions[0].functions)
-
-
-        def morse(x, de=10, a=2, re=0):
-            return de*(1-np.exp(-a*(x-re)))**2
-        def morse_prod(x, de=10, a=2, re=0):
-            base_vals = de*(1-np.exp(-a*(x-re)))**2
-            if x.ndim > 1:
-                base_vals = np.product(base_vals, axis=-1)
-            return base_vals
-        def morse(x, de=10, a=2, re=0):
-            base_vals = de*(1-np.exp(-a*(x-re)))**2
-            if x.ndim > 1:
-                base_vals = np.product(base_vals, axis=-1)
-            return base_vals
-        def morse_deriv1D(n):
-            if n == 0:
-                return morse
-            def morse_deriv(r, de=10, a=2, re=0):
-                return ( (-1)**(n-1) * 2*de*a**n * np.exp(-2*a*(r - re)) * (
-                   np.exp(a*(r - re)) - 2**(n-1)
-                ) )
-            return morse_deriv
-        from McUtils.Combinatorics import SymmetricGroupGenerator
-        def morse_deriv(n, ndim=1):
-            if n == 0:
-                return morse
-            if ndim == 1:
-                def deriv(r, de=10, a=2, re=0, _f=morse_deriv1D(n)):
-                    return _f(r, de=de, a=a, re=re).reshape((-1,) + (1,) * n)
-                return deriv
-            partitions = SymmetricGroupGenerator(ndim).get_terms(n)
-            uterms = {k:morse_deriv1D(k) for k in np.unique(partitions.flatten())}
-            def deriv(r, de=10, a=2, re=0):
-                res = np.zeros((len(r),) + (ndim,) * n)
-                # uvals = {k:t(r, de=de, a=a, re=re) for k,t in uterms.items()}
-                for i,pos in enumerate(itertools.combinations_with_replacement(range(ndim), r=n)):
-                    vals = [uterms[k](r[..., d], de=de, a=a, re=re) for d,k in enumerate(partitions[i])]
-                    val = np.prod(vals, axis=0)
-                    for p in itertools.permutations(pos):
-                        res[(slice(None, None, None),)+p] = val
-                return res
-            return deriv
-
-
-        # g = np.linspace(-.5, 1.2, 100)
-        # fig = None
-        # colors = ['black', 'red', 'green', 'blue', 'orange', 'purple']
-        # legend = [{'marker':"-", 'color':c} for c in colors]
-        # for n in range(6):
-        #     fig = plt.Plot(g, morse_deriv(n)(g), color=colors[n], figure=fig, plot_legend=legend)
-        # fig.show()
-        # raise Exception(...)
+        fn = sym.morse(sym.x) + sym.morse(sym.y)
 
         np.random.seed(3)
         pts = np.random.uniform(low=-.5, high=1.2, size=30)
-        # plt.ScatterPlot(pts, morse(pts)).show()
+        plt.ScatterPlot(pts, morse(pts)).show()
 
         # base_interp = RBFDInterpolator.create_function_interpolation(
         #     pts.reshape((-1, 1)),
@@ -1827,10 +1765,35 @@ class ZacharyTests(TestCase):
 
     @debugTest
     def test_Symbolics(self):
+
+        from McUtils.Misc import njit
+
+        @njit
+        def farts():
+            return np.prod((np.random.rand(10, 2), np.random.rand(10, 2)))
+
+        raise Exception(farts().shape)
+
         sym = Symbols('xyz')
         x, y, z = sym.vars
 
         e = sym.cos(x)
+        c = e.compile()
+
+        # pts = np.random.rand(10000)
+        #
+        # with Timer("base"):
+        #     e(pts)
+        # with Timer('comp'):
+        #     c(pts)
+        #
+        #
+        # import astunparse
+        # print(
+        #     astunparse.unparse(e.deriv().get_compile_spec())
+        # )
+        # raise Exception('...')
+
         d = e.deriv()
         pts = np.array([1, 2, 3])
         self.assertTrue(np.allclose(e(pts), np.cos(pts)))
@@ -1840,9 +1803,6 @@ class ZacharyTests(TestCase):
         m = sym.morse(x)
         self.assertTrue(np.allclose(m(pts), (1-np.exp(-pts))**2))
         self.assertTrue(np.allclose(m.deriv()(pts), 2*np.exp(-pts)*(1 - np.exp(-pts))))
-        ds = m.deriv().simplify()
-        print(ds.tree_repr())
-        raise Exception(ds)
 
         e = sym.cos(x) + sym.cos(y)
         pts = np.array([[1, 0], [2, 1], [3, 2]])
@@ -1864,6 +1824,96 @@ class ZacharyTests(TestCase):
             )
         )
 
+        import sympy
+        np.random.seed(0)
+        new_pts = np.random.rand(3, 2)
+
+        comp_expr = sym.morse(x)*sym.morse(y)# + sym.morse(x) - sym.cos(y)
+        sx, sy = sympy.symbols(["x", "y"])
+        sympy_expr = (1-sympy.exp(-sx))**2 *(1-sympy.exp(-sy))**2
+        # print(
+        #     comp_expr(new_pts),
+        #     sympy.lambdify([x, y], sympy_expr)(
+        #         new_pts[:, 0],
+        #         new_pts[:, 1]
+        #     )
+        # )
+
+        self.assertTrue(
+            np.allclose(
+                comp_expr(new_pts),
+                sympy.lambdify([sx, sy], sympy_expr)(
+                    new_pts[:, 0],
+                    new_pts[:, 1]
+                )
+            )
+        )
+
+        # print(comp_expr.functions[0].tree_repr())
+
+        comp_dexpr = comp_expr.deriv()
+        self.assertTrue(
+            np.allclose(
+                comp_dexpr(new_pts),
+                np.array([
+                    sympy.lambdify([sx, sy], sympy_expr.diff(sx))(
+                        new_pts[:, 0],
+                        new_pts[:, 1]
+                    ),
+
+                    sympy.lambdify([sx, sy], sympy_expr.diff(sy))(
+                        new_pts[:, 0],
+                        new_pts[:, 1]
+                    )
+                    ])
+            )
+        )
+        # raise Exception(comp_dexpr.functions[0], sympy_expr.diff(sx))
+        #
+        # raise Exception(comp_expr)
+
+        import astunparse
+
+        # print(astunparse.unparse(comp_dexpr.functions[0].get_compile_spec()))
+        # raise Exception(astunparse.unparse(comp_dexpr.functions[0].get_compile_spec()))
+
+        new_pts = np.random.rand(10000, 2)
+        with Timer(tag="Custom"):
+            dexpr_res = comp_dexpr(new_pts)
+        comp_dexpr_compiled = comp_dexpr.compile()
+        # import astunparse
+        # raise Exception(astunparse.unparse(comp_dexpr.get_compile_spec()))
+        # compiled_exprs = [
+        #     comp_dexpr.functions[0].compile(),
+        #     comp_dexpr.functions[1].compile()
+        # ]
+        # raise Exception(compiled_exprs[0](new_pts))
+        with Timer(tag="Compiled"):
+            # comp_res = np.array([
+            #     e(new_pts)
+            #     for e in compiled_exprs
+            #     ])
+            comp_res = comp_dexpr_compiled(new_pts)
+        # raise Exception(comp_res)
+        exprs = [
+            sympy.lambdify([sx, sy], sympy_expr.diff(sx)),
+            sympy.lambdify([sx, sy], sympy_expr.diff(sy))
+        ]
+        with Timer(tag="SymPy"):
+            sympy_res = np.array([
+                e(
+                    new_pts[:, 0],
+                    new_pts[:, 1]
+                )
+                for e in exprs
+            ])
+
+        self.assertTrue(
+            np.allclose(dexpr_res, sympy_res)
+        )
+        self.assertTrue(
+            np.allclose(dexpr_res, comp_res)
+        )
 
 
     #endregion

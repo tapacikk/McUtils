@@ -3,6 +3,7 @@ import abc, numpy as np, itertools, collections, copy
 from functools import reduce
 
 from ...Combinatorics import SymmetricGroupGenerator
+from  ...Misc import Abstract
 
 
 __all__ = [
@@ -20,8 +21,91 @@ class Functionlike(metaclass=abc.ABCMeta):
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         ...
 
+    compile_vars = 0
+    @staticmethod
+    def cur_var():
+        return Functionlike.compile_vars
+    @staticmethod
+    def inc_var():
+        v = Functionlike.compile_vars
+        Functionlike.compile_vars += 1
+        return v
+    @staticmethod
+    def reset_var():
+        Functionlike.compile_vars = 0
+    @staticmethod
+    def get_compile_var():
+        return Abstract.Name("var_"+str(Functionlike.inc_var()))
+    def get_compile_spec(self)->'Abstract.Expr':
+        raise NotImplementedError("don't know how to compile {}".format(self))
+    # def get_eval_ast(self)->'ast.Lambda':
+    #     return ast.fix_missing_locations(ast.Lambda(
+    #             args=ast.arguments(
+    #                 posonlyargs=[],
+    #                 args=[ast.arg(arg='x', annotation=None, type_comment=None)],
+    #                 vararg=None,
+    #                 kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]
+    #             ),
+    #             body=self.get_compile_spec()
+    #         ))
+    # def lambda_wrap(self, var, expr)->'ast.Lambda':
+    #     return ast.Lambda(
+    #         args=ast.arguments(
+    #             posonlyargs=[],
+    #             args=[ast.arg(arg=var, annotation=None, type_comment=None)],
+    #             vararg=None,
+    #             kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]
+    #         ),
+    #         body=expr
+    #     )
+    # @staticmethod
+    # def ast_var(var):
+    #     return ast.Name(id=var, ctx=ast.Load())
+
+    # @staticmethod
+    # def ast_call(fn, *args, **kwargs):
+    #     return ast.Call(
+    #         func=fn,
+    #         args=[*args],
+    #         keyword=[
+    #             ast.keyword(arg=k, value=v)
+    #             for k,v in kwargs.items()
+    #         ]
+    #     )
+    # @classmethod
+    # def ast_attr(cls, obj, attr):
+    #     if isinstance(obj, str):
+    #         obj = cls.ast_var(obj)
+    #     return ast.Attribute(value=obj, attr=attr, ctx=ast.Load())
+    # @staticmethod
+    # def ast_np(fun, *args, **kwargs):
+    #     return ast.Call(
+    #         func=ast.Attribute(value=ast.Name(id='np', ctx=ast.Load()), attr=fun, ctx=ast.Load()),
+    #         args=[*args],
+    #         keyword=[
+    #             ast.keyword(arg=k, value=v)
+    #             for k,v in kwargs.items()
+    #         ]
+    #     )
+    # @classmethod
+    # def ast_nparray(cls, *args):
+    #     return cls.ast_np('array', ast.List(elts=[*args], ctx=ast.Load()))
+
+    def compile(self, mode='numba'):
+        self.reset_var()
+        expr = eval(
+            compile(
+                self.get_compile_spec().to_eval_expr(),
+                "<expression>", mode='eval'
+            ),
+            {'np':np}
+        )
+        if mode=='numba':
+            from ...Misc import njit
+            expr = njit(expr)
+        return expr
     @abc.abstractmethod
-    def deriv(self, *which) -> 'Functionlike':
+    def deriv(self, *which, simplify=True) -> 'Functionlike':
         ...
 
     def __call__(self, r):
@@ -192,10 +276,12 @@ class ElementaryFunction(Functionlike):
     def get_deriv(self) -> 'ElementaryFunction':
         ...
 
-    def deriv(self, n=1):  # this can be overloaded but for now this is the easy way to bootstrap
+    def deriv(self, n=1, simplify=True):  # this can be overloaded but for now this is the easy way to bootstrap
         d = self.get_deriv()
         for _ in range(n - 1):
             d = d.get_deriv()
+        if simplify:
+            d = d.simplify()
         return d
 
     # @classmethod
@@ -217,6 +303,8 @@ class Variable(ElementaryFunction):
         self.name = name
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         return r
+    def get_compile_spec(self):
+        return Abstract.Lambda(Abstract.Name(self.name))(Abstract.Name(self.name))
     def get_deriv(self) -> 'Functionlike':
         return Scalar(1)
     def simplify(self, iterations=10) ->'Functionlike':
@@ -249,7 +337,7 @@ class ElementaryVaradic(ElementaryFunction):
     def get_sortval(self):
         return self.sort_key + sum(f.sort_val for f in self.functions)
     def __hash__(self):
-        return hash((ElementarySummation, self.functions, self.idx))
+        return hash((type(self), self.functions, self.idx))
     def tree_equivalent(self, other):
         return (
                 len(other.functions) == len(self.functions)
@@ -300,6 +388,13 @@ class ElementarySummation(ElementaryVaradic):
 
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return np.sum([f(r) for f in self.functions], axis=0)
+    def get_compile_spec(self):
+        var = self.get_compile_var()
+        np = Abstract.Name('np')
+        args = [f.get_compile_spec()(var) for f in self.functions]
+        return Abstract.Lambda(var)(
+            np.sum(np.array(args), axis=0)
+        )
     def get_deriv(self) ->'ElementaryFunction':
         fns = self.functions
         return type(self)(*[f.deriv() for f in fns])
@@ -355,6 +450,16 @@ class ElementaryProduct(ElementaryVaradic):
 
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return np.prod([f(r) for f in self.functions], axis=0)
+    def get_compile_spec(self):
+        var = self.get_compile_var()
+        np = Abstract.Name('np')
+        args = [
+            f.get_compile_spec()(var)
+            for f in self.functions
+        ]
+        return Abstract.Lambda(var)(
+            np.prod(np.array(args), axis=0)
+        )
     def get_deriv(self) ->'ElementaryFunction':
         fns = self.functions
         prod = type(self)
@@ -400,6 +505,17 @@ class ElementaryComposition(ElementaryVaradic):
 
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return reduce(lambda r,f:f(r), reversed(self.functions), r)
+
+    def get_compile_spec(self):
+        var = self.get_compile_var()
+        return Abstract.Lambda(var)(
+            reduce(
+                lambda r, f: f.get_compile_spec(r),
+                reversed(self.functions),
+                var
+            )
+        )
+
     def get_deriv(self) ->'ElementaryFunction':
         rev = list(reversed(self.functions))
         return ElementaryProduct(*[
@@ -513,11 +629,51 @@ class MultivariateFunction(Functionlike):
     def ndim(self):
         return len(self.indices)
 
+    @staticmethod
+    def x_slice(x, idx):
+        return ast.Subscript(
+            value=x,
+            slice=ast.Index(
+                value=ast.Tuple(
+                    elts=[ast.Constant(value=Ellipsis, kind=None), ast.Constant(value=idx, kind=None)],
+                    ctx=ast.Load()
+                )
+            ),
+            ctx=ast.Load()
+        )
+
+    @staticmethod
+    def slice_lambda(expr, idx): # for taking slices in compiled statements
+        return ast.Call(
+            func=ast.Lambda(
+                args=ast.arguments(
+                    posonlyargs=[],
+                    args=[ast.arg(arg='x', annotation=None, type_comment=None)],
+                    vararg=None,
+                    kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]
+                ),
+                body=expr
+            ),
+            args=[
+                ast.Subscript(
+                    value=ast.Name(id='x', ctx=ast.Load()),
+                    slice=ast.Index(
+                        value=ast.Tuple(
+                            elts=[ast.Constant(value=Ellipsis, kind=None), ast.Constant(value=idx, kind=None)],
+                            ctx=ast.Load()
+                            )
+                    ),
+                    ctx=ast.Load()
+                )
+            ],
+            keywords=[]
+        )
+
     @abc.abstractmethod
     def get_deriv(self, *counts) -> 'Functionlike':
         ...
 
-    def deriv(self, *which, order=1, ndim=None) -> 'Functionlike':
+    def deriv(self, *which, order=1, ndim=None, simplify=True) -> 'Functionlike':
         if len(which) == 0:
             ndim = self.ndim if ndim is None else ndim
             res = np.full((ndim,) * order, None)
@@ -526,17 +682,73 @@ class MultivariateFunction(Functionlike):
                 fun = self.get_deriv(*partitions[i])
                 for p in itertools.permutations(pos):
                     res[p] = fun
-            return TensorFunction(res, symmetric=True, indices=self.indices)
+            deriv = TensorFunction(res, symmetric=True, indices=self.indices)
         else:
             count_map = {k:v for k,v in zip(*np.unique(which, return_counts=True))}
-            return self.get_deriv(*(count_map.get(k, 0) for k in range(self.ndim)))
+            deriv = self.get_deriv(*(count_map.get(k, 0) for k in range(self.ndim)))
 
-    sort_key = 0
+        if simplify:
+            deriv = deriv.simplify()
+        return deriv
+
+    sort_key = None
     def get_sortval(self):
         return self.sort_key + sum(f.sort_val for f in self.functions)
 
     def apply_simplifications(self) ->'Functionlike':
-        return type(self)(*(f.simplify() for f in self.functions), indices=self.indices)
+        return type(self)(
+            *(f.simplify() for f in self.functions),
+            indices=self.indices
+        )
+
+    def __hash__(self):
+        return hash((type(self), self.functions, self.indices))
+    def tree_equivalent(self, other):
+        return (
+                len(other.functions) == len(self.functions)
+                and (self.indices == other.indices).all()
+                and all(f1 == f2 for f1, f2 in zip(self.functions, other.functions))
+        )
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.tree_equivalent(other)
+
+    def get_children(self):
+        return self.functions
+
+    # @classmethod
+    # @abc.abstractmethod
+    # def get_repr(cls, fns) -> str:
+    #     ...
+    # def __repr__(self):
+    #     return self.get_repr(self.functions)
+
+    def tree_repr(self, sep="\n", indent=""):
+        return "{name}({s}{terms}{s})".format(
+            name=type(self).__name__,
+            s=sep + indent,
+            terms=("," + sep + indent).join(f.tree_repr(sep=sep, indent=indent + " ") for f in self.functions)
+        )
+
+    def get_child(self, pos):
+        if isinstance(pos, (int, np.integer)):
+            return self.functions[pos]
+        else:
+            fn = self
+            for p in pos:
+                fn = fn.get_child(p)
+        return fn
+    def replace_child(self, pos, new) -> 'ElementaryVaradic':
+        if not isinstance(pos, (int, np.integer)):
+            if len(pos) == 1:
+                pos = pos[0]
+            else:
+                new = self.get_child(pos[0]).replace_child(pos[1:], new)
+                pos = pos[0]
+
+        fn = self.copy()
+        fn.functions = fn.functions[:pos] + (new,) + fn.functions[pos + 1:]  # ez?
+        return fn
 
 class TensorFunction(MultivariateFunction):
     """
@@ -547,47 +759,163 @@ class TensorFunction(MultivariateFunction):
         self.symmetric = symmetric
         super().__init__(*functions.flat, indices=indices)
         self.functions = functions
-    def eval(self, r:np.ndarray) ->'np.ndarray':
+    def _get_res_array(self, v)->np.ndarray:
+        if isinstance(v, np.ndarray):
+            res = np.empty(self.functions.shape + v.shape, dtype=v.dtype)
+        elif isinstance(v, str):
+            res = np.empty(self.functions.shape, dtype=object) # someday maybe I'll treat as strings...?
+        elif isinstance(v, (int, np.integer)):
+            res = np.empty(self.functions.shape, dtype=int)
+        elif isinstance(v, (float, np.floating)):
+            res = np.empty(self.functions.shape, dtype=float)
+        else:
+            res = np.empty(self.functions.shape, dtype=object)
+        return res
+    def apply_function(self, fn, res_builder=None)->np.ndarray:
         flat = self.functions.flat
         if self.symmetric:
             _cache = {}
+        if res_builder is None:
+            res_builder = self._get_res_array
         res = None
         for f in flat:
             idx = np.unravel_index(flat.index - 1, self.functions.shape)
             if not self.symmetric:
-                v = f(r)
+                v = fn(f)
                 if res is None:
-                    res = np.empty(self.functions.shape + v.shape)
+                    res = res_builder(v)
                 res[idx] = v
             else:
                 key = tuple(np.sort(idx))
                 if key not in _cache:
-                    _cache[key] = f(r)
+                    _cache[key] = fn(f)
                 if res is None:
-                    res = np.empty(self.functions.shape + _cache[key].shape)
+                    res = res_builder(_cache[key])
                 res[idx] = _cache[key]
         return res
+    def eval(self, r:np.ndarray) ->'np.ndarray':
+        return self.apply_function(
+            lambda f:f(r[..., f.idx] if f.idx is not None else r) if isinstance(f, ElementaryFunction) else f(r)
+        )
+    def get_compile_spec(self) ->'ast.Lambda':
+        var = self.get_compile_var()
+        var_2 = Abstract.Name("_")
+        spec_calls = [
+            f.get_compile_spec()(
+                args=[
+                    self.x_slice(ast.Name(id=var, ctx=ast.Load()), f.idx)
+                    if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                    ast.Name(var, ctx=ast.Load())
+                ],
+                keywords=[]
+            )
+
+            for f in self.functions.flat
+        ]
+        # call with appropriate slicing behavior
+        spec_array = self.ast_nparray(*spec_calls)
+
+        return self.lambda_wrap(
+            var,
+            ast.Call( # just a reshape...
+                func=self.lambda_wrap(
+                    var_2,
+                    self.ast_np('reshape',
+                                ast.Name(id=var_2, ctx=ast.Load()),
+                                ast.BinOp(
+                                    left=ast.Tuple(elts=[ast.Constant(value=s, kind=None) for s in self.functions.shape], ctx=ast.Load()),
+                                    op=ast.Add(),
+                                    right=ast.Subscript(
+                                        value=self.ast_attr(var_2, 'shape'),
+                                        slice=ast.Slice(lower=ast.Constant(value=1, kind=None), upper=None, step=None), ctx=ast.Load()
+                                    )
+                                )
+                        )
+                ),
+                args=[spec_array],
+                keywords=[]
+            )
+        )
     def get_deriv(self, *counts)->'TensorFunction':
-        flat = self.functions.flat
-        if self.symmetric:
-            _cache = {}
-        res = np.full(self.functions.shape, None)
-        for f in flat:
-            idx = np.unravel_index(flat.index - 1, self.functions.shape)
-            if not self.symmetric:
-                res[idx] = f.get_deriv(*counts)
-            else:
-                key = tuple(np.sort(idx))
-                if key not in _cache:
-                    _cache[key] = f.get_deriv(*counts)
-                res[idx] = _cache[key]
-        return TensorFunction(res, indices=self.indices)
+        return TensorFunction(self.apply_function(lambda f:f.get_deriv(*counts)), indices=self.indices)
     def get_sortval(self):
         return self.sort_key + sum(f.sort_val for f in self.functions.flat)
     def apply_simplifications(self) ->'Functionlike':
-        return type(self)(np.apply_along_axis(lambda f:f.simplify(), self.functions), indices=self.indices)
+        return type(self)(self.apply_function(lambda f:f.simplify()), indices=self.indices)
     def __repr__(self):
         return "{}({})".format(type(self).__name__, self.functions)
+
+    @classmethod
+    def format_repr_array(cls, arr, ilevel=0, brackets="[]", sep=",\n", indent=" "):
+        # # non-recursive depth-first walk of the array tree rather than
+        # # itertools based or arr.flat based walk since both of those require
+        # # explicit tracking of indices
+        # bl, br = brackets
+        # queue = collections.deque()
+        # queue.append(arr)
+        # lines = []
+        # while queue:
+        #     cur = queue.pop()
+        #     if isinstance(cur[0], np.ndarray):
+        #         queue.extend(cur)
+        #         lines.append(bl)
+        #         ilevel += 1
+        #     else:
+        #         lines.append(indent+bl)
+        #         lines.append((sep+indent).join(cur))
+        #         lines.append(indent+br)
+        #         ilevel -= 1
+        # return "\n".join(lines)
+
+        ## Meh. Recursion is easier.
+        lines = []
+        lines.append((ilevel*indent)+brackets[0])
+        if isinstance(arr[0], np.ndarray):
+            for row in arr:
+                lines.append(cls.format_repr_array(row, ilevel=ilevel+1, brackets=brackets, sep=sep, indent=indent))
+        else:
+            lines.append((ilevel*indent)+sep.join(arr))
+        lines.append((ilevel*indent)+brackets[1])
+        return "\n".join(lines)
+
+    def tree_equivalent(self, other):
+        return (
+                len(other.functions) == len(self.functions)
+                and (self.indices == other.indices).all()
+                and (self.functions == other.functions).all()
+        )
+    def tree_repr(self, sep="\n", indent=""):
+        return "{name}({terms})".format(
+            name=type(self).__name__,
+            terms=self.format_repr_array(self.apply_function(lambda f:f.tree_repr(sep=sep, indent=indent + " ")))
+        )
+    def copy(self)->'TensorFunction':
+        cp = super().copy() #type: TensorFunction
+        cp.functions = cp.functions.copy()
+        return cp
+
+    def get_children(self)->'Iterable[Functionlike]':
+        return self.functions.flat
+    def get_child(self, pos)->'Functionlike':
+        if isinstance(pos, (int, np.integer)):
+            pos = np.unravel_index(pos, self.functions.shape)
+            return self.functions[pos]
+        else:
+            fn = self
+            for p in pos:
+                fn = fn.get_child(p)
+        return fn
+    def replace_child(self, pos, new) -> 'TensorFunction':
+        if not isinstance(pos, (int, np.integer)):
+            if len(pos) == 1:
+                pos = pos[0]
+            else:
+                new = self.get_child(pos[0]).replace_child(pos[1:], new)
+                pos = pos[0]
+
+        fn = self.copy()
+        fn.functions[pos] = new
+        return fn
 
 class Summation(MultivariateFunction):
     """
@@ -597,6 +925,28 @@ class Summation(MultivariateFunction):
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         vals = [f(r[..., f.idx] if f.idx is not None else r) if isinstance(f, ElementaryFunction) else f(r) for f in self.functions]
         return np.sum(vals, axis=0)
+    def get_compile_spec(self) -> 'ast.Lambda':
+        var = self.get_compile_var()
+        args = [
+            ast.Call(
+                func=f.get_compile_spec(),
+                args=[
+                    self.x_slice(ast.Name(id=var, ctx=ast.Load()), f.idx)
+                    if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                    ast.Name(var, ctx=ast.Load())
+                ],
+                keywords=[]
+            )
+
+            for f in self.functions
+        ]
+        return self.lambda_wrap(
+            var,
+            self.ast_np('sum',
+                        self.ast_nparray(*args),
+                        axis=ast.Constant(value=0, kind=None)
+                        )
+        )
 
     @classmethod
     def construct(cls, *terms, indices=None):
@@ -616,17 +966,67 @@ class Summation(MultivariateFunction):
 
     def get_deriv(self, *counts)->'MultivariateFunction':
         needs_der_pos = {i for i,c in enumerate(counts) if c > 0}
-        return type(self)(*(
-            f.deriv(counts[i])
-                if isinstance(f, ElementaryFunction) else
-            f.get_deriv(*counts)
-            for i, f in enumerate(self.functions)
+        if len(needs_der_pos) == 1:
+            idx = list(needs_der_pos)[0]
+        else:
+            idx = -1
+        return type(self)(
+            *(
+                f.deriv(counts[idx])
+                    if isinstance(f, ElementaryFunction) else
+                f.get_deriv(*counts)
+                for i, f in enumerate(self.functions)
 
-            if not isinstance(f, ElementaryFunction) or
-               len(needs_der_pos) == 1 and f.idx in needs_der_pos
-        ), indices=self.indices)
+                if not isinstance(f, ElementaryFunction) or
+                   len(needs_der_pos) == 1 and (f.idx is None or f.idx in needs_der_pos)
+            ),
+            indices=self.indices
+        )
 
     sort_key = 1000
+
+    @classmethod
+    def merge_product(cls, f1, f2):
+        if isinstance(f1, (Product, ElementaryProduct)):
+            scalars1 = [f.scalar for f in f1.functions if isinstance(f, Scalar)]
+            terms1 = [f for f in f1.functions if not isinstance(f, Scalar)]
+        else:
+            scalars1 = [1]
+            terms1 = [f1]
+
+        if isinstance(f2,  (Product, ElementaryProduct)):
+            scalars2 = [f.scalar for f in f2.functions if isinstance(f, Scalar)]
+            terms2 = [f for f in f2.functions if not isinstance(f, Scalar)]
+        else:
+            scalars2 = [1]
+            terms2 = [f2]
+
+        if len(terms1) == len(terms2) and all(t1 == t2 for t1, t2 in zip(terms1, terms2)):
+            return type(f1)(Scalar(sum(scalars1) + sum(scalars2)), *terms1)
+
+    @classmethod
+    def reduce_pair(cls, f1, f2) -> 'Iterable[Functionlike]|bool':
+        # implement possible reduction rules for sums
+        mp = cls.merge_product(f1, f2)
+        return [mp] if mp is not None else mp
+
+    def apply_simplifications(self):
+        simp_funs = [f.simplify() for f in sorted(self.functions, key=lambda f: f.sort_val)]
+        newfs = [
+            x
+            for f in simp_funs
+            for x in (f.functions if isinstance(f, (ElementarySummation, Summation)) else [f])
+            if not self.is_zero(f)
+        ]
+
+        # newfs = self.merge_funcs(newfs, self.reduce_pair)
+
+        if len(newfs) == 0:
+            return Scalar(0)
+        elif len(newfs) == 1:
+            return newfs[0]
+        else:
+            return type(self)(*sorted(newfs, key=lambda f: f.sort_val), indices=self.indices)
 
     def __repr__(self):
         return ElementarySummation.get_repr(self.functions)
@@ -639,6 +1039,26 @@ class Product(MultivariateFunction):
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         vals = [f(r[..., f.idx] if f.idx is not None else r) if isinstance(f, ElementaryFunction) else f(r) for f in self.functions]
         return np.product(vals, axis=0)
+    def get_compile_spec(self) ->'ast.Lambda':
+        var = self.get_compile_var()
+        args = [
+            ast.Call(
+                func=f.get_compile_spec(),
+                args=[
+                    self.x_slice(ast.Name(id=var, ctx=ast.Load()), f.idx)
+                        if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                    ast.Name(var, ctx=ast.Load())
+                ],
+                keywords=[]
+            ) for f in self.functions
+        ]
+        return self.lambda_wrap(
+            var,
+            self.ast_np('prod',
+                        self.ast_nparray(*args),
+                        axis=ast.Constant(value=0, kind=None)
+                        )
+        )
 
     @classmethod
     def construct(cls, *terms, indices=None):
@@ -660,16 +1080,36 @@ class Product(MultivariateFunction):
         return cls.construct_varivariate(ElementaryProduct, cls, terms, indices=indices)
 
     def get_deriv(self, *counts):
-        return Summation.construct(*(
-            type(self)(
-                *(
-                    f.get_deriv(*counts) if j==i else f
-                    for j,f in enumerate(self.functions)
-                ),
-                indices=self.indices
-            )
-            for i in range(len(self.functions))
-        ), indices=self.indices)
+        needs_der_pos = {i for i, c in enumerate(counts) if c > 0}
+        if len(needs_der_pos) == 1:
+            idx = list(needs_der_pos)[0]
+        else:
+            idx = -1
+        return Summation.construct(
+            *(
+                type(self)(
+                    *(
+                        (
+                            f.deriv(counts[idx])
+                                if isinstance(f, ElementaryFunction) else
+                            f.get_deriv(*counts)
+                        )
+
+                        if j == i else
+
+                        f
+
+                        for j, f in enumerate(self.functions)
+                    ),
+                    indices=self.indices
+                )
+
+                for i in range(len(self.functions))
+                if not isinstance(self.functions[i], ElementaryFunction) or
+                   len(needs_der_pos) == 1 and (self.functions[i].idx is None or self.functions[i].idx in needs_der_pos)
+            ),
+            indices=self.indices
+        )
 
     sort_key = 100
 
@@ -698,6 +1138,24 @@ class Composition(MultivariateFunction):
 
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         return reduce(lambda r,f: f(r[..., f.idx] if f.idx is not None else r), reversed(self.functions), r)
+    def get_compile_spec(self) ->'ast.Lambda':
+        var = self.get_compile_var()
+        return self.lambda_wrap(
+            var,
+            reduce(
+                lambda r, f: ast.Call(
+                    func=f.get_compile_spec(),
+                    args=[
+                        self.x_slice(r, f.idx)
+                        if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                        r
+                    ],
+                    keywords=[]
+                ),
+                reversed(self.functions),
+                ast.Name(id=var, ctx=ast.Load())
+            )
+        )
 
     @classmethod
     def construct(cls, *terms, indices=None):
@@ -787,13 +1245,27 @@ class Scalar(ElementaryFunction):
     """
     __slots__ = ['scalar', 'idx']
     def __init__(self, scalar, *, idx=None):
+        if not isinstance(scalar, Functionlike):
+            idx = None
         super().__init__(idx=idx)
         self.scalar = scalar
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         return np.broadcast_to(np.full(1, self.scalar, dtype=r.dtype), r.shape)
+    def get_compile_spec(self) ->'ast.Lambda':
+        if isinstance(self.scalar, Functionlike):
+            return self.scalar.get_compile_spec()
+        else:
+            var = self.get_compile_var()
+            return self.lambda_wrap(
+                var,
+                self.ast_np('full',
+                            self.ast_attrr(self.ast_var(var), 'shape'),
+                            ast.Constant(value=self.scalar, kind=None)
+                            )
+            )
     def get_deriv(self) -> 'ElementaryFunction':
         return type(self)(0, idx=self.idx)
-    def deriv(self, n=1):
+    def deriv(self, n=1, *, simplify=True):
         return type(self)(0, idx=self.idx)
     def get_sortval(self):
         return (self.scalar.sort_val if isinstance(self.scalar, Functionlike) else self.scalar)
@@ -816,9 +1288,19 @@ class Identity(ElementaryFunction):
     """
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         return r
+    def get_compile_spec(self) ->'ast.Lambda':
+        return ast.Lambda(
+                args=ast.arguments(
+                    posonlyargs=[],
+                    args=[ast.arg(arg='x', annotation=None, type_comment=None)],
+                    vararg=None,
+                    kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]
+                ),
+                body=ast.Name(id='x', ctx=ast.Load())
+            )
     def get_deriv(self) -> 'ElementaryFunction':
         return Scalar(1)
-    def deriv(self, n=1):
+    def deriv(self, n=1, simplify=True):
         return Scalar(1) if n == 1 else Scalar(0)
     def simplify(self, iterations=10) ->'Functionlike':
         return self
@@ -841,6 +1323,17 @@ class Power(ElementaryFunction):
         self.power = power
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return r**self.power
+    def get_compile_spec(self) ->'ast.Lambda':
+        power = self.power.get_compile_spec() if isinstance(self.power, Functionlike) else ast.Constant(value=self.power, kind=None)
+        return ast.Lambda(
+                args=ast.arguments(
+                    posonlyargs=[],
+                    args=[ast.arg(arg='x', annotation=None, type_comment=None)],
+                    vararg=None,
+                    kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]
+                ),
+                body=ast.BinOp(left=ast.Name(id='x', ctx=ast.Load()), op=ast.Pow(), right=power)
+            )
     def get_deriv(self) -> 'ElementaryFunction':
         return self.power * type(self)(self.power-1, idx=self.idx)
     def __hash__(self):
@@ -876,6 +1369,17 @@ class Exponent(ElementaryFunction):
         self.base = base
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return self.base**r
+    def get_compile_spec(self) ->'ast.Lambda':
+        base = self.base.get_compile_spec() if isinstance(self.base, Functionlike) else ast.Constant(value=self.base, kind=None)
+        return ast.Lambda(
+                args=ast.arguments(
+                    posonlyargs=[],
+                    args=[ast.arg(arg='x', annotation=None, type_comment=None)],
+                    vararg=None,
+                    kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]
+                ),
+                body=ast.BinOp(left=base, op=ast.Pow(), right=ast.Name(id='x', ctx=ast.Load()))
+            )
     def get_deriv(self) -> 'ElementaryFunction':
         return np.log(self.base) * self
     def __hash__(self):
@@ -899,10 +1403,12 @@ class Exp(Exponent):
         super().__init__(np.e, idx=idx)
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return np.exp(r)
+    def get_compile_spec(self) ->'ast.Attribute':
+        return self.ast_attr('np', 'exp')
     def get_deriv(self) -> 'ElementaryFunction':
         return self
     def __repr__(self):
-        return "e^{}"
+        return "exp{}"
     def tree_repr(self, sep="\n", indent=""):
         return "{}()".format(type(self).__name__)
 
@@ -936,6 +1442,8 @@ class Ln(Logarithm):
         super().__init__(np.e, idx=idx)
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return np.log(r)
+    def get_compile_spec(self) ->'ast.Attribute':
+        return self.ast_attr('np', 'log')
     def get_deriv(self) -> 'ElementaryFunction':
         return 1/self
     def __repr__(self):
@@ -948,6 +1456,8 @@ class Sin(ElementaryFunction):
         return np.sin(r)
     def get_deriv(self) -> 'ElementaryFunction':
         return Cos()
+    def get_compile_spec(self) ->'ast.Attribute':
+        return self.ast_attr('np', 'sin')
     def __hash__(self):
         return hash((Sin, self.idx))
     def __eq__(self, other):
@@ -960,6 +1470,8 @@ class Sin(ElementaryFunction):
 class Cos(ElementaryFunction):
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return np.cos(r)
+    def get_compile_spec(self) ->'ast.Attribute':
+        return self.ast_attr('np', 'cos')
     def get_deriv(self) -> 'ElementaryFunction':
         return -Sin()
     def __hash__(self):
@@ -988,6 +1500,8 @@ class CompoundFunction(ElementaryFunction):
         return self.expression == other
     def get_deriv(self) -> 'ElementaryFunction':
         return self.expression.get_deriv()
+    def get_compile_spec(self) -> 'ast.AST':
+        return self.expression.get_compile_spec()
     def get_sortval(self):
         return self.expression.sort_val
 class Morse(CompoundFunction):
