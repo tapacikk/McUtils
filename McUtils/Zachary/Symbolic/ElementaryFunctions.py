@@ -392,9 +392,7 @@ class ElementarySummation(ElementaryVaradic):
         var = self.get_compile_var()
         np = Abstract.Name('np')
         args = [f.get_compile_spec()(var) for f in self.functions]
-        return Abstract.Lambda(var)(
-            np.sum(np.array(args), axis=0)
-        )
+        return Abstract.Lambda(var)(reduce(lambda x,y:x+y, args))
     def get_deriv(self) ->'ElementaryFunction':
         fns = self.functions
         return type(self)(*[f.deriv() for f in fns])
@@ -457,9 +455,7 @@ class ElementaryProduct(ElementaryVaradic):
             f.get_compile_spec()(var)
             for f in self.functions
         ]
-        return Abstract.Lambda(var)(
-            np.prod(np.array(args), axis=0)
-        )
+        return Abstract.Lambda(var)(reduce(lambda x,y:x*y, args))
     def get_deriv(self) ->'ElementaryFunction':
         fns = self.functions
         prod = type(self)
@@ -510,7 +506,7 @@ class ElementaryComposition(ElementaryVaradic):
         var = self.get_compile_var()
         return Abstract.Lambda(var)(
             reduce(
-                lambda r, f: f.get_compile_spec(r),
+                lambda r, f: f.get_compile_spec()(r),
                 reversed(self.functions),
                 var
             )
@@ -797,43 +793,31 @@ class TensorFunction(MultivariateFunction):
         return self.apply_function(
             lambda f:f(r[..., f.idx] if f.idx is not None else r) if isinstance(f, ElementaryFunction) else f(r)
         )
-    def get_compile_spec(self) ->'ast.Lambda':
+    def get_compile_spec(self):
         var = self.get_compile_var()
-        var_2 = Abstract.Name("_")
+        _, np = Abstract.vars("_", "np")
         spec_calls = [
             f.get_compile_spec()(
-                args=[
-                    self.x_slice(ast.Name(id=var, ctx=ast.Load()), f.idx)
-                    if (isinstance(f, ElementaryFunction) and f.idx is not None) else
-                    ast.Name(var, ctx=ast.Load())
-                ],
-                keywords=[]
+                var[..., f.idx]
+                if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                var
             )
 
             for f in self.functions.flat
         ]
-        # call with appropriate slicing behavior
-        spec_array = self.ast_nparray(*spec_calls)
 
-        return self.lambda_wrap(
-            var,
-            ast.Call( # just a reshape...
-                func=self.lambda_wrap(
-                    var_2,
-                    self.ast_np('reshape',
-                                ast.Name(id=var_2, ctx=ast.Load()),
-                                ast.BinOp(
-                                    left=ast.Tuple(elts=[ast.Constant(value=s, kind=None) for s in self.functions.shape], ctx=ast.Load()),
-                                    op=ast.Add(),
-                                    right=ast.Subscript(
-                                        value=self.ast_attr(var_2, 'shape'),
-                                        slice=ast.Slice(lower=ast.Constant(value=1, kind=None), upper=None, step=None), ctx=ast.Load()
-                                    )
-                                )
-                        )
+        return Abstract.Lambda(var)(
+            Abstract.Lambda(_)(
+                np.reshape(_, Abstract.Tuple(*self.functions.shape) + _.shape[1:])
+            )(
+                np.concatenate(tuple(
+                    Abstract.Lambda(_)(
+                        np.reshape(_, Abstract.Tuple(1) + _.shape)
+                    )(x)
+                    for x in spec_calls
                 ),
-                args=[spec_array],
-                keywords=[]
+                    axis=0
+                )
             )
         )
     def get_deriv(self, *counts)->'TensorFunction':
@@ -925,28 +909,19 @@ class Summation(MultivariateFunction):
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         vals = [f(r[..., f.idx] if f.idx is not None else r) if isinstance(f, ElementaryFunction) else f(r) for f in self.functions]
         return np.sum(vals, axis=0)
-    def get_compile_spec(self) -> 'ast.Lambda':
+    def get_compile_spec(self):
         var = self.get_compile_var()
+        np = Abstract.Name('np')
         args = [
-            ast.Call(
-                func=f.get_compile_spec(),
-                args=[
-                    self.x_slice(ast.Name(id=var, ctx=ast.Load()), f.idx)
-                    if (isinstance(f, ElementaryFunction) and f.idx is not None) else
-                    ast.Name(var, ctx=ast.Load())
-                ],
-                keywords=[]
+            f.get_compile_spec()(
+                var[..., f.idx]
+                if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                var
             )
 
             for f in self.functions
         ]
-        return self.lambda_wrap(
-            var,
-            self.ast_np('sum',
-                        self.ast_nparray(*args),
-                        axis=ast.Constant(value=0, kind=None)
-                        )
-        )
+        return Abstract.Lambda(var)(reduce(lambda x,y:x+y, args))
 
     @classmethod
     def construct(cls, *terms, indices=None):
@@ -1038,27 +1013,19 @@ class Product(MultivariateFunction):
 
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         vals = [f(r[..., f.idx] if f.idx is not None else r) if isinstance(f, ElementaryFunction) else f(r) for f in self.functions]
-        return np.product(vals, axis=0)
-    def get_compile_spec(self) ->'ast.Lambda':
+        return np.prod(vals, axis=0)
+    def get_compile_spec(self):
         var = self.get_compile_var()
         args = [
-            ast.Call(
-                func=f.get_compile_spec(),
-                args=[
-                    self.x_slice(ast.Name(id=var, ctx=ast.Load()), f.idx)
-                        if (isinstance(f, ElementaryFunction) and f.idx is not None) else
-                    ast.Name(var, ctx=ast.Load())
-                ],
-                keywords=[]
-            ) for f in self.functions
+            f.get_compile_spec()(
+                var[..., f.idx]
+                if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                var
+            )
+
+            for f in self.functions
         ]
-        return self.lambda_wrap(
-            var,
-            self.ast_np('prod',
-                        self.ast_nparray(*args),
-                        axis=ast.Constant(value=0, kind=None)
-                        )
-        )
+        return Abstract.Lambda(var)(reduce(lambda x,y:x*y, args))
 
     @classmethod
     def construct(cls, *terms, indices=None):
@@ -1138,22 +1105,17 @@ class Composition(MultivariateFunction):
 
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         return reduce(lambda r,f: f(r[..., f.idx] if f.idx is not None else r), reversed(self.functions), r)
-    def get_compile_spec(self) ->'ast.Lambda':
+    def get_compile_spec(self):
         var = self.get_compile_var()
-        return self.lambda_wrap(
-            var,
+        return Abstract.Lambda(var)(
             reduce(
-                lambda r, f: ast.Call(
-                    func=f.get_compile_spec(),
-                    args=[
-                        self.x_slice(r, f.idx)
-                        if (isinstance(f, ElementaryFunction) and f.idx is not None) else
-                        r
-                    ],
-                    keywords=[]
+                lambda r, f: f.get_compile_spec()(
+                    r[..., f.idx]
+                    if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                    r
                 ),
                 reversed(self.functions),
-                ast.Name(id=var, ctx=ast.Load())
+                var
             )
         )
 
@@ -1251,17 +1213,14 @@ class Scalar(ElementaryFunction):
         self.scalar = scalar
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         return np.broadcast_to(np.full(1, self.scalar, dtype=r.dtype), r.shape)
-    def get_compile_spec(self) ->'ast.Lambda':
+    def get_compile_spec(self):
         if isinstance(self.scalar, Functionlike):
             return self.scalar.get_compile_spec()
         else:
             var = self.get_compile_var()
-            return self.lambda_wrap(
-                var,
-                self.ast_np('full',
-                            self.ast_attrr(self.ast_var(var), 'shape'),
-                            ast.Constant(value=self.scalar, kind=None)
-                            )
+            np = Abstract.Name('np')
+            return Abstract.Lambda(var)(
+                np.full(var.shape, self.scalar)
             )
     def get_deriv(self) -> 'ElementaryFunction':
         return type(self)(0, idx=self.idx)
@@ -1288,16 +1247,9 @@ class Identity(ElementaryFunction):
     """
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         return r
-    def get_compile_spec(self) ->'ast.Lambda':
-        return ast.Lambda(
-                args=ast.arguments(
-                    posonlyargs=[],
-                    args=[ast.arg(arg='x', annotation=None, type_comment=None)],
-                    vararg=None,
-                    kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]
-                ),
-                body=ast.Name(id='x', ctx=ast.Load())
-            )
+    def get_compile_spec(self):
+        _ = Abstract.Name("_")
+        return Abstract.Lambda(_)(_)
     def get_deriv(self) -> 'ElementaryFunction':
         return Scalar(1)
     def deriv(self, n=1, simplify=True):
@@ -1323,17 +1275,10 @@ class Power(ElementaryFunction):
         self.power = power
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return r**self.power
-    def get_compile_spec(self) ->'ast.Lambda':
-        power = self.power.get_compile_spec() if isinstance(self.power, Functionlike) else ast.Constant(value=self.power, kind=None)
-        return ast.Lambda(
-                args=ast.arguments(
-                    posonlyargs=[],
-                    args=[ast.arg(arg='x', annotation=None, type_comment=None)],
-                    vararg=None,
-                    kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]
-                ),
-                body=ast.BinOp(left=ast.Name(id='x', ctx=ast.Load()), op=ast.Pow(), right=power)
-            )
+    def get_compile_spec(self):
+        var = self.get_compile_var()
+        power = self.power.get_compile_spec()(var) if isinstance(self.power, Functionlike) else self.power
+        return Abstract.Lambda(var)(var**power)
     def get_deriv(self) -> 'ElementaryFunction':
         return self.power * type(self)(self.power-1, idx=self.idx)
     def __hash__(self):
@@ -1369,17 +1314,10 @@ class Exponent(ElementaryFunction):
         self.base = base
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return self.base**r
-    def get_compile_spec(self) ->'ast.Lambda':
-        base = self.base.get_compile_spec() if isinstance(self.base, Functionlike) else ast.Constant(value=self.base, kind=None)
-        return ast.Lambda(
-                args=ast.arguments(
-                    posonlyargs=[],
-                    args=[ast.arg(arg='x', annotation=None, type_comment=None)],
-                    vararg=None,
-                    kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]
-                ),
-                body=ast.BinOp(left=base, op=ast.Pow(), right=ast.Name(id='x', ctx=ast.Load()))
-            )
+    def get_compile_spec(self):
+        var = self.get_compile_var()
+        base = self.base.get_compile_spec()(var) if isinstance(self.base, Functionlike) else self.base
+        return Abstract.Lambda(var)(base**var)
     def get_deriv(self) -> 'ElementaryFunction':
         return np.log(self.base) * self
     def __hash__(self):
@@ -1403,8 +1341,8 @@ class Exp(Exponent):
         super().__init__(np.e, idx=idx)
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return np.exp(r)
-    def get_compile_spec(self) ->'ast.Attribute':
-        return self.ast_attr('np', 'exp')
+    def get_compile_spec(self):
+        return Abstract.Name('np').exp
     def get_deriv(self) -> 'ElementaryFunction':
         return self
     def __repr__(self):
@@ -1421,6 +1359,13 @@ class Logarithm(ElementaryFunction):
         return np.log(r)/np.log(self.base)
     def get_deriv(self) -> 'ElementaryFunction':
         return 1/(np.log(self.base)*self)
+    def get_compile_spec(self):
+        var = self.get_compile_var()
+        np = Abstract.Name('np')
+        base = self.base.get_compile_spec()(var) if isinstance(self.base, Functionlike) else self.base
+        return Abstract.Lambda(var)(
+            np.log(var) / np.log(base)
+            )
     def __hash__(self):
         return hash((Logarithm, self.base, self.idx))
     def __eq__(self, other):
@@ -1442,8 +1387,8 @@ class Ln(Logarithm):
         super().__init__(np.e, idx=idx)
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return np.log(r)
-    def get_compile_spec(self) ->'ast.Attribute':
-        return self.ast_attr('np', 'log')
+    def get_compile_spec(self):
+        return Abstract.Name('np').log
     def get_deriv(self) -> 'ElementaryFunction':
         return 1/self
     def __repr__(self):
@@ -1456,8 +1401,8 @@ class Sin(ElementaryFunction):
         return np.sin(r)
     def get_deriv(self) -> 'ElementaryFunction':
         return Cos()
-    def get_compile_spec(self) ->'ast.Attribute':
-        return self.ast_attr('np', 'sin')
+    def get_compile_spec(self):
+        return Abstract.Name('np').sin
     def __hash__(self):
         return hash((Sin, self.idx))
     def __eq__(self, other):
@@ -1470,8 +1415,8 @@ class Sin(ElementaryFunction):
 class Cos(ElementaryFunction):
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return np.cos(r)
-    def get_compile_spec(self) ->'ast.Attribute':
-        return self.ast_attr('np', 'cos')
+    def get_compile_spec(self):
+        return Abstract.Name('np').cos
     def get_deriv(self) -> 'ElementaryFunction':
         return -Sin()
     def __hash__(self):
@@ -1500,7 +1445,7 @@ class CompoundFunction(ElementaryFunction):
         return self.expression == other
     def get_deriv(self) -> 'ElementaryFunction':
         return self.expression.get_deriv()
-    def get_compile_spec(self) -> 'ast.AST':
+    def get_compile_spec(self):
         return self.expression.get_compile_spec()
     def get_sortval(self):
         return self.expression.sort_val

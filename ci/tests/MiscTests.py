@@ -21,7 +21,7 @@ class MiscTests(TestCase):
 
         x, np = Abstract.vars('x', 'np')
         npexpr = Abstract.Lambda(x)(
-            np.array(x)[..., 0]
+            np.array(x)[..., 0] + 1
         )
 
         # print(
@@ -33,7 +33,7 @@ class MiscTests(TestCase):
         self.assertTrue(
             numpy.all(
                 npexpr.compile({'np':numpy})([[1], [2], [3]])
-                == numpy.array([[1], [2], [3]])[..., 0]
+                == numpy.array([[1], [2], [3]])[..., 0] + 1
             )
         )
 

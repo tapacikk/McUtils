@@ -1768,12 +1768,6 @@ class ZacharyTests(TestCase):
 
         from McUtils.Misc import njit
 
-        @njit
-        def farts():
-            return np.prod((np.random.rand(10, 2), np.random.rand(10, 2)))
-
-        raise Exception(farts().shape)
-
         sym = Symbols('xyz')
         x, y, z = sym.vars
 
@@ -1868,18 +1862,11 @@ class ZacharyTests(TestCase):
                     ])
             )
         )
-        # raise Exception(comp_dexpr.functions[0], sympy_expr.diff(sx))
-        #
-        # raise Exception(comp_expr)
 
-        import astunparse
-
-        # print(astunparse.unparse(comp_dexpr.functions[0].get_compile_spec()))
-        # raise Exception(astunparse.unparse(comp_dexpr.functions[0].get_compile_spec()))
-
-        new_pts = np.random.rand(10000, 2)
-        with Timer(tag="Custom"):
-            dexpr_res = comp_dexpr(new_pts)
+        new_pts = np.random.rand(1000, 2)
+        with Timer(tag="Custom", number=25):
+            for _ in range(25):
+                dexpr_res = comp_dexpr(new_pts)
         comp_dexpr_compiled = comp_dexpr.compile()
         # import astunparse
         # raise Exception(astunparse.unparse(comp_dexpr.get_compile_spec()))
@@ -1888,25 +1875,25 @@ class ZacharyTests(TestCase):
         #     comp_dexpr.functions[1].compile()
         # ]
         # raise Exception(compiled_exprs[0](new_pts))
-        with Timer(tag="Compiled"):
-            # comp_res = np.array([
-            #     e(new_pts)
-            #     for e in compiled_exprs
-            #     ])
-            comp_res = comp_dexpr_compiled(new_pts)
+        comp_dexpr_compiled(new_pts) # to precompile
+        with Timer(tag="Compiled", number=25):
+            for _ in range(25):
+                comp_res = comp_dexpr_compiled(new_pts)
+
         # raise Exception(comp_res)
         exprs = [
             sympy.lambdify([sx, sy], sympy_expr.diff(sx)),
             sympy.lambdify([sx, sy], sympy_expr.diff(sy))
         ]
-        with Timer(tag="SymPy"):
-            sympy_res = np.array([
-                e(
-                    new_pts[:, 0],
-                    new_pts[:, 1]
-                )
-                for e in exprs
-            ])
+        with Timer(tag="SymPy", number=25):
+            for _ in range(25):
+                sympy_res = np.array([
+                    e(
+                        new_pts[:, 0],
+                        new_pts[:, 1]
+                    )
+                    for e in exprs
+                ])
 
         self.assertTrue(
             np.allclose(dexpr_res, sympy_res)

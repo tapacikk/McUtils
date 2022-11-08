@@ -31,7 +31,7 @@ class ASTUtils:
             val = val.to_ast()
         elif not isinstance(val, ast.AST):
             if isinstance(val, (int, float, str, np.integer, np.floating, ellipsis)):
-                val = ast.Constant(value=val, ctx=ast.Load())
+                val = ast.Constant(value=val, kind=None)
             else:
                 val = cls.convert(val).to_ast()
         return val
@@ -115,7 +115,7 @@ class ASTUtils:
     def ast_const(cls, value):
         if not isinstance(value, (str, int, float, np.integer, np.floating)):
             value = cls.astify(value)
-        return ast.Constant(value=value, ctx=ast.Load())
+        return ast.Constant(value=value, kind=None)
 
     @classmethod
     def ast_iterable(cls, otype, values):
@@ -410,6 +410,8 @@ class AbstractExpr(metaclass=abc.ABCMeta):
         return AbstractSub(self, other)
     def __mul__(self, other):
         return AbstractMult(self, other)
+    def __pow__(self, other):
+        return AbstractPow(self, other)
     def __truediv__(self, other):
         return AbstractDiv(self, other)
     def __floordiv__(self, other):
@@ -795,9 +797,17 @@ class Abstract:
         if len(spec) == 1:
             spec = spec[0].split()
         return [AbstractName(x) for x in spec]
+
     Expr = AbstractExpr
     Name = AbstractName
+
     Lambda = AbstractLambda
+
+    List = AbstractList
+    Tuple = AbstractTuple
+    Set = AbstractSet
+    Dict = AbstractDict
+
     # Lambda = AbstractLambda
 
 #     @classmethod
