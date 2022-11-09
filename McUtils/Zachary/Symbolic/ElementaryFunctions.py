@@ -2,7 +2,7 @@
 import abc, numpy as np, itertools, collections, copy
 from functools import reduce
 
-from ...Combinatorics import SymmetricGroupGenerator
+# from ...Combinatorics import SymmetricGroupGenerator
 from  ...Misc import Abstract
 
 
@@ -295,7 +295,11 @@ class ElementaryFunction(Functionlike):
         )
 
     def idx_compatible(self, other):
-        return other.idx is None or self.idx is None or other.idx == self.idx
+        return (
+                isinstance(other, Scalar) or # invariant upon change of indices
+                isinstance(self, Scalar) or
+                other.idx is None or self.idx is None or other.idx == self.idx
+        )
 
 class Variable(ElementaryFunction):
     def __init__(self, name, idx):
@@ -625,46 +629,6 @@ class MultivariateFunction(Functionlike):
     def ndim(self):
         return len(self.indices)
 
-    @staticmethod
-    def x_slice(x, idx):
-        return ast.Subscript(
-            value=x,
-            slice=ast.Index(
-                value=ast.Tuple(
-                    elts=[ast.Constant(value=Ellipsis, kind=None), ast.Constant(value=idx, kind=None)],
-                    ctx=ast.Load()
-                )
-            ),
-            ctx=ast.Load()
-        )
-
-    @staticmethod
-    def slice_lambda(expr, idx): # for taking slices in compiled statements
-        return ast.Call(
-            func=ast.Lambda(
-                args=ast.arguments(
-                    posonlyargs=[],
-                    args=[ast.arg(arg='x', annotation=None, type_comment=None)],
-                    vararg=None,
-                    kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]
-                ),
-                body=expr
-            ),
-            args=[
-                ast.Subscript(
-                    value=ast.Name(id='x', ctx=ast.Load()),
-                    slice=ast.Index(
-                        value=ast.Tuple(
-                            elts=[ast.Constant(value=Ellipsis, kind=None), ast.Constant(value=idx, kind=None)],
-                            ctx=ast.Load()
-                            )
-                    ),
-                    ctx=ast.Load()
-                )
-            ],
-            keywords=[]
-        )
-
     @abc.abstractmethod
     def get_deriv(self, *counts) -> 'Functionlike':
         ...
@@ -673,10 +637,11 @@ class MultivariateFunction(Functionlike):
         if len(which) == 0:
             ndim = self.ndim if ndim is None else ndim
             res = np.full((ndim,) * order, None)
-            partitions = SymmetricGroupGenerator(ndim).get_terms(order)
-            for i, pos in enumerate(itertools.combinations_with_replacement(range(ndim), r=order)):
-                fun = self.get_deriv(*partitions[i])
-                for p in itertools.permutations(pos):
+            # partitions = SymmetricGroupGenerator(ndim).get_terms(order)
+            for which in itertools.combinations_with_replacement(range(ndim), r=order):
+                count_map = {k: v for k, v in zip(*np.unique(which, return_counts=True))}
+                fun = self.get_deriv(*(count_map.get(k, 0) for k in range(self.ndim)))
+                for p in itertools.permutations(which):
                     res[p] = fun
             deriv = TensorFunction(res, symmetric=True, indices=self.indices)
         else:
@@ -791,7 +756,10 @@ class TensorFunction(MultivariateFunction):
         return res
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return self.apply_function(
-            lambda f:f(r[..., f.idx] if f.idx is not None else r) if isinstance(f, ElementaryFunction) else f(r)
+            lambda f:
+                f(r[..., f.idx] if f.idx is not None else r)
+                    if isinstance(f, ElementaryFunction) else
+                f(r)
         )
     def get_compile_spec(self):
         var = self.get_compile_var()
@@ -936,7 +904,7 @@ class Summation(MultivariateFunction):
         ]
         terms = [t for t in terms if not (isinstance(t, Scalar) and t.scalar == 0)]
         if len(terms) == 0:
-            return Scalar(0)
+            return Scalar(0, idx=0)
         return cls.construct_varivariate(ElementarySummation, cls, terms, indices=indices)
 
     def get_deriv(self, *counts)->'MultivariateFunction':
@@ -997,7 +965,7 @@ class Summation(MultivariateFunction):
         # newfs = self.merge_funcs(newfs, self.reduce_pair)
 
         if len(newfs) == 0:
-            return Scalar(0)
+            return Scalar(0, idx=0)
         elif len(newfs) == 1:
             return newfs[0]
         else:
@@ -1040,10 +1008,10 @@ class Product(MultivariateFunction):
         ]
         for t in terms:
             if isinstance(t, Scalar) and t.scalar == 0:
-                return Scalar(0)
+                return Scalar(0, idx=0)
         terms = [t for t in terms if not (isinstance(t, Scalar) and t.scalar == 1)]
         if len(terms) == 0:
-            return Scalar(1)
+            return Scalar(1, idx=0)
         return cls.construct_varivariate(ElementaryProduct, cls, terms, indices=indices)
 
     def get_deriv(self, *counts):
@@ -1052,7 +1020,7 @@ class Product(MultivariateFunction):
             idx = list(needs_der_pos)[0]
         else:
             idx = -1
-        return Summation.construct(
+        return Summation(
             *(
                 type(self)(
                     *(
@@ -1084,14 +1052,14 @@ class Product(MultivariateFunction):
         simp_funs = [f.simplify() for f in self.functions]
         for f in simp_funs:
             if isinstance(f, Scalar) and f.scalar == 0:
-                return Scalar(0)
+                return Scalar(0, idx=0)
 
         newfs = [
             f for f in simp_funs
             if not (isinstance(f, Scalar) and f.scalar == 1)
         ]
         if len(newfs) == 0:
-            return Scalar(1)
+            return Scalar(1, idx=0)
         return type(self)(*newfs, indices=self.indices)
 
     def __repr__(self):
@@ -1148,7 +1116,7 @@ class Composition(MultivariateFunction):
         if len(newfs) == 1:
             return newfs[0]
         elif len(newfs) == 0:
-            return Identity()
+            return Identity(idx=0)
         else:
           return type(self)(*newfs, indices=self.indices)
 
@@ -1196,7 +1164,7 @@ class Composition(MultivariateFunction):
                 for i,f in enumerate(self.functions)
             ), indices=self.indices)
         else:
-            return Scalar(0)
+            return Scalar(0, idx=0)
 
     def __repr__(self):
         return ElementaryComposition.get_repr(self.functions)
@@ -1207,8 +1175,6 @@ class Scalar(ElementaryFunction):
     """
     __slots__ = ['scalar', 'idx']
     def __init__(self, scalar, *, idx=None):
-        if not isinstance(scalar, Functionlike):
-            idx = None
         super().__init__(idx=idx)
         self.scalar = scalar
     def eval(self, r: np.ndarray) -> 'np.ndarray':

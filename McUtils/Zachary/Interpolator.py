@@ -302,8 +302,9 @@ class RBFDInterpolator:
                  kernel_options=None,
                  auxiliary_basis=None,
                  extra_degree=0,
-                 clustering_radius=.01,
-                 monomial_basis=True
+                 clustering_radius=.001,
+                 monomial_basis=True,
+                 multicenter_monomials=True
                  ):
 
         pts = np.asanyarray(pts)
@@ -342,6 +343,7 @@ class RBFDInterpolator:
         self.aux_poly = auxiliary_basis
         self.extra_degree = extra_degree
         self.monomial_basis = monomial_basis
+        self.multicenter_monomials = multicenter_monomials
 
         self._expr_cache = {}
 
@@ -451,12 +453,18 @@ class RBFDInterpolator:
 
                 shp = (npts,) + (ndim,) * k
                 if reshape:
-                    if np.prod(shp)==len(values):
+                    if np.prod(shp) == len(values):
                         values = values.reshape(shp)
                     else:
                         a = np.zeros(shp)
-                        inds = (slice(None, None, None),)+RBFDInterpolator.triu_inds(ndim, k)
-                        a[inds] = values
+                        base_inds = RBFDInterpolator.triu_inds(ndim, k)
+                        inds = (slice(None, None, None),) + base_inds
+                        a[inds] = values.reshape((npts, -1))
+                        for pos in np.array(base_inds).T:
+                            base = (slice(None, None, None),) + tuple(pos)
+                            for p in itertools.permutations(pos):
+                                ind = (slice(None, None, None),) + p
+                                a[ind] = a[base]
                         values = a
                 else:
                     values = values.reshape((npts, -1))
@@ -582,18 +590,21 @@ class RBFDInterpolator:
             self._expr_cache[k] = exprs
         return self._expr_cache[k]
     def evaluate_poly_matrix(self, pts, degree, deriv_order=0, poly_origin=0.5, include_constant_term=True, monomials=True):
-        #TODO: include deriv order and merge all at once
-        # fn = self.aux_poly['function']
-        pts = pts - poly_origin
+        if isinstance(poly_origin, (int, float, np.integer, np.floating)):
+            pts = pts - poly_origin
+        else:
+            poly_origin = np.asanyarray(poly_origin)
+            pts = pts[np.newaxis, :, :] - poly_origin[:, np.newaxis, :]
+
         ndim = pts.shape[-1]
         exprs = (
                 (
                     [    # add in constant term by hand
                         [
-                            TensorExpression.ConstantArray(np.ones((len(pts), 1)))
+                            TensorExpression.ConstantArray(np.ones(pts.shape[:-1] + (1,)))
                         ] +
                         [
-                            TensorExpression.ConstantArray(np.zeros((len(pts),) + (ndim,)*d + (1,)) )
+                            TensorExpression.ConstantArray(np.zeros(pts.shape[:-1] + (ndim,)*d + (1,)) )
                             for d in range(1, deriv_order+1)
                         ]
                     ]
@@ -602,8 +613,8 @@ class RBFDInterpolator:
                 ) +
                 [self._poly_exprs(ndim, d, deriv_order, monomials=monomials) for d in range(1, degree + 1)]
         )
-        # print(">>>", pts)
-        crds = TensorExpression.ArrayStack((len(pts),), pts)
+
+        crds = TensorExpression.ArrayStack(pts.shape[:-1], pts)
         vals = [ # evaluate poly values & derivs at each order in a dumb, kinda inefficient way? (for now)
             [
                 TensorExpression(e, coord_vec=crds).eval()
@@ -611,7 +622,9 @@ class RBFDInterpolator:
             ]
             for exp_list in exprs
         ]
-        # print(">  ", vals)
+
+        # Set things up so that arbitrary numbers of centers can be used at once
+        padding = (slice(None, None, None),) * (2 if isinstance(poly_origin, np.ndarray) else 1)
 
         # now we take only upper triangle indices to get only unique ones
         flat_vals = [[] for _ in range(deriv_order+1)]
@@ -623,25 +636,26 @@ class RBFDInterpolator:
                 if monomials:
                     power_inds = ()
                 else:
-                    power_inds = self.triu_inds(ndim, o)#tuple(np.array(list(itertools.combinations_with_replacement(range(ndim), r=o))).T)
-                pis = (slice(None, None, None),) + power_inds
+                    power_inds = self.triu_inds(ndim, o)
+                pis = padding + power_inds
                 flat_vals[0].append(v_list[0][pis])
-                # power_reps = (slice(None, None, None),)*o
             else:
                 power_inds = ()
                 flat_vals[0].append(v_list[0]) # need to add a dimension for joining...
-                # power_reps = ()
-                # power_slice = (slice(None, None, None),)
             for n,d in enumerate(v_list[1:]): #need utri inds
                 # sample first power inds then derivs
-                pis = (slice(None, None, None),)*(n+2) + power_inds
+                pis = padding + (slice(None, None, None),)*(n+1) + power_inds
                 d = d[pis]
                 # get upper inds for the different derivatives
-                inds = self.triu_inds(ndim, n+1)#tuple(np.array(list(itertools.combinations_with_replacement(range(ndim), r=n+1))).T)
-                inds = (slice(None, None, None),) + inds
+                inds = self.triu_inds(ndim, n+1)
+                inds = padding + inds
                 d = d[inds]
                 flat_vals[n+1].append(d)
+
         mats = [np.concatenate(v, axis=-1) for v in flat_vals]
+        if isinstance(poly_origin, np.ndarray):
+            mats = [np.moveaxis(m, 0, -1) for m in mats]
+            mats = [np.reshape(m, m.shape[:-2] + (-1,)) for m in mats]
         mat = np.concatenate(
             [
                 m.reshape((-1, m.shape[-1]))
@@ -649,10 +663,8 @@ class RBFDInterpolator:
             ],
             axis=0
         )
-        # with np.printoptions(linewidth=1e8):
-        #     print(mat)
-        # raise Exception(...)
         return mat
+
     def _rbf_exprs(self, ndim, deriv_order):
         k = (ndim, deriv_order)
         if k not in self._expr_cache:
@@ -715,8 +727,6 @@ class RBFDInterpolator:
         # now reshape to turn into full mats
         npts = len(centers)
 
-        # print("...")
-        # print([a.shape for a in flat_expr_vals])
         flat_expr_vals = [
             np.moveaxis(
                 a.reshape((len(pts), len(centers)) + a.shape[1:]),
@@ -742,11 +752,12 @@ class RBFDInterpolator:
                          poly_origin=0.5, # can be set at the class level
                          include_constant_term=True, # can be set at the class level
                          force_square=False,
-                         monomials=True
+                         monomials=True,
+                         multicentered_polys=False
                          ):
         if degree > 0:
             pol_mats = self.evaluate_poly_matrix(pts, degree,
-                                                 poly_origin=poly_origin,
+                                                 poly_origin=poly_origin if not multicentered_polys else centers,
                                                  include_constant_term=include_constant_term,
                                                  deriv_order=deriv_order,
                                                  monomials=monomials)
@@ -776,15 +787,15 @@ class RBFDInterpolator:
 
         degree = 0
         if nder > 0:
-            # print("--->", self.extra_degree+nder, derivs)
             # I now know how many derivs I have per order...but I get the same contrib from each
             # degree order, but the issue is the num derivs scales with the number of centers too
             # so it needs to be solved for differently
             ndim = centers.shape[-1]
-            target_extra = 1 + len(centers)*sum(self.triu_num(ndim, k) for k in range(1, nder+1))
+            target_extra = 1 + len(centers)*sum(self.triu_num(ndim, k) for k in range(1, nder))
             cur = 0
-            for degree in range(1, nder*20):# not sure where I need to stop?
-                cur = cur + (self.triu_num(ndim, degree) if not self.monomial_basis else ndim)
+            ncent = len(centers) if self.multicenter_monomials else 1
+            for degree in range(1, nder*(target_extra//ndim)):# not sure where I need to stop?
+                cur = cur + (self.triu_num(ndim, degree) if not self.monomial_basis else ndim*ncent)
                 if cur >= target_extra:
                     break
 
@@ -792,6 +803,7 @@ class RBFDInterpolator:
                                   degree=degree+self.extra_degree,
                                   deriv_order=nder,
                                   monomials=self.monomial_basis,
+                                  multicentered_polys=self.multicenter_monomials,
                                   force_square=True) # deriv_order and degree collaborate to get a square matrix...?
         if len(M) > len(vals):
             vals = np.concatenate([vals, np.zeros(len(M) - len(vals))])
@@ -893,7 +905,7 @@ class RBFDInterpolator:
         centers = data.centers
 
         sub_pts = scaling_data.apply_renormalization(pts)
-        M = self.construct_matrix(sub_pts, centers, degree=degree, deriv_order=deriv_order, monomials=self.monomial_basis)
+        M = self.construct_matrix(sub_pts, centers, degree=degree, deriv_order=deriv_order, monomials=self.monomial_basis, multicentered_polys=self.multicenter_monomials)
         return M
 
     def apply_interpolation(self, pts, data, reshape_derivatives=True, deriv_order=0):
@@ -915,7 +927,11 @@ class RBFDInterpolator:
         centers = data.centers
 
         sub_pts = scaling_data.apply_renormalization(pts)
-        M = self.construct_matrix(sub_pts, centers, degree=degree, deriv_order=deriv_order, monomials=self.monomial_basis)
+        M = self.construct_matrix(sub_pts, centers, degree=degree,
+                                  deriv_order=deriv_order,
+                                  monomials=self.monomial_basis,
+                                  multicentered_polys=self.multicenter_monomials
+                                  )
         v = np.dot(M, w[0])
 
         npts = len(sub_pts)
@@ -929,7 +945,6 @@ class RBFDInterpolator:
                 dvs.append(v[offset:offset + num])
                 # print(dvs[-1])
                 offset += num
-            # print(">>>", pts_inds, dvs)
             dvs = scaling_data.reverse_derivative_renormalization(dvs, reshape=reshape_derivatives)
 
         return vals, dvs

@@ -1515,12 +1515,13 @@ class ZacharyTests(TestCase):
         # with np.printoptions(linewidth=1e8, threshold=1e8):
         #     print("???", intl.matrix(pts[:1]))
 
-        test_vals = interp(pts[:2], neighbors=5)
+        test_vals = interp(pts[:2], neighbors=15)
         real = np.product(np.sin(pts[:2]), axis=1)
         self.assertTrue(np.allclose(
             test_vals,
             real,
-            atol=1e-5
+            atol=1e-3,
+            rtol=1e-2
         ), msg="bad interpolation at interpolation points \n {} \nvs\n {}".format(
             test_vals, real
         ))
@@ -1578,7 +1579,7 @@ class ZacharyTests(TestCase):
         test_vals = np.unique(np.random.randint(0, len(pts)-1, size=200))
         errors = [[], [], []]
         print_errors = False
-        prob_n = 8
+        # prob_n = 8
         # c = pts[test_vals[prob_n:prob_n+1]]+.1
         # dat = interp.nearest_interpolation(c, neighbors=15, solver_data=True, interpolator=False)[0]
         # raise Exception(
@@ -1626,8 +1627,8 @@ class ZacharyTests(TestCase):
         # )
         h = .1
         for ifun in [
-                interp.global_interpolator,
-                lambda x,**kw:interp(x, neighbors=15, **kw)
+                # interp.global_interpolator,
+                lambda x,**kw:interp(x, neighbors=25, **kw)
         ]:
             for n,p in enumerate(pts[test_vals]):
                 c = p[np.newaxis]+h
@@ -1705,65 +1706,153 @@ class ZacharyTests(TestCase):
             with Timer(tag="{} pts:".format(len(interp.grid))):
                 interp(interp.grid, deriv_order=0, neighbors=5)
 
-    @inactiveTest
+    @debugTest
     def test_RBFForms(self):
 
+        def test_1D(fn, pts):
+
+            base_interp = RBFDInterpolator.create_function_interpolation(
+                pts.reshape((-1, 1)),
+                lambda p,f=fn:f(p).flatten()
+            )
+
+            #
+            g = np.linspace(np.min(pts)-.3, np.max(pts)+.3, 50)
+            cp = plt.CompositePlot(
+                plt.Plot(g, base_interp(g.reshape(-1, 1)), color='red'),
+                plt.Plot(g, fn(g), color='green', linestyle='-'),
+                plt.ScatterPlot(pts, fn(pts))
+            ).show(interactive=False)
+
+            dinterp = RBFDInterpolator.create_function_interpolation(
+                pts,
+                lambda p,f=fn:f(p).reshape(-1),
+                lambda p,f=fn.deriv(1):f(p).reshape(-1, 1),
+                lambda p,f=fn.deriv(2):f(p).reshape(-1, 1, 1)
+            )
+
+            #
+            itp = dinterp
+            g = np.linspace(np.min(itp.grid)-.3, np.max(itp.grid)+.3, 50)
+            cp = plt.CompositePlot(
+                plt.Plot(g, itp(g.reshape(-1, 1)), color='red'),
+                plt.Plot(g, fn(g), color='green', linestyle='dashed'),
+                plt.ScatterPlot(pts, fn(pts))
+            ).show(interactive=False)
+
+
         sym = Symbols('xyz')
-        e = sym.cos(sym.x)
-        d = e.deriv()
 
-        fn = sym.morse(sym.x) + sym.morse(sym.y)
+        # np.random.seed(3)
+        # fn = sym.morse(sym.x)
+        # pts = np.random.uniform(low=-.5, high=1.2, size=30)
 
-        np.random.seed(3)
-        pts = np.random.uniform(low=-.5, high=1.2, size=30)
-        plt.ScatterPlot(pts, morse(pts)).show()
+        # test_1D(sym.morse(sym.x), pts)
+        # test_1D(sym.sin(sym.x), pts)
+        # test_1D(sym.morse(sym.x)*sym.sin(sym.x), pts)
+        #
+        # raise Exception(...)
 
-        # base_interp = RBFDInterpolator.create_function_interpolation(
-        #     pts.reshape((-1, 1)),
-        #     morse
-        # )
-        #
-        # g = np.linspace(-.7, 2, 50)
-        # cp = plt.CompositePlot(
-        #     plt.Plot(g, base_interp(g.reshape(-1, 1)), color='red'),
-        #     plt.Plot(g, morse(g), color='green', linestyle='-'),
-        #     plt.ScatterPlot(pts, morse(pts))
-        # ).show(interactive=False)
-        #
-        # dinterp = RBFDInterpolator.create_function_interpolation(
-        #     pts,
-        #     morse,
-        #     morse_deriv(1),
-        #     morse_deriv(2)
-        # )
-        #
-        # itp = dinterp
-        # g = np.linspace(np.min(itp.grid), np.max(itp.grid), 50)
-        # g = np.linspace(-1, 2, 50)
-        # cp = plt.CompositePlot(
-        #     plt.Plot(g, itp(g.reshape(-1, 1)), color='red'),
-        #     plt.Plot(g, morse(g), color='green', linestyle='dashed'),
-        #     plt.ScatterPlot(pts, morse(pts))
-        # ).show(interactive=False)
 
         np.random.seed(3)
         ndim = 2
-        pts = np.random.uniform(low=-.5, high=1.2, size=(500, ndim))
+        pts = np.random.uniform(low=-.5, high=1.2, size=(10000, ndim))
+        np.random.seed(3)
+        new = np.random.uniform(low=-.6, high=1.3, size=(500, ndim))
 
-        dinterp = RBFDInterpolator.create_function_interpolation(
-            pts,
-            morse,
-            morse_deriv(1, ndim=ndim),
-            morse_deriv(2, ndim=ndim)
-        )
+        # fn = sym.morse(sym.x) * sym.morse(sym.y) - sym.morse(sym.x) - sym.morse(sym.y)
 
-        new = np.random.uniform(low=-.5, high=1.2, size=(100, 2))
-        plt.TriContourPlot(*new.T, dinterp.global_interpolator(new), plot_style=dict(vmin=0, vmax=200))
-        plt.TriContourPlot(*new.T, morse(new), plot_style=dict(vmin=0, vmax=200))
-        plt.TriContourPlot(*new.T, dinterp.global_interpolator(new)-morse(new), colorbar=True).show()
+        for fn in [
+            sym.morse(sym.x) * sym.morse(sym.y),
+            sym.morse(sym.x) * sym.morse(sym.y) - sym.morse(sym.x) - sym.morse(sym.y)
+
+        ]:
+            dinterp = RBFDInterpolator.create_function_interpolation(
+                pts,
+                fn,
+                lambda p,f=fn.deriv(order=1):f(p).transpose(),
+                lambda p,f=fn.deriv(order=2):f(p).transpose(2, 0, 1),
+                clustering_radius=1e-5
+            )
+            # dinterp2 = RBFDInterpolator.create_function_interpolation(
+            #     pts,
+            #     fn,
+            #     lambda p, f=fn.deriv(order=1): f(p).transpose(),
+            #     lambda p, f=fn.deriv(order=2): f(p).transpose(2, 0, 1),
+            #     multicenter_monomials=False
+            # )
+
+            vals = dinterp(new, deriv_order=2)
+
+            print_errors = True
+            val_diff = vals[0] - fn(new)
+            if print_errors:
+                print("avg diff:", np.average(val_diff))
+                print("median diff:", np.median(val_diff))
+                print("std diff:", np.std(val_diff))
+            self.assertLess(
+                np.abs(np.average(val_diff)),
+                .01,
+                msg='failed for {}'.format(fn)
+            )
+            self.assertLess(
+                np.std(val_diff),
+                .05,
+                msg='failed for {}'.format(fn)
+            )
+
+            grad_diff = vals[1] - fn.deriv(order=1)(new).T
+            if print_errors:
+                print("avg grad diff:", np.average(grad_diff))
+                print("median grad diff:", np.median(grad_diff))
+                print("std grad diff:", np.std(grad_diff))
+
+            # bad_pos = np.where(np.abs(grad_diff) > .5)[0]
+            # good_pos = np.setdiff1d(np.arange(len(dinterp.grid)), bad_pos)
+            #
+            # plt.ListTriPlot3D(*dinterp.grid.T, dinterp.vals).show()
+            #
+            # bad_inds = dinterp.get_neighborhood(new[bad_pos[0]:bad_pos[0]+1], neighbors=15)[0]
+            # plt.ListTriPlot3D(*dinterp.grid[bad_inds].T, dinterp.vals[bad_inds])
+            #
+            # good_inds = dinterp.get_neighborhood(new[good_pos[0]:good_pos[0]+1], neighbors=15)[0]
+            # plt.ListTriPlot3D(*dinterp.grid[good_inds].T, dinterp.vals[good_inds]).show()
+
+            # raise Exception(np.where(np.abs(grad_diff) > .5))
+            self.assertLess(
+                np.abs(np.average(grad_diff)),
+                .05,
+                msg='failed for {}'.format(fn)
+            )
+            self.assertLess(
+                np.std(grad_diff),
+                .2,
+                msg='failed for {}'.format(fn)
+            )
+
+            hess_diff = vals[2] - fn.deriv(order=2)(new).transpose(2, 0, 1)
+            if print_errors:
+                print("avg hess diff:", np.average(hess_diff))
+                print("median hess diff:", np.median(hess_diff))
+                print("std hess diff:", np.std(hess_diff))
+            self.assertLess(
+                np.abs(np.average(hess_diff)),
+                .2,
+                msg='failed for {}'.format(fn)
+            )
+            self.assertLess(
+                np.std(hess_diff),
+                .8,
+                msg='failed for {}'.format(fn)
+            )
+
+
+
+        # plt.TriContourPlot(*new.T, dinterp2(new)-fn(new), colorbar=True).show()
+        # plt.TriContourPlot(*new.T, dinterp(new)-dinterp2(new), colorbar=True).show()
         # raise Exception(dinterp(new) - morse(new))
 
-    @debugTest
+    @validationTest
     def test_Symbolics(self):
 
         from McUtils.Misc import njit

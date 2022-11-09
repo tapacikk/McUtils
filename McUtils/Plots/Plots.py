@@ -1158,10 +1158,11 @@ class ListPlot3D(Plot3D):
     """
     Convenience 3D plotting class that handles the interpolation first
     """
+    method = 'contour'
     def __init__(self,
                  *params,
                  plot_style=None,
-                 method='contour',
+                 method=None,
                  colorbar=None,
                  figure=None,
                  axes=None,
@@ -1211,12 +1212,13 @@ class ListPlot3D(Plot3D):
 
         return (x, y, z)
 
+@Plot3D.register
 class ListTriPlot3D(ListPlot3D):
     """
     Creates a triangulated surface plot in 3D
     """
     method = 'plot_trisurf'
-    default_plot_style = {'interpolate':False}
+    default_plot_style = {}
 
 
 # add classes to __all__
