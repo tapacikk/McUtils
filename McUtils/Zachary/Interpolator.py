@@ -401,8 +401,10 @@ class RBFDInterpolator:
             dim_slices = np.transpose(pts)
             mins = [np.min(x) for x in dim_slices]
             maxs = [np.max(x) for x in dim_slices]
-            scalings = [M - m for M, m in zip(maxs, mins)]
-            rescaled_slices = [(x - m) / s for x, m, s in zip(dim_slices, mins, scalings)]
+            scalings = [1 if M - m < 1e-8 else M - m for M, m in zip(maxs, mins)]
+            rescaled_slices = [
+                (x - m) / s for x, m, s in zip(dim_slices, mins, scalings)
+            ]
             return np.transpose(rescaled_slices), np.array(mins), np.array(scalings)
         @classmethod
         def renormalize_values(cls, values):
@@ -428,7 +430,9 @@ class RBFDInterpolator:
 
         def apply_renormalization(self, pts):
             pts = pts.T
-            return ((pts - self.grid_shifts[:, np.newaxis]) / self.grid_scaling[:, np.newaxis]).T
+            scaligns = self.grid_scaling.copy()
+            scaligns[scaligns == 0] = 1. # only gonna happen when there's no shift anyway...
+            return ((pts - self.grid_shifts[:, np.newaxis]) / scaligns[:, np.newaxis]).T
         def reverse_renormalization(self, pts):
             return pts * self.grid_scaling + self.grid_shifts
 
@@ -1028,6 +1032,12 @@ class RBFDInterpolator:
         if pts.ndim == 1:
             pts = pts[np.newaxis]
 
+        if pts.ndim > 2:
+            extra_shape = pts.shape[:-1]
+            pts = pts.reshape(-1, pts.shape[-1])
+        else:
+            extra_shape = None
+
         ind_grps, pts_grps = self.create_neighbor_groups(
             self.get_neighborhood(pts, neighbors=neighbors),
             merge_limit=merge_neighbors
@@ -1050,6 +1060,12 @@ class RBFDInterpolator:
             for n, d in enumerate(ders):
                 der_sets[n][pts_inds] = d
 
+        if extra_shape is not None:
+            val_sets = np.reshape(val_sets, extra_shape)
+            der_sets = [
+                d.reshape(extra_shape + d.shape[1:])
+                for d in der_sets
+            ]
         if deriv_order > 0:
             return [val_sets] + der_sets
         else:

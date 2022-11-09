@@ -652,6 +652,7 @@ class StructuredTypeArray:
                 if isinstance(value, StructuredTypeArray):
                     value = value.array
                 residual_dims = len(self._array.shape) - append_chops
+
                 if isinstance(value, np.ndarray) and residual_dims > 0:
                     if residual_dims == 0:
                         # nothing to do here
@@ -661,7 +662,7 @@ class StructuredTypeArray:
                         value = value.flatten()
                         # we can actually manage to do some padding, so why not do so?
                         if self.axis_shape_indeterminate(append_chops):
-                            curr_slices =  (slice(None, None), ) * append_chops
+                            curr_slices = (slice(None, None), ) * append_chops
                             slices =  curr_slices + ( slice(0, value.shape[0]), )
                             self._array = self._array[slices]
                             # we do
@@ -703,13 +704,17 @@ class StructuredTypeArray:
                         num_val = int(str(value.dtype).strip("<US|"))
                         if num_arr < num_val:
                             self._array = self._array.astype(value.dtype)
-                    # print(key, value, self._array.shape)
+
                     self._array[key] = value
                     fill=self.filled_to
 
                     chopped_fill = fill[:append_chops]
                     max_chops = list(max(a, s) for a,s in zip(fill[append_chops:], value.shape))
-                    self.filled_to =  chopped_fill + max_chops
+                    self.filled_to = chopped_fill + max_chops
+                else:
+                    # I think this is what there being no residual dims means
+                    # (essentially single-element insert)
+                    self._array[key] = value
 
             if isinstance(key, int) and key == self.filled_to[0]:
                 self.filled_to[0] += 1
@@ -903,18 +908,18 @@ class StructuredTypeArray:
         return castable
 
     def append(self, val, axis=0):
-        """Puts val in the first empty slot in the array
+        """
+        Puts val in the first empty slot in the array
 
         :param val:
         :type val:
         :return:
         :rtype:
         """
+
         axis = axis + max(self.append_depth, 0)
-        # print("real_axis:", axis)
         if self.is_simple:
             pos = tuple(self.filled_to[:axis+1])
-            # print(pos)
         else:
             pos = [tuple(f[:axis+1]) for f in self.filled_to]
         self[pos] = val
@@ -1098,6 +1103,7 @@ class StructuredTypeArray:
                             else:
                                 new_shp[i] = ashp[which_array_shp]
                                 which_array_shp += 1
+
                         array = array.reshape(new_shp)
                         self._array = array
                     elif len(shp) == len(ashp):
