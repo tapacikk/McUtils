@@ -1678,6 +1678,19 @@ class ZacharyTests(TestCase):
         # )
         # raise Exception(interp(pts[:2], deriv_order=1, neighbors=5))
 
+    @debugTest
+    def test_HigherElementaryDerivs(self):
+        sym = Symbols('x', 'y')
+        fn = sym.morse(sym.x, de=2, a=1) + sym.morse(sym.y, de=2, a=1)
+        fexpr = 2*(1-sym.exp(-1*sym.x))**2 + 2*(1-sym.exp(-1*sym.y))**2
+
+        # raise Exception(sym.x + (3*sym.x**2)/12)
+
+        self.assertTrue(np.allclose(
+            fn.deriv(order=3)([[1, 2], [3, 4]]),
+            fexpr.deriv(order=3)([[1, 2], [3, 4]])
+        ))
+
     @validationTest
     def test_RBFTiming(self):
         for npts in [50, 100, 200, 300, 400, 500]:
@@ -1706,7 +1719,7 @@ class ZacharyTests(TestCase):
             with Timer(tag="{} pts:".format(len(interp.grid))):
                 interp(interp.grid, deriv_order=0, neighbors=5)
 
-    @debugTest
+    @validationTest
     def test_RBFForms(self):
 
         def test_1D(fn, pts):

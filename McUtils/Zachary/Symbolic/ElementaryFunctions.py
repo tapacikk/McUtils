@@ -126,8 +126,10 @@ class Functionlike(metaclass=abc.ABCMeta):
     def __rmul__(self, other):
         return self * other
     def __truediv__(self, other):
+        # print("t???", self, other, Power(-1).compose(other))
         return self * Power(-1).compose(other)
     def __rtruediv__(self, other):
+        # print("r???", self, other)
         return other * Power(-1).compose(self)
 
     def __add__(self, other):
@@ -276,9 +278,9 @@ class ElementaryFunction(Functionlike):
     def get_deriv(self) -> 'ElementaryFunction':
         ...
 
-    def deriv(self, n=1, simplify=True):  # this can be overloaded but for now this is the easy way to bootstrap
+    def deriv(self, order=1, simplify=True):  # this can be overloaded but for now this is the easy way to bootstrap
         d = self.get_deriv()
-        for _ in range(n - 1):
+        for _ in range(order - 1):
             d = d.get_deriv()
         if simplify:
             d = d.simplify()
@@ -757,7 +759,7 @@ class TensorFunction(MultivariateFunction):
     def eval(self, r:np.ndarray) ->'np.ndarray':
         return self.apply_function(
             lambda f:
-                f(r[..., f.idx] if f.idx is not None else r)
+                f(r[..., f.idx] if f.idx is not None else r[..., 0])
                     if isinstance(f, ElementaryFunction) else
                 f(r)
         )
@@ -766,8 +768,8 @@ class TensorFunction(MultivariateFunction):
         _, np = Abstract.vars("_", "np")
         spec_calls = [
             f.get_compile_spec()(
-                var[..., f.idx]
-                if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                (var[..., f.idx]  if f.idx is not None else var[..., 0])
+                    if (isinstance(f, ElementaryFunction)) else
                 var
             )
 
@@ -875,15 +877,15 @@ class Summation(MultivariateFunction):
     """
 
     def eval(self, r: np.ndarray) -> 'np.ndarray':
-        vals = [f(r[..., f.idx] if f.idx is not None else r) if isinstance(f, ElementaryFunction) else f(r) for f in self.functions]
+        vals = [f(r[..., f.idx] if f.idx is not None else r[..., 0]) if isinstance(f, ElementaryFunction) else f(r) for f in self.functions]
         return np.sum(vals, axis=0)
     def get_compile_spec(self):
         var = self.get_compile_var()
         np = Abstract.Name('np')
         args = [
             f.get_compile_spec()(
-                var[..., f.idx]
-                if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                (var[..., f.idx]  if f.idx is not None else var[..., 0])
+                    if (isinstance(f, ElementaryFunction)) else
                 var
             )
 
@@ -893,12 +895,13 @@ class Summation(MultivariateFunction):
 
     @classmethod
     def construct(cls, *terms, indices=None):
+        terms = [Scalar(x) if isinstance(x, (int, float, np.integer, np.floating)) else x for x in terms]
         terms = [
             x
             for t in terms
             for x in (
                 t.functions
-                if isinstance(t, (Summation, ElementarySummation))
+                    if isinstance(t, (Summation, ElementarySummation))
                 else [t]
             )
         ]
@@ -980,14 +983,14 @@ class Product(MultivariateFunction):
     """
 
     def eval(self, r: np.ndarray) -> 'np.ndarray':
-        vals = [f(r[..., f.idx] if f.idx is not None else r) if isinstance(f, ElementaryFunction) else f(r) for f in self.functions]
+        vals = [f(r[..., f.idx] if f.idx is not None else r[..., 0]) if isinstance(f, ElementaryFunction) else f(r) for f in self.functions]
         return np.prod(vals, axis=0)
     def get_compile_spec(self):
         var = self.get_compile_var()
         args = [
             f.get_compile_spec()(
-                var[..., f.idx]
-                if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                (var[..., f.idx] if f.idx is not None else var[..., 0])
+                    if (isinstance(f, ElementaryFunction)) else
                 var
             )
 
@@ -997,6 +1000,7 @@ class Product(MultivariateFunction):
 
     @classmethod
     def construct(cls, *terms, indices=None):
+        terms = [Scalar(x) if isinstance(x, (int, float, np.integer, np.floating)) else x for x in terms]
         terms = [
             x
             for t in terms
@@ -1072,14 +1076,14 @@ class Composition(MultivariateFunction):
     """
 
     def eval(self, r: np.ndarray) -> 'np.ndarray':
-        return reduce(lambda r,f: f(r[..., f.idx] if f.idx is not None else r), reversed(self.functions), r)
+        return reduce(lambda r,f: f(r[..., f.idx] if f.idx is not None else r[..., 0]), reversed(self.functions), r)
     def get_compile_spec(self):
         var = self.get_compile_var()
         return Abstract.Lambda(var)(
             reduce(
                 lambda r, f: f.get_compile_spec()(
-                    r[..., f.idx]
-                    if (isinstance(f, ElementaryFunction) and f.idx is not None) else
+                    (r[..., f.idx] if f.idx is not None else r[..., 0])
+                        if (isinstance(f, ElementaryFunction)) else
                     r
                 ),
                 reversed(self.functions),
@@ -1089,30 +1093,33 @@ class Composition(MultivariateFunction):
 
     @classmethod
     def construct(cls, *terms, indices=None):
+        terms = [Scalar(x) if isinstance(x, (int, float, np.integer, np.floating)) else x for x in terms]
         terms = [
             x
             for t in terms
             for x in (
                 t.functions
-                if isinstance(t, (Composition, ElementaryComposition))
+                    if isinstance(t, (Composition, ElementaryComposition))
                 else [t]
             )
         ]
         sel = 0
-        for i,t in enumerate(terms):
-            if isinstance(t, Scalar):
-                sel = i
-        terms = terms[sel:]
+        # for i,t in enumerate(terms):
+        #     if isinstance(t, Scalar):
+        #         sel = i
+        #         break
+        # terms = terms[:sel+1]
         return cls.construct_varivariate(ElementaryComposition, cls, terms, indices=indices)
 
     def apply_simplifications(self):
         simp_funs = [f.simplify() for f in self.functions]
-        newf_point = 0
-        for i,f in enumerate(simp_funs):
-            if isinstance(f, Scalar):
-                newf_point = i
+        # newf_point = 0
+        # for i,f in enumerate(simp_funs):
+        #     if isinstance(f, Scalar):
+        #         newf_point = i
+        #         break
 
-        newfs = [f for f in simp_funs[newf_point:] if not isinstance(f, Identity)]
+        newfs = [f for f in simp_funs if not isinstance(f, Identity)]
         if len(newfs) == 1:
             return newfs[0]
         elif len(newfs) == 0:
@@ -1174,7 +1181,8 @@ class Scalar(ElementaryFunction):
     Broadcasts a constant value
     """
     __slots__ = ['scalar', 'idx']
-    def __init__(self, scalar, *, idx=None):
+    def __init__(self, scalar, *, idx=0):
+        idx = None
         super().__init__(idx=idx)
         self.scalar = scalar
     def eval(self, r: np.ndarray) -> 'np.ndarray':
@@ -1190,7 +1198,7 @@ class Scalar(ElementaryFunction):
             )
     def get_deriv(self) -> 'ElementaryFunction':
         return type(self)(0, idx=self.idx)
-    def deriv(self, n=1, *, simplify=True):
+    def deriv(self, order=1, *, simplify=True):
         return type(self)(0, idx=self.idx)
     def get_sortval(self):
         return (self.scalar.sort_val if isinstance(self.scalar, Functionlike) else self.scalar)
@@ -1218,8 +1226,8 @@ class Identity(ElementaryFunction):
         return Abstract.Lambda(_)(_)
     def get_deriv(self) -> 'ElementaryFunction':
         return Scalar(1)
-    def deriv(self, n=1, simplify=True):
-        return Scalar(1) if n == 1 else Scalar(0)
+    def deriv(self, order=1, simplify=True):
+        return Scalar(1) if order == 1 else Scalar(0)
     def simplify(self, iterations=10) ->'Functionlike':
         return self
     def __hash__(self):
@@ -1429,10 +1437,45 @@ class Morse(CompoundFunction):
         return de*(Scalar(1)-Exp()(-a*(r-re)))**2
     def eval(self, r: np.ndarray) -> 'np.ndarray':
         return self.de*(1-np.exp(-self.a*(r-self.re )))**2
+    def get_deriv(self):
+        return MorseDeriv(1, de=self.de, a=self.a, re=self.re, idx=self.idx)
     def __repr__(self):
         return "morse(de={},a={},re={})".format(self.de, self.a, self.re)
     def tree_repr(self, sep="\n", indent=""):
         return "{}(de={},a={},re={})".format(type(self).__name__, self.de, self.a, self.re)
+class MorseDeriv(CompoundFunction):
+    def __init__(self, order, *, de=1, a=1, re=0, idx=None):
+        self.order = order
+        self.de = de
+        self.a = a
+        self.re = re
+        super().__init__(idx=idx)
+    def eval(self, r: np.ndarray) -> 'np.ndarray':
+        r = np.asanyarray(r)
+        n = self.order
+        de = self.de
+        a = self.a
+        re = self.re
+        return ((-1)**(n + 1) * 2*a**n * de) * np.exp(-2*a*(r-re))*(np.exp(a*(r-re)) - (2 ** (n - 1)))
+    def get_expression(self) -> 'ElementaryFunction':
+        n = self.order
+        de = self.de if isinstance(self.de, Scalar) else Scalar(self.de)
+        a = self.a if isinstance(self.a, Scalar) else Scalar(self.a)
+        re = self.re if isinstance(self.re, Scalar) else Scalar(self.re)
+        r = Identity(idx=self.idx)
+        return ((-1) ** (n + 1) * 2 * a ** n * de) * Exp()(-2 * a * (r-re)) * (Exp()(a * (r-re)) - (2 ** (n - 1)))
+    def get_deriv(self) -> 'MorseDeriv':
+        return type(self)(
+            self.order+1,
+            de=self.de,
+            a=self.a,
+            re=self.re,
+            idx=self.idx
+        )
+    def __repr__(self):
+        return "morse[{}](de={},a={},re={})".format(self.order, self.de, self.a, self.re)
+    def tree_repr(self, sep="\n", indent=""):
+        return "{}(order={},de={},a={},re={})".format(type(self).__name__, self.order, self.de, self.a, self.re)
 
 class Symbols:
 
