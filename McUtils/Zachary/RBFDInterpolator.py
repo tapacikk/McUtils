@@ -610,7 +610,7 @@ class RBFDInterpolator:
         if neighbors == 1:
             # `KDTree` squeezes the output when neighbors=1.
             yindices = yindices[np.newaxis]
-        yindices = np.sort(yindices)
+        # yindices = np.sort(yindices)
         res = yindices
         if return_distances:
             res = (yindices, distances)
