@@ -3,14 +3,17 @@ import abc, numpy as np, itertools, collections, copy
 from functools import reduce
 
 # from ...Combinatorics import SymmetricGroupGenerator
+
 from  ...Misc import Abstract
 
 
 __all__ = [
-    "Symbols"
+    "Symbols",
+    "SymPyFunction"
     # "Summation",
     # "Product"
 ]
+
 class Functionlike(metaclass=abc.ABCMeta):
     """
     A function suitable for symbolic manipulation
@@ -1018,24 +1021,22 @@ class Product(MultivariateFunction):
             return Scalar(1, idx=0)
         return cls.construct_varivariate(ElementaryProduct, cls, terms, indices=indices)
 
-    def get_deriv(self, *counts):
-        needs_der_pos = {i for i, c in enumerate(counts) if c > 0}
-        if len(needs_der_pos) == 1:
-            idx = list(needs_der_pos)[0]
-        else:
-            idx = -1
+    def get_1d_deriv(self, idx, amt):
+        # basically identical to ElementaryFunction version but we filter
+        # against irrelevant indices
+        counts = [0]*self.ndim
+        counts[idx] = amt
         return Summation(
             *(
+                # equivalent of ElementaryFunction version
                 type(self)(
                     *(
                         (
-                            f.deriv(counts[idx])
+                            f.deriv(amt)
                                 if isinstance(f, ElementaryFunction) else
                             f.get_deriv(*counts)
                         )
-
                         if j == i else
-
                         f
 
                         for j, f in enumerate(self.functions)
@@ -1045,10 +1046,27 @@ class Product(MultivariateFunction):
 
                 for i in range(len(self.functions))
                 if not isinstance(self.functions[i], ElementaryFunction) or
-                   len(needs_der_pos) == 1 and (self.functions[i].idx is None or self.functions[i].idx in needs_der_pos)
+                   (self.functions[i].idx is None or self.functions[i].idx == idx)
             ),
             indices=self.indices
         )
+
+    def get_deriv(self, *counts):
+        needs_der_pos = {i for i, c in enumerate(counts) if c > 0}
+        if len(needs_der_pos) == 0:
+            return self
+        elif len(needs_der_pos) == 1:
+            idx = list(needs_der_pos)[0]
+            return self.get_1d_deriv(idx, counts[idx])
+        else:
+            for i,c in enumerate(counts):
+                if c > 0: # has to happen at some point
+                    new = self.get_1d_deriv(i, c)
+                    rest = [0]*self.ndim
+                    rest[i+1:] = counts[i+1:]
+                    return new.get_deriv(*rest)
+            else:
+                raise ValueError("shouldn't be here...")
 
     sort_key = 100
 
@@ -1509,3 +1527,323 @@ class Symbols:
     @classmethod
     def morse(cls, r, de=1, a=1, re=0):
         return Morse(de=de, a=a, re=re)(r)
+
+
+class SymPyFunction:
+    """
+    A function suitable for symbolic manipulation
+    with derivatives and evlauation
+    """
+
+    @classmethod
+    def get_sympy(cls):
+        import sympy
+        return sympy
+    @property
+    def sympy(self):
+        return self.get_sympy()
+
+    def __init__(self, expr, vars=None):
+        if isinstance(expr, str):
+            expr = self.sympy.parsing.parse_expr(expr)
+        self.expr = expr
+        if vars is None:
+            vars = self.expr.free_symbols
+        self.vars = self.sort_vars(vars)
+        self._compiled = None
+
+    def _varkey(self, v):
+        if isinstance(v, self.sympy.Symbol):
+            v = v.name
+        bits = v.split('[', 2)
+        if len(bits) > 1:
+            v = int(bits[1].split("]")[0])
+        return v
+    def sort_vars(self, vars):
+        return list(sorted(vars, key=lambda v:self._varkey(v)))
+    def merge_vars(self, v1, v2):
+        v = set(v1)
+        v.update(v2)
+        return self.sort_vars(v)
+
+    def compile(self):
+        if self._compiled is None:
+            self._compiled = self.sympy.lambdify(self.vars, self.expr)
+        return self._compiled
+
+    def eval(self, r: np.ndarray) -> 'np.ndarray':
+        if len(self.vars) == 1:
+            if r.ndim > 1 and r.shape[-1] == 1:
+                return self.compile()(
+                    np.moveaxis(r, -1, 0)[0]
+                )
+            else:
+                return self.compile()(r)
+        else:
+            return self.compile()(*np.moveaxis(r, -1, 0))
+
+    def deriv(self, *which, order=1):
+        cls = type(self)
+        if len(self.vars) == 1:
+            if len(which) > 0:
+                order = which[0]
+            expr = self.expr
+            for _ in range(order):
+                expr = self.sympy.diff(expr, self.vars)
+            deriv = cls(expr, vars=self.vars)
+        else:
+            ndim = len(self.vars)
+            if len(which) == 0:
+                res = np.full((ndim,) * order, None)
+                # partitions = SymmetricGroupGenerator(ndim).get_terms(order)
+                for which in itertools.combinations_with_replacement(range(ndim), r=order):
+                    count_map = {k: v for k, v in zip(*np.unique(which, return_counts=True))}
+                    expr = self.expr
+                    for k in range(ndim):
+                        for _ in range(count_map.get(k, 0)):
+                            expr = self.sympy.diff(expr, self.vars[k])
+                    fn = cls(expr, vars=self.vars)
+                    for p in itertools.permutations(which):
+                        res[p] = expr
+                deriv = SymPyArrayFunction(res, symmetric=True)
+            else:
+                count_map = {k: v for k, v in zip(*np.unique(which, return_counts=True))}
+                expr = self.expr
+                for k in range(ndim):
+                    for _ in range(count_map.get(k, 0)):
+                        expr = self.sympy.diff(expr, self.vars[k])
+                deriv = cls(expr, vars=self.vars)
+
+        # if simplify:
+        #     deriv = deriv.simplify()
+        return deriv
+
+    def __call__(self, r):
+        if isinstance(r, SymPyFunction):
+            return self.compose(r)
+        else:
+            r = np.asanyarray(r)
+            return self.eval(r)
+
+    def __neg__(self):
+        return -1 * self
+
+    def __mul__(self, other):
+        if isinstance(other, SymPyFunction):
+            ovars = other.vars
+            other = other.expr
+        else:
+            ovars = []
+        return type(self)(self.expr * other, vars=self.merge_vars(self.vars, ovars))
+    def __rmul__(self, other):
+        return self * other
+    def __truediv__(self, other):
+        if isinstance(other, SymPyFunction):
+            ovars = other.vars
+            other = other.expr
+        else:
+            ovars = []
+        return type(self)(self.expr / other, vars=self.merge_vars(self.vars, ovars))
+    def __rtruediv__(self, other):
+        if isinstance(other, SymPyFunction):
+            ovars = other.vars
+            other = other.expr
+        else:
+            ovars = []
+        return type(self)(other / self.expr, vars=self.merge_vars(self.vars, ovars))
+
+    def __add__(self, other):
+        if isinstance(other, SymPyFunction):
+            ovars = other.vars
+            other = other.expr
+        else:
+            ovars = []
+        return type(self)(other + self.expr, vars=self.merge_vars(self.vars, ovars))
+    def __radd__(self, other):
+        if isinstance(other, SymPyFunction):
+            ovars = other.vars
+            other = other.expr
+        else:
+            ovars = []
+        return type(self)(other + self.expr, vars=self.merge_vars(self.vars, ovars))
+
+    def __sub__(self, other):
+        if isinstance(other, SymPyFunction):
+            ovars = other.vars
+            other = other.expr
+        else:
+            ovars = []
+        return type(self)(self.expr - other, vars=self.merge_vars(self.vars, ovars))
+    def __rsub__(self, other):
+        if isinstance(other, SymPyFunction):
+            ovars = other.vars
+            other = other.expr
+        else:
+            ovars = []
+        return type(self)(other - self.expr, vars=self.merge_vars(ovars, self.vars))
+
+    def __pow__(self, power, modulo=None):
+        if isinstance(power, SymPyFunction):
+            ovars = power.vars
+            power = power.expr
+        else:
+            ovars = []
+        return type(self)(self.expr**power, vars=self.merge_vars(self.vars, ovars))
+
+    def invert(self):
+        return type(self)(self.expr.invert())
+    def __invert__(self):
+        return self.invert()
+    def copy(self):
+        return copy.copy(self)
+    def compose(self, other):
+        if isinstance(other, SymPyFunction):
+            ovars = other.vars
+            other = other.expr
+        else:
+            ovars = []
+        return type(self)(
+            self.expr(other),
+            vars=self.merge_vars(self.vars, ovars)
+        )
+
+    @classmethod
+    def symbols(cls, *syms):
+        sympy = cls.get_sympy()
+        return [cls(sympy.Symbol("{}[{}]".format(s, n))) for n,s in enumerate(syms)]
+    @classmethod
+    def exp(cls, fn):
+        return cls(cls.get_sympy().exp(fn.expr), vars=fn.vars)
+    @classmethod
+    def morse(cls, var, de=10, a=1, re=0):
+        if not isinstance(var, SymPyFunction):
+            var = cls(var)
+        return de*(1-cls.exp(-a*(var-re)))**2
+
+    def __repr__(self):
+        return repr(self.expr)
+
+class SymPyArrayFunction:
+    def __init__(self, expr_array, symmetric=False):
+        self.functions = expr_array
+        self.symmetric = symmetric
+        self.functions = self.apply_function(lambda f:SymPyFunction(f) if not isinstance(f, (SymPyFunction, SymPyArrayFunction)) else f)
+    def _get_res_array(self, v)->np.ndarray:
+        if isinstance(v, np.ndarray):
+            res = np.empty(self.functions.shape + v.shape, dtype=v.dtype)
+        elif isinstance(v, str):
+            res = np.empty(self.functions.shape, dtype=object) # someday maybe I'll treat as strings...?
+        elif isinstance(v, (int, np.integer)):
+            res = np.empty(self.functions.shape, dtype=int)
+        elif isinstance(v, (float, np.floating)):
+            res = np.empty(self.functions.shape, dtype=float)
+        else:
+            res = np.empty(self.functions.shape, dtype=object)
+        return res
+    def apply_function(self, fn, res_builder=None)->np.ndarray:
+        flat = self.functions.flat
+        if self.symmetric:
+            _cache = {}
+        if res_builder is None:
+            res_builder = self._get_res_array
+        res = None
+        for f in flat:
+            idx = np.unravel_index(flat.index - 1, self.functions.shape)
+            if not self.symmetric:
+                v = fn(f)
+                if res is None:
+                    res = res_builder(v)
+                res[idx] = v
+            else:
+                key = tuple(np.sort(idx))
+                if key not in _cache:
+                    _cache[key] = fn(f)
+                if res is None:
+                    res = res_builder(_cache[key])
+                res[idx] = _cache[key]
+        return res
+    def eval(self, r:np.ndarray) ->'np.ndarray':
+        return self.apply_function(lambda f:f(r))
+
+    def __call__(self, r):
+        if isinstance(r, SymPyFunction):
+            return self.compose(r)
+        else:
+            r = np.asanyarray(r)
+            return self.eval(r)
+
+    def __neg__(self):
+        return -1 * self
+
+    def __mul__(self, other):
+        if isinstance(other, SymPyArrayFunction):
+            other = other.functions
+        elif isinstance(other, SymPyFunction):
+            other = other.expr
+        return type(self)(self.functions * other)
+    def __rmul__(self, other):
+        return self * other
+
+    def __truediv__(self, other):
+        if isinstance(other, SymPyArrayFunction):
+            other = other.functions
+        elif isinstance(other, SymPyFunction):
+            other = other.expr
+        return type(self)(self.functions / other)
+    def __rtruediv__(self, other):
+        if isinstance(other, SymPyArrayFunction):
+            other = other.functions
+        elif isinstance(other, SymPyFunction):
+            other = other.expr
+        return type(self)(other / self.functions)
+
+    def __add__(self, other):
+        if isinstance(other, SymPyArrayFunction):
+            other = other.functions
+        elif isinstance(other, SymPyFunction):
+            other = other.expr
+        return type(self)(self.functions + other)
+    def __radd__(self, other):
+        if isinstance(other, SymPyArrayFunction):
+            other = other.functions
+        elif isinstance(other, SymPyFunction):
+            other = other.expr
+        return type(self)(self.functions + other)
+
+    def __sub__(self, other):
+        if isinstance(other, SymPyArrayFunction):
+            other = other.functions
+        elif isinstance(other, SymPyFunction):
+            other = other.expr
+        return type(self)(self.functions - other)
+    def __rsub__(self, other):
+        if isinstance(other, SymPyArrayFunction):
+            other = other.functions
+        elif isinstance(other, SymPyFunction):
+            other = other.expr
+        return type(self)(other - self.functions)
+
+    def __pow__(self, power, modulo=None):
+        if isinstance(power, SymPyArrayFunction):
+            power = power.functions
+        elif isinstance(power, SymPyFunction):
+            power = power.expr
+        return type(self)(self.functions ** power)
+
+    def invert(self):
+        raise NotImplementedError("...")
+        return type(self)(self.apply_function(lambda f:f.invert()))
+    def __invert__(self):
+        return self.invert()
+
+    def copy(self):
+        return copy.copy(self)
+
+    def compose(self, other):
+        if isinstance(other, SymPyArrayFunction):
+            other = other.functions
+        elif isinstance(other, SymPyFunction):
+            other = other.expr
+        return type(self)(self.apply_function(lambda f:f(other)))
+    def __repr__(self):
+        return "{}({})".format(type(self).__name__, self.functions)

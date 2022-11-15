@@ -1402,9 +1402,8 @@ class ZacharyTests(TestCase):
         raise Exception(c)
         TensorExpression.OuterPowerTerm(TensorExpression.ConstantArray([1, 2, 3], name="bloop"), 2)
 
-    @validationTest
-    def test_RBFInterpolator(self):
-
+    @debugTest
+    def test_RBFInterp1D(self):
         # 1D
         np.random.seed(0)
         npts = 50
@@ -1468,6 +1467,8 @@ class ZacharyTests(TestCase):
         #     ]
         # )
 
+    @debugTest
+    def test_RBFInterpolator(self):
 
         #
         np.random.seed(1)
@@ -1498,6 +1499,7 @@ class ZacharyTests(TestCase):
             # extra_degree=2,
             kernel='thin_plate_spline',
             clustering_radius=.01,
+            multicenter_monomials=True
             # monomial_basis=True
         )
 
@@ -1575,35 +1577,18 @@ class ZacharyTests(TestCase):
             atol=.1
         ), msg="bad deriv interpolation at interpolation points \nerror: {} in\n{} \nvs\n {}".format(dervs-reals, dervs, reals))
 
-        np.random.seed(0)
-        test_vals = np.unique(np.random.randint(0, len(pts)-1, size=200))
-        errors = [[], [], []]
-        print_errors = False
+        # np.random.seed(0)
+        # test_vals = np.unique(np.random.randint(0, len(pts)-1, size=200))
+        # errors = [[], [], []]
+        # print_errors = False
         # prob_n = 8
         # c = pts[test_vals[prob_n:prob_n+1]]+.1
-        # dat = interp.nearest_interpolation(c, neighbors=15, solver_data=True, interpolator=False)[0]
-        # raise Exception(
-        #     np.average(np.linalg.norm(
-        #         interp.grid[interp.get_neighborhood(c, neighbors=15)[0]][:, np.newaxis, :]
-        #         - interp.grid[interp.get_neighborhood(c, neighbors=15)[0]][np.newaxis, :, :],
-        #         axis=1
-        #     )) -
-        #     np.average(np.linalg.norm(
-        #         interp.grid[interp.get_neighborhood(c-.1+.01, neighbors=15)[0]][:, np.newaxis, :]
-        #         - interp.grid[interp.get_neighborhood(c-.1+.01, neighbors=15)[0]][np.newaxis, :, :],
-        #         axis=1
-        #     ))
-        #     # interp.get_neighborhood(c, neighbors=15),
-        #     # interp.get_neighborhood(c-.1+.01, neighbors=15),
-        #     # interp.tree.query(c, k=15)[0],
-        #     # interp.tree.query(c-.1+.01, k=15)[0],
-        # )
-
+        #
         # intl = interp.nearest_interpolation(c[0], neighbors=15, solver_data=True, interpolator=True)
         # idat = intl.data
 
         # import json, os
-        # with open(os.path.expanduser("~/Desktop/bad_pos.json"), 'w+') as dump:
+        # with open(os.path.expanduser("~/Desktop/bad_pos_new.json"), 'w+') as dump:
         #     json.dump({
         #         'center': c.tolist(),
         #         'pts': pts.tolist(),
