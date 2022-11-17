@@ -42,6 +42,10 @@ class ExtensionsTests(TestCase):
             "SharedLibraryFunction(FunctionSignature(calcpot_(Argument('nw', PointerType(PrimitiveType(int)))" in repr(
                 mbpol))
 
+    @debugTest
+    def test_FFI(self):
+        ...
+
 
 
 """
@@ -50,7 +54,7 @@ import multiprocessing as mproc
 from numpy.ctypeslib import ndpointer
 ​
 class MBPolCaller:
-    lib_loc = "/Users/Mark/Documents/UW/Research/Notebooks/Jupyter/data/"
+    lib_loc = "~/Documents/UW/Research/Notebooks/Jupyter/data/"
     def __init__(self):
         self._nw = None
         self._cnw = None

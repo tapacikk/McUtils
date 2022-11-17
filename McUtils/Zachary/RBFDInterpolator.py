@@ -34,7 +34,7 @@ class RBFDInterpolator:
                  neighborhood_merge_threshold=10,
                  solve_method='least_squares',
                  max_condition_number=np.inf,
-                 error_threshold=.0001
+                 error_threshold=.01
                  ):
 
         pts = np.asanyarray(pts)
@@ -959,10 +959,13 @@ class RBFDInterpolator:
     @property
     def global_interpolator(self):
         if self._globint is None:
-            self._globint = self.Interpolator(
-                self.construct_interpolation(np.arange(len(self.grid))),
-                self
-            )
+            et = self.error_threshold
+            try: # ignore errors
+                self.error_threshold = None
+                interp = self.construct_interpolation(np.arange(len(self.grid)))
+            finally:
+                self.error_threshold = et
+            self._globint = self.Interpolator(interp, self)
         return self._globint
 
 
