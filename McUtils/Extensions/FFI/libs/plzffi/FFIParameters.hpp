@@ -502,12 +502,20 @@ namespace plzffi {
             // determine if our type is a pointer type
             auto pos = std::find(FFIPointerTypes.begin(), FFIPointerTypes.end(), type);
             if (pos < FFIPointerTypes.end() || !shape.empty()) {
+                if (debug_print()) {
+                    auto garb = mcutils::python::get_python_repr(py_obj);
+                    mcutils::python::py_printf("Converting PyObject %s with pointer type FFIType %i\n", garb.c_str(), type);
+                }
                 // not a pointer to data so we want to extract with a deleter
                 return std::shared_ptr<void>(
                         mcutils::python::from_python<typename T::type *>(py_obj),
                         [](typename T::type *val) { delete val; }
                 );
             } else {
+                if (debug_print()) {
+                    auto garb = mcutils::python::get_python_repr(py_obj);
+                    mcutils::python::py_printf("Converting PyObject %s with non-pointer type FFIType %i\n", garb.c_str(), type);
+                }
                 // is a pointer so no deletion
                 return std::make_shared<typename T::type>(
                         mcutils::python::from_python<typename T::type>(py_obj)
@@ -524,14 +532,23 @@ namespace plzffi {
 
         static std::shared_ptr<void> from_python_attr_direct(FFIType type, PyObject* py_obj, const char* attr, std::vector<size_t>& shape) {
             auto pos = std::find(FFIPointerTypes.begin(), FFIPointerTypes.end(), type);
+
             if (pos < FFIPointerTypes.end() || !shape.empty()) {
                 // not a pointer to data so we want to extract with a deleter
+                if (debug_print()) {
+                    auto garb = mcutils::python::get_python_repr(py_obj);
+                    mcutils::python::py_printf("Converting PyObject %s attr %s with pointer type FFIType %i\n", garb.c_str(), attr, type);
+                }
                 return std::shared_ptr<void>(
                         mcutils::python::get_python_attr_ptr<typename T::type>(py_obj, attr),
                         [](typename T::type* val){delete val;}
                 );
             } else {
-                // is a pointer so no deletion
+                // new managed instance so no deleter
+                if (debug_print()) {
+                    auto garb = mcutils::python::get_python_repr(py_obj);
+                    mcutils::python::py_printf("Converting PyObject %s attr %s with pointer type FFIType %i\n", garb.c_str(), attr, type);
+                }
                 return std::make_shared<typename T::type>(
                         mcutils::python::get_python_attr<typename T::type>(py_obj, attr)
                 );
@@ -547,11 +564,11 @@ namespace plzffi {
         static PyObject* as_python_direct(FFIType type, std::shared_ptr<void>& data, std::vector<size_t>& shape) {
             // determine if our type is a pointer type
             auto pos = std::find(FFIPointerTypes.begin(), FFIPointerTypes.end(), type);
-            if (pos < FFIPointerTypes.end() ) {
-                // not a pointer so we just do a basic conversion
+            if (pos < FFIPointerTypes.end()) {
+                // is a pointer type so we convert regularly
                 return FFITypeHandler<typename T::type>::as_python(type, data, shape);
             } else {
-                // is a pointer type so we convert as a pointer
+                // not a pointer type so we extract data from shared_ptr as a pointer first
                 return FFITypeHandler<typename T::type*>::as_python(type, data, shape);
             }
         }

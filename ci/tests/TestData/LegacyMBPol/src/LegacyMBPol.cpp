@@ -28,6 +28,19 @@ namespace LegacyMBPol {
 
     }
 
+    double test_pot(FFIParameters &params) {
+
+        return 0.0;
+
+    }
+
+    double test_val(FFIParameters &params) {
+
+        auto val = params.value<double>("val");
+        return val;
+
+    }
+
     FFICompoundType energy_grad_type {
             {"energy", "grad"},
             {FFIType::Double, FFIType::Double},
@@ -79,6 +92,23 @@ namespace LegacyMBPol {
         // need a load function that can be called in PYMODINIT
     void load(FFIModule *mod) {
         // load modules and return python def
+
+        // add data for test pots
+        mod->add<double>(
+                "test_pot",
+                {
+                },
+                test_pot
+                );
+
+        // add data for test pots
+        mod->add<double>(
+                "test_val",
+                {
+                    {"val", FFIType::Double, {}},
+                },
+                test_val
+                );
 
         // add data for first obj
         mod->add<double>(

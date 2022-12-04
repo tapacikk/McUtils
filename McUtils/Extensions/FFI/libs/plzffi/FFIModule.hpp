@@ -289,7 +289,7 @@ namespace plzffi {
             }
             try {
                 loader(this);
-                module_def = get_def();
+                get_def();
                 return PyModule_Create(&module_def);
             } catch (std::exception &e) {
                 std::string msg = "in loading module " + name + ": ";
@@ -354,7 +354,7 @@ namespace plzffi {
 
         const char *doc();
 
-        struct PyModuleDef get_def();
+        void get_def();
 
         std::string ffi_module_attr() { return capsule_name; };
 
@@ -771,7 +771,7 @@ namespace plzffi {
         return docstring.c_str();
     }
 
-    struct PyModuleDef FFIModule::get_def() {
+    void FFIModule::get_def() {
         // once I have them, I should hook into python methods to return, e.g. the method names and return types
         // inside the module
         auto *methods = new PyMethodDef[5]; // I think Python manages this memory if def() only gets called once
@@ -781,7 +781,7 @@ namespace plzffi {
         methods[2] = {"call_method", _pycall_evaluate_method, METH_VARARGS, "calls a method from an FFI module"};
         methods[3] = {"call_method_threaded", _pycall_evaluate_method_threaded, METH_VARARGS, "calls a method from an FFI module using a threading strategey"};
         methods[4] = {NULL, NULL, 0, NULL};
-        return {
+        module_def = {
                 PyModuleDef_HEAD_INIT,
                 name.c_str(),   /* name of module */
                 doc(), /* module documentation, may be NULL */
