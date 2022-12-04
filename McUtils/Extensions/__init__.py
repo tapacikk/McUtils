@@ -4,17 +4,16 @@ The existing `ExtensionLoader` will be moving here, and will be supplemented by 
 """
 
 
-from .CLoader import *
-from .ModuleLoader import *
-from .SharedLibraryManager import *
-from .ArgumentSignature import *
+
 
 __all__ = []
-from .CLoader import __all__ as exposed
+from .CLoader import *; from .CLoader import __all__ as exposed
 __all__ += exposed
-from .ModuleLoader import __all__ as exposed
+from .ModuleLoader import *; from .ModuleLoader import __all__ as exposed
 __all__ += exposed
-from .ArgumentSignature import __all__ as exposed
+from .ArgumentSignature import *; from .ArgumentSignature import __all__ as exposed
 __all__ += exposed
-from .SharedLibraryManager import __all__ as exposed
+from .SharedLibraryManager import *; from .SharedLibraryManager import __all__ as exposed
+__all__ += exposed
+from .FFI import *; from .FFI import __all__ as exposed
 __all__ += exposed

@@ -10,7 +10,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace rynlib {
+namespace mcutils {
     namespace python {
 
         class PyallupDebugFuckery {
@@ -44,6 +44,10 @@ namespace rynlib {
 
         static PyallupDebugFuckery pyadeeb;
 
+        inline std::string get_python_repr(PyObject* obj);
+
+        inline void print_obj(const char* fmt, PyObject* obj);
+
         inline long* _np_fuckery() {
             if(PyArray_API == NULL) {
                 import_array();
@@ -59,7 +63,8 @@ namespace rynlib {
 
         inline void _check_py_arr(PyObject* array) {
             if (!PyArray_Check(array)) {
-                PyErr_SetString(PyExc_TypeError, "expected numpy array");
+                std::string msg = "expected numpy array got " + get_python_repr(array);
+                PyErr_SetString(PyExc_TypeError, msg.c_str());
                 throw std::runtime_error("requires NumPy array");
             }
         }
@@ -68,7 +73,7 @@ namespace rynlib {
         class from_python_error : public std::runtime_error {
             const char* typestr = typeid(T).name();
         public:
-            from_python_error() : std::runtime_error(typestr) {};
+            from_python_error() : std::runtime_error(typeid(T).name()) {};
             std::string type_id() { return typestr; }
             const char * what() const noexcept override { return typestr; }
         };
@@ -146,7 +151,7 @@ namespace rynlib {
         class as_python_error : public std::runtime_error {
                 const char* typestr = typeid(T).name();
         public:
-            as_python_error() : std::runtime_error(typestr) {};
+            as_python_error() : std::runtime_error(typeid(T).name()) {};
             std::string type_id() { return typestr; }
             const char * what() const noexcept override { return typestr; }
         };
@@ -267,12 +272,49 @@ namespace rynlib {
             return as_python_tuple<T>(data, data.size());
         }
 
+
+        inline PyObject* as_python_dict(
+                const std::vector<std::string> keys,
+                const std::vector<PyObject*> values
+        ) {
+            // very basic dict builder
+
+            auto dict = PyDict_New();
+            for (size_t i = 0; i < keys.size(); i++) {
+                auto k = keys[i];
+                PyDict_SetItemString(dict, k.c_str(), values[i]);
+            }
+
+            return dict;
+
+        }
+//        class DictInterchange { // very basic interchange for python-like dicts
+//        public:
+//            std::vector<std::string> keys;
+//            std::vector<PyObject*> values;
+//
+//            template <typename T>
+//            PyObject* set_item(std::string key, T value) {
+//                auto obj = as_python(value);
+//                keys.push_back(key);
+//                values.push_back(obj);
+//                return obj;
+//            }
+//
+//            PyObject* as_python() {
+//                return as_python_dict(keys, values);
+//            }
+//
+//        };
+//        template <>
+//        inline PyObject *as_python<DictInterchange>(DictInterchange dict) {
+//            return dict.as_python();
+//        }
+
         template<typename T>
         inline T get_pycapsule_ptr(PyObject* cap, const char* name) {
             auto obj = PyCapsule_GetPointer(cap, name);
-            if (obj == NULL) {
-                throw std::runtime_error("Capsule error");
-            }
+            if (obj == NULL) { throw std::runtime_error("Capsule error"); }
             return T(obj); // explicit cast
         }
         template<typename T>
@@ -312,7 +354,7 @@ namespace rynlib {
         class numpy_type_error : public std::runtime_error {
             const char* typestr = typeid(T).name();
         public:
-            numpy_type_error() : std::runtime_error(typestr) {};
+            numpy_type_error() : std::runtime_error(typeid(T).name()) {};
             std::string type_id() { return typestr; }
         };
 

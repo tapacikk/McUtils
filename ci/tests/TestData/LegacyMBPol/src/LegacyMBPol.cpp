@@ -9,16 +9,11 @@
 using namespace plzffi;
 
 // Put all module functions in here
+// Declare our linkage
+double calcpot_(int*, double*, const double*);// comes from libmbpol.so
+double calcpotg_(int *nw, double *Vpot, const double *x, double *g);// comes from libmbpol.so
+
 namespace LegacyMBPol {
-
-    static FFIModule Data("LegacyMBPol", "provides linkage for legacy version of MB-Pol");
-    static PyModuleDef Module;
-
-    // Declare our linkage -> could be in TTM.hpp, but why bother
-    extern "C" {
-        double calcpot_(int*, double*, const double*);// comes from libmbpol.so
-        double calcpotg_(int *nw, double *Vpot, const double *x, double *g);// comes from libmbpol.so
-        }
 
     // all functions should take a single argument "FFIParameters"
     // data can be extracted by using the `.value` method with the name of the parameter
@@ -33,15 +28,15 @@ namespace LegacyMBPol {
 
     }
 
-    struct energy_grad {
-        double energy;
-        double* grad;
-        std::vector<std::string> keys = {"energy", "grad"};
-        std::vector<FFIType> types = {FFIType::Double, FFIType::Double};
-        std::vector<std::vector<int> > shapes = {{}, {0, 3}};
-    }
+    FFICompoundType energy_grad_type {
+            {"energy", "grad"},
+            {FFIType::Double, FFIType::Double},
+            {{}, {0, 3}}
+    };
 
-    energy_grad mbpol_grad(FFIParameters &params) {
+    FFICompoundReturn mbpol_grad(FFIParameters &params) {
+
+        FFICompoundReturn res(energy_grad_type);
 
         auto nwaters = params.value<int>("nwaters");
         auto coords = params.value<double*>("coords");
@@ -49,12 +44,11 @@ namespace LegacyMBPol {
         double derivs[nwaters * 9];
         double pot_val;
 
-        calcpotg_(&nwaters, &pot_val, coords, &derivs);
-        return {
-            pot_val / 627.5094740631,
-            energy_grad
-            }
-        }
+        calcpotg_(&nwaters, &pot_val, coords, derivs);
+        res.set<double>("energy", pot_val / 627.5094740631);
+        res.set<double *>("grad", derivs);
+
+        return res;
 
     }
 
@@ -65,7 +59,7 @@ namespace LegacyMBPol {
         auto coords_shape = params.shape("coords");
 
         std::vector<double> energies(coords_shape[0]);
-        auto block_size = std::accumulate(coords_shape.begin()+1, coords_shape.end(), 1, std::multiplies<>());
+//        auto block_size = std::accumulate(coords_shape.begin()+1, coords_shape.end(), 1, std::multiplies<>());
 
         for (size_t w = 0; w < coords_shape[0]; w++) {
 
@@ -82,12 +76,12 @@ namespace LegacyMBPol {
         return energies;
     }
 
-    // need a load function that can be called in PYMODINIT
-    void load() {
+        // need a load function that can be called in PYMODINIT
+    void load(FFIModule *mod) {
         // load modules and return python def
 
         // add data for first obj
-        Data.add<double>(
+        mod->add<double>(
                 "get_pot",
                 {
                         {"nwaters", FFIType::Int, {}},
@@ -95,8 +89,20 @@ namespace LegacyMBPol {
                 },
                 mbpol
                 );
+
+        // add data for version with gradient
+        mod->add(
+                "get_pot_grad",
+                {
+                        {"nwaters", FFIType::Int, {}},
+                        {"coords", FFIType::Double, {0, 0, 3}},
+                },
+                energy_grad_type,
+                mbpol_grad
+        );
+
         // add data for vectorized version
-        Data.add<double>(
+        mod->add<double>(
                 "get_pot_vec",
                 {
                         {"nwaters", FFIType::Int, {}},
@@ -105,28 +111,22 @@ namespace LegacyMBPol {
                 mbpol_vec
         );
 
-        Data.add<double>(
-                "get_pot_vec",
-                {
-                        {"nwaters", FFIType::Int, {}},
-                        {"coords", FFIType::Double, {0, 0, 3}},
-                },
-                mbpol_vec
-        );
-
-        Module = Data.get_def(); // uses new
     }
 
+    static FFIModule Data(
+        "LegacyMBPol",
+        "provides linkage for legacy version of MB-Pol",
+        load
+        );
 }
 
-PyMODINIT_FUNC PyInit_TTM(void)
+PyMODINIT_FUNC PyInit_LegacyMBPol(void)
 {
 
-    MBPol::load();
     PyObject *m;
-    m = PyModule_Create(&MBPol::Module);
+    m = LegacyMBPol::Data.create_module();
     if (m == NULL) { return NULL; }
-    MBPol::Data.attach(m);
+    LegacyMBPol::Data.attach(m);
 
     return m;
 }

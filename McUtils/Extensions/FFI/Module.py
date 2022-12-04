@@ -61,6 +61,9 @@ class FFIType(enum.Enum):
     type_map["O"] = PyObject
     type_map[PyObject] = ("O", object)
 
+    Compound = PY_TYPES + 500
+    type_map[PyObject] = (None, dict)
+
     # supports the NumPy NPY_TYPES enum
     # 200 is python space
     NUMPY_TYPES = 2000
@@ -272,12 +275,12 @@ class FFIMethod(FFISpec):
         )
 
 
-    def __call__(self, *args, threading_var=None, threading_mode="serial", **kwargs):
+    def __call__(self, *args, threading_var=None, threading_mode="serial", debug=False, **kwargs):
         fack = self.collect_args(*args, **kwargs)
         if threading_var is None:
-            return self.mod.call_method(self.name, fack)
+            return self.mod.call_method(self.name, fack, debug=debug)
         else:
-            return self.mod.call_method_threaded(self.name, fack, threading_var, threading_mode=threading_mode)
+            return self.mod.call_method_threaded(self.name, fack, threading_var, mode=threading_mode, debug=debug)
 
     def __repr__(self):
         return "{}('{}', {})=>{}".format(
@@ -304,6 +307,11 @@ class FFIModule(FFISpec):
     @property
     def captup(self):
         return self.mod._FFIModule
+
+    @classmethod
+    def from_lib(cls, name, src=None, **compile_kwargs):
+        from .Loader import FFILoader
+        return FFILoader(name, src=src, **compile_kwargs).call_obj
 
     @classmethod
     def from_signature(cls, sig, module=None):
@@ -334,7 +342,7 @@ class FFIModule(FFISpec):
         else:
             raise AttributeError("FFIModule {} has no method {}".format(self.name, name))
 
-    def call_method(self, name, params):
+    def call_method(self, name, params, debug=False):
         """
         Calls a method
 
@@ -351,8 +359,8 @@ class FFIModule(FFISpec):
         for p in params:
             if not all(hasattr(p, x) for x in req_attrs):
                 raise AttributeError("parameter {} needs attributes {}".format(p, req_attrs))
-        return self.mod.call_method(self.captup, name, params)
-    def call_method_threaded(self, name, params, thread_var, mode="serial"):
+        return self.mod.call_method(self.captup, name, params, debug)
+    def call_method_threaded(self, name, params, thread_var, mode="serial", debug=False):
         """
         Calls a method with threading enabled
 
@@ -371,7 +379,7 @@ class FFIModule(FFISpec):
         for p in params:
             if not all(hasattr(p, x) for x in req_attrs):
                 raise AttributeError("parameter needs attributes {}", req_attrs)
-        return self.mod.call_method_threaded(self.mod, name, params, thread_var, mode)
+        return self.mod.call_method_threaded(self.mod, name, params, thread_var, mode, debug)
 
     def __getattr__(self, item):
         return self.get_method(item)

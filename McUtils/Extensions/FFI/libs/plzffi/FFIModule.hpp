@@ -12,7 +12,7 @@
 #include <omp.h> // comes with -fopenmp
 #endif
 
-#ifdef _TBB // I gotta set this now but like it'll allow for better scalability
+#ifdef _TBB // Generally one _won't_ have TBB available
 #include "tbb/parallel_for.h"
 #include "tbb/task_arena.h"
 #endif
@@ -24,10 +24,13 @@ namespace plzffi {
 //        typedef T (*Func)(const FFIParameters&);
 
     // data for an FFI method so that FFIModule gets a uniform interface
+
+    auto FFIEmptyCompoundType = FFICompoundType {};
     struct FFIMethodData {
         std::string name;
         std::vector<FFIArgument> args;
         FFIType ret_type;
+        FFICompoundType comp_type;
         bool vectorized;
     };
     template<typename T>
@@ -46,14 +49,29 @@ namespace plzffi {
                 FFIType return_type,
                 bool vectorized,
                 T (*function)(FFIParameters &)
-        ) : data(FFIMethodData {method_name, arg, return_type, vectorized}), function_pointer(function) { type_check(); };
+        ) : data(FFIMethodData{method_name, arg, return_type, FFIEmptyCompoundType,  vectorized}), function_pointer(function) { type_check(); };
         FFIMethod(
                 const char *method_name,
                 std::vector<FFIArgument> arg,
                 FFIType return_type,
                 bool vectorized,
                 T (*function)(FFIParameters &)
-        ) : data(FFIMethodData{method_name, arg, return_type, vectorized}), function_pointer(function) { type_check(); };
+        ) : data(FFIMethodData{method_name, arg, return_type, FFIEmptyCompoundType,  vectorized}), function_pointer(function) { type_check(); };
+
+        FFIMethod(
+                std::string &method_name,
+                std::vector<FFIArgument> &arg,
+                FFICompoundType return_type,
+                bool vectorized,
+                T (*function)(FFIParameters &)
+        ) : data(FFIMethodData{method_name, arg, FFIType::Compound, return_type,  vectorized}), function_pointer(function) { type_check(); };
+        FFIMethod(
+                const char *method_name,
+                std::vector<FFIArgument> arg,
+                FFICompoundType return_type,
+                bool vectorized,
+                T (*function)(FFIParameters &)
+        ) : data(FFIMethodData{method_name, arg, FFIType::Compound, return_type,  vectorized}), function_pointer(function) { type_check(); };
 
         void type_check();
 
@@ -71,9 +89,9 @@ namespace plzffi {
 //                }
 //                return Py_BuildValue(
 //                        "(NNN)",
-//                        rynlib::python::as_python<std::string>(name),
-//                        rynlib::python::as_python_tuple<PyObject *>(py_args),
-//                        rynlib::python::as_python<int>(static_cast<int>(ret_type))
+//                        mcutils::python::as_python<std::string>(name),
+//                        mcutils::python::as_python_tuple<PyObject *>(py_args),
+//                        mcutils::python::as_python<int>(static_cast<int>(ret_type))
 //                        );
 //            }
 
@@ -236,6 +254,8 @@ namespace plzffi {
         std::vector<void *> method_pointers; // pointers to FFI methods, but return types are ambiguous
         // we maintain a secondary cache of this data just because it's easier
         std::vector<FFIMethodData> method_data;
+        void (*loader)(FFIModule *mod);
+        PyModuleDef module_def;
     public:
         FFIModule() = default;
 
@@ -246,7 +266,41 @@ namespace plzffi {
                 name(module_name),
                 docstring(module_doc) { init(); }
 
+        FFIModule(std::string &module_name, std::string &module_doc, void (*module_loader)(FFIModule *mod)) :
+                name(module_name),
+                docstring(module_doc),
+                loader(module_loader) { init(); }
+        FFIModule(const char *module_name, const char *module_doc, void (*module_loader)(FFIModule *mod)) :
+                name(module_name),
+                docstring(module_doc),
+                loader(module_loader) { init(); }
+
         void init();
+
+        PyObject* create_module() {
+            if (loader == NULL) {
+                std::string msg = "in loading module " + name + ": ";
+                msg += "no module loader defined";
+                PyErr_SetString(
+                        PyExc_ImportError,
+                        msg.c_str()
+                );
+                return NULL;
+            }
+            try {
+                loader(this);
+                module_def = get_def();
+                return PyModule_Create(&module_def);
+            } catch (std::exception &e) {
+                std::string msg = "in loading module " + name + ": ";
+                msg += e.what();
+                PyErr_SetString(
+                        PyExc_ImportError,
+                        msg.c_str()
+                );
+                return NULL;
+            };
+        }
 
         template<typename T>
         void add_method(FFIMethod<T> &method);
@@ -260,6 +314,13 @@ namespace plzffi {
         void add(const char *method_name,
                  std::vector<FFIArgument> arg,
                  T (*function)(FFIParameters &));
+        void add(
+                const char *method_name,
+                std::vector<FFIArgument> arg,
+                FFICompoundType return_type,
+                FFICompoundReturn (*function)(FFIParameters &)
+        );
+
         template<typename T>
         void add(const char *method_name,
                  std::vector<FFIArgument> arg,
@@ -269,6 +330,12 @@ namespace plzffi {
         void add(const char *method_name,
                  std::vector<FFIArgument> arg,
                  std::vector<T> (*function)(FFIParameters &));
+        void add(
+                const char *method_name,
+                std::vector<FFIArgument> arg,
+                FFICompoundType return_type,
+                std::vector<FFICompoundReturn> (*function)(FFIParameters &)
+        );
 
         FFIMethodData get_method_data(std::string &method_name);
 
@@ -327,8 +394,7 @@ namespace plzffi {
 
     template<typename T>
     void FFIMethod<T>::type_check() {
-        FFITypeHandler<T> handler;
-        handler.validate(return_type());
+        FFITypeHandler<T>::validate(return_type());
     }
 
     template<typename T>
@@ -362,10 +428,11 @@ namespace plzffi {
             T (*function)(FFIParameters &)
     ) {
         // need to introduce destructor to FFIModule to clean up all of these methods once we go out of scope
-        auto return_type = FFITypeHandler<T>().ffi_type();
+        auto constexpr return_type = FFITypeHandler<T>::ffi_type();
         auto meth = new FFIMethod<T>(method_name, arg, return_type, false, function);
         add_method(*meth);
     }
+
     template<typename T>
     void FFIModule::add(
             const char *method_name,
@@ -382,8 +449,28 @@ namespace plzffi {
             std::vector<FFIArgument> arg,
             std::vector<T> (*function)(FFIParameters &)
     ) {
-        auto return_type = FFITypeHandler<T>().ffi_type();
+        auto constexpr return_type = FFITypeHandler<T>::ffi_type();
         auto meth = new FFIMethod<std::vector<T>>(method_name, arg, return_type, true, function);
+        add_method(*meth);
+    }
+
+    void FFIModule::add(
+            const char *method_name,
+            std::vector<FFIArgument> arg,
+            FFICompoundType return_type,
+            FFICompoundReturn (*function)(FFIParameters &)
+    ) {
+        // TODO: need to introduce destructor to FFIModule to clean up all of these methods once we go out of scope
+        auto meth = new FFIMethod<FFICompoundReturn>(method_name, arg, return_type, false, function);
+        add_method(*meth);
+    }
+    void FFIModule::add(
+            const char *method_name,
+            std::vector<FFIArgument> arg,
+            FFICompoundType return_type,
+            std::vector<FFICompoundReturn> (*function)(FFIParameters &)
+    ) {
+        auto meth = new FFIMethod<std::vector<FFICompoundReturn>>(method_name, arg, return_type, true, function);
         add_method(*meth);
     }
 
@@ -404,8 +491,7 @@ namespace plzffi {
     FFIMethod<T> FFIModule::get_method_from_index(size_t i) {
 
         if (debug_print()) printf("  > checking return type...\n");
-        FFITypeHandler<T> handler;
-        handler.validate(method_data[i].ret_type);
+        FFITypeHandler<T>::validate(method_data[i].ret_type);
         if (debug_print()) printf("  > casting method pointer...\n");
         auto methodptr = static_cast<FFIMethod<T> *>(method_pointers[i]);
         if (methodptr == NULL) {
@@ -433,30 +519,43 @@ namespace plzffi {
     template <typename T, typename... Args> // expects FFITypePair objects
     class FFIModuleMethodCaller<T, Args...> {
     public:
+        static PyObject* call_direct(FFIModule& mod, std::string& method_name, FFIParameters& params) {
+            if (debug_print()) printf(" > FFIModuleMethodCaller found appropriate type dispatch!\n");
+            PyObject* obj;
+            if (mod.get_method_data(method_name).vectorized) {
+                if (debug_print()) printf("  > evaluating vectorized potential\n");
+                auto val = mod.call_method<std::vector<typename T::type> >(method_name, params);
+                if (debug_print()) printf("  > constructing python return value\n");
+                auto arr = mcutils::python::as_python<typename T::type>(val);
+                if (debug_print()) mcutils::python::print_obj("  > got %s\n", arr);
+                obj = mcutils::python::numpy_copy_array(arr);
+            } else {
+                if (debug_print()) printf("  > evaluating non-vectorized potential\n");
+                auto val = mod.call_method<typename T::type>(method_name, params);
+                if (debug_print()) printf("  > constructing python return value\n");
+                obj = mcutils::python::as_python<typename T::type>(val);
+            }
+            // need to actually return the values...
+            return obj;
+        }
         static PyObject* call(FFIType type, FFIModule& mod, std::string& method_name, FFIParameters& params) {
             if (type == T::value) {
-                if (debug_print()) printf(" > FFIModuleMethodCaller found appropriate type dispatch!\n");
-                PyObject* obj;
-                if (mod.get_method_data(method_name).vectorized) {
-                    if (debug_print()) printf("  > evaluating vectorized potential\n");
-                    auto val = mod.call_method<std::vector<typename T::type> >(method_name, params);
-                    if (debug_print()) printf("  > constructing python return value\n");
-                    auto arr = rynlib::python::as_python<typename T::type>(val);
-                    if (debug_print()) rynlib::python::print_obj("  > got %s\n", arr);
-                    obj = rynlib::python::numpy_copy_array(arr);
-                } else {
-                    if (debug_print()) printf("  > evaluating non-vectorized potential\n");
-                    auto val = mod.call_method<typename T::type>(method_name, params);
-                    if (debug_print()) printf("  > constructing python return value\n");
-                    obj = rynlib::python::as_python<typename T::type>(val);
-                }
-                // need to actually return the values...
-                return obj;
+                return call_direct(mod, method_name, params);
             } else {
                 return FFIModuleMethodCaller<Args...>::call(type, mod, method_name, params);
             }
         }
     };
+
+    template <typename T>
+    inline PyObject* ffi_call_method(FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        return FFIModuleMethodCaller<T>::call_direct(mod, method_name, params);
+    }
+    template <FFIType F>
+    inline PyObject* ffi_call_method(FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        using T = typename FFITypeMap::find_type<F>;
+        return FFIModuleMethodCaller<T>::call_direct(mod, method_name, params);
+    }
     template <size_t... Idx>
     inline PyObject* ffi_call_method(
             FFIType type, FFIModule& mod, std::string& method_name, FFIParameters& params,
@@ -492,21 +591,36 @@ namespace plzffi {
                               FFIModule& mod, std::string& method_name,
                               std::string& threaded_var, std::string& mode,
                               FFIParameters& params) {
-            if (threaded_type == C::value) {
-                auto val = mod.call_method_threaded<T, typename C::type>(
-                        method_name, params, threaded_var, mode
-                        );
-                auto np = rynlib::python::as_python<T>(val);
-                // now copy before returning to put memory on heap
-                auto new_arr = rynlib::python::numpy_copy_array(np);
-                Py_XDECREF(np);
-                return new_arr;
+            if (std::is_same_v<typename C::type, T>) {
+                if (threaded_type == C::value) {
+                    auto val = mod.call_method_threaded<T, typename C::type>(
+                            method_name, params, threaded_var, mode
+                    );
+                    auto np = mcutils::python::as_python<T>(val);
+                    // now copy before returning to put memory on heap
+                    auto new_arr = mcutils::python::numpy_copy_array(np);
+                    Py_XDECREF(np);
+                    return new_arr;
+                } else {
+                    std::string garb =
+                            "type specifier mismatch in threading method "
+                            + method_name + ": " + std::to_string(static_cast<int>(threaded_type));
+                    throw std::runtime_error(garb.c_str());
+                }
             } else {
-                return FFIModuleMethodThreadingCaller<T, Args...>::call(type, threaded_type,
-                                                                        mod, method_name,
-                                                                        threaded_var, mode,
-                                                                        params
-                                                                        );
+//                static_assert(sizeof...(Args) > 0, "unhandled type specifier in threading method");
+                if (sizeof...(Args) > 0) {
+                    return FFIModuleMethodThreadingCaller<T, Args...>::call(type, threaded_type,
+                                                                            mod, method_name,
+                                                                            threaded_var, mode,
+                                                                            params
+                    );
+                } else {
+                    std::string garb =
+                            "unhandled type specifier in calling method "
+                            + method_name + ": " + std::to_string(static_cast<int>(threaded_type));
+                    throw std::runtime_error(garb.c_str());
+                }
             }
         }
     };
@@ -607,6 +721,305 @@ namespace plzffi {
     PyObject *_pycall_module_name(PyObject *self, PyObject *args);
     PyObject *_pycall_evaluate_method(PyObject *self, PyObject *args);
     PyObject *_pycall_evaluate_method_threaded(PyObject *self, PyObject *args);
+
+
+
+    // This used to be in FFIModule.cpp but I'm going header-only
+
+    using mcutils::python::py_printf;
+
+    void FFIModule::init() {
+        capsule_name = name + "." + attr;
+    }
+
+    PyObject *FFIModule::get_capsule() {
+//            auto full_name = ffi_module_attr();
+//            printf("wat %s\n", capsule_name.c_str());
+        auto cap = PyCapsule_New((void *) this, capsule_name.c_str(), NULL); // do I need a destructor?
+        return Py_BuildValue(
+                "(NN)",
+                get_py_name(),
+                cap
+        );
+    }
+
+    PyObject *FFIModule::get_py_name() {
+        return mcutils::python::as_python<std::string>(name);
+    }
+
+    bool FFIModule::attach(PyObject *module) {
+        PyObject *capsule = get_capsule();
+        if (capsule == NULL) return false;
+        bool i_did_good = (PyModule_AddObject(module, attr.c_str(), capsule) == 0);
+        if (!i_did_good) {
+            Py_XDECREF(capsule);
+            Py_DECREF(module);
+        } else {
+            PyObject *pyname = get_py_name();
+            i_did_good = (PyModule_AddObject(module, "name", pyname) == 0);
+            if (!i_did_good) {
+                Py_XDECREF(capsule);
+                Py_XDECREF(pyname);
+                Py_DECREF(module);
+            }
+        }
+
+        return i_did_good;
+    }
+
+    const char *FFIModule::doc() {
+        return docstring.c_str();
+    }
+
+    struct PyModuleDef FFIModule::get_def() {
+        // once I have them, I should hook into python methods to return, e.g. the method names and return types
+        // inside the module
+        auto *methods = new PyMethodDef[5]; // I think Python manages this memory if def() only gets called once
+        // but we'll need to be careful to avoid any memory leaks
+        methods[0] = {"get_signature", _pycall_python_signature, METH_VARARGS, "gets the signature for an FFI module"};
+        methods[1] = {"get_name", _pycall_module_name, METH_VARARGS, "gets the module name for an FFI module"};
+        methods[2] = {"call_method", _pycall_evaluate_method, METH_VARARGS, "calls a method from an FFI module"};
+        methods[3] = {"call_method_threaded", _pycall_evaluate_method_threaded, METH_VARARGS, "calls a method from an FFI module using a threading strategey"};
+        methods[4] = {NULL, NULL, 0, NULL};
+        return {
+                PyModuleDef_HEAD_INIT,
+                name.c_str(),   /* name of module */
+                doc(), /* module documentation, may be NULL */
+                size,       /* size of per-interpreter state of the module,
+                 or -1 if the module keeps state in global variables. */
+                methods
+        };
+    }
+
+    PyObject *FFIModule::python_signature() {
+
+        std::vector<PyObject *> py_sigs(method_data.size(), NULL);
+        for (size_t i = 0; i < method_data.size(); i++) {
+
+            auto args = method_data[i].args;
+            if (debug_print()) py_printf(" > constructing signature for %s\n",
+                                         method_data[i].name.c_str());
+//                    printf("....wat %lu\n", args.size());
+            std::vector<PyObject *> subargs(args.size(), NULL);
+            for (size_t j = 0; j < args.size(); j++) {
+                subargs[j] = args[j].as_tuple();
+            }
+
+            py_sigs[i] = Py_BuildValue(
+                    "(NNNN)",
+                    mcutils::python::as_python<std::string>(method_data[i].name),
+                    mcutils::python::as_python_tuple<PyObject *>(subargs),
+                    mcutils::python::as_python<int>(static_cast<int>(method_data[i].ret_type)), // to be python portable
+                    mcutils::python::as_python<bool>(method_data[i].vectorized)
+            );
+        }
+
+        return Py_BuildValue(
+                "(NN)",
+                mcutils::python::as_python<std::string>(name),
+                mcutils::python::as_python_tuple<PyObject *>(py_sigs)
+        );
+
+    }
+
+    FFIModule ffi_from_capsule(PyObject *captup) {
+//        set_debug_print(true); // temporary debug hack
+        if (!PyTuple_Check(captup)) {
+            PyErr_SetString(
+                    PyExc_TypeError,
+                    "FFIModule spec. expected to be a tuple looking like (name, capsule)"
+            );
+            throw std::runtime_error("bad tuple shiz");
+        }
+
+        if (debug_print()) py_printf("Got FFIModule spec \"%s\"\n", mcutils::python::get_python_repr(captup).c_str());
+        auto name_obj = PyTuple_GetItem(captup, 0);
+        if (name_obj == NULL) throw std::runtime_error("bad tuple indexing");
+        if (debug_print())
+            py_printf("Pulling FFIModule for module \"%s\"\n", mcutils::python::get_python_repr(name_obj).c_str());
+        auto cap_obj = PyTuple_GetItem(captup, 1);
+        if (cap_obj == NULL) throw std::runtime_error("bad tuple indexing");
+        if (debug_print())
+            py_printf("  extracting from capsule \"%s\"\n", mcutils::python::get_python_repr(cap_obj).c_str());
+        std::string name = mcutils::python::from_python<std::string>(name_obj);
+        std::string doc;
+        FFIModule mod(name, doc); // empty module
+        if (debug_print()) py_printf("  pulling pointer with name \"%s\"\n", mod.ffi_module_attr().c_str());
+        return mcutils::python::from_python_capsule<FFIModule>(cap_obj, mod.ffi_module_attr().c_str());
+    }
+
+    size_t FFIModule::get_method_index(std::string &method_name) {
+        for (size_t i = 0; i < method_data.size(); i++) {
+            if (method_data[i].name == method_name) { return i; }
+        }
+        throw std::runtime_error("method " + method_name + " not found");
+    }
+
+    FFIMethodData FFIModule::get_method_data(std::string &method_name) {
+        for (auto data : method_data) {
+            if (data.name == method_name) {
+//                py_printf("Method %s is the %lu-th method in %s\n", method_name.c_str(), i, name.c_str());
+                return data;
+            }
+        }
+        throw std::runtime_error("method " + method_name + " not found");
+    }
+
+    PyObject* FFIModule::py_call_method(PyObject *method_name, PyObject *params) {
+
+        if (debug_print()) py_printf("Calling from python ");
+        auto mname = mcutils::python::from_python<std::string>(method_name);
+        if (debug_print()) py_printf(" into method %s\n", mname.c_str());
+        auto meth_idx = get_method_index(mname);
+        auto argtype = method_data[meth_idx].ret_type;
+
+        if (debug_print()) py_printf(" > loading parameters...\n");
+        auto args = FFIParameters(params);
+
+        if (debug_print()) py_printf(" > calling on parameters...\n");
+        return ffi_call_method(
+                argtype,
+                *this,
+                mname,
+                args
+        );
+    }
+
+    PyObject *FFIModule::py_call_method_threaded(PyObject *method_name,
+                                                 PyObject *params,
+                                                 PyObject *looped_var,
+                                                 PyObject *threading_mode
+    ) {
+
+        auto mname = mcutils::python::from_python<std::string>(method_name);
+        auto meth_idx = get_method_index(mname);
+        auto argtype = method_data[meth_idx].ret_type;
+        auto args = FFIParameters(params);
+
+        auto varname = mcutils::python::from_python<std::string>(looped_var);
+        auto mode = mcutils::python::from_python<std::string>(threading_mode);
+        auto thread_var = args.get_parameter(varname);
+        auto ttype = thread_var.type();
+
+        return ffi_call_method_threaded(
+                argtype,
+                ttype,
+                *this,
+                mname,
+                varname, mode,
+                args
+        );
+
+    }
+
+    PyObject *_pycall_python_signature(PyObject *self, PyObject *args) {
+
+        PyObject *cap;
+        auto parsed = PyArg_ParseTuple(args, "O", &cap);
+        if (!parsed) { return NULL; }
+
+        try {
+            auto obj = ffi_from_capsule(cap);
+//            printf("!!!!!!!?????\n");
+            auto sig = obj.python_signature();
+
+            return sig;
+        } catch (std::exception &e) {
+            if (!PyErr_Occurred()) {
+                std::string msg = "in signature call: ";
+                msg += e.what();
+                PyErr_SetString(
+                        PyExc_SystemError,
+                        msg.c_str()
+                );
+            }
+            return NULL;
+        }
+
+    }
+
+    PyObject *_pycall_module_name(PyObject *self, PyObject *args) {
+
+        PyObject *cap;
+        auto parsed = PyArg_ParseTuple(args, "O", &cap);
+        if (!parsed) { return NULL; }
+
+        try {
+            auto obj = ffi_from_capsule(cap);
+//            printf(".....?????\n");
+            auto name = obj.get_py_name();
+
+            return name;
+        } catch (std::exception &e) {
+            if (!PyErr_Occurred()) {
+                std::string msg = "in module_name call: ";
+                msg += e.what();
+                PyErr_SetString(
+                        PyExc_SystemError,
+                        msg.c_str()
+                );
+            }
+            return NULL;
+        }
+
+    }
+
+    PyObject *_pycall_evaluate_method(PyObject *self, PyObject *args) {
+        PyObject *cap, *method_name, *params;
+        bool debug;//, *looped_var, *threading_mode;
+        auto parsed = PyArg_ParseTuple(args, "OOOp",
+                                       &cap,
+                                       &method_name,
+                                       &params,
+                                       &debug
+        );
+        if (!parsed) { return NULL; }
+
+        set_debug_print(debug);
+        mcutils::python::pyadeeb.set_debug_print(debug);
+
+        try {
+            auto obj = ffi_from_capsule(cap);
+            return obj.py_call_method(method_name, params);
+        } catch (std::exception &e) {
+            if (!PyErr_Occurred()) {
+                std::string msg = "in module_name call: ";
+                msg += e.what();
+                PyErr_SetString(
+                        PyExc_SystemError,
+                        msg.c_str()
+                );
+            }
+            return NULL;
+        }
+
+    }
+
+    PyObject *_pycall_evaluate_method_threaded(PyObject *self, PyObject *args) {
+        PyObject *cap, *method_name, *params, *looped_var, *threading_mode;
+        bool debug;
+        auto parsed = PyArg_ParseTuple(args, "OOOOOp", &cap, &method_name, &params, &looped_var, &threading_mode, &debug);
+        if (!parsed) { return NULL; }
+
+        set_debug_print(debug);
+        mcutils::python::pyadeeb.set_debug_print(debug);
+
+        try {
+            auto obj = ffi_from_capsule(cap);
+            return obj.py_call_method_threaded(method_name, params, looped_var, threading_mode);
+        } catch (std::exception &e) {
+            if (!PyErr_Occurred()) {
+                std::string msg = "in method call: ";
+                msg += e.what();
+                PyErr_SetString(
+                        PyExc_SystemError,
+                        msg.c_str()
+                );
+            }
+            return NULL;
+        }
+
+    }
 
 }
 

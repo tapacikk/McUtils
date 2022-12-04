@@ -12,24 +12,31 @@ class CLoader:
 
     def __init__(self,
                  lib_name,
-                 lib_dir,
+                 lib_dir=None,
                  load_path=None,
-                 src_ext = 'src',
-                 description = "An extension module",
-                 version = "1.0.0",
-                 include_dirs = None,
-                 runtime_dirs = None,
-                 linked_libs = None,
-                 macros = None,
+                 src_ext='src',
+                 description="An extension module",
+                 version="1.0.0",
+                 include_dirs=None,
+                 runtime_dirs=None,
+                 linked_libs=None,
+                 macros=None,
                  extra_link_args=None,
                  extra_compile_args=None,
                  extra_objects=None,
-                 source_files = None,
-                 build_script = None,
-                 requires_make = False,
-                 out_dir = None,
-                 cleanup_build = True
+                 source_files=None,
+                 build_script=None,
+                 requires_make=True,
+                 out_dir=None,
+                 cleanup_build=True,
+                 recompile=False
                  ):
+        if lib_dir is None:
+            if os.path.isdir(lib_name):
+                lib_dir = lib_name
+                lib_name = os.path.basename(lib_name)
+            else:
+                raise ValueError("'lib_dir' cannot be None")
         self.lib_name = lib_name
         self.lib_dir = lib_dir
         self.lib_description = description
@@ -51,11 +58,12 @@ class CLoader:
         self.out_dir = out_dir
         self.cleanup_build = cleanup_build
 
+        self.recompile = recompile
         self._lib = None
 
     def load(self):
         if self._lib is None:
-            ext = self.find_extension()
+            ext = None if self.recompile else self.find_extension()
             if ext is None:
                 ext = self.compile_extension()
             if ext is None:
@@ -113,17 +121,21 @@ class CLoader:
         :rtype:
         """
         lib_lib_dir = os.path.abspath(self.lib_lib_dir)
+        is_mac = platform.system() == 'Darwin'
 
         lib_dirs = [os.path.abspath(d) for d in self.include_dirs + (lib_lib_dir,)]
         runtime_dirs = lib_dirs if self.runtime_dirs is None else self.runtime_dirs
-        libbies = self.linked_libs
+        libbies = list(self.linked_libs) + [f[3:].split(".")[0] for f in self.make_required_libs()]
+        # print("????", runtime_dirs)
         mroos = self.macros
         sources = self.source_files
 
         extra_link_args = list(self.extra_link_args)
         extra_compile_args = list(self.extra_compile_args)
-        if platform.system() == 'Darwin':
-            extra_link_args.append('-Wl,-rpath,' + ":".join(lib_dirs))
+        if is_mac:
+            # extra_link_args.append('-Xlinker -rpath -Xlinker' + ":".join(lib_dirs))
+            extra_link_args.append('-headerpad_max_install_names')
+            extra_link_args.extend('-Wl,-rpath,'+l for l in lib_dirs)#.join(lib_dirs))
 
         module = Extension(
             self.lib_name,
@@ -131,7 +143,7 @@ class CLoader:
             library_dirs=list(lib_dirs),
             runtime_library_dirs=list(runtime_dirs),
             include_dirs=[os.path.abspath(d) for d in self.include_dirs],
-            libraries=list(libbies),
+            libraries=libbies,
             define_macros=list(mroos),
             extra_objects=list(self.extra_objects),
             extra_link_args=extra_link_args,
@@ -251,12 +263,31 @@ class CLoader:
         :return:
         :rtype:
         """
+
+        lib_files = []
         if self.requires_make:
             lib_d = os.path.abspath(self.lib_lib_dir)
-            for lib in os.listdir(lib_d):
-                lib = os.path.join(lib_d, lib)
-                if os.path.isdir(lib):
+            lib_pairs = {}
+            for lib_f in os.listdir(lib_d):
+                lib = os.path.join(lib_d, lib_f)
+                if lib_f.startswith('lib') and (lib_f.endswith(".so") or lib_f.endswith(".pyd")):
+                    lib_dir = os.path.join(lib_d, lib_f[3:].split(".")[0])
+                    lib_pairs[lib_dir] = lib_f
+                elif os.path.isdir(lib):
+                    if lib not in lib_pairs:
+                        lib_pairs[lib] = None
+            for lib, f in lib_pairs.items():
+                if f is None:
                     self.custom_make(self.requires_make, lib)
+
+            # need to reload
+            for lib_f in os.listdir(lib_d):
+                if lib_f.startswith('lib') and (lib_f.endswith(".so") or lib_f.endswith(".pyd")):
+                    lib_files.append(lib_f)
+
+        return lib_files
+
+
 
     def build_lib(self):
 
@@ -284,7 +315,14 @@ class CLoader:
                 sys.argv = sysargv1
                 os.chdir(curdir)
 
-    def locate_lib(self, root = None):
+        if platform.system() == "Darwin": # mac fuckery
+            built, _, _ = self.locate_lib()
+            libbies = list(self.linked_libs) + [f[3:].split(".")[0] for f in self.make_required_libs()]
+            for l in libbies:
+                subprocess.check_output(['install_name_tool', '-change', "lib{}.so".format(l), "@rpath/lib{}.so".format(l), built])
+
+
+    def locate_lib(self, root=None):
         """
         Tries to locate the build library file (if it exists)
 
@@ -295,7 +333,7 @@ class CLoader:
         libname = self.lib_name
         lib_dir = os.path.abspath(self.lib_dir)
         if root is None:
-            root = os.path.join(lib_dir, "src")
+            root = os.path.join(lib_dir, self.src_ext)
         target = libname
         built = None
         ext = ""
@@ -311,6 +349,30 @@ class CLoader:
                 built = os.path.join(root, f)
                 target += ext
                 break
+        else:
+            for f in os.listdir(): # try current dir too..?
+                if f.startswith(libname) and f.endswith(".so"):
+                    ext = ".so"
+                    built = os.path.join(lib_dir, f)
+                    target += ext
+                    break
+                elif f.startswith(libname) and f.endswith(".pyd"):
+                    ext = ".pyd"
+                    built = os.path.join(lib_dir, f)
+                    target += ext
+                    break
+            else:
+                for f in os.listdir():  # try current dir too..?
+                    if f.startswith(libname) and f.endswith(".so"):
+                        ext = ".so"
+                        built = os.path.abspath(f)
+                        target += ext
+                        break
+                    elif f.startswith(libname) and f.endswith(".pyd"):
+                        ext = ".pyd"
+                        built = os.path.abspath(f)
+                        target += ext
+                        break
 
         if built is None:
             target = None
@@ -327,6 +389,7 @@ class CLoader:
             if target_dir is None:
                 target_dir = self.lib_dir
             target = os.path.join(target_dir, target)
+
             try:
                 os.remove(target)
             except:

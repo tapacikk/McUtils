@@ -54,6 +54,9 @@ class ArgumentType(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def cast(self, arg):
         raise NotImplementedError()
+    @abc.abstractmethod
+    def c_cast(self, arg):
+        raise NotImplementedError()
 class PrimitiveType(ArgumentType):
     """
     Defines a general purpose ArgumentType so that we can easily manage complicated type specs
@@ -118,6 +121,9 @@ class PrimitiveType(ArgumentType):
         return isinstance(arg, self._types)
     def cast(self, arg):
         return self._types[0](arg)
+    def c_cast(self, arg):
+        return self.ctypes_type(self.cast(arg))
+        # return self._types[0](arg)
     def __repr__(self):
         return "{}({})".format(
             type(self).__name__,
@@ -130,9 +136,10 @@ class ArrayType(ArgumentType):
     To start, we're only adding in proper support for numpy arrays.
     Other flavors might come, but given the use case, it's unlikely.
     """
-    def __init__(self, base_type, shape=None):
+    def __init__(self, base_type, shape=None, ctypes_spec=None):
         self.base = base_type
         self.shape = shape
+        self._ctypes_spec = ctypes_spec
 
     @property
     def ctypes_type(self):
@@ -151,7 +158,9 @@ class ArrayType(ArgumentType):
     def isinstance(self, arg):
         return isinstance(arg, self.types) and arg.dtype in self.base.dtypes
     def cast(self, arg):
-        return np.asarray(arg).astype(self.base.dtypes[0])
+        return np.asanyarray(arg).astype(self.base.dtypes[0])
+    def c_cast(self, arg):
+        return np.ascontiguousarray(self.cast(arg))
     def __repr__(self):
         return "{}({})".format(
             type(self).__name__,
@@ -173,7 +182,7 @@ class PointerType(ArgumentType):
     @property
     def ctypes_type(self):
         if self._ctypes_spec is None:
-            self._ctypes_spec = ctypes.pointer(self.base.ctypes_type)
+            self._ctypes_spec = ctypes.POINTER(self.base.ctypes_type)
         return self._ctypes_spec
 
     @property
@@ -189,6 +198,9 @@ class PointerType(ArgumentType):
         return self.base.isinstance(arg)
     def cast(self, arg):
         return self.base.cast(arg)
+    def c_cast(self, arg):
+        # we might need to cast arg first...
+        return ctypes.byref(self.base.c_cast(arg))
     def __repr__(self):
         return "{}({})".format(
             type(self).__name__,
@@ -209,7 +221,7 @@ RealType = PrimitiveType(
 )
 IntegerType = PrimitiveType(
     "int",
-    ctypes.c_int,
+    ctypes.c_int64,
     "int",
     "i",
     (int,),
@@ -250,7 +262,7 @@ DoubleType = PrimitiveType(
 )
 IntType = PrimitiveType(
     "int",
-    ctypes.c_int,
+    ctypes.c_int32,
     "int",
     "i",
     (int,),
@@ -260,11 +272,11 @@ IntType = PrimitiveType(
 )
 LongType = PrimitiveType(
     "long",
-    ctypes.c_int,
+    ctypes.c_int64,
     "long",
     "i",
     (int,),
-    (np.dtype('int32'),),
+    (np.dtype('int64'),),
     None,#serializer
     None#deserializer
 )
@@ -314,14 +326,17 @@ class Argument:
 
     @classmethod
     def infer_array_type(cls, argstr):
-        ...
+        raise NotImplementedError("...")
 
     @classmethod
     def inferred_type_string(cls, arg):
         """
         returns a type string for the inferred type
         """
-        ...
+        raise NotImplementedError("...")
+
+    def prep_value(self, val):
+        return self.dtype.c_cast(val)
 
     @property
     def cpp_signature(self):
@@ -342,7 +357,7 @@ class FunctionSignature:
     To be used inside `SharedLibraryFunction` and things to manage the core interface.
     """
 
-    def __init__(self, name, *args, return_type=None):
+    def __init__(self, name, *args, defaults=None, return_type=None):
         """
         :param name: the name of the function
         :type name: str
@@ -356,6 +371,9 @@ class FunctionSignature:
             return_type = Argument.infer_type(return_type)
         self._ret_type = return_type
         self._arguments = tuple(self.build_argument(x, i) for i, x in enumerate(args))
+        if defaults is None:
+            defaults = {}
+        self.defaults = defaults
 
     def build_argument(self, argtup, which=None):
         """
@@ -386,7 +404,13 @@ class FunctionSignature:
 
     @property
     def return_type(self):
-        return self._ret_type
+        res = self._ret_type
+        if res is not None:
+            res = res.ctypes_type
+        return res
+    @property
+    def arg_types(self):
+        return [a.dtype.ctypes_type for a in self.args]
 
     @property
     def cpp_signature(self):
@@ -395,6 +419,33 @@ class FunctionSignature:
             self.name,
             ", ".join(a.cpp_signature for a in self.args)
         )
+
+    def prep_args(self, args, kwargs, defaults=None):
+        kwlist = {}
+        for base, val in zip(self.args, args):
+            kwlist[base.name] = val
+        for k,v in kwargs.items():
+            if k in kwlist:
+                raise ValueError("got multiple values for argument '{}'".format(k))
+            kwlist[k] = v
+
+        if defaults is None:
+            defaults = {}
+
+        final_args = [
+            # coerce to correct type and resolve any possible default value
+            a.prep_value(
+                kwlist.get(a.name,
+                           defaults.get(a.name,
+                                        self.defaults.get(a.name, a.default)
+                                        )
+                           )
+            )
+            for a in self.args
+        ]
+
+        return final_args
+
     def __repr__(self):
         return "{}({}({})->{})".format(
             type(self).__name__,
