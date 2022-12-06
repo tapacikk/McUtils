@@ -14,7 +14,7 @@ __all__ = [
     "FunctionSignature"
 ]
 
-import abc, ctypes, numpy as np, numpy.ctypeslib as npctypes
+import abc, ctypes, numpy as np, numpy.ctypeslib as npctypes, re
 
 # TODO: need to finish up with the actual type inference & make it
 #   so that we can use a `Argument.from_value` constructor
@@ -65,6 +65,7 @@ class PrimitiveType(ArgumentType):
     to use either the basic `ctypes` FFI or a more efficient, but fragile system based off of extension modules
     """
 
+    typeset = {}
     def __init__(self,
                  name,
                  ctypes_spec,
@@ -101,6 +102,8 @@ class PrimitiveType(ArgumentType):
         self._dtypes = numpy_dtypes
         self._serializer = serializer
         self._deserializer = deserializer
+
+        self.typeset[self._cpp_spec] = self
 
     @property
     def name(self):
@@ -253,7 +256,7 @@ FloatType = PrimitiveType(
 DoubleType = PrimitiveType(
     "double",
     ctypes.c_double,
-    "float",
+    "double",
     "d",
     (float,),
     (np.dtype('float64'),),
@@ -304,8 +307,9 @@ class Argument:
         :type default:
         """
         self.name = name
-        self.dtype = dtype #self.infer_type(dtype)
+        self.dtype = self.infer_type(dtype) #self.infer_type(dtype)
         self.default = default #self.prep_argument(default)
+        self._typesets = {}
 
     @classmethod
     def infer_type(cls, arg):
@@ -317,16 +321,59 @@ class Argument:
         :return:
         :rtype:
         """
+
         if isinstance(arg, ArgumentType):
             return arg
-        for at in cls.arg_types:
-            if at.isinstance(arg):
-                return at
-        # TODO: throw an error for getting down here...
+
+        argtype = None
+        if isinstance(arg, tuple): # shorthand for pointer types
+            argtype = PointerType(cls.infer_type(arg[0]))
+        elif isinstance(arg, (list, np.ndarray)):
+            argtype = ArrayType(cls.infer_type(arg[0]))
+        elif isinstance(arg, str):
+            argtype = cls.infer_type_str(arg)
+        elif isinstance(arg, type):
+            argtype = cls.infer_type_type(arg)
+        else:
+            for at in cls.arg_types:
+                if at.isinstance(arg):
+                    argtype = at
+                    break
+
+        if argtype is None:
+            raise ValueError("can't infer type from {}".format(arg))
+        return argtype
+
+    _typesets = None
+    _typestrs = None
+    @classmethod
+    def _prep_typesets(cls):
+        if cls._typesets is None or cls._typestrs is None:
+            cls._typesets = {}
+            cls._typestrs = {}
+            for at in cls.arg_types:
+                for t in at.types:
+                    if t not in cls._typesets:
+                        cls._typesets[t] = at
+                if at.cpp_type not in cls._typestrs:
+                    cls._typestrs[at.cpp_type] = at
+    @classmethod
+    def infer_type_type(cls, type_key):
+        cls._prep_typesets()
+        return cls._typesets.get(type_key, None)
 
     @classmethod
-    def infer_array_type(cls, argstr):
-        raise NotImplementedError("...")
+    def infer_type_str(cls, argstr):
+        type = None
+        if argstr in cls._typesets:
+            type = cls._typesets[argstr]
+        else:
+            ptr_pat = "\*({})".format( "|".join(cls._typestrs.keys()))
+            match = re.match(ptr_pat, argstr)
+            if match is not None:
+                typestr = match.group(0)
+                type = ArrayType(cls._typestrs[typestr])
+        return type
 
     @classmethod
     def inferred_type_string(cls, arg):
@@ -375,6 +422,15 @@ class FunctionSignature:
             defaults = {}
         self.defaults = defaults
 
+    @classmethod
+    def construct(cls, name, defaults=None, return_type=None, **args):
+        return FunctionSignature(
+            name,
+            *(Argument(k, v) for k, v in args.items()),
+            defaults=defaults,
+            return_type=return_type
+        )
+
     def build_argument(self, argtup, which=None):
         """
         Converts an argument tuple into an Argument object
@@ -420,11 +476,11 @@ class FunctionSignature:
             ", ".join(a.cpp_signature for a in self.args)
         )
 
-    def prep_args(self, args, kwargs, defaults=None):
+    def populate_kwargs(self, args, kwargs, defaults=None):
         kwlist = {}
         for base, val in zip(self.args, args):
             kwlist[base.name] = val
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             if k in kwlist:
                 raise ValueError("got multiple values for argument '{}'".format(k))
             kwlist[k] = v
@@ -432,15 +488,22 @@ class FunctionSignature:
         if defaults is None:
             defaults = {}
 
-        final_args = [
-            # coerce to correct type and resolve any possible default value
-            a.prep_value(
-                kwlist.get(a.name,
-                           defaults.get(a.name,
-                                        self.defaults.get(a.name, a.default)
-                                        )
-                           )
+        for a in self.args:
+            # resolve any possible default values
+            kwlist[a.name] = kwlist.get(
+                a.name,
+                defaults.get(a.name, self.defaults.get(a.name, a.default))
             )
+
+        return kwlist
+
+    def prep_args(self, args, kwargs, defaults=None):
+        if args is not None: # easy way to say no prep needed...
+            kwargs = self.populate_kwargs(args, kwargs, defaults=defaults)
+
+        final_args = [
+            # coerce to correct type
+            a.prep_value(kwargs[a.name])
             for a in self.args
         ]
 
