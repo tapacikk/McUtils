@@ -26,8 +26,8 @@
 //    // defines a compiler map between FFIType and proper types
 //    PyObject * FFIArgument::as_tuple() {
 //        return Py_BuildValue("(NNN)",
-//                             mcutils::python::as_python<std::string>(param_key),
-//                             mcutils::python::as_python<FFIType>(type_char),
+//                             mcutils::python::as_python_object<std::string>(param_key),
+//                             mcutils::python::as_python_object<FFIType>(type_char),
 //                             mcutils::python::as_python_tuple<size_t>(shape_vec)
 //        );
 //    }
@@ -61,13 +61,13 @@
 //
 //    }
 //
-//     PyObject* FFIParameter::as_python() {
+//     PyObject* FFIParameter::as_python_object() {
 //        auto shp = shape();
 //        return ffi_to_python(type(), param_data, shp);
 //    }
 //
 //    std::string FFIParameter::repr() {
-//      auto pp = as_python();
+//      auto pp = as_python_object();
 //      auto repr = get_python_repr(pp);
 //      Py_XDECREF(pp);
 //      return repr;

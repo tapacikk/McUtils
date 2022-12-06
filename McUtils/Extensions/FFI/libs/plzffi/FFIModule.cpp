@@ -21,7 +21,7 @@
 //    }
 //
 //    PyObject *FFIModule::get_py_name() {
-//        return mcutils::python::as_python<std::string>(name);
+//        return mcutils::python::as_python_object<std::string>(name);
 //    }
 //
 //    bool FFIModule::attach(PyObject *module) {
@@ -84,16 +84,16 @@
 //
 //            py_sigs[i] = Py_BuildValue(
 //                    "(NNNN)",
-//                    mcutils::python::as_python<std::string>(method_data[i].name),
+//                    mcutils::python::as_python_object<std::string>(method_data[i].name),
 //                    mcutils::python::as_python_tuple<PyObject *>(subargs),
-//                    mcutils::python::as_python<int>(static_cast<int>(method_data[i].ret_type)), // to be python portable
-//                    mcutils::python::as_python<bool>(method_data[i].vectorized)
+//                    mcutils::python::as_python_object<int>(static_cast<int>(method_data[i].ret_type)), // to be python portable
+//                    mcutils::python::as_python_object<bool>(method_data[i].vectorized)
 //            );
 //        }
 //
 //        return Py_BuildValue(
 //                "(NN)",
-//                mcutils::python::as_python<std::string>(name),
+//                mcutils::python::as_python_object<std::string>(name),
 //                mcutils::python::as_python_tuple<PyObject *>(py_sigs)
 //        );
 //
@@ -118,7 +118,7 @@
 //        if (cap_obj == NULL) throw std::runtime_error("bad tuple indexing");
 //        if (debug_print())
 //            py_printf("  extracting from capsule \"%s\"\n", mcutils::python::get_python_repr(cap_obj).c_str());
-//        std::string name = mcutils::python::from_python<std::string>(name_obj);
+//        std::string name = mcutils::python::convert<std::string>(name_obj);
 //        std::string doc;
 //        FFIModule mod(name, doc); // empty module
 //        if (debug_print()) py_printf("  pulling pointer with name \"%s\"\n", mod.ffi_module_attr().c_str());
@@ -145,7 +145,7 @@
 //    PyObject* FFIModule::py_call_method(PyObject *method_name, PyObject *params) {
 //
 //        if (debug_print()) py_printf("Calling from python ");
-//        auto mname = mcutils::python::from_python<std::string>(method_name);
+//        auto mname = mcutils::python::convert<std::string>(method_name);
 //        if (debug_print()) py_printf(" into method %s\n", mname.c_str());
 //        auto meth_idx = get_method_index(mname);
 //        auto argtype = method_data[meth_idx].ret_type;
@@ -168,13 +168,13 @@
 //                                                 PyObject *threading_mode
 //                                                 ) {
 //
-//        auto mname = mcutils::python::from_python<std::string>(method_name);
+//        auto mname = mcutils::python::convert<std::string>(method_name);
 //        auto meth_idx = get_method_index(mname);
 //        auto argtype = method_data[meth_idx].ret_type;
 //        auto args = FFIParameters(params);
 //
-//        auto varname = mcutils::python::from_python<std::string>(looped_var);
-//        auto mode = mcutils::python::from_python<std::string>(threading_mode);
+//        auto varname = mcutils::python::convert<std::string>(looped_var);
+//        auto mode = mcutils::python::convert<std::string>(threading_mode);
 //        auto thread_var = args.get_parameter(varname);
 //        auto ttype = thread_var.type();
 //

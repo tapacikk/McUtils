@@ -47,6 +47,20 @@ namespace LegacyMBPol {
             {{}, {0, 3}}
     };
 
+//    FFICompoundType energy_grad_type {
+//            {"energy", "grad"},
+//            {FFIType::Double, FFIType::Double},
+//            {{}, {}}
+//    };
+
+//    FFICompoundType energy_grad_type {
+//            {"energy"},//, "grad"},
+//            {FFIType::Double}//, FFIType::Double},
+//    };
+
+//    FFICompoundType energy_grad_type {
+//    };
+
     FFICompoundReturn mbpol_grad(FFIParameters &params) {
 
         FFICompoundReturn res(energy_grad_type);
@@ -54,12 +68,18 @@ namespace LegacyMBPol {
         auto nwaters = params.value<int>("nwaters");
         auto coords = params.value<double*>("coords");
 
-        double derivs[nwaters * 9];
+        std::vector<double> grad(nwaters*9);
         double pot_val;
 
-        calcpotg_(&nwaters, &pot_val, coords, derivs);
-        res.set<double>("energy", pot_val / 627.5094740631);
-        res.set<double *>("grad", derivs);
+
+        calcpotg_(&nwaters, &pot_val, coords, grad.data());
+        pot_val = pot_val / 627.5094740631;
+        for (size_t i = 0; i < grad.size(); i++) {
+            grad[i] = grad[i] / 627.5094740631; // Convert to Hartree
+        }
+
+        res.set<double>("energy", pot_val);
+        res.set<double>("grad", grad);
 
         return res;
 
@@ -150,13 +170,6 @@ namespace LegacyMBPol {
         );
 }
 
-PyMODINIT_FUNC PyInit_LegacyMBPol(void)
-{
-
-    PyObject *m;
-    m = LegacyMBPol::Data.create_module();
-    if (m == NULL) { return NULL; }
-    LegacyMBPol::Data.attach(m);
-
-    return m;
+PyMODINIT_FUNC PyInit_LegacyMBPol(void) {
+    return LegacyMBPol::Data.attach();
 }

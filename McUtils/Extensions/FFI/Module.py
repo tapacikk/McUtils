@@ -105,6 +105,11 @@ class FFIType(enum.Enum):
             val = val.value
         return mapp[val]
 
+class DebugLevels(enum.Enum):
+    Quiet = 0
+    Normal = 5
+    More = 10
+    All = 100
 
 class FFISpec:
     """
@@ -323,8 +328,14 @@ class FFIModule(FFISpec):
         )
 
     @classmethod
-    def from_module(cls, module):
-        sig = module.get_signature(module._FFIModule)
+    def from_module(cls, module, debug=False):
+        if debug is False:
+            debug = DebugLevels.Quiet
+        elif debug is True:
+            debug = DebugLevels.Normal
+        else:
+            debug = DebugLevels(debug)
+        sig = module.get_signature(module._FFIModule, debug.value)
         return cls.from_signature(sig, module=module)
 
     @property
@@ -359,7 +370,13 @@ class FFIModule(FFISpec):
         for p in params:
             if not all(hasattr(p, x) for x in req_attrs):
                 raise AttributeError("parameter {} needs attributes {}".format(p, req_attrs))
-        return self.mod.call_method(self.captup, name, params, debug)
+        if debug is False:
+            debug = DebugLevels.Quiet
+        elif debug is True:
+            debug = DebugLevels.Normal
+        else:
+            debug = DebugLevels(debug)
+        return self.mod.call_method(self.captup, name, params, debug.value)
     def call_method_threaded(self, name, params, thread_var, mode="serial", debug=False):
         """
         Calls a method with threading enabled
@@ -379,7 +396,13 @@ class FFIModule(FFISpec):
         for p in params:
             if not all(hasattr(p, x) for x in req_attrs):
                 raise AttributeError("parameter needs attributes {}", req_attrs)
-        return self.mod.call_method_threaded(self.mod, name, params, thread_var, mode, debug)
+        if debug is False:
+            debug = DebugLevels.Quiet
+        elif debug is True:
+            debug = DebugLevels.Normal
+        else:
+            debug = DebugLevels(debug)
+        return self.mod.call_method_threaded(self.mod, name, params, thread_var, mode, debug.value + 1)
 
     def __getattr__(self, item):
         return self.get_method(item)

@@ -49,7 +49,8 @@ class FFILoader:
                  cleanup_build=True,
                  pointer_name=None,
                  build_kwargs=None,
-                 threaded=True,
+                 threaded=False,
+                 extra_compile_args=None,
                  extra_link_args=None,
                  recompile=False
                  ):
@@ -83,7 +84,7 @@ class FFILoader:
             requires_make=requires_make,
             out_dir=out_dir,
             cleanup_build=cleanup_build,
-            extra_compile_args=(["-fopenmp"] if self.threaded else []) + [self.cpp_std],
+            extra_compile_args=(["-fopenmp"] if self.threaded else []) + [self.cpp_std] + ([] if extra_compile_args is None else list(extra_compile_args)),
             extra_link_args=(["-fopenmp"] if self.threaded else []) + ([] if extra_link_args is None else list(extra_link_args)),
             recompile=recompile,
             **({} if build_kwargs is None else build_kwargs)
