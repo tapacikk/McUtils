@@ -69,7 +69,7 @@ class ExtensionsTests(TestCase):
         # print(mbpol(nwaters=1, coords=water))
         self.assertGreater(mbpol(nwaters=1, coords=water), .001)
 
-    @debugTest
+    @validationTest
     def test_SharedLibrary(self):
         lib_file = TestManager.test_data('libmbpol.so')
         mbpol = SharedLibrary(
@@ -129,7 +129,7 @@ class ExtensionsTests(TestCase):
         self.assertGreater(mbpol.get_pot_grad(nwaters=1, coords=water)['energy'], .001)
         self.assertEquals(mbpol.get_pot_grad(nwaters=1, coords=water)['grad'].shape, (3, 3))
 
-    @debugTest
+    @validationTest
     def test_FFI(self):
         lib_dir = TestManager.test_data('LegacyMBPol')
         mbpol = FFIModule.from_lib(lib_dir, extra_link_args=['-mmacosx-version-min=12.0'])
@@ -160,3 +160,43 @@ class ExtensionsTests(TestCase):
 
         # print(mbpol.get_pot_grad(nwaters=1, coords=water))
         self.assertGreater(mbpol.get_pot_grad(nwaters=1, coords=water)['energy'], .001)
+
+
+    @debugTest
+    def test_FFI_threaded(self):
+        lib_dir = TestManager.test_data('LegacyMBPol')
+        mbpol = FFIModule.from_lib(lib_dir, extra_link_args=['-mmacosx-version-min=12.0']
+                                   # , recompile=True
+                                   )
+
+        from Peeves.Timer import Timer
+        waters = np.array([
+                              [
+                                  [0, 0, 0],
+                                  [1, 0, 0],
+                                  [0, 1, 0]
+                              ],
+                              [  # some random structure Mathematica got from who knows where...
+                                  [-0.063259, -0.25268, 0.2621],
+                                  [0.74277, 0.26059, 0.17009],
+                                  [-0.67951, -0.0079118, -0.43219]
+                              ],
+                              [  # some structure from the MBX tests...
+                                  [-0.0044590985, -0.0513425796, 0.0000158138],
+                                  [0.9861302114, -0.0745730984, 0.0000054324],
+                                  [-0.1597470923, 0.8967180895, -0.0000164932]
+                              ]
+                          ] * 3
+                          )
+
+        with Timer():
+            res = mbpol.get_pot(nwaters=1, coords=waters, threading_var='coords')
+            print(np.mean(res))
+        print("="*100)
+        print(waters[0])
+        print(mbpol.get_pot(nwaters=1, coords=waters[0]))
+        with Timer():
+            res = np.array([mbpol.get_pot(nwaters=1, coords=w) for w in waters])
+            print(np.mean(res))
+
+

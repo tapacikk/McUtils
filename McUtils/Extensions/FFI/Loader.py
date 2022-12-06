@@ -49,6 +49,7 @@ class FFILoader:
                  cleanup_build=True,
                  pointer_name=None,
                  build_kwargs=None,
+                 nodebug=False,
                  threaded=False,
                  extra_compile_args=None,
                  extra_link_args=None,
@@ -68,6 +69,10 @@ class FFILoader:
         linked_libs = tuple(linked_libs) #+ ("plzffi", )
 
         self.threaded = threaded
+        if macros is None:
+            macros = []
+        if nodebug:
+            macros = list(macros) + [('_NODEBUG', True)]
 
         self.c_loader = CLoader(
             name,

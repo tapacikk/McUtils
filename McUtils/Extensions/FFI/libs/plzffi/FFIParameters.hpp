@@ -68,7 +68,7 @@ namespace plzffi {
         std::vector<std::vector<size_t> > _shapes;
 
     public:
-        FFICompoundType() {};
+        FFICompoundType() = default;
         FFICompoundType(
                 std::vector<std::string> key_vec,
                 std::vector<FFIType> type_vec,
@@ -108,7 +108,7 @@ namespace plzffi {
         std::vector<FFIContainerType> containers;
         std::vector<std::shared_ptr<void> > data;
     public:
-        FFICompoundReturn() {};
+        FFICompoundReturn() = default;
         FFICompoundReturn(FFICompoundType comp_type, std::vector<std::shared_ptr<void> > init_data) : type(comp_type), data(init_data) {
             auto size = type.keys().size();
             containers.resize(size);
@@ -166,27 +166,27 @@ namespace plzffi {
 // register a conversion for FFIType
 namespace mcutils::python {
         template<>
-        inline PyObject* as_python_object<plzffi::FFIType>(plzffi::FFIType data) {
+         PyObject* as_python_object<plzffi::FFIType>(plzffi::FFIType data) {
             if (pyadeeb::debug_print(DebugLevel::All)) py_printf("Converting FFIType\n");
             return as_python_object<int>(static_cast<int>(data));
         }
         template<>
-        inline plzffi::FFIType from_python<plzffi::FFIType>(pyobj data) {
+         plzffi::FFIType from_python<plzffi::FFIType>(pyobj data) {
             return static_cast<plzffi::FFIType>(data.getattr<int>("value"));
         }
 
         template<>
-        inline pyobj as_python<plzffi::FFICompoundType>(plzffi::FFICompoundType data) {
+         pyobj as_python<plzffi::FFICompoundType>(plzffi::FFICompoundType data) {
             if (pyadeeb::debug_print(DebugLevel::All)) py_printf("Converting FFICompoundType\n");
             return data.as_python();
         }
         template<>
-        inline PyObject* as_python_object<plzffi::FFICompoundType>(plzffi::FFICompoundType data) {
+         PyObject* as_python_object<plzffi::FFICompoundType>(plzffi::FFICompoundType data) {
             return as_python<plzffi::FFICompoundType>(data).obj();
         }
 
         template<>
-        inline plzffi::FFICompoundType from_python<plzffi::FFICompoundType>(pyobj dict) {
+         plzffi::FFICompoundType from_python<plzffi::FFICompoundType>(pyobj dict) {
 
             auto keys = dict.get_key<pyobj>("keys");
             auto types = dict.get_key<pyobj>("types");
@@ -201,18 +201,18 @@ namespace mcutils::python {
         }
 
         template<>
-        inline pyobj as_python<plzffi::FFICompoundReturn>(plzffi::FFICompoundReturn data) {
+         pyobj as_python<plzffi::FFICompoundReturn>(plzffi::FFICompoundReturn data) {
             if (pyadeeb::debug_print(DebugLevel::All)) {
                 py_printf("Constructing compound return value\n");
             }
             return data.as_python();
         }
         template<>
-        inline PyObject* as_python_object<plzffi::FFICompoundReturn>(plzffi::FFICompoundReturn data) {
+         PyObject* as_python_object<plzffi::FFICompoundReturn>(plzffi::FFICompoundReturn data) {
             return as_python<plzffi::FFICompoundReturn>(data).obj();
         }
 //        template<>
-//        inline plzffi::FFICompoundReturn convert<plzffi::FFICompoundReturn>(pyobj data) {
+//         plzffi::FFICompoundReturn convert<plzffi::FFICompoundReturn>(pyobj data) {
 //            return data.convert();
 //        }
 }
@@ -252,11 +252,11 @@ namespace plzffi {
     // register a conversion for FFIType
 //    namespace mcutils::python {
 //        template<>
-//        inline pyobj as_python_object<plzffi::FFIType>(plzffi::FFIType data) {
+//         pyobj as_python_object<plzffi::FFIType>(plzffi::FFIType data) {
 //            return as_python_object<int>(static_cast<int>(data));
 //        }
 //        template<>
-//        inline plzffi::FFIType convert<plzffi::FFIType>(pyobj data) {
+//         plzffi::FFIType convert<plzffi::FFIType>(pyobj data) {
 //            return static_cast<plzffi::FFIType>(get_python_attr<int>(data, "value"));
 //        }
 //    }
@@ -366,16 +366,16 @@ namespace plzffi {
                 }
             }
         };
+        template <typename D, typename T, typename... Args>
+        struct ffi_type_resolver<D, std::tuple<T, Args...>> {
+            static constexpr FFIType typecode() { return ffi_type_resolver<D, T, Args...>::typecode(); }
+        };
 
 
-        template <typename T, size_t... Idx>
-        static constexpr FFIType ffi_typecode(std::index_sequence<Idx...>) {
-            return ffi_type_resolver<T, std::tuple_element_t<Idx, pairs>...>::typecode();
-        }
         template <typename T>
         static constexpr FFIType ffi_typecode() {
-            return ffi_typecode<T>(std::make_index_sequence<std::tuple_size<pairs>{}>{});
-        };
+            return ffi_type_resolver<T, pairs>::typecode();
+        }
 
         template <FFIType F>
         using find_type = typename decltype(get_pair(std::integral_constant<FFIType, F>{}))::type;
@@ -400,85 +400,88 @@ namespace plzffi {
     };
 
 
-    template <typename, typename...>
-    struct FFITypeValidator;
-    template <typename T>
-    struct FFITypeValidator<T> {
-        static void validate (FFIType type) {
-            std::string msg = "ERROR: unhandled typename/FFIType pair ";
-            std::string tname = typeid(T).name();
-            msg += "(" + tname + "/" + std::to_string(static_cast<int>(type)) + ")";
-            printf("%s\n", msg.c_str());
-            throw std::runtime_error(msg);
-        }
-        static FFIType typecode() {
-            std::string msg = "ERROR: unhandled typename ";
-            msg += typeid(T).name();
-            printf("%s\n", msg.c_str());
-            throw std::runtime_error(msg);
-        }
-    };
-    template <typename D, typename T, typename... Args> // expects FFITypeset objects
-    struct FFITypeValidator<D, T, Args...> {
-        static void validate (FFIType type) {
-            if (std::is_same<D, typename T::type>::value) {
+    template <typename pairs>
+    struct FFITypeValidatorBase {
+        template<typename, typename...>
+        struct resolver;
+        template<typename D>
+        struct resolver<D> {
+            static void value(FFIType type) {
+                std::string msg = "ERROR: unhandled typename/FFIType pair ";
+                std::string tname = mcutils::type_name<D>::value;
+                msg += "(" + tname + "/" + std::to_string(static_cast<int>(type)) + ")";
+                printf("%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+        };
+        template<typename D, typename T, typename... Args>
+        struct resolver<D, T, Args...> {
+            static void value(FFIType type) {
+                if (std::is_same<D, typename T::type>::value) {
 //                auto valids = T::valid;
 //                auto nels = std::tuple_size_v<decltype(T::valid)>;
-                // https://stackoverflow.com/a/40233852/5720002
-                // Functional-programming loop over tuple elements
-                // to check if the type is in the held tuple
-                // This is basically a bunch of template fuckery
-                // just to avoid a huge switch...I think it's worth it
-                bool found = std::apply(
-                        [type](auto &&... args) {
-                            return ( (decltype(args)(args) == type) || ...);
-                        },
-                        T::valid
-                );
-                if ( !found ) {
-                    std::string msg = "typename/FFIType mismatch: (";
-                    msg += typeid(D).name();
-                    msg += "/" + std::to_string(static_cast<int>(type)) + ")";
-                    printf("%s\n", msg.c_str());
-                    throw std::runtime_error(msg);
+                    // https://stackoverflow.com/a/40233852/5720002
+                    // Functional-programming loop over tuple elements
+                    // to check if the type is in the held tuple
+                    // This is basically a bunch of template fuckery
+                    // just to avoid a huge switch...I think it's worth it?
+                    bool found = std::apply(
+                            [type](auto &&... args) {
+                                return ((decltype(args)(args) == type) || ...);
+                            },
+                            T::valid
+                    );
+                    if (!found) {
+                        std::string msg = "typename/FFIType mismatch: (";
+                        msg += mcutils::type_name<D>::value;
+                        msg += "/" + std::to_string(static_cast<int>(type)) + ")";
+                        printf("%s\n", msg.c_str());
+                        throw std::runtime_error(msg);
+                    }
+                } else {
+                    resolver<D, Args...>::value(type);
                 }
-            } else {
-                FFITypeValidator<D, Args...>::validate(type);
+            };
+        };
+        template<typename D, typename T, typename... Args> // expects FFITypeset objects
+        struct resolver<std::vector<D>, T, Args...> {
+            static void value(FFIType type) {
+                resolver<D, T, Args...>::value(type);
             }
-        }
-    };
-    template <typename D, typename T, typename... Args> // expects FFITypeset objects
-    struct FFITypeValidator<std::vector<D>, T, Args...> {
-        static void validate (FFIType type) {
-            FFITypeValidator<D, T, Args...>::validate(type);
-        }
-    };
-    template <typename D, typename T, typename... Args> // expects FFITypeset objects
-    struct FFITypeValidator<D*, T, Args...> {
-        static void validate (FFIType type) {
-            FFITypeValidator<D, T, Args...>::validate(type);
-        }
-    };
+        };
+        template<typename D, typename T, typename... Args> // expects FFITypeset objects
+        struct resolver<D *, T, Args...> {
+            static void value(FFIType type) {
+                resolver<D, T, Args...>::value(type);
+            }
+        };
+        template<typename D, typename T, typename... Args> // Tuple-based spec
+        struct resolver<D, std::tuple<T, Args...>> {
+            static void value(FFIType type) {
+                resolver<D, T, Args...>::value(type);
+            }
+        };
 
+        template<typename D>
+        static void validate(FFIType type) {
+            return resolver<D, pairs>::value(type);
+        }
+    };
+    using FFITypeValidator = FFITypeValidatorBase<FFITypesets>;
 
-    template <typename T, size_t... Idx>
-    inline void validate_type(FFIType type, std::index_sequence<Idx...>) {
-        return FFITypeValidator<T, std::tuple_element_t<Idx, FFITypesets>...>::validate(type);
-    }
-    template <typename T>
-    inline void validate_type(FFIType type) {
-        return validate_type<T>(type, std::make_index_sequence<std::tuple_size<FFITypesets>{}>{});
-    }
 
     template <typename T>
-    inline constexpr FFIType ffi_typecode() {
+     void validate_type(FFIType type) {
+        return FFITypeValidator::validate<T>(type);
+    }
+    template <typename T>
+     constexpr FFIType ffi_typecode() {
         return FFITypeMap::ffi_typecode<T>();
     }
 
     template <typename T>
-    class FFITypeHandler {
+    struct FFITypeHandler {
         // class that helps us maintain a map between type codes & proper types
-    public:
         static constexpr FFIType ffi_type() { return ffi_typecode<T>(); }
         static void validate(FFIType type_code) { validate_type<T>(type_code); }
         static T cast(FFIType type_code, std::shared_ptr<void> &data) {
@@ -491,7 +494,7 @@ namespace plzffi {
             auto ptr = std::make_shared<T>(data);
 
             if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-                mcutils::python::py_printf("Stored generic version of object of type %s at %p\n", typeid(T).name(), ptr.get());
+                mcutils::python::py_printf("Stored generic version of object of type %s at %p\n", mcutils::type_name<T>::c_str(), ptr.get());
             }
 
             return ptr;
@@ -506,9 +509,8 @@ namespace plzffi {
     };
 
     template <typename T>
-    class FFITypeHandler<std::vector<T> > {
+    struct FFITypeHandler<std::vector<T> > {
         // specialization to handle vector types
-    public:
         static constexpr FFIType ffi_type() {return ffi_typecode<T>();}
         static void validate(FFIType type_code) { validate_type<T>(type_code); }
         static std::vector<T> cast(FFIType type_code, std::shared_ptr<void>& data) {
@@ -524,9 +526,8 @@ namespace plzffi {
     };
 
     template <typename T>
-    class FFITypeHandler<T*> {
+    struct FFITypeHandler<T*> {
         // specialization to handle pointer types
-    public:
         static constexpr FFIType ffi_type() {return ffi_typecode<T>();}
         static void validate(FFIType type_code) { validate_type<T>(type_code); }
         static T* cast(FFIType type_code, std::shared_ptr<void>& data) {
@@ -535,7 +536,7 @@ namespace plzffi {
         static std::shared_ptr<void> genericize(T* data) {
             return std::shared_ptr<void>(
                     data
-                    , [](T* val){delete val;}
+                    , [](T* val){} //  // delete val;}
             );
         }
         static pyobj as_python(FFIType type_code, std::shared_ptr<void>& data, std::vector<size_t>& shape) {
@@ -583,7 +584,7 @@ namespace plzffi {
                     default:
                         return std::shared_ptr<void>(
                                 mcutils::python::from_python<typename T::type *>(py_obj)
-                                , [](typename T::type *val) { delete val; }
+                                , [](typename T::type *val) {}// This came from python and will be managed by python // delete val; }
                         );
                 }
             } else {
@@ -620,7 +621,7 @@ namespace plzffi {
                     default:
                         return std::shared_ptr<void>(
                                 py_obj.getattr<D*>(attr)
-                                , [](D* val){delete val;}
+                                , [](D* val){}// This came from python and will be managed by python //delete val;}
                         );
                 }
             } else {
@@ -639,6 +640,7 @@ namespace plzffi {
                 return FFIConversionManager<Args...>::from_python_attr(type, py_obj, attr, shape);
             }
         }
+
         static pyobj as_python_direct(FFIType type, std::shared_ptr<void>& data, std::vector<size_t>& shape, FFIContainerType ctype = None) {
             using D = typename T::type;
 
@@ -650,13 +652,13 @@ namespace plzffi {
                 switch(ctype) {
                     case(FFIContainerType::Vector): {
                         if (debug::debug_print(DebugLevel::All)) {
-                            mcutils::python::py_printf("Converting type std::vector<%s> to python with FFIType %i\n", typeid(D).name(), type);
+                            mcutils::python::py_printf("Converting type std::vector<%s> to python with FFIType %i\n", mcutils::type_name<D>::c_str(), type);
                         }
                         return FFITypeHandler<std::vector<D>>::as_python(type, data, shape);
                     }
                     default: {
                         if (debug::debug_print(DebugLevel::All)) {
-                            mcutils::python::py_printf("Converting type %s* to python with FFIType %i\n", typeid(D).name(), type);
+                            mcutils::python::py_printf("Converting type %s* to python with FFIType %i\n", mcutils::type_name<D>::c_str(), type);
                         }
                         return FFITypeHandler<D*>::as_python(type, data, shape);
                     }
@@ -664,7 +666,7 @@ namespace plzffi {
             } else {
 
                 if (debug::debug_print(DebugLevel::All)) {
-                    mcutils::python::py_printf("Converting type %s to python with non-pointer type FFIType %i\n", typeid(D).name(), type);
+                    mcutils::python::py_printf("Converting type %s to python with non-pointer type FFIType %i\n", mcutils::type_name<D>::c_str(), type);
                 }
                 // not a pointer type so we extract data from shared_ptr as a pointer first
                 return FFITypeHandler<D>::as_python(type, data, shape);
@@ -678,75 +680,69 @@ namespace plzffi {
             }
         }
     };
+    template <typename T, typename... Args> // expects FFITypePair objects
+    class FFIConversionManager<std::tuple<T, Args...>> {
+    public:
+
+        static std::shared_ptr<void> from_python(FFIType type, pyobj py_obj, std::vector<size_t> &shape, FFIContainerType ctype = None) {
+            return FFIConversionManager<T, Args...>::from_python(type, py_obj, shape, ctype);
+        }
+
+        static std::shared_ptr<void> from_python_attr(FFIType type, pyobj py_obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+            return FFIConversionManager<T, Args...>::from_python_attr(type, py_obj, attr, shape);
+        }
+
+        static pyobj as_python(FFIType type, std::shared_ptr<void>& data, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+            return FFIConversionManager<T, Args...>::as_python(type, data, shape, ctype);
+        }
+
+    };
+    using FFIConverter = FFIConversionManager<FFITypePairs>;
 
     template <typename T>
-    inline pyobj ffi_to_python(std::shared_ptr<void>&data, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
+     pyobj ffi_to_python(std::shared_ptr<void>&data, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
         return FFIConversionManager<T>::as_python_direct(FFITypeHandler<T>::typecode(), data, shape, ctype);
     }
     template <FFIType F>
-    inline pyobj ffi_to_python(std::shared_ptr<void>&data, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
+     pyobj ffi_to_python(std::shared_ptr<void>&data, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
         using T = typename FFITypeMap::find_type<F>;
         return FFIConversionManager<T>::as_python_direct(F, data, shape, ctype);
     }
-    template <size_t... Idx>
-    inline pyobj ffi_to_python(FFIType type, std::shared_ptr<void>&data, std::vector<size_t>& shape, FFIContainerType ctype,
-                                   std::index_sequence<Idx...> inds) {
-        return FFIConversionManager<std::tuple_element_t<Idx, FFITypePairs>...>::as_python(type, data, shape, ctype);
+     pyobj ffi_to_python(FFIType type, std::shared_ptr<void>&data, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
+        return FFIConverter::as_python(type, data, shape, ctype);
     }
-    inline pyobj ffi_to_python(const FFIType type, std::shared_ptr<void>&data, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
-        return ffi_to_python(
-                type, data, shape, ctype,
-                std::make_index_sequence<std::tuple_size<FFITypePairs>{}>{}
-                );
-    };
 
     template <typename T>
-    inline std::shared_ptr<void> ffi_from_python_attr(pyobj obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
+     std::shared_ptr<void> ffi_from_python_attr(pyobj obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
         return FFIConversionManager<T>::from_python_attr_direct(FFITypeHandler<T>::typecode(), obj, attr, shape, ctype);
     }
     template <FFIType F>
-    inline std::shared_ptr<void> ffi_from_python_attr(pyobj obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
+     std::shared_ptr<void> ffi_from_python_attr(pyobj obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
         using T = typename FFITypeMap::find_type<F>;
         return FFIConversionManager<T>::from_python_attr_direct(F, obj, attr, shape, ctype);
     }
-    template <size_t... Idx>
-    inline std::shared_ptr<void> ffi_from_python_attr(const FFIType type, pyobj obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype,
-                                   std::index_sequence<Idx...> inds) {
-        return FFIConversionManager<std::tuple_element_t<Idx, FFITypePairs>...>::from_python_attr(type, obj, attr, shape, ctype);
+     std::shared_ptr<void> ffi_from_python_attr(const FFIType type, pyobj obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
+        return FFIConverter::from_python_attr(type, obj, attr, shape, ctype);
     }
-    inline std::shared_ptr<void> ffi_from_python_attr(const FFIType type, pyobj obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
-        return ffi_from_python_attr(
-                type, obj, attr, shape, ctype,
-                std::make_index_sequence<std::tuple_size<FFITypePairs>{}>{}
-        );
-    };
 
     template <typename T>
-    inline std::shared_ptr<void> ffi_from_python(pyobj obj, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
+     std::shared_ptr<void> ffi_from_python(pyobj obj, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
         return FFIConversionManager<T>::from_python_direct(FFITypeHandler<T>::typecode(), obj, shape, ctype);
     }
     template <FFIType F>
-    inline std::shared_ptr<void> ffi_from_python_attr(pyobj obj, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
+     std::shared_ptr<void> ffi_from_python_attr(pyobj obj, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
         using T = typename FFITypeMap::find_type<F>;
         return FFIConversionManager<T>::from_python_direct(F, obj, shape, ctype);
     }
-    template <size_t... Idx>
-    inline std::shared_ptr<void> ffi_from_python(const FFIType type, pyobj obj, std::vector<size_t>& shape, FFIContainerType ctype,
-                                                      std::index_sequence<Idx...> inds) {
-        return FFIConversionManager<std::tuple_element_t<Idx, FFITypePairs>...>::from_python(type, obj, shape, ctype);
+     std::shared_ptr<void> ffi_from_python(const FFIType type, pyobj obj, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
+        return FFIConverter::from_python(type, obj, shape, ctype);
     }
-    inline std::shared_ptr<void> ffi_from_python(const FFIType type, pyobj obj, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
-        return ffi_from_python(
-                type, obj, shape, ctype,
-                std::make_index_sequence<std::tuple_size<FFITypePairs>{}>{}
-        );
-    };
 
     template <typename T>
-    inline std::shared_ptr<void> genericize(T data) {
+     std::shared_ptr<void> genericize(T data) {
         auto ptr = FFITypeHandler<T>::genericize(data);
         if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-            mcutils::python::py_printf("Got generic version of object of type %s at %p\n", typeid(T).name(), ptr.get());
+            mcutils::python::py_printf("Got generic version of object of type %s at %p\n", mcutils::type_name<T>::c_str(), ptr.get());
         }
         return ptr;
 
@@ -927,7 +923,6 @@ namespace plzffi {
 //        };
 //        // trivial destructor should be safe?
 //        ~FFIParameter() = default;
-//        // ...?
 
         void init();
 
@@ -1024,6 +1019,9 @@ namespace plzffi {
         auto shp = shape();
         return ffi_to_python(type(), param_data, shp);
     }
+    PyObject* FFIParameter::as_python_object() {
+        return as_python().obj();
+    }
 
     std::string FFIParameter::repr() { return as_python().repr(); }
 
@@ -1081,13 +1079,13 @@ namespace plzffi {
 // register a conversion for FFIType
 namespace mcutils::python {
     template<>
-    inline PyObject *as_python_object<plzffi::FFIParameter>(plzffi::FFIParameter data) {
+     PyObject *as_python_object<plzffi::FFIParameter>(plzffi::FFIParameter data) {
         if (pyadeeb::debug_print(DebugLevel::All)) py_printf("Converting FFIParameter to PyObject...\n");
         return data.as_python_object();
     }
 
     template<>
-    inline plzffi::FFIParameter from_python<plzffi::FFIParameter>(pyobj data) {
+     plzffi::FFIParameter from_python<plzffi::FFIParameter>(pyobj data) {
         if (pyadeeb::debug_print(DebugLevel::All)) py_printf("Converting PyObject to FFIParameter...\n");
         return plzffi::FFIParameter(data);
     }

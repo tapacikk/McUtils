@@ -393,6 +393,8 @@ class FFIModule(FFISpec):
         :rtype:
         """
         req_attrs = ("arg_type", "arg_name", "arg_shape", "arg_value")
+        if isinstance(params, collections.OrderedDict):
+            params = FFIParameters(params)
         for p in params:
             if not all(hasattr(p, x) for x in req_attrs):
                 raise AttributeError("parameter needs attributes {}", req_attrs)
@@ -402,7 +404,7 @@ class FFIModule(FFISpec):
             debug = DebugLevels.Normal
         else:
             debug = DebugLevels(debug)
-        return self.mod.call_method_threaded(self.mod, name, params, thread_var, mode, debug.value + 1)
+        return self.mod.call_method_threaded(self.captup, name, params, thread_var, mode, debug.value)
 
     def __getattr__(self, item):
         return self.get_method(item)

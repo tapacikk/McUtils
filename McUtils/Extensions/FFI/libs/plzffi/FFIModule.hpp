@@ -507,35 +507,45 @@ namespace plzffi {
     }
 
     template <typename...>
-    class FFIModuleMethodCaller;
+    struct FFIModuleMethodCallDispatcher;
     template<>
-    class FFIModuleMethodCaller<> {
-    public:
+    struct FFIModuleMethodCallDispatcher<> {
         static pyobj call(FFIType type, FFIModule& mod, std::string& method, FFIParameters& params) {
             std::string garb =
-                    "unhandled type specifier in threaded call to "
+                    "unhandled type specifier in call to "
                     + method + ": " + std::to_string(static_cast<int>(type));
+            throw std::runtime_error(garb.c_str());
+        }
+        template <typename D>
+        static pyobj call_threaded_dispatch(FFIType type, FFIType threaded_type,
+                                   FFIModule& mod, std::string& method_name,
+                                   std::string& threaded_var, std::string& mode,
+                                   FFIParameters& params) {
+            std::string garb =
+                    "unhandled type specifier in threaded call to "
+                    + method_name + ": " + std::to_string(static_cast<int>(type));
             throw std::runtime_error(garb.c_str());
         }
     };
     template <typename T, typename... Args> // expects FFITypePair objects
-    class FFIModuleMethodCaller<T, Args...> {
-    public:
+    struct FFIModuleMethodCallDispatcher<T, Args...> {
         static pyobj call_direct(FFIModule& mod, std::string& method_name, FFIParameters& params) {
             using D = typename T::type;
             if (pyadeeb::debug_print(DebugLevel::All)) printf(" > FFIModuleMethodCaller found appropriate type dispatch!\n");
             pyobj obj;
-            if (mod.get_method_data(method_name).vectorized) {
+            auto mdat = mod.get_method_data(method_name); // Don't support raw pointer returns...
+            if (mdat.vectorized) {
                 py_printf(DebugLevel::All, "  > evaluating vectorized potential\n");
                 auto val = mod.call_method<std::vector<D> >(method_name, params);
-                if (pyadeeb::debug_print(DebugLevel::All)) py_printf("  > constructing python return value for typename/FFIType pair %s/%i\n", typeid(D).name(), T::value);
-                auto arr = pyobj::cast<std::vector<D>>(val);
-                if (pyadeeb::debug_print(DebugLevel::All)) py_printf("  > got %s\n", pyobj(arr).repr().c_str());
-                obj = mcutils::python::numpy_copy_array(arr);
+                if (pyadeeb::debug_print(DebugLevel::All)) py_printf("  > constructing python return value for typename/FFIType pair std::vector<%s>/%i\n", mcutils::type_name<D>::c_str(), T::value);
+                obj = pyobj::cast<D>(val);
+//                if (pyadeeb::debug_print(DebugLevel::All)) py_printf("  > got %s\n", pyobj(obj).repr().c_str());
+//                obj = arr;
+//                obj = mcutils::python::numpy_copy_array(arr);
             } else {
                 if (pyadeeb::debug_print(DebugLevel::All)) printf("  > evaluating non-vectorized potential\n");
                 D val = mod.call_method<D>(method_name, params);
-                if (pyadeeb::debug_print(DebugLevel::All)) printf("  > constructing python return value for typename/FFIType pair %s/%i\n", typeid(D).name(), T::value);
+                if (pyadeeb::debug_print(DebugLevel::All)) printf("  > constructing python return value for typename/FFIType pair %s/%i\n", mcutils::type_name<D>::c_str(), T::value);
                 obj = pyobj::cast<D>(val);
             }
             // need to actually return the values...
@@ -545,177 +555,338 @@ namespace plzffi {
             if (type == T::value) {
                 return call_direct(mod, method_name, params);
             } else {
-                return FFIModuleMethodCaller<Args...>::call(type, mod, method_name, params);
+                return FFIModuleMethodCallDispatcher<Args...>::call(type, mod, method_name, params);
             }
         }
-    };
 
-    template <typename T>
-    inline pyobj ffi_call_method(FFIModule& mod, std::string& method_name, FFIParameters& params) {
-        return FFIModuleMethodCaller<T>::call_direct(mod, method_name, params);
-    }
-    template <FFIType F>
-    inline pyobj ffi_call_method(FFIModule& mod, std::string& method_name, FFIParameters& params) {
-        using T = typename FFITypeMap::find_type<F>;
-        return FFIModuleMethodCaller<T>::call_direct(mod, method_name, params);
-    }
-    template <size_t... Idx>
-    inline pyobj ffi_call_method(
-            FFIType type, FFIModule& mod, std::string& method_name, FFIParameters& params,
-            std::index_sequence<Idx...> inds) {
-        return FFIModuleMethodCaller<std::tuple_element_t<Idx, FFITypePairs>...>::call(type, mod, method_name, params);
-    }
-    inline pyobj ffi_call_method(
-            FFIType type, FFIModule& mod, std::string& method_name, FFIParameters& params) {
-        return ffi_call_method(type, mod, method_name, params,
-                               std::make_index_sequence<std::tuple_size<FFITypePairs>{}>{});
-    }
-
-    class FFIThreaderTypeIterationError : public std::exception {};
-    template <typename, typename...>
-    class FFIModuleMethodThreadingCaller;
-    template<typename T>
-    class FFIModuleMethodThreadingCaller<T> {
-    public:
-        static pyobj call(FFIType type, FFIType threaded_type,
-                              FFIModule& mod, std::string& method_name,
-                              std::string& threaded_var, std::string& mode,
-                              FFIParameters& params) {
-            std::string garb =
-                    "unhandled type specifier in calling method "
-                    + method_name + ": " + std::to_string(static_cast<int>(threaded_type));
-            throw std::runtime_error(garb.c_str());
-        }
-    };
-    template <typename T, typename C, typename... Args> // expects a type and then nested FFITypePair objects
-    class FFIModuleMethodThreadingCaller<T, C, Args...> {
-    public:
-        static pyobj call(FFIType type, FFIType threaded_type,
-                              FFIModule& mod, std::string& method_name,
-                              std::string& threaded_var, std::string& mode,
-                              FFIParameters& params) {
-            if (std::is_same_v<typename C::type, T>) {
-                if (threaded_type == C::value) {
-                    auto val = mod.call_method_threaded<T, typename C::type>(
-                            method_name, params, threaded_var, mode
-                    );
-                    auto np = pyobj::cast<std::vector<T>>(val, true);
-                    // now copy before returning to put memory on heap
-                    auto new_arr = mcutils::python::numpy_copy_array(np);
-                    return new_arr;
-                } else {
-                    std::string garb =
-                            "type specifier mismatch in threading method "
-                            + method_name + ": " + std::to_string(static_cast<int>(threaded_type));
-                    throw std::runtime_error(garb.c_str());
-                }
-            } else {
-//                static_assert(sizeof...(Args) > 0, "unhandled type specifier in threading method");
-                if (sizeof...(Args) > 0) {
-                    return FFIModuleMethodThreadingCaller<T, Args...>::call(type, threaded_type,
-                                                                            mod, method_name,
-                                                                            threaded_var, mode,
-                                                                            params
-                    );
-                } else {
-                    std::string garb =
-                            "unhandled type specifier in calling method "
-                            + method_name + ": " + std::to_string(static_cast<int>(threaded_type));
-                    throw std::runtime_error(garb.c_str());
-                }
-            }
-        }
-    };
-
-    // annoying hack to get outer-product of types...
-    template <typename T, size_t... Idx>
-    inline pyobj ffi_call_method_threaded_dispatch(
-            FFIType type, FFIType threaded_type,
-            FFIModule& mod, std::string& method_name,
-            std::string& threaded_var, std::string& mode,
-            FFIParameters& params,
-            std::index_sequence<Idx...> inds) {
-        return FFIModuleMethodThreadingCaller<T, std::tuple_element_t<Idx, FFITypePairs>...>::call(
-                type, threaded_type, mod,
-                method_name, threaded_var, mode, params
-        );
-    }
-    template <typename T>
-    inline pyobj ffi_call_method_threaded_dispatch(
-            FFIType type, FFIType threaded_type,
-            FFIModule& mod, std::string& method_name,
-            std::string& threaded_var, std::string& mode,
-            FFIParameters& params
-            ) {
-        return ffi_call_method_threaded_dispatch<T>(
-                type, threaded_type, mod,
-                method_name, threaded_var, mode, params,
-                std::make_index_sequence<std::tuple_size<FFITypePairs>{}>{}
+        template <typename D>
+        static pyobj call_threaded_direct(
+                FFIType type, FFIType threaded_type,
+                FFIModule& mod, std::string& method_name,
+                std::string& threaded_var, std::string& mode,
+                FFIParameters& params
+                ) {
+            if (threaded_type == T::value) {
+                auto val = mod.call_method_threaded<D, typename T::type>(
+                        method_name, params, threaded_var, mode
                 );
-    }
-    template <typename...>
-    class FFIModuleMethodThreadingDispatcher;
-    template<>
-    class FFIModuleMethodThreadingDispatcher<> {
-    public:
-        static pyobj call(FFIType type, FFIType threaded_type,
-                              FFIModule& mod, std::string& method_name,
-                              std::string& threaded_var, std::string& mode,
-                              FFIParameters& params) {
-            std::string garb =
-                    "unhandled type specifier in calling method "
-                    + method_name + ": " + std::to_string(static_cast<int>(threaded_type));
-            throw std::runtime_error(garb.c_str());
+                auto np = pyobj::cast<D>(val, true);
+                auto new_arr = mcutils::python::numpy_copy_array(np);
+                return new_arr;
+            } else {
+                std::string garb = "type specifier mismatch in threading method " + method_name
+                                   + " expected " + std::to_string(static_cast<int>(threaded_type))
+                                   + " got " + std::to_string(static_cast<int>(T::value));
+                throw std::runtime_error(garb.c_str());
+            }
         }
-    };
-    template <typename T, typename... Args> // expects a type and then nested FFITypePair objects
-    class FFIModuleMethodThreadingDispatcher<T, Args...> {
-    public:
-        static pyobj call(FFIType type, FFIType threaded_type,
-                              FFIModule& mod, std::string& method_name,
-                              std::string& threaded_var, std::string& mode,
-                              FFIParameters& params) {
-            if (type == T::value) {
-                return ffi_call_method_threaded_dispatch<typename T::type>(
+        template <typename D>
+        static pyobj call_threaded_dispatch(
+                FFIType type, FFIType threaded_type,
+                FFIModule &mod, std::string &method_name,
+                std::string &threaded_var, std::string &mode,
+                FFIParameters &params
+        ) {
+            if (std::is_same_v<typename T::type, D>) {
+                return call_threaded_direct<D>(
                         type, threaded_type,
                         mod, method_name,
                         threaded_var, mode,
                         params
                 );
             } else {
-                return FFIModuleMethodThreadingDispatcher<T, Args...>::call(type, threaded_type,
-                                                                            mod, method_name,
-                                                                            threaded_var, mode,
-                                                                            params);
+//                static_assert(sizeof...(Args) > 0, "unhandled type specifier in threading method");
+                return FFIModuleMethodCallDispatcher<Args...>::template call_threaded_dispatch<D>(
+                        type, threaded_type,
+                        mod, method_name,
+                        threaded_var, mode,
+                        params
+                );
             }
+        }
+
+        template<typename...>
+        struct threading_resolver;
+        template<>
+        struct threading_resolver<> {
+            static pyobj call(
+                    FFIType type, FFIType threaded_type,
+                    FFIModule &mod, std::string &method_name,
+                    std::string &threaded_var, std::string &mode,
+                    FFIParameters &params
+            ) {
+                std::string msg = "ERROR: in threading dispatch: unresolved FFIType " + std::to_string(static_cast<int>(type));
+                printf("%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+        };
+        template<typename t, typename... subargs>
+        struct threading_resolver<t, subargs...> {
+            static pyobj call(
+                    FFIType type, FFIType threaded_type,
+                    FFIModule &mod, std::string &method_name,
+                    std::string &threaded_var, std::string &mode,
+                    FFIParameters &params
+            ) {
+                if (type == t::value) {
+                    using D = typename t::type;
+                    return call_threaded_dispatch<D>(
+                            type, threaded_type,
+                            mod, method_name,
+                            threaded_var, mode,
+                            params
+                    );
+                } else {
+                    return threading_resolver<subargs...>::call(
+                            type, threaded_type,
+                            mod, method_name,
+                            threaded_var, mode,
+                            params
+                    );
+                }
+            };
+        };
+        template<typename t, typename... subargs> // Tuple-based spec
+        struct threading_resolver<std::tuple<t, subargs...>> {
+            static pyobj call(
+                    FFIType type, FFIType threaded_type,
+                    FFIModule &mod, std::string &method_name,
+                    std::string &threaded_var, std::string &mode,
+                    FFIParameters &params
+            ) {
+                return threading_resolver<t, subargs...>::call(
+                        type, threaded_type,
+                        mod, method_name,
+                        threaded_var, mode,
+                        params
+                );
+            }
+        };
+        using call_threaded_resolver = threading_resolver<FFITypePairs>;
+
+        static pyobj call_threaded(
+                FFIType type, FFIType threaded_type,
+                FFIModule& mod, std::string& method_name,
+                std::string& threaded_var, std::string& mode,
+                FFIParameters& params
+                ) {
+            return call_threaded_resolver::call(
+                    type, threaded_type,
+                    mod, method_name,
+                    threaded_var, mode, params
+            );
+        }
+
+    };
+    template <typename T, typename... Args> // expects FFITypePair objects
+    struct FFIModuleMethodCallDispatcher<std::tuple<T, Args...>> {
+        static pyobj call_direct(FFIModule& mod, std::string& method_name, FFIParameters& params) {
+            return FFIModuleMethodCallDispatcher<T, Args...>::call_direct(mod, method_name, params);
+        }
+        static pyobj call(FFIType type, FFIModule& mod, std::string& method_name, FFIParameters& params) {
+            return FFIModuleMethodCallDispatcher<T, Args...>::call(type, mod, method_name, params);
+        }
+        template <typename D>
+        static pyobj call_threaded_direct(
+                FFIType type, FFIType threaded_type,
+                FFIModule& mod, std::string& method_name,
+                std::string& threaded_var, std::string& mode,
+                FFIParameters& params
+        ) {
+            return FFIModuleMethodCallDispatcher<T, Args...>::template call_threaded_direct<D>(
+                    type, threaded_type,
+                    mod, method_name,
+                    threaded_var, mode, params
+            );
+        }
+        template <typename D>
+        static pyobj call_threaded_dispatch(
+                FFIType type, FFIType threaded_type,
+                FFIModule &mod, std::string &method_name,
+                std::string &threaded_var, std::string &mode,
+                FFIParameters &params
+        ) {
+            return FFIModuleMethodCallDispatcher<T, Args...>::template call_threaded_dispatch<D>(
+                    type, threaded_type,
+                    mod, method_name,
+                    threaded_var, mode, params
+            );
+        }
+        static pyobj call_threaded(FFIType type, FFIType threaded_type,
+                                    FFIModule& mod, std::string& method_name,
+                                    std::string& threaded_var, std::string& mode,
+                                    FFIParameters& params) {
+            return FFIModuleMethodCallDispatcher<T, Args...>::call_threaded(
+                    type, threaded_type,
+                    mod, method_name,
+                    threaded_var, mode, params
+            );
         }
     };
 
-    template <size_t... Idx>
-    inline pyobj ffi_call_method_threaded(
-            FFIType type, FFIType threaded_type,
-            FFIModule& mod, std::string& method_name,
-            std::string& threaded_var, std::string& mode,
-            FFIParameters& params,
-            std::index_sequence<Idx...> inds) {
-        return FFIModuleMethodThreadingDispatcher<std::tuple_element_t<Idx, FFITypePairs>...>::call(
-                type, threaded_type,
-                mod, method_name,
-                threaded_var, mode, params
-                );
+    using FFIModuleMethodCaller = FFIModuleMethodCallDispatcher<FFITypePairs>;
+
+
+    template <typename T>
+    pyobj ffi_call_method(FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        return FFIModuleMethodCallDispatcher<T>::call_direct(mod, method_name, params);
     }
-    inline pyobj ffi_call_method_threaded(
+    template <FFIType F>
+    pyobj ffi_call_method(FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        using T = typename FFITypeMap::find_type<F>;
+        return FFIModuleMethodCallDispatcher<T>::call_direct(mod, method_name, params);
+    }
+    pyobj ffi_call_method(FFIType type, FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        return FFIModuleMethodCaller::call(type, mod, method_name, params);
+    }
+
+    template <typename T, typename D>
+    pyobj ffi_call_method_threaded(FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        return FFIModuleMethodCallDispatcher<T>::template call_threaded_direct<D>(mod, method_name, params);
+    }
+    template <FFIType F, FFIType G>
+    pyobj ffi_call_method_threaded(FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        using T = typename FFITypeMap::find_type<F>;
+        using D = typename FFITypeMap::find_type<G>;
+        return FFIModuleMethodCallDispatcher<T>::template call_threaded_direct<D>(mod, method_name, params);
+    }
+    pyobj ffi_call_method_threaded(
             FFIType type, FFIType threaded_type,
             FFIModule& mod, std::string& method_name,
             std::string& threaded_var, std::string& mode,
             FFIParameters& params
-            ) {
-        return ffi_call_method_threaded(
-                type, threaded_type,
-                mod, method_name,
-                threaded_var, mode, params,
-                std::make_index_sequence<std::tuple_size<FFITypePairs>{}>{});
+    ) {
+        return FFIModuleMethodCaller::call_threaded(
+                type, threaded_type, mod,
+                method_name, threaded_var, mode, params
+        );
     }
+
+//    class FFIThreaderTypeIterationError : public std::exception {};
+//    template <typename, typename...>
+//    class FFIModuleMethodThreadingCaller;
+//    template<typename T>
+//    class FFIModuleMethodThreadingCaller<T> {
+//    public:
+//        static pyobj call(FFIType type, FFIType threaded_type,
+//                              FFIModule& mod, std::string& method_name,
+//                              std::string& threaded_var, std::string& mode,
+//                              FFIParameters& params) {
+//            std::string garb =
+//                    "unhandled type specifier in calling method " + method_name + ": "
+//                    + std::to_string(static_cast<int>(threaded_type));
+//            throw std::runtime_error(garb.c_str());
+//        }
+//    };
+//    template <typename T, typename C, typename... Args> // expects a type and then nested FFITypePair objects
+//    class FFIModuleMethodThreadingCaller<T, C, Args...> {
+//    public:
+//        static pyobj call(FFIType type, FFIType threaded_type,
+//                              FFIModule& mod, std::string& method_name,
+//                              std::string& threaded_var, std::string& mode,
+//                              FFIParameters& params) {
+//            if (std::is_same_v<typename C::type, T>) {
+//                if (threaded_type == C::value) {
+//                    auto val = mod.call_method_threaded<T, typename C::type>(
+//                            method_name, params, threaded_var, mode
+//                    );
+//                    auto np = pyobj::cast<std::vector<T>>(val, true);
+//                    // now copy before returning to put memory on heap
+//                    auto new_arr = mcutils::python::numpy_copy_array(np);
+//                    return new_arr;
+//                } else {
+//                    std::string garb = "type specifier mismatch in threading method " + method_name
+//                            + " expected " + std::to_string(static_cast<int>(threaded_type))
+//                            + " got " + std::to_string(static_cast<int>(C::value));
+//                    throw std::runtime_error(garb.c_str());
+//                }
+//            } else {
+////                static_assert(sizeof...(Args) > 0, "unhandled type specifier in threading method");
+//                if (sizeof...(Args) > 0) {
+//                    return FFIModuleMethodThreadingCaller<T, Args...>::call(type, threaded_type,
+//                                                                            mod, method_name,
+//                                                                            threaded_var, mode,
+//                                                                            params
+//                    );
+//                } else {
+//                    std::string garb =
+//                            "unhandled type specifier in calling method "
+//                            + method_name + ": " + std::to_string(static_cast<int>(threaded_type));
+//                    throw std::runtime_error(garb.c_str());
+//                }
+//            }
+//        }
+//    };
+
+
+//    template <typename...>
+//    class FFIModuleMethodThreadingDispatcher;
+//    template<>
+//    class FFIModuleMethodThreadingDispatcher<> {
+//    public:
+//        static pyobj call(FFIType type, FFIType threaded_type,
+//                              FFIModule& mod, std::string& method_name,
+//                              std::string& threaded_var, std::string& mode,
+//                              FFIParameters& params) {
+//            std::string garb =
+//                    "unhandled type specifier in calling method "
+//                    + method_name + ": " + std::to_string(static_cast<int>(threaded_type));
+//            throw std::runtime_error(garb.c_str());
+//        }
+//    };
+//    template <typename T, typename... Args> // expects a type and then nested FFITypePair objects
+//    class FFIModuleMethodThreadingDispatcher<T, Args...> {
+//    public:
+//        static pyobj call(
+//                FFIType type, FFIType threaded_type,
+//                FFIModule &mod, std::string &method_name,
+//                std::string &threaded_var, std::string &mode,
+//                FFIParameters &params
+//        ) {
+//            if (type == T::value) {
+//                return ffi_call_method_threaded_dispatch<typename T::type>(
+//                        type, threaded_type,
+//                        mod, method_name,
+//                        threaded_var, mode,
+//                        params
+//                );
+//            } else {
+//                return FFIModuleMethodThreadingDispatcher<T, Args...>::call(
+//                        type, threaded_type,
+//                        mod, method_name,
+//                        threaded_var, mode,
+//                        params
+//                );
+//            }
+//        }
+//    };
+
+//    template <size_t... Idx>
+//    pyobj ffi_call_method_threaded(
+//            FFIType type, FFIType threaded_type,
+//            FFIModule& mod, std::string& method_name,
+//            std::string& threaded_var, std::string& mode,
+//            FFIParameters& params,
+//            std::index_sequence<Idx...> inds) {
+//        return FFIModuleMethodThreadingDispatcher<std::tuple_element_t<Idx, FFITypePairs>...>::call(
+//                type, threaded_type,
+//                mod, method_name,
+//                threaded_var, mode, params
+//                );
+//    }
+//    pyobj ffi_call_method_threaded(
+//            FFIType type, FFIType threaded_type,
+//            FFIModule& mod, std::string& method_name,
+//            std::string& threaded_var, std::string& mode,
+//            FFIParameters& params
+//            ) {
+//        return ffi_call_method_threaded(
+//                type, threaded_type,
+//                mod, method_name,
+//                threaded_var, mode, params,
+//                std::make_index_sequence<std::tuple_size<FFITypePairs>{}>{}
+//                );
+//    }
 
     //endregion
 
@@ -732,7 +903,7 @@ namespace plzffi {
 //            printf("wat %s\n", capsule_name.c_str());
         auto cap = PyCapsule_New((void *) this, capsule_name.c_str(), NULL); // do I need a destructor?
         return Py_BuildValue(
-                "(NN)",
+                "(OO)",
                 get_py_name(),
                 cap
         );
@@ -904,7 +1075,7 @@ namespace plzffi {
             pyobj threading_mode
     ) {
 
-        auto mname = (method_name).convert<std::string>();
+        auto mname = method_name.convert<std::string>();
         auto meth_idx = get_method_index(mname);
         auto argtype = method_data[meth_idx].ret_type;
         auto args = FFIParameters(params);

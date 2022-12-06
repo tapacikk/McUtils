@@ -92,16 +92,12 @@ namespace LegacyMBPol {
         auto coords_shape = params.shape("coords");
 
         std::vector<double> energies(coords_shape[0]);
-//        auto block_size = std::accumulate(coords_shape.begin()+1, coords_shape.end(), 1, std::multiplies<>());
+        auto block_size = std::accumulate(coords_shape.begin()+1, coords_shape.end(), 1, std::multiplies<>());
 
+        double pot_val;
         for (size_t w = 0; w < coords_shape[0]; w++) {
-
-//            printf("    > calling structure %lu\n", w);
-
-            double pot_val;
-            calcpot_(&nwaters, &pot_val, coords);
+            calcpot_(&nwaters, &pot_val, coords + (block_size*w));
             energies[w] = pot_val / 627.5094740631;
-
         }
 
 //        printf("    > sucessfully got energy %f %f %f!\n", energies[0], energies[1], energies[2]);
