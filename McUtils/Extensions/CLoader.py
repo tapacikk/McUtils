@@ -124,7 +124,7 @@ class CLoader:
         is_mac = platform.system() == 'Darwin'
 
         lib_dirs = [os.path.abspath(d) for d in self.include_dirs + (lib_lib_dir,)]
-        runtime_dirs = lib_dirs if self.runtime_dirs is None else self.runtime_dirs
+        runtime_dirs = lib_dirs if self.runtime_dirs is None else lib_dirs + self.runtime_dirs
         libbies = list(self.linked_libs) + [f[3:].split(".")[0] for f in self.make_required_libs()]
         # print("????", runtime_dirs)
         mroos = self.macros

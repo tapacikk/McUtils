@@ -3,6 +3,8 @@ Provides a Loader object to load a potential from a C++ extension
 """
 
 import os, numpy as np
+import platform
+
 from .. import CLoader, ModuleLoader
 from .Module import FFIModule
 
@@ -27,6 +29,11 @@ class FFILoader:
         "out_dir",
         "cleanup_build",
         'build_kwargs'
+        'nodebug',
+        'threaded',
+        'extra_compile_args',
+        'extra_link_args',
+        'recompile'
     ]
 
     # src_folder = os.path.join(os.path.dirname(__file__), "src")
@@ -41,6 +48,7 @@ class FFILoader:
                  version="1.0.0",
                  include_dirs=None,
                  linked_libs=None,
+                 runtime_dirs=None,
                  macros=None,
                  source_files=None,
                  build_script=None,
@@ -73,7 +81,9 @@ class FFILoader:
             macros = []
         if nodebug:
             macros = list(macros) + [('_NODEBUG', True)]
-
+        threading_flags = (["-fopenmp"] if self.threaded else [])
+        # if platform.system() == "Darwin":
+        #     threading_flags = ['-Xprepocessor'] + threading_flags
         self.c_loader = CLoader(
             name,
             src,
@@ -82,15 +92,16 @@ class FFILoader:
             description=description,
             version=version,
             include_dirs=include_dirs,
-            linked_libs=linked_libs,
+            runtime_dirs=runtime_dirs,
+            linked_libs=(("omp",) if self.threaded else ()) + linked_libs,
             macros=macros,
             source_files=source_files,
             build_script=build_script,
             requires_make=requires_make,
             out_dir=out_dir,
             cleanup_build=cleanup_build,
-            extra_compile_args=(["-fopenmp"] if self.threaded else []) + [self.cpp_std] + ([] if extra_compile_args is None else list(extra_compile_args)),
-            extra_link_args=(["-fopenmp"] if self.threaded else []) + ([] if extra_link_args is None else list(extra_link_args)),
+            extra_compile_args=threading_flags + [self.cpp_std] + ([] if extra_compile_args is None else list(extra_compile_args)),
+            extra_link_args=[] if extra_link_args is None else list(extra_link_args),
             recompile=recompile,
             **({} if build_kwargs is None else build_kwargs)
         )

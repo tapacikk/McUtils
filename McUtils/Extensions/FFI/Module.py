@@ -109,7 +109,14 @@ class DebugLevels(enum.Enum):
     Quiet = 0
     Normal = 5
     More = 10
-    All = 100
+    All = 50
+    Excessive = 100
+
+class ThreadingMode(enum.Enum):
+    Serial = 'serial'
+    OpenMP = 'omp'
+    TBB = 'tbb'
+
 
 class FFISpec:
     """
@@ -314,9 +321,24 @@ class FFIModule(FFISpec):
         return self.mod._FFIModule
 
     @classmethod
-    def from_lib(cls, name, src=None, **compile_kwargs):
+    def from_lib(cls, name,
+                 src=None,
+                 threaded=None,
+                 extra_compile_args=None,
+                 extra_link_args=None,
+                 linked_libs=None,
+                 **compile_kwargs
+                 ):
         from .Loader import FFILoader
-        return FFILoader(name, src=src, **compile_kwargs).call_obj
+        if threaded is not None: # use the default
+            compile_kwargs['threaded'] = threaded
+        return FFILoader(name,
+                         src=src,
+                         extra_compile_args=extra_compile_args,
+                         extra_link_args=extra_link_args,
+                         linked_libs=linked_libs,
+                         **compile_kwargs
+                         ).call_obj
 
     @classmethod
     def from_signature(cls, sig, module=None):
@@ -326,16 +348,22 @@ class FFIModule(FFISpec):
             methods=[FFIMethod.from_signature(x) for x in meths],
             module=module
         )
-
     @classmethod
-    def from_module(cls, module, debug=False):
+    def get_debug_level(cls, debug):
         if debug is False:
             debug = DebugLevels.Quiet
         elif debug is True:
             debug = DebugLevels.Normal
-        else:
+        elif isinstance(debug, str):
+            debug = DebugLevels[debug.lower().capitalize()]
+        elif not isinstance(debug, (int, float, np.integer, np.floating)):
             debug = DebugLevels(debug)
-        sig = module.get_signature(module._FFIModule, debug.value)
+        if isinstance(debug, DebugLevels):
+            debug = debug.value
+        return debug
+    @classmethod
+    def from_module(cls, module, debug=False):
+        sig = module.get_signature(module._FFIModule, cls.get_debug_level(debug))
         return cls.from_signature(sig, module=module)
 
     @property
@@ -370,13 +398,7 @@ class FFIModule(FFISpec):
         for p in params:
             if not all(hasattr(p, x) for x in req_attrs):
                 raise AttributeError("parameter {} needs attributes {}".format(p, req_attrs))
-        if debug is False:
-            debug = DebugLevels.Quiet
-        elif debug is True:
-            debug = DebugLevels.Normal
-        else:
-            debug = DebugLevels(debug)
-        return self.mod.call_method(self.captup, name, params, debug.value)
+        return self.mod.call_method(self.captup, name, params,  self.get_debug_level(debug))
     def call_method_threaded(self, name, params, thread_var, mode="serial", debug=False):
         """
         Calls a method with threading enabled
@@ -398,13 +420,10 @@ class FFIModule(FFISpec):
         for p in params:
             if not all(hasattr(p, x) for x in req_attrs):
                 raise AttributeError("parameter needs attributes {}", req_attrs)
-        if debug is False:
-            debug = DebugLevels.Quiet
-        elif debug is True:
-            debug = DebugLevels.Normal
-        else:
-            debug = DebugLevels(debug)
-        return self.mod.call_method_threaded(self.captup, name, params, thread_var, mode, debug.value)
+        if not isinstance(mode, ThreadingMode):
+            mode = ThreadingMode(mode)
+        mode = mode.name
+        return self.mod.call_method_threaded(self.captup, name, params, thread_var, mode, self.get_debug_level(debug))
 
     def __getattr__(self, item):
         return self.get_method(item)

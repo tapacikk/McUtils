@@ -15,6 +15,7 @@ namespace plzffi {
     using debug = mcutils::python::pyadeeb;
     using DebugLevel = mcutils::python::DebugLevel;
     using mcutils::python::pyobj;
+    using mcutils::python::py_printf;
 
     // Set up enum for type mapping
     // Must be synchronized with the types on the python side
@@ -107,17 +108,20 @@ namespace plzffi {
         FFICompoundType type;
         std::vector<FFIContainerType> containers;
         std::vector<std::shared_ptr<void> > data;
+        std::vector<std::vector<size_t>> res_shapes;
     public:
         FFICompoundReturn() = default;
         FFICompoundReturn(FFICompoundType comp_type, std::vector<std::shared_ptr<void> > init_data) : type(comp_type), data(init_data) {
             auto size = type.keys().size();
             containers.resize(size);
             data.resize(size);
+            res_shapes.resize(size);
         };
         explicit FFICompoundReturn(FFICompoundType comp_type) : type(comp_type) {
             auto size = type.keys().size();
             containers.resize(size);
             data.resize(size);
+            res_shapes.resize(size);
         }
 
 //        ~FFICompoundReturn() // I. destructor
@@ -140,14 +144,20 @@ namespace plzffi {
 
 
         size_t key_index(std::string& key);
+
         template <typename T>
-        T get(std::string key);
+        class value_getter;
+        template <typename T>
+        value_getter<T> get(std::string key);
+        template <typename T>
+        value_getter<T> get_idx(size_t idx);
         template <typename T>
         void set(std::string key, T value);
         template <typename T>
         void set(std::string key, T* value);
         template <typename T>
         void set(std::string key, std::vector<T> value);
+        void set_shape(std::string key, std::vector<size_t> shape);
 
 //        template <typename T>
 //        class setter{
@@ -159,9 +169,12 @@ namespace plzffi {
 //        };
 
         FFICompoundType types() {return type;}
+        std::vector<FFIContainerType> container_types() {return containers;}
+        std::vector<std::vector<size_t>> result_shapes() {return res_shapes;};
 
         pyobj as_python();
     };
+
 }
 // register a conversion for FFIType
 namespace mcutils::python {
@@ -200,17 +213,25 @@ namespace mcutils::python {
 
         }
 
-        template<>
-         pyobj as_python<plzffi::FFICompoundReturn>(plzffi::FFICompoundReturn data) {
-            if (pyadeeb::debug_print(DebugLevel::All)) {
-                py_printf("Constructing compound return value\n");
-            }
-            return data.as_python();
+//    template<>
+//    PyObject* numpy_object_from_data<plzffi::FFICompoundReturn>(
+//            plzffi::FFICompoundReturn* buffer,
+//            NPY_TYPES dtype,
+//            std::vector<size_t>& shape,
+//            bool copy
+//    ); // Implemented later
+
+    template<>
+     pyobj as_python<plzffi::FFICompoundReturn>(plzffi::FFICompoundReturn data) {
+        if (pyadeeb::debug_print(DebugLevel::All)) {
+            py_printf("Constructing compound return value\n");
         }
-        template<>
-         PyObject* as_python_object<plzffi::FFICompoundReturn>(plzffi::FFICompoundReturn data) {
-            return as_python<plzffi::FFICompoundReturn>(data).obj();
-        }
+        return data.as_python();
+    }
+    template<>
+     PyObject* as_python_object<plzffi::FFICompoundReturn>(plzffi::FFICompoundReturn data) {
+        return as_python<plzffi::FFICompoundReturn>(data).obj();
+    }
 //        template<>
 //         plzffi::FFICompoundReturn convert<plzffi::FFICompoundReturn>(pyobj data) {
 //            return data.convert();
@@ -357,8 +378,8 @@ namespace plzffi {
                 } else {
 //                    static_assert(sizeof...(Args) > 0, "invalid type resolution");
                     if constexpr (sizeof...(Args) == 0) {
-                        char msg[60] = "unresolvable type: ";
-                        strcat(msg, typeid(T).name());
+                        char msg[60] = "";
+                        sprintf(msg, "can't resolve type %s to FFIType...", typeid(T).name());
                         throw std::runtime_error(msg);
                     } else {
                         return ffi_type_resolver<D, Args...>::typecode();
@@ -493,8 +514,8 @@ namespace plzffi {
 
             auto ptr = std::make_shared<T>(data);
 
-            if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-                mcutils::python::py_printf("Stored generic version of object of type %s at %p\n", mcutils::type_name<T>::c_str(), ptr.get());
+            if (debug::debug_print(DebugLevel::All)) {
+                py_printf("Stored generic version of object of type %s at %p\n", mcutils::type_name<T>::c_str(), ptr.get());
             }
 
             return ptr;
@@ -514,7 +535,7 @@ namespace plzffi {
         static constexpr FFIType ffi_type() {return ffi_typecode<T>();}
         static void validate(FFIType type_code) { validate_type<T>(type_code); }
         static std::vector<T> cast(FFIType type_code, std::shared_ptr<void>& data) {
-            return *static_cast<std::vector<T>>(data.get());
+            return *static_cast<std::vector<T>*>(data.get());
         }
         static std::shared_ptr<void> genericize(std::vector<T> data) {
             return std::make_shared<std::vector<T>>(data);
@@ -524,7 +545,6 @@ namespace plzffi {
             return mcutils::python::numpy_from_data<T>(vals, shape);
         }
     };
-
     template <typename T>
     struct FFITypeHandler<T*> {
         // specialization to handle pointer types
@@ -573,7 +593,7 @@ namespace plzffi {
             if (pos < FFIPointerTypes.end() || !shape.empty() || ctype != FFIContainerType::None) {
                 if (debug::debug_print(DebugLevel::All)) {
                     auto garb = py_obj.repr();
-                    mcutils::python::py_printf("Converting PyObject %s with pointer type FFIType %i\n", garb.c_str(), type);
+                    py_printf("Converting PyObject %s with pointer type FFIType %i\n", garb.c_str(), type);
                 }
                 // extract with a deleter if raw pointer
                 switch(ctype) {
@@ -590,7 +610,7 @@ namespace plzffi {
             } else {
                 if (debug::debug_print(DebugLevel::All)) {
                     auto garb = py_obj.repr();
-                    mcutils::python::py_printf("Converting PyObject %s with non-pointer type FFIType %i\n", garb.c_str(), type);
+                    py_printf("Converting PyObject %s with non-pointer type FFIType %i\n", garb.c_str(), type);
                 }
                 // is a pointer so no deletion
                 return std::make_shared<typename T::type>(
@@ -613,7 +633,7 @@ namespace plzffi {
             if (pos < FFIPointerTypes.end() || !shape.empty() || ctype != FFIContainerType::None) {
                 if (debug::debug_print(DebugLevel::All)) {
                     auto garb = py_obj.repr();
-                    mcutils::python::py_printf("Converting PyObject %s attr %s with pointer type FFIType %i\n", garb.c_str(), attr, type);
+                    py_printf("Converting PyObject %s attr %s with pointer type FFIType %i\n", garb.c_str(), attr, type);
                 }
                 switch(ctype) {
                     case(FFIContainerType::Vector):
@@ -628,7 +648,7 @@ namespace plzffi {
                 // new managed instance so no deleter
                 if (debug::debug_print(DebugLevel::All)) {
                     auto garb = py_obj.repr();
-                    mcutils::python::py_printf("Converting PyObject %s attr %s with pointer type FFIType %i\n", garb.c_str(), attr, type);
+                    py_printf("Converting PyObject %s attr %s with pointer type FFIType %i\n", garb.c_str(), attr, type);
                 }
                 return std::make_shared<D>(py_obj.getattr<D>(attr));
             }
@@ -652,13 +672,13 @@ namespace plzffi {
                 switch(ctype) {
                     case(FFIContainerType::Vector): {
                         if (debug::debug_print(DebugLevel::All)) {
-                            mcutils::python::py_printf("Converting type std::vector<%s> to python with FFIType %i\n", mcutils::type_name<D>::c_str(), type);
+                            py_printf("Converting type std::vector<%s> to python with FFIType %i\n", mcutils::type_name<D>::c_str(), type);
                         }
                         return FFITypeHandler<std::vector<D>>::as_python(type, data, shape);
                     }
                     default: {
                         if (debug::debug_print(DebugLevel::All)) {
-                            mcutils::python::py_printf("Converting type %s* to python with FFIType %i\n", mcutils::type_name<D>::c_str(), type);
+                            py_printf("Converting type %s* to python with FFIType %i\n", mcutils::type_name<D>::c_str(), type);
                         }
                         return FFITypeHandler<D*>::as_python(type, data, shape);
                     }
@@ -666,7 +686,7 @@ namespace plzffi {
             } else {
 
                 if (debug::debug_print(DebugLevel::All)) {
-                    mcutils::python::py_printf("Converting type %s to python with non-pointer type FFIType %i\n", mcutils::type_name<D>::c_str(), type);
+                    py_printf("Converting type %s to python with non-pointer type FFIType %i\n", mcutils::type_name<D>::c_str(), type);
                 }
                 // not a pointer type so we extract data from shared_ptr as a pointer first
                 return FFITypeHandler<D>::as_python(type, data, shape);
@@ -741,12 +761,318 @@ namespace plzffi {
     template <typename T>
      std::shared_ptr<void> genericize(T data) {
         auto ptr = FFITypeHandler<T>::genericize(data);
-        if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-            mcutils::python::py_printf("Got generic version of object of type %s at %p\n", mcutils::type_name<T>::c_str(), ptr.get());
+        if (debug::debug_print(DebugLevel::All)) {
+            py_printf("Got generic version of object of type %s at %p\n", mcutils::type_name<T>::c_str(), ptr.get());
         }
         return ptr;
 
     }
+
+    /*
+     * FFICompoundReturn defs
+     *
+     *
+     */
+
+    template <typename pairs>
+    struct FFICompoundReturnVectorCollator {
+        template <typename T>
+        class compound_return_vector_extractor {
+            FFICompoundReturn* buffer;
+            size_t nels;
+            size_t idx;
+        public:
+            compound_return_vector_extractor(FFICompoundReturn* b, size_t n, size_t i) : buffer(b), nels(n), idx(i) {}
+            std::vector<T> extract_plain() {
+                std::vector<T> res(nels);
+                for (size_t i = 0; i < nels; i++) {
+                    auto r = buffer[i];
+                    res[i] = r.template get_idx<T>(idx).extract_plain();
+                }
+                return res;
+            }
+            std::vector<std::vector<T>> extract_vector() {
+                std::vector<std::vector<T>> res(nels);
+                for (size_t i = 0; i < nels; i++) {
+                    auto r = buffer[i];
+                    res[i] = r.template get_idx<T>(idx).extract_vector();
+                }
+                return res;
+            }
+            explicit operator std::vector<T>() {
+                return extract_plain();
+            }
+            explicit operator std::vector<std::vector<T>>() {
+                return extract_vector();
+            }
+        };
+
+        template<typename...>
+        struct resolver;
+        template<>
+        struct resolver<> {
+//            static void collate(
+//                    FFIType type,
+//                    FFICompoundReturn* buffer, size_t nels, size_t idx
+//            ) {
+//                std::string msg = "ERROR: in collator dispatch: unresolved FFIType " + std::to_string(static_cast<int>(type));
+//                printf("%s\n", msg.c_str());
+//                throw std::runtime_error(msg);
+//            }
+            static pyobj extract_ffi(
+                    FFIType type, FFIContainerType ctype, std::vector<size_t>& shape,
+                    FFICompoundReturn* buffer, size_t nels, size_t idx
+            ) {
+                std::string msg = "ERROR: in collator dispatch: unresolved FFIType " + std::to_string(static_cast<int>(type));
+                if (debug::debug_print(DebugLevel::Normal))py_printf("%s\n", msg.c_str());
+                throw std::runtime_error(msg);
+            }
+        };
+        template<typename t, typename... subargs>
+        struct resolver<t, subargs...> {
+//            static compound_return_vector_extractor<typename t::type> collate(
+//                    FFIType type,
+//                    FFICompoundReturn* buffer, size_t nels, size_t idx
+//            ) {
+//                if (type == t::value) {
+//                    using D = typename t::type;
+//                    return compound_return_vector_extractor<D> (
+//                            buffer,
+//                            nels,
+//                            idx
+//                    );
+//                } else {
+//                    return resolver<subargs...>::collate(
+//                            type,
+//                            buffer, nels, idx
+//                    );
+//                }
+//            };
+            static pyobj extract_ffi(
+                    FFIType type, FFIContainerType ctype, std::vector<size_t>& shape,
+                    FFICompoundReturn* buffer, size_t nels, size_t idx
+            ) {
+                if (type == t::value) {
+                    using D = typename t::type;
+                    auto collator = compound_return_vector_extractor<D>(
+                            buffer,
+                            nels,
+                            idx
+                    );
+//                    std::vector<size_t> new_shape(1+shape.size());
+//                    new_shape[0] = nels;
+//                    for (size_t i = 0; i < shape.size(); i++) {
+//                        new_shape[1+i] = shape[i];
+//                    }
+
+//                    py_printf( "          - old shape: ( ");
+//                    for (auto s: shape) py_printf( "%lu ", s);
+//                    py_printf(")\n");
+//                    py_printf( "          - new shape: ( ");
+//                    for (auto s: new_shape) py_printf( "%lu ", s);
+//                    py_printf(")\n");
+
+
+                    switch(ctype) {
+                        case FFIContainerType::Vector: {
+                            auto val = collator.extract_vector();
+                            return mcutils::python::numpy_from_data<D>(val, shape);
+                        };
+                        default: {
+                            auto val = collator.extract_plain();
+                            return mcutils::python::numpy_from_data<D>(val, shape);
+                        }
+                    }
+
+                } else {
+                    return resolver<subargs...>::extract_ffi(
+                            type, ctype, shape,
+                            buffer, nels, idx
+                    );
+                }
+            }
+        };
+        template<typename t, typename... subargs> // Tuple-based spec
+        struct resolver<std::tuple<t, subargs...>> {
+//            static compound_return_vector_extractor<typename t::type> collate(
+//                    FFIType type,
+//                    FFICompoundReturn* buffer, size_t nels, size_t idx
+//            ) {
+//                return resolver<t, subargs...>::call(
+//                        type,
+//                        buffer, nels, idx
+//                );
+//            }
+            static pyobj extract_ffi(
+                    FFIType type, FFIContainerType ctype, std::vector<size_t>& shape,
+                    FFICompoundReturn* buffer, size_t nels, size_t idx
+                    ) {
+
+                if (debug::debug_print(DebugLevel::All)) py_printf("     --> collating compound return values\n");
+                return resolver<t, subargs...>::extract_ffi(
+                        type, ctype, shape,
+                        buffer, nels, idx
+                );
+            }
+        };
+        using collator_resolver = resolver<pairs>;
+
+        static pyobj collate_to_python(
+                FFIType type, FFIContainerType ctype, std::vector<size_t>& shape,
+                FFICompoundReturn* buffer, size_t nels, size_t idx
+                ) {
+            return collator_resolver::extract_ffi(type, ctype, shape, buffer, nels, idx);
+        }
+    };
+
+    using FFICompoundReturnCollator = FFICompoundReturnVectorCollator<FFITypePairs>;
+
+    size_t FFICompoundReturn::key_index(std::string& key) {
+        size_t i;
+//        py_printf("  > looking through ");
+//        py_printf("%lu poopies\n", params.size());
+        auto keys = type.keys();
+        for ( i=0; i < keys.size(); i++) {
+            auto p = keys[i];
+//            py_printf("  > this is not my mom (%lu) ", i);
+//            py_printf("%s\n", p.name().c_str());
+            if (p == key) break;
+        };
+        if ( i == keys.size()) throw std::runtime_error("key \"" + key + "\" not found");
+        return i;
+    }
+
+    template <typename T>
+    class FFICompoundReturn::value_getter{
+        std::shared_ptr<void> data;
+        FFIType type;
+        FFIContainerType ctype;
+    public:
+        value_getter(
+                std::shared_ptr<void> dat,
+                FFIType typ,
+                FFIContainerType ctyp
+        ) : data(std::move(dat)), type(typ), ctype(ctyp) {}
+        T extract_plain() {
+            return FFITypeHandler<T>::cast(type, data);
+        }
+        std::vector<T> extract_vector() {
+            return FFITypeHandler<std::vector<T>>::cast(type, data);
+        }
+
+        explicit operator T() {
+            if (ctype == FFIContainerType::Vector) throw std::runtime_error("requested plain type but container type is Vector");
+            return extract_plain();
+        }
+        explicit operator std::vector<T>() {
+            if (ctype != FFIContainerType::Vector) throw std::runtime_error("requested std::vector but container type is not Vector");
+            return extract_vector();
+        }
+    };
+    template <typename T>
+    FFICompoundReturn::value_getter<T> FFICompoundReturn::get_idx(size_t idx) {
+        return value_getter<T>(data[idx], type.types()[idx], container_types()[idx]);
+    };
+    template <typename T>
+    FFICompoundReturn::value_getter<T> FFICompoundReturn::get(std::string key) {
+        auto idx = key_index(key);
+        return value_getter<T>(data[idx], type.types()[idx], container_types()[idx]);
+    };
+    template <typename T>
+    void FFICompoundReturn::set(std::string key, T value) {
+        auto idx = key_index(key);
+        if (debug::debug_print(DebugLevel::All)) {
+            py_printf("Setting key %s at index %d\n", key.c_str(), idx);
+        }
+        validate_type<T>(type.types()[idx]);
+        if (debug::debug_print(DebugLevel::All)) {
+            py_printf("Type pair validated...\n", key.c_str(), idx);
+        }
+        containers[idx] = FFIContainerType::None;
+        data[idx] = genericize<T>(value);
+    }
+    template <typename T>
+    void FFICompoundReturn::set(std::string key, T* value) {
+        auto idx = key_index(key);
+        if (debug::debug_print(DebugLevel::All)) {
+            py_printf("Setting key %s at index %d\n", key.c_str(), idx);
+        }
+        validate_type<T>(type.types()[idx]);
+        if (debug::debug_print(DebugLevel::All)) {
+            py_printf("Type pair validated...\n", key.c_str(), idx);
+        }
+        containers[idx] = FFIContainerType::Raw;
+        data[idx] = genericize<T*>(value);
+    }
+    template <typename T>
+    void FFICompoundReturn::set(std::string key, std::vector<T> value) {
+        auto idx = key_index(key);
+        if (debug::debug_print(DebugLevel::All)) {
+            py_printf("Setting key %s at index %d\n", key.c_str(), idx);
+        }
+        validate_type<T>(type.types()[idx]);
+        if (debug::debug_print(DebugLevel::All)) {
+            py_printf("Type pair validated...\n", key.c_str(), idx);
+        }
+        containers[idx] = FFIContainerType::Vector;
+        data[idx] = genericize<std::vector<T>>(value);
+    }
+    void FFICompoundReturn::set_shape(std::string key, std::vector<size_t> shape) {
+        auto idx = key_index(key);
+        res_shapes[idx].assign(shape.begin(), shape.end()); // copy the data in
+    }
+
+    pyobj FFICompoundReturn::as_python() {
+//        return mcutils::python::as_python_object(1);
+//        return mcutils::python::as_python_dict(
+//                {},
+//                {}
+//        );
+
+        auto keys = type.keys();
+        auto types = type.types();
+        auto shapes = type.shapes();
+        auto rs = res_shapes;
+
+        if (debug::debug_print(DebugLevel::All)) {
+            py_printf("Building compound return type with keys: ");
+            for (auto k:keys) {
+                py_printf("%s ", k.c_str());
+            }
+            py_printf("\n");
+        }
+
+        if (data.size() != keys.size()) {
+            std::string msg = "Mismatch between number of keys and number of stored values ";
+            msg += "(" + std::to_string(keys.size()) + " and " + std::to_string(data.size()) + ")";
+            throw std::runtime_error(msg.c_str());
+        }
+        if (containers.size() != keys.size()) {
+            std::string msg = "Mismatch between number of keys and number of container types ";
+            msg += "(" + std::to_string(keys.size()) + " and " + std::to_string(containers.size()) + ")";
+            throw std::runtime_error(msg.c_str());
+        }
+
+        std::vector<pyobj> objects;
+        objects.resize(data.size());
+        for (size_t i=0; i < data.size(); i++){
+            if (debug::debug_print(DebugLevel::All)) {
+                py_printf("casting value to python for key %s\n", keys[i].c_str());
+            }
+            objects[i] = ffi_to_python(types[i], data[i], rs[i].empty()?shapes[i]:rs[i], containers[i]);
+
+            if (debug::debug_print(DebugLevel::All)) {
+                py_printf("got cast value %s\n", objects[i].repr().c_str());
+            }
+        }
+
+        return mcutils::python::as_python_dict(keys, objects);
+    }
+
+    /*
+     * FFIArgument defs
+     *
+     */
 
     class FFIArgument {
         std::string param_key;
@@ -785,112 +1111,11 @@ namespace plzffi {
 
     };
 
-    size_t FFICompoundReturn::key_index(std::string& key) {
-        size_t i;
-//        py_printf("  > looking through ");
-//        py_printf("%lu poopies\n", params.size());
-        auto keys = type.keys();
-        for ( i=0; i < keys.size(); i++) {
-            auto p = keys[i];
-//            py_printf("  > this is not my mom (%lu) ", i);
-//            py_printf("%s\n", p.name().c_str());
-            if (p == key) break;
-        };
-        if ( i == keys.size()) throw std::runtime_error("key \"" + key + "\" not found");
-        return i;
-    }
 
-    template <typename T>
-    T FFICompoundReturn::get(std::string key) {
-        auto idx = key_index(key);
-        return FFITypeHandler<T>::cast(type.types()[idx], data[idx]);
-    }
-    template <typename T>
-    void FFICompoundReturn::set(std::string key, T value) {
-        auto idx = key_index(key);
-        if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-            mcutils::python::py_printf("Setting key %s at index %d\n", key.c_str(), idx);
-        }
-        validate_type<T>(type.types()[idx]);
-        if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-            mcutils::python::py_printf("Type pair validated...\n", key.c_str(), idx);
-        }
-        containers[idx] = FFIContainerType::None;
-        data[idx] = genericize<T>(value);
-    }
-    template <typename T>
-    void FFICompoundReturn::set(std::string key, T* value) {
-        auto idx = key_index(key);
-        if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-            mcutils::python::py_printf("Setting key %s at index %d\n", key.c_str(), idx);
-        }
-        validate_type<T>(type.types()[idx]);
-        if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-            mcutils::python::py_printf("Type pair validated...\n", key.c_str(), idx);
-        }
-        containers[idx] = FFIContainerType::Raw;
-        data[idx] = genericize<T*>(value);
-    }
-    template <typename T>
-    void FFICompoundReturn::set(std::string key, std::vector<T> value) {
-        auto idx = key_index(key);
-        if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-            mcutils::python::py_printf("Setting key %s at index %d\n", key.c_str(), idx);
-        }
-        validate_type<T>(type.types()[idx]);
-        if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-            mcutils::python::py_printf("Type pair validated...\n", key.c_str(), idx);
-        }
-        containers[idx] = FFIContainerType::Vector;
-        data[idx] = genericize<std::vector<T>>(value);
-    }
-
-    pyobj FFICompoundReturn::as_python() {
-//        return mcutils::python::as_python_object(1);
-//        return mcutils::python::as_python_dict(
-//                {},
-//                {}
-//        );
-
-        auto keys = type.keys();
-        auto types = type.types();
-        auto shapes = type.shapes();
-
-        if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-            mcutils::python::py_printf("Building compound return type with keys: ");
-            for (auto k:keys) {
-                mcutils::python::py_printf("%s ", k.c_str());
-            }
-            mcutils::python::py_printf("\n");
-        }
-
-        if (data.size() != keys.size()) {
-            std::string msg = "Mismatch between number of keys and number of stored values ";
-            msg += "(" + std::to_string(keys.size()) + " and " + std::to_string(data.size()) + ")";
-            throw std::runtime_error(msg.c_str());
-        }
-        if (containers.size() != keys.size()) {
-            std::string msg = "Mismatch between number of keys and number of container types ";
-            msg += "(" + std::to_string(keys.size()) + " and " + std::to_string(containers.size()) + ")";
-            throw std::runtime_error(msg.c_str());
-        }
-
-        std::vector<pyobj> objects;
-        objects.resize(data.size());
-        for (size_t i=0; i < data.size(); i++){
-            if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-                mcutils::python::py_printf("casting value to python for key %s\n", keys[i].c_str());
-            }
-            objects[i] = ffi_to_python(types[i], data[i], shapes[i], containers[i]);
-
-            if (mcutils::python::pyadeeb::debug_print(DebugLevel::All)) {
-                mcutils::python::py_printf("got cast value %s\n", objects[i].repr().c_str());
-            }
-        }
-
-        return mcutils::python::as_python_dict(keys, objects);
-    }
-
+    /*
+     * FFIParameter defs
+     *
+     */
 
     class FFIParameter {
         // object that maps onto the python FFI stuff...
@@ -972,11 +1197,8 @@ namespace plzffi {
     };
 
 
-
     // This used to be in FFIParameters.cpp but I'm going header only
-
-    using mcutils::python::py_printf;
-
+    
     using namespace mcutils::python;
 
 //    // weirdness with constexpr... (https://stackoverflow.com/a/8016853/5720002)
@@ -1076,17 +1298,67 @@ namespace plzffi {
 
 }
 
-// register a conversion for FFIType
+// register a conversion for FFIParamter
 namespace mcutils::python {
+
+    template<>
+    PyObject* numpy_object_from_data<plzffi::FFICompoundReturn>(
+            plzffi::FFICompoundReturn* buffer,
+            std::vector<size_t>& shape,
+            bool copy
+    ) {
+
+        if (pyadeeb::debug_print(DebugLevel::All)) py_printf("     --> converting FFICompoundReturn* to dict of numpy arrays\n");
+        auto rep = buffer[0];
+
+        auto types = rep.types().types();
+        auto containers = rep.container_types();
+        auto shapes = rep.types().shapes();
+        auto rs = rep.result_shapes();
+
+        size_t nels = std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<>());
+
+        auto keys = rep.types().keys();
+        std::vector<pyobj> objs(keys.size());
+        for (size_t i=0; i < keys.size(); i++) {
+
+            if (pyadeeb::debug_print(DebugLevel::All)) py_printf("     --> converting key %s\n", keys[i].c_str());
+
+            // we need to concatenate the base data
+            // shape with the stored return shape
+            auto shp = rs[i].empty()?shapes[i]:rs[i];
+            std::vector<size_t> new_shape(shape.size() + shp.size());
+            std::copy(shape.begin(), shape.end(), new_shape.begin());
+            std::copy(shp.begin(), shp.end(), new_shape.begin() + shape.size());
+
+//            py_printf( "          - concat shape: ( ");
+//            for (auto s: new_shape) py_printf( "%lu ", s);
+//            py_printf(")\n");
+//            py_printf( "          - passed shape: ( ");
+//            for (auto s: shape) py_printf( "%lu ", s);
+//            py_printf(")\n");
+
+            objs[i] = plzffi::FFICompoundReturnCollator::collate_to_python(
+                    types[i], containers[i], new_shape,
+                    buffer, nels, i
+                    );
+
+        }
+        return as_python_dict_object(
+                keys,
+                objs
+                );
+    }
+
     template<>
      PyObject *as_python_object<plzffi::FFIParameter>(plzffi::FFIParameter data) {
-        if (pyadeeb::debug_print(DebugLevel::All)) py_printf("Converting FFIParameter to PyObject...\n");
+        if (pyadeeb::debug_print(DebugLevel::All)) py_printf("     --> Converting FFIParameter to PyObject...\n");
         return data.as_python_object();
     }
 
     template<>
      plzffi::FFIParameter from_python<plzffi::FFIParameter>(pyobj data) {
-        if (pyadeeb::debug_print(DebugLevel::All)) py_printf("Converting PyObject to FFIParameter...\n");
+        if (pyadeeb::debug_print(DebugLevel::All)) py_printf("     --> Converting PyObject to FFIParameter...\n");
         return plzffi::FFIParameter(data);
     }
 }

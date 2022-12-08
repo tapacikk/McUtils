@@ -41,6 +41,28 @@ namespace LegacyMBPol {
 
     }
 
+
+
+    std::vector<double> mbpol_vec(FFIParameters &params) {
+
+        auto nwaters = params.value<int>("nwaters");
+        auto coords = params.value<double*>("coords");
+        auto coords_shape = params.shape("coords");
+
+        std::vector<double> energies(coords_shape[0]);
+        auto block_size = std::accumulate(coords_shape.begin()+1, coords_shape.end(), 1, std::multiplies<>());
+
+        double pot_val;
+        for (size_t w = 0; w < coords_shape[0]; w++) {
+            calcpot_(&nwaters, &pot_val, coords + (block_size*w));
+            energies[w] = pot_val / 627.5094740631;
+        }
+
+//        printf("    > sucessfully got energy %f %f %f!\n", energies[0], energies[1], energies[2]);
+
+        return energies;
+    }
+
     FFICompoundType energy_grad_type {
             {"energy", "grad"},
             {FFIType::Double, FFIType::Double},
@@ -79,30 +101,44 @@ namespace LegacyMBPol {
         }
 
         res.set<double>("energy", pot_val);
-        res.set<double>("grad", grad);
+        res.set<double>("grad", std::move(grad));
+        res.set_shape("grad", {(size_t)nwaters, 3, 3});
 
         return res;
 
     }
 
-    std::vector<double> mbpol_vec(FFIParameters &params) {
+    FFICompoundReturn mbpol_grad_vec(FFIParameters &params) {
+
+        FFICompoundReturn res(energy_grad_type);
 
         auto nwaters = params.value<int>("nwaters");
         auto coords = params.value<double*>("coords");
         auto coords_shape = params.shape("coords");
 
         std::vector<double> energies(coords_shape[0]);
-        auto block_size = std::accumulate(coords_shape.begin()+1, coords_shape.end(), 1, std::multiplies<>());
+        std::vector<double> grad(coords_shape[0]*nwaters*9);
 
+        auto block_size = std::accumulate(coords_shape.begin()+1, coords_shape.end(), 1, std::multiplies<>());
+        size_t grad_size = nwaters*9;
+        size_t grad_offset = 0;
         double pot_val;
         for (size_t w = 0; w < coords_shape[0]; w++) {
-            calcpot_(&nwaters, &pot_val, coords + (block_size*w));
+            grad_offset = w * grad_size;
+            calcpotg_(&nwaters, &pot_val, coords + (block_size*w), grad.data()+grad_offset);
             energies[w] = pot_val / 627.5094740631;
+            for (size_t i = 0; i < grad_size; i++) {
+                grad[grad_offset+i] = grad[grad_offset+i] / 627.5094740631; // Convert to Hartree
+            }
         }
+
+        res.set<double>("energy", pot_val);
+        res.set<double>("grad", std::move(grad));
+        res.set_shape("grad", {coords_shape[0], (size_t)nwaters, 3, 3});
 
 //        printf("    > sucessfully got energy %f %f %f!\n", energies[0], energies[1], energies[2]);
 
-        return energies;
+        return res;
     }
 
         // need a load function that can be called in PYMODINIT
@@ -131,7 +167,7 @@ namespace LegacyMBPol {
                 "get_pot",
                 {
                         {"nwaters", FFIType::Int, {}},
-                        {"coords", FFIType::Double, {0, 0, 3}},
+                        {"coords", FFIType::Double, {0, 3, 3}},
                 },
                 mbpol
                 );
@@ -141,7 +177,7 @@ namespace LegacyMBPol {
                 "get_pot_grad",
                 {
                         {"nwaters", FFIType::Int, {}},
-                        {"coords", FFIType::Double, {0, 0, 3}},
+                        {"coords", FFIType::Double, {0, 3, 3}},
                 },
                 energy_grad_type,
                 mbpol_grad
@@ -152,9 +188,20 @@ namespace LegacyMBPol {
                 "get_pot_vec",
                 {
                         {"nwaters", FFIType::Int, {}},
-                        {"coords", FFIType::Double, {0, 0, 3}},
+                        {"coords", FFIType::Double, {0, 0, 3, 3}},
                 },
                 mbpol_vec
+        );
+
+        // add data for vectorized version with gradient
+        mod->add(
+                "get_pot_grad_vec",
+                {
+                        {"nwaters", FFIType::Int, {}},
+                        {"coords", FFIType::Double, {0, 0, 3, 3}},
+                },
+                energy_grad_type,
+                mbpol_grad_vec
         );
 
     }

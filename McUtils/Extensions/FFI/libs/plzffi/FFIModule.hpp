@@ -87,16 +87,16 @@ namespace plzffi {
             auto args = data.args;
             auto ret_type = data.ret_type;
 
-            std::vector<pyobj> py_args(args.size(), NULL);
+            std::vector<pyobj> py_args(args.size());
             for (size_t i=0; i < args.size(); i++) {
                 py_args[i] = args[i].as_tuple();
             }
-            return Py_BuildValue(
+            return pyobj(Py_BuildValue(
                     "(NNN)",
                     mcutils::python::as_python_object<std::string>(name),
                     mcutils::python::as_python_tuple_object<pyobj>(py_args),
                     mcutils::python::as_python_object<int>(static_cast<int>(ret_type))
-                    );
+                    ));
         }
 
     };
@@ -120,10 +120,11 @@ namespace plzffi {
                 mode = FFIThreadingMode::OpenMP;
             } else if (mode_name == "TBB") {
                 mode = FFIThreadingMode::TBB;
-            } else if (mode_name == "serial") {
+            } else if (mode_name == "Serial") {
                 mode = FFIThreadingMode::SERIAL;
             } else {
-                throw std::runtime_error("FFIThreader: unknown threading method");
+                std::string msg="FFIThreader: unknown threading method " + mode_name;
+                throw std::runtime_error(msg);
             }
         }
 
@@ -144,6 +145,7 @@ namespace plzffi {
                     _call_serial(ret_data, coords, shape, params, var);
                     break;
                 default:
+                    std::string msg="FFIThreader: unknown threading method " + std::to_string(static_cast<int>(mode));
                     throw std::runtime_error("FFIThreader: unknown threading method");
             }
             return ret_data;
@@ -390,7 +392,7 @@ namespace plzffi {
     //region Template Fuckery
     template<typename T>
     T FFIMethod<T>::call(FFIParameters &params) {
-        if (pyadeeb::debug_print(DebugLevel::All)) printf("  > calling function pointer on parameters...\n");
+        if (pyadeeb::debug_print(DebugLevel::Excessive)) printf("  > calling function pointer on parameters...\n");
         return function_pointer(params);
     }
 
@@ -482,7 +484,7 @@ namespace plzffi {
         for (size_t i = 0; i < method_data.size(); i++) {
             if (method_data[i].name == method_name) {
 //                if (debug_print()) printf(" > FFIModuleMethodCaller found appropriate type dispatch!\n");
-                if (pyadeeb::debug_print(DebugLevel::All)) py_printf("  > method %s is the %lu-th method in %s\n", method_name.c_str(), i, name.c_str());
+                if (pyadeeb::debug_print(DebugLevel::Excessive)) py_printf("  > method %s is the %lu-th method in %s\n", method_name.c_str(), i, name.c_str());
                 return FFIModule::get_method_from_index<T>(i);
             }
         }
@@ -492,9 +494,9 @@ namespace plzffi {
     template<typename T>
     FFIMethod<T> FFIModule::get_method_from_index(size_t i) {
 
-        if (pyadeeb::debug_print(DebugLevel::All)) py_printf("  > checking return type...\n");
+        if (pyadeeb::debug_print(DebugLevel::Excessive)) py_printf("  > checking return type...\n");
         FFITypeHandler<T>::validate(method_data[i].ret_type);
-        if (pyadeeb::debug_print(DebugLevel::All)) py_printf("  > casting method pointer...\n");
+        if (pyadeeb::debug_print(DebugLevel::Excessive)) py_printf("  > casting method pointer...\n");
         auto methodptr = static_cast<FFIMethod<T> *>(method_pointers[i]);
         if (methodptr == NULL) {
             std::string err = "Bad pointer for method '%s'" + method_data[i].name;
@@ -531,19 +533,16 @@ namespace plzffi {
     struct FFIModuleMethodCallDispatcher<T, Args...> {
         static pyobj call_direct(FFIModule& mod, std::string& method_name, FFIParameters& params) {
             using D = typename T::type;
-            if (pyadeeb::debug_print(DebugLevel::All)) printf(" > FFIModuleMethodCaller found appropriate type dispatch!\n");
+            if (pyadeeb::debug_print(DebugLevel::Excessive)) printf(" > FFIModuleMethodCaller found appropriate type dispatch!\n");
             pyobj obj;
             auto mdat = mod.get_method_data(method_name); // Don't support raw pointer returns...
             if (mdat.vectorized) {
-                py_printf(DebugLevel::All, "  > evaluating vectorized potential\n");
+                py_printf(DebugLevel::Excessive, "  > evaluating vectorized potential\n");
                 auto val = mod.call_method<std::vector<D> >(method_name, params);
                 if (pyadeeb::debug_print(DebugLevel::All)) py_printf("  > constructing python return value for typename/FFIType pair std::vector<%s>/%i\n", mcutils::type_name<D>::c_str(), T::value);
                 obj = pyobj::cast<D>(val);
-//                if (pyadeeb::debug_print(DebugLevel::All)) py_printf("  > got %s\n", pyobj(obj).repr().c_str());
-//                obj = arr;
-//                obj = mcutils::python::numpy_copy_array(arr);
             } else {
-                if (pyadeeb::debug_print(DebugLevel::All)) printf("  > evaluating non-vectorized potential\n");
+                if (pyadeeb::debug_print(DebugLevel::Excessive)) printf("  > evaluating non-vectorized potential\n");
                 D val = mod.call_method<D>(method_name, params);
                 if (pyadeeb::debug_print(DebugLevel::All)) printf("  > constructing python return value for typename/FFIType pair %s/%i\n", mcutils::type_name<D>::c_str(), T::value);
                 obj = pyobj::cast<D>(val);
@@ -570,11 +569,12 @@ namespace plzffi {
                 auto val = mod.call_method_threaded<D, typename T::type>(
                         method_name, params, threaded_var, mode
                 );
-                auto np = pyobj::cast<D>(val, true);
-                auto new_arr = mcutils::python::numpy_copy_array(np);
-                return new_arr;
+                auto np = pyobj::cast<D>(val);
+//                auto new_arr = mcutils::python::numpy_copy_array(np);
+                return np;
             } else {
                 std::string garb = "type specifier mismatch in threading method " + method_name
+                                   + " with base return type " + mcutils::type_name<T>::c_str()
                                    + " expected " + std::to_string(static_cast<int>(threaded_type))
                                    + " got " + std::to_string(static_cast<int>(T::value));
                 throw std::runtime_error(garb.c_str());
@@ -587,7 +587,9 @@ namespace plzffi {
                 std::string &threaded_var, std::string &mode,
                 FFIParameters &params
         ) {
-            if (std::is_same_v<typename T::type, D>) {
+            if (T::value == threaded_type) {
+                // D is the return type corresponding to `type` and
+                // T correspeonds to the threaded type
                 return call_threaded_direct<D>(
                         type, threaded_type,
                         mod, method_name,
@@ -974,7 +976,7 @@ namespace plzffi {
         for (size_t i = 0; i < method_data.size(); i++) {
 
             auto args = method_data[i].args;
-            if (pyadeeb::debug_print(DebugLevel::All)) {
+            if (pyadeeb::debug_print(DebugLevel::Excessive)) {
                 py_printf(" > constructing signature for %s\n", method_data[i].name.c_str());
             };
 //                    printf("....wat %lu\n", args.size());
@@ -1004,7 +1006,7 @@ namespace plzffi {
 
         if (captup == NULL) throw std::runtime_error("NULL capsule passed to `ffi_from_capsule`\n");
 
-        py_printf(DebugLevel::All, "Checking capsule tuple validity...\n");
+        py_printf(DebugLevel::Excessive, "Checking capsule tuple validity...\n");
 
         if (!PyTuple_Check(captup)) {
             PyErr_SetString(
@@ -1015,19 +1017,19 @@ namespace plzffi {
         }
         auto capsule_obj = pyobj(captup);
 
-        if (pyadeeb::debug_print(DebugLevel::All)) py_printf("Got FFIModule spec \"%s\"\n", capsule_obj.repr().c_str());
+        if (pyadeeb::debug_print(DebugLevel::Excessive)) py_printf("Got FFIModule spec \"%s\"\n", capsule_obj.repr().c_str());
         auto name_obj = capsule_obj.get_item<pyobj>(0);
         if (!name_obj.valid()) throw std::runtime_error("bad tuple indexing");
         if (pyadeeb::debug_print(DebugLevel::All))
             py_printf("Pulling FFIModule for module \"%s\"\n", name_obj.repr().c_str());
         auto cap_obj = capsule_obj.get_item<pyobj>(1);
         if (!cap_obj.valid()) throw std::runtime_error("bad tuple indexing");
-        if (pyadeeb::debug_print(DebugLevel::All))
+        if (pyadeeb::debug_print(DebugLevel::Excessive))
             py_printf("  extracting from capsule \"%s\"\n", cap_obj.repr().c_str());
         std::string name = name_obj.convert<std::string>();
         std::string doc;
         FFIModule mod(name, doc); // empty module
-        if (pyadeeb::debug_print(DebugLevel::All)) py_printf("  pulling pointer with name \"%s\"\n", mod.ffi_module_attr().c_str());
+        if (pyadeeb::debug_print(DebugLevel::Excessive)) py_printf("  pulling pointer with name \"%s\"\n", mod.ffi_module_attr().c_str());
         return mcutils::python::from_python_capsule<FFIModule>(cap_obj, mod.ffi_module_attr().c_str());
     }
 
@@ -1056,10 +1058,10 @@ namespace plzffi {
         auto meth_idx = get_method_index(mname);
         auto argtype = method_data[meth_idx].ret_type;
 
-        if (pyadeeb::debug_print(DebugLevel::All)) py_printf(" > loading parameters...\n");
+        if (pyadeeb::debug_print(DebugLevel::Excessive)) py_printf(" > loading parameters...\n");
         auto args = FFIParameters(params);
 
-        if (pyadeeb::debug_print(DebugLevel::All)) py_printf(" > calling on parameters...\n");
+        if (pyadeeb::debug_print(DebugLevel::Excessive)) py_printf(" > calling on parameters...\n");
         return ffi_call_method(
                 argtype,
                 *this,
@@ -1161,12 +1163,12 @@ namespace plzffi {
 
         pyadeeb::set_debug_level(debug_level);
 
-        py_printf(DebugLevel ::All, "::> Calling method from python...\n");
+        py_printf(DebugLevel ::Excessive, "Calling method from python...\n");
 
         try {
-            py_printf(DebugLevel ::All, "::> Extracting module...\n");
+            py_printf(DebugLevel ::Excessive, "Extracting module...\n");
             auto obj = ffi_from_capsule(cap);
-            py_printf(DebugLevel ::All, "::> Calling method module method...\n");
+            py_printf(DebugLevel ::Excessive, "Calling method module method...\n");
             return obj.py_call_method(pyobj(method_name), pyobj(params)).obj();
         } catch (std::exception &e) {
             if (!PyErr_Occurred()) {
@@ -1190,8 +1192,12 @@ namespace plzffi {
 
         pyadeeb::set_debug_level(debug_level);
 
+        py_printf(DebugLevel ::Excessive, "Calling method from python with threading...\n");
+
         try {
+            py_printf(DebugLevel ::Excessive, "Extracting module...\n");
             auto obj = ffi_from_capsule(cap);
+            py_printf(DebugLevel ::Excessive, "Calling method module method...\n");
             return obj.py_call_method_threaded(
                     pyobj(method_name),
                     pyobj(params),
