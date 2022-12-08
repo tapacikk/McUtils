@@ -141,6 +141,33 @@ namespace LegacyMBPol {
         return res;
     }
 
+    bool mbpol_grad_vec_buffered(FFIParameters &params) {
+
+        auto nwaters = params.value<int>("nwaters");
+        auto coords = params.value<double*>("coords");
+        auto coords_shape = params.shape("coords");
+
+        auto energies = params.value<double*>("energies");
+        auto grad = params.value<double*>("gradients");
+
+//        std::vector<double> energies(coords_shape[0]);
+//        std::vector<double> grad(coords_shape[0]*nwaters*9);
+
+        auto block_size = std::accumulate(coords_shape.begin()+1, coords_shape.end(), 1, std::multiplies<>());
+        size_t grad_size = nwaters*9;
+        size_t grad_offset = 0;
+        for (size_t w = 0; w < coords_shape[0]; w++) {
+            grad_offset = w * grad_size;
+            calcpotg_(&nwaters, energies+w, coords + (block_size*w), grad+grad_offset);
+            energies[w] /= 627.5094740631;
+            for (size_t i = 0; i < grad_size; i++) {
+                grad[grad_offset+i] /= 627.5094740631; // Convert to Hartree
+            }
+        }
+
+        return true;
+    }
+
         // need a load function that can be called in PYMODINIT
     void load(FFIModule *mod) {
         // load modules and return python def
@@ -202,6 +229,18 @@ namespace LegacyMBPol {
                 },
                 energy_grad_type,
                 mbpol_grad_vec
+        );
+
+        // add data for buffered/vectorized version with gradient
+        mod->add<bool>(
+                "get_pot_grad_vec_buffered",
+                {
+                        {"nwaters", FFIType::Int, {}},
+                        {"coords", FFIType::Double, {0, 0, 3, 3}},
+                        {"energies", FFIType::Double, {0}},
+                        {"gradients", FFIType::Double, {0, 0, 3, 3}},
+                },
+                mbpol_grad_vec_buffered
         );
 
     }

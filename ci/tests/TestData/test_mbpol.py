@@ -45,7 +45,7 @@ mbpol_so = SharedLibrary(
     )
 )
 
-# might need CC=/usr/local/opt/llvm/bin/clang
+# might need export CC=/usr/local/opt/llvm/bin/clang
 lib_dir = os.path.join(test_dir, 'LegacyMBPol')
 mbpol = FFIModule.from_lib(lib_dir,
                            threaded=True,
@@ -116,7 +116,17 @@ print(np.mean(res['energy']))
 print(np.mean(res['grad']))
 
 
-print("Relative timing: ", t4.latest/t3.latest)
+with Timer(tag="buffered", number=test_its) as t5:
+    res = {
+        'energy':np.zeros(len(waters), dtype='float64'),
+        'grad':np.zeros((len(waters), 3, 3), dtype='float64')
+    }
+    for _ in range(test_its):
+        mbpol.get_pot_grad_vec_buffered(nwaters=1, coords=waters, energies=res['energy'], gradients=res['grad'])
+print(np.mean(res['energy']))
+print(np.mean(res['grad']))
+
+print("Relative timing: ", t5.latest/t3.latest)
 # n = 0
 # for _ in range(10):
 #     for _ in range(10):
