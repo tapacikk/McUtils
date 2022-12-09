@@ -15,9 +15,9 @@ double calcpotg_(int *nw, double *Vpot, const double *x, double *g);// comes fro
 
 namespace LegacyMBPol {
 
-    // all functions should take a single argument "FFIParameters"
+    // all functions should take a single argument of type "Arguments &"
     // data can be extracted by using the `.value` method with the name of the parameter
-    double mbpol(FFIParameters &params) {
+    double mbpol(Arguments &params) {
 
         auto nwaters = params.value<int>("nwaters");
         auto coords = params.value<double*>("coords");
@@ -28,26 +28,31 @@ namespace LegacyMBPol {
 
     }
 
-    double test_pot(FFIParameters &params) {
+    double test_pot(Arguments &params) {
 
         return 0.0;
 
     }
 
-    double test_val(FFIParameters &params) {
+    double test_val(Arguments &params) {
 
         auto val = params.value<double>("val");
         return val;
 
     }
 
+//    unsigned char test_uchar(Arguments &params) {
+//
+//        auto val = params.value<unsigned char>("val");
+//        return val;
+//
+//    }
 
-
-    std::vector<double> mbpol_vec(FFIParameters &params) {
+    std::vector<double> mbpol_vec(Arguments &params) {
 
         auto nwaters = params.value<int>("nwaters");
         auto coords = params.value<double*>("coords");
-        auto coords_shape = params.shape("coords");
+        auto coords_shape = params.shape("coords"); // we can infer this...
 
         std::vector<double> energies(coords_shape[0]);
         auto block_size = std::accumulate(coords_shape.begin()+1, coords_shape.end(), 1, std::multiplies<>());
@@ -83,16 +88,26 @@ namespace LegacyMBPol {
 //    FFICompoundType energy_grad_type {
 //    };
 
-    FFICompoundReturn mbpol_grad(FFIParameters &params) {
+    FFICompoundReturn mbpol_grad(Arguments &params) {
 
         FFICompoundReturn res(energy_grad_type);
 
+
+//        printf("...0?\n");
+
         auto nwaters = params.value<int>("nwaters");
+
+//        printf(".10?\n");
+
         auto coords = params.value<double*>("coords");
+
+//        printf("...1?\n");
 
         std::vector<double> grad(nwaters*9);
         double pot_val;
 
+
+//        printf("...2?\n");
 
         calcpotg_(&nwaters, &pot_val, coords, grad.data());
         pot_val = pot_val / 627.5094740631;
@@ -100,15 +115,16 @@ namespace LegacyMBPol {
             grad[i] = grad[i] / 627.5094740631; // Convert to Hartree
         }
 
+//        printf("...3?\n");
+
         res.set<double>("energy", pot_val);
-        res.set<double>("grad", std::move(grad));
-        res.set_shape("grad", {(size_t)nwaters, 3, 3});
+        res.set<double>("grad", std::move(grad), {(size_t)nwaters, 3, 3});
 
         return res;
 
     }
 
-    FFICompoundReturn mbpol_grad_vec(FFIParameters &params) {
+    FFICompoundReturn mbpol_grad_vec(Arguments &params) {
 
         FFICompoundReturn res(energy_grad_type);
 
@@ -133,15 +149,14 @@ namespace LegacyMBPol {
         }
 
         res.set<double>("energy", pot_val);
-        res.set<double>("grad", std::move(grad));
-        res.set_shape("grad", {coords_shape[0], (size_t)nwaters, 3, 3});
+        res.set<double>("grad", std::move(grad), {coords_shape[0], (size_t)nwaters, 3, 3});
 
 //        printf("    > sucessfully got energy %f %f %f!\n", energies[0], energies[1], energies[2]);
 
         return res;
     }
 
-    bool mbpol_grad_vec_buffered(FFIParameters &params) {
+    bool mbpol_grad_vec_buffered(Arguments &params) {
 
         auto nwaters = params.value<int>("nwaters");
         auto coords = params.value<double*>("coords");
@@ -171,6 +186,14 @@ namespace LegacyMBPol {
         // need a load function that can be called in PYMODINIT
     void load(FFIModule *mod) {
         // load modules and return python def
+
+//        // add data for test pots
+//        mod->add<unsigned char>(
+//                "test_uchar",
+//                {
+//                },
+//                test_uchar
+//                );
 
         // add data for test pots
         mod->add<double>(

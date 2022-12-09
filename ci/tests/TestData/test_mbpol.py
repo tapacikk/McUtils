@@ -10,7 +10,7 @@ parser.add_argument('--recompile', dest='recompile', action='store_const', const
 parser.add_argument('--debug', dest='debug', action='store_const', const=True, default=False)
 parser.add_argument('--threading', dest='threading', default='serial', type=str, nargs="?")
 parser.add_argument('--iterations', dest='iterations', default=10, type=int, nargs="?")
-parser.add_argument('--structs', dest='structs', default=100, type=int, nargs="?")
+parser.add_argument('--structs', dest='structs', default=10, type=int, nargs="?")
 opts = parser.parse_args()
 
 from McUtils.Extensions import *
@@ -49,7 +49,7 @@ mbpol_so = SharedLibrary(
 lib_dir = os.path.join(test_dir, 'LegacyMBPol')
 mbpol = FFIModule.from_lib(lib_dir,
                            threaded=True,
-                           extra_compile_args=['-ftime-report'],
+                           extra_compile_args=['-ftime-report', '-j=8'],
                            include_dirs=['/usr/local/opt/llvm/include'],
                            runtime_dirs=['/usr/local/opt/llvm/lib', '/usr/local/opt/llvm/lib/c++'],
                            extra_link_args=['-mmacosx-version-min=12.0'],
@@ -86,17 +86,18 @@ with Timer(tag="ctypes", number=test_its) as t1:
 print(np.mean(res['energy']))
 print(np.mean(res['grad']))
 
-with Timer(tag="FFI + python", number=test_its) as t2:
-    for _ in range(test_its):
-        res = [mbpol.get_pot_grad(nwaters=1, coords=w) for w in waters]
-        res = {
-            'energy':np.array([r['energy'] for r in res]),
-            'grad':np.array([r['grad'] for r in res])
-        }
-print(np.mean(res['energy']))
-print(np.mean(res['grad']))
+# mbpol.get_pot_grad(nwaters=1, coords=waters[0], debug='all' if opts.debug else False)
+# with Timer(tag="FFI + python", number=test_its) as t2:
+#     for _ in range(test_its):
+#         res = [mbpol.get_pot_grad(nwaters=1, coords=w) for w in waters]
+#         res = {
+#             'energy':np.array([r['energy'] for r in res]),
+#             'grad':np.array([r['grad'] for r in res])
+#         }
+# print(np.mean(res['energy']))
+# print(np.mean(res['grad']))
 
-print("Relative timing: ", t2.latest/t1.latest)
+# print("Relative timing: ", t2.latest/t1.latest)
 
 with Timer(tag="vectorized", number=test_its) as t3:
     for _ in range(test_its):
@@ -110,8 +111,9 @@ with Timer(tag="threaded", number=test_its) as t4:
     for _ in range(test_its):
         res = mbpol.get_pot_grad(nwaters=1, coords=waters, threading_var='coords',
                                  threading_mode=opts.threading,
-                                 debug='all' if opts.debug else False
+                                 debug='excessive' if opts.debug else False
                                  )
+# print(np.mean(res))
 print(np.mean(res['energy']))
 print(np.mean(res['grad']))
 
@@ -123,8 +125,8 @@ with Timer(tag="buffered", number=test_its) as t5:
     }
     for _ in range(test_its):
         mbpol.get_pot_grad_vec_buffered(nwaters=1, coords=waters, energies=res['energy'], gradients=res['grad'])
-print(np.mean(res['energy']))
-print(np.mean(res['grad']))
+# print(np.mean(res['energy']))
+# print(np.mean(res['grad']))
 
 print("Relative timing: ", t5.latest/t3.latest)
 # n = 0

@@ -163,7 +163,7 @@ class ExtensionsTests(TestCase):
 
 
     @debugTest
-    def test_FFI_threaded(self):
+    def test_FFI_threaded(self): # More detailed testing in test_mbpol.py
         lib_dir = TestManager.test_data('LegacyMBPol')
         mbpol = FFIModule.from_lib(lib_dir, extra_link_args=['-mmacosx-version-min=12.0']
                                    # , recompile=True
@@ -192,9 +192,9 @@ class ExtensionsTests(TestCase):
         with Timer():
             res = mbpol.get_pot(nwaters=1, coords=waters, threading_var='coords')
             print(np.mean(res))
-        print("="*100)
-        print(waters[0])
-        print(mbpol.get_pot(nwaters=1, coords=waters[0]))
+        # print("="*100)
+        # print(waters[0])
+        # print(mbpol.get_pot(nwaters=1, coords=waters[0]))
         with Timer():
             res = np.array([mbpol.get_pot(nwaters=1, coords=w) for w in waters])
             print(np.mean(res))

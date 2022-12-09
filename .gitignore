@@ -4,6 +4,7 @@ _ci/tests/test_results
 Tests/TestData
 .DS_Store
 .idea
+.vscode
 CMakeLists.txt
 cmake-build-debug
 Icon?
