@@ -53,7 +53,7 @@ lib_dir = os.path.join(test_dir, 'LegacyMBPol')
 with Timer(tag="Compilation", print_times=(opts.recompile and opts.time_report)):
     mbpol = FFIModule.from_lib(lib_dir,
                                threaded=True,
-                               extra_compile_args=(['-ftime-report', '-Wpedantic'] if opts.time_report else []) + (['-O0'] if opts.cmode == 'fast' else []),
+                               extra_compile_args=(['-ftime-report'] if opts.time_report else []) + (['-O0'] if opts.cmode == 'fast' else []),
                                include_dirs=['/usr/local/opt/llvm/include'],
                                runtime_dirs=['/usr/local/opt/llvm/lib', '/usr/local/opt/llvm/lib/c++'],
                                extra_link_args=['-mmacosx-version-min=12.0'],

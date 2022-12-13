@@ -197,9 +197,7 @@ namespace mcutils {
                     stolen = true;
                 }
             }
-            int refcnt() {
-                return obj()->ob_refcnt;
-            }
+            Py_ssize_t refcnt() { return obj()->ob_refcnt; }
             bool valid() {return obj() != NULL;}
             std::string repr() { return get_python_repr(obj()); }
 
@@ -393,7 +391,7 @@ namespace mcutils {
         };
 
         template<typename T>
-        T from_python(pyobj data) {
+        T from_python([[maybe_unused]] pyobj data) {
             auto typestr = conversion_type_error<T>::type_id();
             std::string msg = "Failed to convert from python for dtype: " + typestr + "\n";
             if (pyadeeb::debug_print(DebugLevel::Normal)) py_printf( "ERROR: Failed to convert from python for dtype %s\n", typestr.c_str());
@@ -415,7 +413,7 @@ namespace mcutils {
         template <>
         int from_python<int>(const pyobj data) { return from_python<int>(data, "i"); }
         template <>
-        char from_python<char>(const pyobj data) { return from_python<int>(data); } // meh
+        char from_python<char>(const pyobj data) { return (char) from_python<int>(data); } // meh
         template <>
         unsigned char from_python<unsigned char>(const pyobj data) { return from_python<unsigned char>(data, "b"); }
         template <>
@@ -541,7 +539,7 @@ namespace mcutils {
          */
 
         template<typename T>
-        PyObject* as_python_object(T data) {
+        PyObject* as_python_object([[maybe_unused]] T data) {
             auto typestr = conversion_type_error<T>::type_id();
             std::string msg = "Failed to convert to python for dtype: " + typestr + "\n";
             if (pyadeeb::debug_print(DebugLevel::Normal))py_printf( "ERROR: Failed to convert to python for dtype %s\n", typestr.c_str());
@@ -815,14 +813,15 @@ namespace mcutils {
         struct sub_type<container<base, Args...>, container> { using value=base; };
 
         size_t total_elements(std::vector<size_t>& shape) {
-            return std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<>());
+            size_t start = 1;
+            return std::accumulate(shape.begin(), shape.end(), start, std::multiplies<size_t>()); // explicit cast b.c. shape is positive
         }
 
         template<typename base, template<typename...> class container>
 //        struct shape_extractor;
         struct shape_extractor {
             using type=base;
-            static void extract(std::vector<size_t>& shape, base& val) {}
+            static void extract([[maybe_unused]] std::vector<size_t>& shape, [[maybe_unused]] base& val) {}
         };
         template<template<typename, typename...> class container, typename base, typename... Args>
         struct shape_extractor<container<base, Args...>, container> {
@@ -869,7 +868,7 @@ namespace mcutils {
                 s = base_shape[i];
                 if (s > 0) {
                     block_size *= s;
-                } else if (zero_loc > -1) {
+                } else if (zero_loc >= base_shape.size()) {
                     throw std::runtime_error("indeterminate shape");
                 } else {
                     zero_loc = i;
@@ -921,7 +920,7 @@ namespace mcutils {
                     py_printf(")\n");
                 };
                 PyObject* arr = PyArray_SimpleNew(
-                        nd,
+                        static_cast<int>(nd), // should I check the size of `nd` first or let numpy do that...?
                         dims,
                         dtype
                 );
@@ -1153,7 +1152,7 @@ namespace mcutils {
         PyObject* numpy_object_from_data(
                 std::vector<V>* buffer, size_t buffer_size,
                 std::vector<size_t>& shape,
-                bool copy = true
+                [[maybe_unused]] bool copy = true
         ) {
             if (pyadeeb::debug_print(DebugLevel::All)) py_printf( "     --> flattening nested buffer of vectors\n");
             using D = typename base_type<V, std::vector>::value;
