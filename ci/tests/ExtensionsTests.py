@@ -162,7 +162,7 @@ class ExtensionsTests(TestCase):
         self.assertGreater(mbpol.get_pot_grad(nwaters=1, coords=water)['energy'], .001)
 
 
-    @debugTest
+    @validationTest
     def test_FFI_threaded(self): # More detailed testing in test_mbpol.py
         lib_dir = TestManager.test_data('LegacyMBPol')
         mbpol = FFIModule.from_lib(lib_dir, extra_link_args=['-mmacosx-version-min=12.0']

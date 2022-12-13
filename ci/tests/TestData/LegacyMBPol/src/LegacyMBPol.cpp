@@ -2,6 +2,7 @@
 
 #include "Python.h"
 #include "plzffi/FFIModule.hpp"
+//#include "plzffi/FFIDynamicLibrary.hpp"
 #include <numeric>
 #include <string>
 #include <vector>
@@ -106,7 +107,6 @@ namespace LegacyMBPol {
         std::vector<double> grad(nwaters*9);
         double pot_val;
 
-
 //        printf("...2?\n");
 
         calcpotg_(&nwaters, &pot_val, coords, grad.data());
@@ -138,17 +138,16 @@ namespace LegacyMBPol {
         auto block_size = std::accumulate(coords_shape.begin()+1, coords_shape.end(), 1, std::multiplies<>());
         size_t grad_size = nwaters*9;
         size_t grad_offset = 0;
-        double pot_val;
         for (size_t w = 0; w < coords_shape[0]; w++) {
             grad_offset = w * grad_size;
-            calcpotg_(&nwaters, &pot_val, coords + (block_size*w), grad.data()+grad_offset);
-            energies[w] = pot_val / 627.5094740631;
+            calcpotg_(&nwaters, energies.data()+w, coords +(block_size*w), grad.data()+grad_offset);
+            energies[w] /= 627.5094740631;
             for (size_t i = 0; i < grad_size; i++) {
-                grad[grad_offset+i] = grad[grad_offset+i] / 627.5094740631; // Convert to Hartree
+                grad[grad_offset+i] /= 627.5094740631; // Convert to Hartree
             }
         }
 
-        res.set<double>("energy", pot_val);
+        res.set<double>("energy", std::move(energies));
         res.set<double>("grad", std::move(grad), {coords_shape[0], (size_t)nwaters, 3, 3});
 
 //        printf("    > sucessfully got energy %f %f %f!\n", energies[0], energies[1], energies[2]);

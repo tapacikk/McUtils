@@ -106,6 +106,22 @@ namespace plzffi {
         Array = 3
     };
 
+    std::unordered_set<FFIType> FFIPointerTypes {
+            FFIType::PyObject,
+            FFIType::NUMPY_Bool,
+            FFIType::NUMPY_Int8,
+            FFIType::NUMPY_Int16,
+            FFIType::NUMPY_Int32,
+            FFIType::NUMPY_Int64,
+            FFIType::NUMPY_UnsignedInt8,
+            FFIType::NUMPY_UnsignedInt16,
+            FFIType::NUMPY_UnsignedInt32,
+            FFIType::NUMPY_UnsignedInt64,
+            FFIType::NUMPY_Float16,
+            FFIType::NUMPY_Float32,
+            FFIType::NUMPY_Float64
+    };
+
     class ffiobj {
         // a little helper class for passing around shared_ptrs with associated conversion info
         // to provide an abstraction on the other versions of this idea I have laying around
@@ -153,6 +169,11 @@ namespace plzffi {
         std::vector<size_t> shape()  {return _shape;}
         FFIContainerType container_type()  {return _ctype;}
 
+        static bool is_array_type(FFIType typ, std::vector<size_t>& shp, FFIContainerType ctyp) {
+            auto pos = FFIPointerTypes.find(typ);
+            return (pos != FFIPointerTypes.end() || !shp.empty() || ctyp != FFIContainerType::None);
+        }
+
     };
 
     class FFICompoundReturn {
@@ -196,7 +217,7 @@ namespace plzffi {
 //        }
 
 
-        size_t key_index(std::string& key);
+        size_t key_index(const std::string& key);
 
         ffiobj get(std::string key);
         ffiobj get_idx(size_t idx);
@@ -288,10 +309,10 @@ namespace mcutils::python {
 namespace plzffi {
 
     // we set up an object that can store a sequence
-    // of FFITypes
-    template <FFIType...ffi_types>
-    struct FFITypeTuple {
-    };
+    // of FFITypes -> nevermind I didn't use this
+    // template <FFIType...ffi_types>
+    // struct FFITypeTuple {
+    // };
 
 //    template <typename T>
 //    struct get_ffi {
@@ -361,278 +382,252 @@ namespace plzffi {
             ,FFIValidTypeset<FFICompoundReturn, FFIType::Compound>
     >;
 
+    // template <typename...pairs>
+    struct FFITypeMap; // remove unnecessary template fuckery from FFITypeMap because IAGNI (and faster compiles)
+    struct FFITypeValidator;
     template <typename...pairs>
-    struct FFITypeMapper;
-    template <typename...types>
-    struct FFITypeTupleIndexer {
-        static std::unordered_map<FFIType, size_t> ffi_map;
+    struct FFITypeTupleIndexer : public pairs... {
 
-        template<typename...>
-        struct ffi_type_mapper;
-        template<>
-        struct ffi_type_mapper<> {
-            static size_t find(size_t cur, FFIType t) {
-                return cur;
-            }
-        };
-        template<typename type, typename... rest>
-        struct ffi_type_mapper<type, rest...> {
-            static size_t find(size_t cur, FFIType t) {
-                ffi_map[t] = cur;
-                if (t == type::value) {
-                    return cur;
+        template<size_t cur, FFIType test, FFIType...rest>
+        struct ffi_type_indexer {
+            static size_t find(FFIType t) {
+                if (t == test) return cur;
+                if constexpr(sizeof...(rest) == 0) {
+                    return cur + 1; // we got to the end so why instantiate another template?
                 } else {
-                    return ffi_type_mapper<rest...>::find(cur + 1, t);
+                    return ffi_type_indexer<cur+1, rest...>::find(t);
                 };
             }
-            static size_t find(FFIType t) {
-                if (ffi_map.empty()) ffi_map.reserve(sizeof...(rest));
-                auto pos = ffi_map.find(t);
-                if (pos == ffi_map.end()) {
-                    return find(0, t);
+        };
+        using indexer = ffi_type_indexer<0, pairs::value...>;
+        // using indexer::find;
+
+        static size_t find(FFIType type) {
+            return indexer::find(type);
+        }
+        
+        // friend struct FFITypeMap;
+        // friend struct FFITypeValidator;
+    };
+    template <typename...pairs>
+    struct FFITypeTupleIndexer<std::tuple<pairs...>> : FFITypeTupleIndexer<pairs...> {};
+
+    template <typename...typesets>
+    struct TypeTupleIndexer : public typesets... {
+        static const size_t ntypes = sizeof...(typesets);
+
+        template<size_t cur, typename D, typename test, typename... rest>
+        struct resolver {
+            static constexpr size_t value() {
+                if (std::is_same_v<D, test>) return cur;
+                if constexpr (sizeof...(rest) == 0) {  // exhausted everything so return bad index
+                    return cur + 1;
                 } else {
-                    return pos->second;
+                    return resolver<cur+1, D, rest...>::value();
                 }
             }
         };
-        using populator = ffi_type_mapper<types...>;
-
-        static size_t ffi_type_index(FFIType type) {
-            return populator::find(type);
+        template<size_t cur, typename D, typename test, typename... rest> // Handle pointer and vector types as well
+        struct resolver<cur, D*, test, rest...> :  resolver<cur, D, test, rest...> {};
+        template<size_t cur, typename D, typename test, typename... rest>
+        struct resolver<cur, std::vector<D>, test, rest...> :  resolver<cur, D, test, rest...> {};
+        
+        template <typename T>
+        static constexpr size_t type_index() {
+            return resolver<0, T, typename typesets::type...>::value();
         }
 
-        friend struct FFITypeMapper<types...>;
+        // friend struct FFITypeMap;
+        // friend struct FFITypeValidator;
     };
-
-//    template <typename pairs>
-//    struct TypeTupleIndexer {
-//
-//        template<typename...>
-//        struct _map_populator;
-//
-//        template<>
-//        struct _map_populator<> {
-//            static void populate(size_t cur, std::unordered_map<FFIType, size_t>) {}
-//        };
-//
-//        template<typename type, typename... rest>
-//        struct _map_populator<type, rest...> {
-//            static void populate(size_t cur, std::unordered_map<FFIType, size_t> map) {
-//                map[type::value] = cur;
-//                _map_populator<rest...>::populate(cur + 1, map);
-//            }
-//
-//            static void populate(std::unordered_map<FFIType, size_t> map) {
-//                map.reserve(sizeof...(rest) + 1);
-//                populate(0, map);
-//            }
-//        };
-//
-//        template<typename... types> // Tuple-based spec
-//        struct _map_populator<std::tuple<types...>> : _map_populator<types...> {
-//        };
-//        using populator = _map_populator<pairs>;
-//
-//        static void populate() { populator::populate(ffi_map); }
-//
-//        size_t ffi_type_index(FFIType type) {
-//            if (ffi_map.empty()) populate();
-//            return ffi_map[type];
-//        }
-//
-//        friend struct FFITypeMapper<pairs>;
-//    };
+    template <typename...typesets>
+    struct TypeTupleIndexer<std::tuple<typesets...>> : TypeTupleIndexer<typesets...> {};
 
     // thank you again StackOverflow
     template <typename...pairs>
-    struct FFITypeMapper : public pairs... {
-        using indexer = FFITypeTupleIndexer<pairs...>;
-        static size_t ffi_type_index(FFIType type) {
-            return indexer::ffi_type_index(type);
-        };
-
-        template<typename, typename...>
-        struct type_index_resolver;
-        template<typename D, typename T, typename... Args>
-        struct type_index_resolver<D, T, Args...> {
-            static constexpr size_t type_index(size_t cur) {
-                if (std::is_same_v<D, typename T::type>) {
-                    return cur;
-                } else {
-//                    static_assert(sizeof...(Args) > 0, "invalid type resolution");
-                    if constexpr (sizeof...(Args) == 0) {
-                        char msg[60] = "";
-                        sprintf(msg, "can't find type tuple index for type %s...", typeid(T).name());
-                        throw std::runtime_error(msg);
-                    } else {
-                        return type_index_resolver<D, Args...>::type_index(cur+1);
-                    }
-                }
-            }
-        };
-        template<typename D, typename T, typename... Args>
-        struct type_index_resolver<D*, T, Args...> : type_index_resolver<D, T, Args...> {};
-        template<typename D, typename T, typename... Args>
-        struct type_index_resolver<std::vector<D>, T, Args...> : type_index_resolver<D, T, Args...> {};
-        template <typename T>
-        static constexpr size_t type_index() {
-            return type_index_resolver<T, pairs...>::type_index(0);
-        }
-
-        // duplication to avoid having to pack things back into a tuple here...
-        template<typename, typename...>
-        struct ffi_type_resolver;
-        template<typename D, typename T, typename... Args>
-        struct ffi_type_resolver<D, T, Args...> {
-            static constexpr FFIType typecode() {
-                if (std::is_same_v<D, typename T::type>) {
-                    return T::value;
-                } else {
-//                    static_assert(sizeof...(Args) > 0, "invalid type resolution");
-                    if constexpr (sizeof...(Args) == 0) {
-                        char msg[60] = "";
-                        sprintf(msg, "can't resolve type %s to FFIType...", typeid(T).name());
-                        throw std::runtime_error(msg);
-                    } else {
-                        return ffi_type_resolver<D, Args...>::typecode();
-                    }
-                }
-            }
-        };
-        template<typename D, typename T, typename... Args>
-        struct ffi_type_resolver<D*, T, Args...> : ffi_type_resolver<D, T, Args...> {};
-        template<typename D, typename T, typename... Args>
-        struct ffi_type_resolver<std::vector<D>, T, Args...> : ffi_type_resolver<D, T, Args...> {};
-        template<typename T>
-        static constexpr FFIType ffi_typecode() {
-            return ffi_type_resolver<T, pairs...>::typecode();
-        }
-
+    struct FFITypeFinder : public pairs... {
         using pairs::get_pair...;
         template<FFIType F>
         using find_type = typename decltype(get_pair(std::integral_constant<FFIType, F>{}))::type;
-
     };
-    template <typename...types>
-    struct FFITypeMapper<std::tuple<types...>> : FFITypeMapper<types...> {};
-    struct FFITypeMap : FFITypeMapper<FFITypePairs> {
-        using pairs = FFITypePairs;
+    template <typename...pairs>
+    struct FFITypeFinder<std::tuple<pairs...>> : FFITypeFinder<pairs...> {}; // 
+    
+    // template <typename...pairs>
+    struct FFITypeMap {
+        using type_pairs = FFITypePairs;
+        static const size_t npairs = std::tuple_size_v<FFITypePairs>;
+        
+        using indexer = FFITypeTupleIndexer<type_pairs>;
+        static std::unordered_map<FFIType, size_t> ffi_index_map;
+        static size_t ffi_type_index(FFIType type) {
+            if (ffi_index_map.empty()) ffi_index_map.reserve(npairs);
+            auto pos = ffi_index_map.find(type);
+            if (pos == ffi_index_map.end()) {
+                size_t val = indexer::find(type);
+                ffi_index_map[type] = val;
+                return val;
+            } else {
+                return pos->second;
+            }
+        }
+
+        using type_indexer = TypeTupleIndexer<type_pairs>;
+        template<typename T>
+        static constexpr size_t type_index() {
+            return type_indexer::type_index<T>();
+        }
+        template<typename T>
+        static constexpr FFIType ffi_typecode() {
+            return std::tuple_element_t<type_indexer::type_index<T>(), type_pairs>::value;
+        }
+
+        using finder = FFITypeFinder<type_pairs>;
+        template<FFIType F>
+        using find_type = finder::find_type<F>;
 
         template <typename T>
         static std::string type_name() {
             return mcutils::type_name<T>::value;
         };
         template <FFIType F>
-        static pyobj type_name() {
-            using T = typename FFITypeMap::find_type<F>;
+        static std::string type_name() {
+            using T = finder::find_type<F>;
             return type_name<T>();
         }
-        template <size_t N = 0> // Caller that will step through the pairs till we get where we need to be
-        static auto type_name_caller(size_t idx, FFIType type) {
-            if (idx >= std::tuple_size_v<pairs>) {
-                std::string msg = "FFIType index error in from_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-                throw std::runtime_error(msg);
-            }
+         // This will be type dispatched so
+         // we store our function in a struct template 
+         // b.c. of template function semantics
+        struct type_name_caller { template <typename T> static std::string call(FFIType type) {return type_name<T>();} };
+        static std::string type_name(FFIType type); // can't fully define until we define our dispatcher
+
+    };
+    std::unordered_map<FFIType, size_t> FFITypeMap::ffi_index_map {}; // set it up empty for now
+
+    // template <typename...types>
+    // struct FFITypeMapper<std::tuple<types...>> : FFITypeMapper<types...> {};
+    
+    
+    // static auto type_name(FFIType type) {
+    //     return type_name_caller<0>(ffi_type_index(type), type);
+    // }
+
+    // struct FFITypeDispatcher {
+    //     template <template <typename...> typename Functor, typename...argtypes>  // Caller that will step through the pairs till we get where we need to be
+    //     struct dispatch;
+    // }; // predeclare...
+    // struct FFITypeMap : FFITypeMapper<FFITypePairs> { // hopefully this helps with the huge error messages...
+    //     using type_pairs = FFITypePairs;
+
+    //     template <typename T>
+    //     static std::string type_name() {
+    //         return mcutils::type_name<T>::value;
+    //     };
+    //     template <FFIType F>
+    //     static std::string type_name() {
+    //         using T = typename FFITypeMap::find_type<F>;
+    //         return type_name<T>();
+    //     }
+    //      // we store our function in a struct template b.c. of template function semantics
+    //     struct type_name_caller { template <typename T> static std::string call(FFIType type) {return type_name<T>();} };
+    //     static std::string type_name(FFIType type); // can't fully define just yet
+    // }; 
+    // template<> std::unordered_map<FFIType, size_t> FFITypeMap::indexer::ffi_map = {};
+
+    struct FFITypeDispatcher {
+        using pairs = FFITypeMap::type_pairs;
+    
+        // template <size_t N=0, template <typename> rtype(*function)(typename... argtypes)>  // Caller that will step through the pairs till we get where we need to be
+        // template <size_t N=0, template <typename> typename function, typename rtype, typename...argtypes>  // Caller that will step through the pairs till we get where we need to be
+        // struct type_dispatcher;
+        // template <size_t N=0, template <typename T> typename function, typename rtype, typename...argtypes>  // dispatch over explicit form of F
+        // struct type_dispatcher<N, rtype(*function<T>)(argtypes...)> {
+
+        // }
+        
+        // template <size_t N, typename caller, typename...argtypes>  // Caller that will step through the pairs till we get where we need to be
+        // static auto type_dispatch(size_t idx, FFIType type, argtypes... args) {
+        //     if (idx >= std::tuple_size_v<pairs>) {
+        //         std::string msg = "FFIType index error. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //         throw std::runtime_error(msg);
+        //     }
+        //     if (N == idx) { 
+        //         using D = typename std::tuple_element_t<N, pairs>::type;
+        //         return caller::template call<D>(type, args...);
+        //     }
+        //     if constexpr (N + 1 < std::tuple_size_v<pairs>) {
+        //         return type_dispatch<N + 1, caller, argtypes...>(idx, type, args...);
+        //     } else {
+        //         std::string msg = "Unreachable: FFIType index error. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //         throw std::runtime_error(msg);
+        //     }
+        // }
+
+        // static std::string template_out_of_bounds(size_t N, FFIType type) {
+        static const size_t ntypes = std::tuple_size_v<pairs>; // define once to shrink template size?
+        static std::string out_of_bounds(size_t idx, FFIType type) {
+            std::string msg = "FFIType index error. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+            return msg;
+        }
+        template <size_t N, typename caller, typename... argtypes>  // Caller that will step through the pairs till we get where we need to be
+        static auto type_dispatch(size_t idx, FFIType type, argtypes... args) {
+            if (idx >= ntypes) throw std::runtime_error(out_of_bounds(idx, type));
             if (N == idx) {
                 using D = typename std::tuple_element_t<N, pairs>::type;
-                return type_name<D>();
+                return caller::template call<D>(type, args...);
             }
-            if constexpr (N + 1 < std::tuple_size_v<pairs>) {
-                return type_name_caller<N + 1>(idx, type);
-            } else {
-                std::string msg = "Unreachable: FFIType index error in type_name call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-                throw std::runtime_error(msg);
+            if constexpr (N + 1 == ntypes - 1) {
+                // next element gotta match because of runtime check
+                // and this cuts out a template instance
+                using D = typename std::tuple_element_t<N + 1, pairs>::type;
+                return caller::template call<D>(type, args...);
+            } else { // this gets to be part of the constexpr branch
+                return type_dispatch<N + 1, caller, argtypes...>(idx, type, args...);
             }
         }
-        static auto type_name(FFIType type) {
-            return type_name_caller<0>(ffi_type_index(type), type);
-        }
-
-    }; // hopefully this helps with the huge error messages...
-    template<> std::unordered_map<FFIType, size_t> FFITypeMap::indexer::ffi_map = {};
-
-    struct FFITypeValidator;
-    template <typename typesets>
-    struct TypeTupleIndexer {
-        template<typename, typename...>
-        struct type_index_resolver;
-        template<typename D, typename T, typename... Args>
-        struct type_index_resolver<D, T, Args...> {
-            static constexpr size_t type_index(size_t cur) {
-                if (std::is_same_v<D, typename T::type>) {
-                    return cur;
-                } else {
-//                    static_assert(sizeof...(Args) > 0, "invalid type resolution");
-                    if constexpr (sizeof...(Args) == 0) {
-                        return std::tuple_size<typesets>{}; // exhausted everything so return bad index
-                    } else {
-                        return type_index_resolver<D, Args...>::type_index(cur+1);
-                    }
-                }
+        template <typename caller, typename...argtypes>  // Caller that will step through the pairs till we get where we need to be
+        struct dispatch {
+            static auto call(FFIType type, argtypes... args) {
+                return type_dispatch<0, caller, argtypes...>(FFITypeMap::ffi_type_index(type), type, args...);
             }
         };
-        template<typename D, typename...tests>
-        struct type_index_resolver<D, std::tuple<tests...>>: type_index_resolver<D, tests...> {};
-        template <typename T>
-        static constexpr size_t type_index() {
-            return type_index_resolver<T, typesets>::type_index(0);
-        }
+        // template <template <typename...> typename Functor, typename...argtypes>  // Caller that will step through the pairs till we get where we need to be
+        // struct dispatch<Functor<argtypes...>> : dispatch<Functor, argtypes...> {};
 
-        friend struct FFITypeValidator;
     };
 
-    std::unordered_set<FFIType> FFIPointerTypes {
-            FFIType::PyObject,
-            FFIType::NUMPY_Bool,
-            FFIType::NUMPY_Int8,
-            FFIType::NUMPY_Int16,
-            FFIType::NUMPY_Int32,
-            FFIType::NUMPY_Int64,
-            FFIType::NUMPY_UnsignedInt8,
-            FFIType::NUMPY_UnsignedInt16,
-            FFIType::NUMPY_UnsignedInt32,
-            FFIType::NUMPY_UnsignedInt64,
-            FFIType::NUMPY_Float16,
-            FFIType::NUMPY_Float32,
-            FFIType::NUMPY_Float64
-    };
+    // We define this out of line now that we have a proper def for our dispatcher
+    std::string FFITypeMap::type_name(FFIType type) {
+        return FFITypeDispatcher::dispatch<type_name_caller>::call(type);
+    }
 
     struct FFITypeValidator {
         using typesets = FFITypesets;
         using indexer = TypeTupleIndexer<typesets>;
-        template<typename T>
-        struct resolver {
-            static void value(FFIType type) {
-                constexpr size_t idx = indexer::template type_index<T>(); // This will throw an error if not valid
-                if constexpr (idx < std::tuple_size<typesets>{}) {
-                    bool found = std::apply(
-                            [type](auto &&... args) {
-                                return ((decltype(args)(args) == type) || ...);
-                            },
-                            std::tuple_element_t<idx, typesets>::valid // the valid FFITypes for T
-                    );
-                    if (!found) {
-                        std::string msg = "typename/FFIType mismatch: (";
-                        msg += mcutils::type_name<T>::value;
-                        msg += "/" + std::to_string(static_cast<int>(type)) + ")";
-                        if (debug::debug_print(DebugLevel::Normal)) py_printf("%s\n", msg.c_str());
-                        throw std::runtime_error(msg);
-                    }
-                } else {
-                        std::string msg = "can't find type tuple index for type %s..." + mcutils::type_name<T>::value;
-                        throw std::runtime_error(msg);
-                }
-            }
-        };
-        template<typename D>
-        struct resolver<std::vector<D>> : resolver<D> {};
-        template<typename D>
-        struct resolver<D*> : resolver<D> {};
 
-        template<typename D>
+        template<typename T> // we need to handle pointer types as well...
         static void validate(FFIType type) {
-            return resolver<D>::value(type);
+            constexpr size_t idx = indexer::template type_index<T>(); // This will throw an error if not valid
+            if constexpr (idx < std::tuple_size<typesets>{}) {
+                bool found = std::apply(
+                        [type](auto &&... args) {
+                            return ((decltype(args)(args) == type) || ...);
+                        },
+                        std::tuple_element_t<idx, typesets>::valid // the valid FFITypes for T
+                );
+                if (!found) {
+                    std::string msg = "typename/FFIType mismatch: (";
+                    msg += mcutils::type_name<T>::value;
+                    msg += "/" + std::to_string(static_cast<int>(type)) + ")";
+                    if (debug::debug_print(DebugLevel::Normal)) py_printf("%s\n", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+            } else {
+                    std::string msg = "can't find type tuple index for type %s..." + mcutils::type_name<T>::value;
+                    throw std::runtime_error(msg);
+            }
         }
+
     };
 
     template <typename T>
@@ -648,6 +643,7 @@ namespace plzffi {
     struct FFITypeHandler {
         // class that helps us maintain a map between type codes & proper types
         static constexpr FFIType ffi_type() { return ffi_typecode<T>(); }
+
         static void validate(FFIType type_code) { validate_type<T>(type_code); }
         static T cast(FFIType type_code, std::shared_ptr<void> &data) {
             validate(type_code);
@@ -683,7 +679,7 @@ namespace plzffi {
         }
         static std::shared_ptr<void> genericize(std::vector<T> data) {
             
-            auto ptr = std::make_shared<std::vector<T>>(data);
+            auto ptr = std::make_shared<std::vector<T>>(std::move(data)); // I _think_ this move is safe given where I use genericize
             if (debug::debug_print(DebugLevel::Excessive)) {
                 py_printf("Stored generic version of object of type std::vector<%s> at %p\n", mcutils::type_name<T>::c_str(), ptr.get());
             }
@@ -719,14 +715,13 @@ namespace plzffi {
     };
 
     struct FFIConverter {
-        using map = FFITypeMap;
-        using pairs = FFITypePairs;
+        // using map = FFITypeMap;
+        // using pairs = FFITypeMap::type_pairs;
 
         template <typename T>
         static std::shared_ptr<void> from_python(FFIType type, pyobj py_obj, std::vector<size_t>& shape, FFIContainerType ctype = None) {
             // determine if our type is a pointer type
-            auto pos = FFIPointerTypes.find(type);
-            if (pos != FFIPointerTypes.end() || !shape.empty() || ctype != FFIContainerType::None) {
+            if (ffiobj::is_array_type(type, shape, ctype)) {
                 if (debug::debug_print(DebugLevel::All)) {
                     auto garb = py_obj.repr();
                     py_printf("Converting PyObject %s with pointer type FFIType %i\n", garb.c_str(), type);
@@ -755,36 +750,49 @@ namespace plzffi {
             }
         }
         template <FFIType F>
-        static pyobj from_python(pyobj py_obj, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
+        static auto from_python(pyobj py_obj, std::vector<size_t>& shape, FFIContainerType ctype = FFIContainerType::None) {
             using T = typename FFITypeMap::find_type<F>;
             return from_python<T>(F, py_obj, shape, ctype);
         }
-        template <size_t N = 0> // Caller that will step through the pairs till we get where we need to be
-        static auto from_python_caller(size_t idx, FFIType type, pyobj py_obj, std::vector<size_t>& shape, FFIContainerType ctype = None) {
-            if (idx >= std::tuple_size_v<pairs>) {
-                std::string msg = "FFIType index error in from_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-                throw std::runtime_error(msg);
+        // we store our function in a struct template b.c. of template function semantics
+        struct from_python_caller {
+            template <typename T>
+            static auto call(FFIType type, pyobj py_obj, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+                return from_python<T>(type, py_obj, shape, ctype);
             }
-            if (N == idx) {
-                using D = typename std::tuple_element_t<N, pairs>::type;
-                return from_python<D>(type, py_obj, shape, ctype);
-            }
-            if constexpr (N + 1 < std::tuple_size_v<pairs>) {
-                return from_python_caller<N + 1>(idx, type, py_obj, shape, ctype);
-            } else {
-                std::string msg = "Unreachable: FFIType index error in from_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-                throw std::runtime_error(msg);
-            }
-        }
+        };
         static auto from_python(FFIType type, pyobj py_obj, std::vector<size_t>& shape, FFIContainerType ctype = None) {
-            return from_python_caller<0>(map::ffi_type_index(type), type, py_obj, shape, ctype);
+            return FFITypeDispatcher::dispatch<from_python_caller, pyobj, std::vector<size_t>&, FFIContainerType>::call(
+                // annoyingly we have to duplicate the types to get them to feed through
+                type, py_obj, shape, ctype
+            );
         }
+
+        // template <size_t N = 0> // Caller that will step through the pairs till we get where we need to be
+        // static auto from_python_caller(size_t idx, FFIType type, pyobj py_obj, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+        //     if (idx >= std::tuple_size_v<pairs>) {
+        //         std::string msg = "FFIType index error in from_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //         throw std::runtime_error(msg);
+        //     }
+        //     if (N == idx) {
+        //         using D = typename std::tuple_element_t<N, pairs>::type;
+        //         return from_python<D>(type, py_obj, shape, ctype);
+        //     }
+        //     if constexpr (N + 1 < std::tuple_size_v<pairs>) {
+        //         return from_python_caller<N + 1>(idx, type, py_obj, shape, ctype);
+        //     } else {
+        //         std::string msg = "Unreachable: FFIType index error in from_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //         throw std::runtime_error(msg);
+        //     }
+        // }
+        // static auto from_python(FFIType type, pyobj py_obj, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+        //     return from_python_caller<0>(map::ffi_type_index(type), type, py_obj, shape, ctype);
+        // }
 
 
         template <typename D>
         static std::shared_ptr<void> from_python_attr(FFIType type, pyobj py_obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = None) {
-            auto pos = FFIPointerTypes.find(type);
-            if (pos != FFIPointerTypes.end() || !shape.empty() || ctype != FFIContainerType::None) {
+            if (ffiobj::is_array_type(type, shape, ctype)) {
                 if (debug::debug_print(DebugLevel::All)) {
                     auto garb = py_obj.repr();
                     py_printf("Converting PyObject %s attr %s with pointer type FFIType %i\n", garb.c_str(), attr, type);
@@ -812,34 +820,45 @@ namespace plzffi {
             using T = typename FFITypeMap::find_type<F>;
             return from_python_attr<T>(F, py_obj, attr, shape, ctype);
         }
-        template <size_t N = 0> // Caller that will step through the pairs till we get where we need to be
-        static auto from_python_attr_caller(size_t idx, FFIType type, pyobj py_obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = None) {
-            if (idx >= std::tuple_size_v<pairs>) {
-                std::string msg = "FFIType index error in from_python_attr call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-                throw std::runtime_error(msg);
+        struct from_python_attr_caller {
+            template <typename T>
+            static auto call(FFIType type, pyobj py_obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+                return from_python_attr<T>(type, py_obj, attr, shape, ctype);
             }
-            if (N == idx) {
-                using D = typename std::tuple_element_t<N, pairs>::type;
-                return from_python_attr<D>(type, py_obj, attr, shape, ctype);
-            } 
-            if constexpr (N + 1 < std::tuple_size_v<pairs>) {
-                return from_python_attr_caller<N + 1>(idx, type, py_obj, attr, shape, ctype);
-            } else {
-                std::string msg = "Unreachable: FFIType index error in from_python_attr call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-                throw std::runtime_error(msg);
-            }
-        }
+        };
         static auto from_python_attr(FFIType type, pyobj py_obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = None) {
-            return from_python_attr_caller<0>(map::ffi_type_index(type), type, py_obj, attr, shape, ctype);
+            return FFITypeDispatcher::dispatch<from_python_attr_caller, pyobj, const char*, std::vector<size_t>&, FFIContainerType>::call(
+                type, py_obj, attr, shape, ctype
+            );
         }
+        // template <size_t N = 0> // Caller that will step through the pairs till we get where we need to be
+        // static auto from_python_attr_caller(size_t idx, FFIType type, pyobj py_obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+        //     if (idx >= std::tuple_size_v<pairs>) {
+        //         std::string msg = "FFIType index error in from_python_attr call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //         throw std::runtime_error(msg);
+        //     }
+        //     if (N == idx) {
+        //         using D = typename std::tuple_element_t<N, pairs>::type;
+        //         return from_python_attr<D>(type, py_obj, attr, shape, ctype);
+        //     } 
+        //     if constexpr (N + 1 < std::tuple_size_v<pairs>) {
+        //         return from_python_attr_caller<N + 1>(idx, type, py_obj, attr, shape, ctype);
+        //     } else {
+        //         std::string msg = "Unreachable: FFIType index error in from_python_attr call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //         throw std::runtime_error(msg);
+        //     }
+        // }
+        // static auto from_python_attr(FFIType type, pyobj py_obj, const char* attr, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+        //     return from_python_attr_caller<0>(map::ffi_type_index(type), type, py_obj, attr, shape, ctype);
+        // }
 
 
         template <typename D>
         static pyobj as_python(FFIType type, std::shared_ptr<void>& data, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+            // can we shrink this by dispatching more intelligently?
 
             // determine if our type is a pointer type
-            auto pos = FFIPointerTypes.find(type);
-            if (pos != FFIPointerTypes.end() || !shape.empty() || ctype != FFIContainerType::None) {
+            if (ffiobj::is_array_type(type, shape, ctype)) {
                 // is a pointer type so we convert regularly
 
                 switch(ctype) {
@@ -870,26 +889,37 @@ namespace plzffi {
             using T = typename FFITypeMap::find_type<F>;
             return as_python<T>(F, data, shape, ctype);
         }
-        template <size_t N = 0> // Caller that will step through the pairs till we get where we need to be
-        static auto as_python_caller(size_t idx, FFIType type, std::shared_ptr<void>& data, std::vector<size_t>& shape, FFIContainerType ctype = None) {
-            if (idx >= std::tuple_size_v<pairs>) {
-                std::string msg = "FFIType index error in as_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-                throw std::runtime_error(msg);
+        struct as_python_caller {
+            template <typename T>
+            static auto call(FFIType type, std::shared_ptr<void>& data, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+                return as_python<T>(type, data, shape, ctype);
             }
-            if (N == idx) {
-                using D = typename std::tuple_element_t<N, pairs>::type;
-                return as_python<D>(type, data, shape, ctype);
-            } 
-            if constexpr (N + 1 < std::tuple_size_v<pairs>) {
-                return as_python_caller<N + 1>(idx, type, data, shape, ctype);
-            } else {
-                std::string msg = "Unreachable: FFIType index error in as_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-                throw std::runtime_error(msg);
-            }
-        }
+        };
         static auto as_python(FFIType type, std::shared_ptr<void>& data, std::vector<size_t>& shape, FFIContainerType ctype = None) {
-            return as_python_caller<0>(map::ffi_type_index(type), type, data, shape, ctype);
+            return FFITypeDispatcher::dispatch<as_python_caller, std::shared_ptr<void>&, std::vector<size_t>&, FFIContainerType>::call(
+                type, data, shape, ctype
+            );
         }
+        // template <size_t N = 0> // Caller that will step through the pairs till we get where we need to be
+        // static auto as_python_caller(size_t idx, FFIType type, std::shared_ptr<void>& data, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+        //     if (idx >= std::tuple_size_v<pairs>) {
+        //         std::string msg = "FFIType index error in as_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //         throw std::runtime_error(msg);
+        //     }
+        //     if (N == idx) {
+        //         using D = typename std::tuple_element_t<N, pairs>::type;
+        //         return as_python<D>(type, data, shape, ctype);
+        //     } 
+        //     if constexpr (N + 1 < std::tuple_size_v<pairs>) {
+        //         return as_python_caller<N + 1>(idx, type, data, shape, ctype);
+        //     } else {
+        //         std::string msg = "Unreachable: FFIType index error in as_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //         throw std::runtime_error(msg);
+        //     }
+        // }
+        // static auto as_python(FFIType type, std::shared_ptr<void>& data, std::vector<size_t>& shape, FFIContainerType ctype = None) {
+        //     return as_python_caller<0>(map::ffi_type_index(type), type, data, shape, ctype);
+        // }
     };
 
     /*
@@ -1153,7 +1183,7 @@ namespace plzffi {
 
     struct FFICompoundReturnCollator {
         using map = FFITypeMap;
-        using pairs = FFITypePairs;
+        // using pairs = FFITypePairs;
 
 //        template <typename T>
 //        class compound_return_vector_extractor {
@@ -1190,7 +1220,7 @@ namespace plzffi {
             switch(ctype) {
                 case FFIContainerType::Vector: {
                     std::vector<std::vector<D>> val(nels);
-                    for (size_t i = 0; i < nels; i++) {
+                    for (size_t i = 0; i < nels; i++) { // should think about using pre-increments instead of post...
                         auto r = buffer[i];
                         val[i] = r.get_idx(idx).convert<std::vector<D>>();
                     }
@@ -1214,90 +1244,71 @@ namespace plzffi {
             using T = typename map::find_type<F>;
             return collate_to_python<T>(F, ctype, shape, buffer, nels, idx);
         }
-        template <size_t N = 0> // Caller that will step through the pairs till we get where we need to be
-        static auto collate_to_python_caller(size_t target, 
-            FFIType type, FFIContainerType ctype, std::vector<size_t>& shape,
-            FFICompoundReturn* buffer, size_t nels, size_t idx
-        ) {
-            if (target >= std::tuple_size_v<pairs>) {
-                std::string msg = "FFIType index error in collate_to_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-                throw std::runtime_error(msg);
+        struct collate_to_python_caller {
+            template <typename T>
+            static auto call(
+                FFIType type, FFIContainerType ctype, std::vector<size_t>& shape,
+                FFICompoundReturn* buffer, size_t nels, size_t idx
+                ) {
+                return collate_to_python<T>(type, ctype, shape, buffer, nels, idx);
             }
-            if (N == target) {
-                using D = typename std::tuple_element_t<N, pairs>::type;
-                if (debug::debug_print(DebugLevel::Excessive)) 
-                    py_printf("    --> collating using dtype %s from base type %d (%s)\n", FFITypeMap::type_name<D>().c_str(), static_cast<int>(type), FFITypeMap::type_name(type).c_str());
-                return collate_to_python<D>(type, ctype, shape, buffer, nels, idx);
-            } 
-            if constexpr (N + 1 < std::tuple_size_v<pairs>) {
-                return collate_to_python_caller<N + 1>(target, type, ctype, shape, buffer, nels, idx);
-            } else {
-                std::string msg = "Unreachable: FFIType index error in collate_to_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-                throw std::runtime_error(msg);
-            }
-        }
+        };
         static auto collate_to_python(
             FFIType type, FFIContainerType ctype, std::vector<size_t>& shape,
             FFICompoundReturn* buffer, size_t nels, size_t idx
             ) {
-            return collate_to_python_caller<0>(map::ffi_type_index(type), type, ctype, shape, buffer, nels, idx);
+            return FFITypeDispatcher::dispatch<collate_to_python_caller, FFIContainerType, std::vector<size_t>&, FFICompoundReturn*, size_t, size_t>::call(
+                type, ctype, shape, buffer, nels, idx
+            );
         }
+        // template <size_t N = 0> // Caller that will step through the pairs till we get where we need to be
+        // static auto collate_to_python_caller(size_t target, 
+        //     FFIType type, FFIContainerType ctype, std::vector<size_t>& shape,
+        //     FFICompoundReturn* buffer, size_t nels, size_t idx
+        // ) {
+        //     if (target >= std::tuple_size_v<pairs>) {
+        //         std::string msg = "FFIType index error in collate_to_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //         throw std::runtime_error(msg);
+        //     }
+        //     if (N == target) {
+        //         using D = typename std::tuple_element_t<N, pairs>::type;
+        //         if (debug::debug_print(DebugLevel::Excessive)) 
+        //             py_printf("    --> collating using dtype %s from base type %d (%s)\n", FFITypeMap::type_name<D>().c_str(), static_cast<int>(type), FFITypeMap::type_name(type).c_str());
+        //         return collate_to_python<D>(type, ctype, shape, buffer, nels, idx);
+        //     } 
+        //     if constexpr (N + 1 < std::tuple_size_v<pairs>) {
+        //         return collate_to_python_caller<N + 1>(target, type, ctype, shape, buffer, nels, idx);
+        //     } else {
+        //         std::string msg = "Unreachable: FFIType index error in collate_to_python call. Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //         throw std::runtime_error(msg);
+        //     }
+        // }
+        // static auto collate_to_python(
+        //     FFIType type, FFIContainerType ctype, std::vector<size_t>& shape,
+        //     FFICompoundReturn* buffer, size_t nels, size_t idx
+        //     ) {
+        //     return collate_to_python_caller<0>(map::ffi_type_index(type), type, ctype, shape, buffer, nels, idx);
+        // }
     };
 
 //
-   size_t FFICompoundReturn::key_index(std::string& key) {
+   size_t FFICompoundReturn::key_index(const std::string& key) {
        size_t i;
+       auto keys = type.keys();
 //        py_printf("  > looking through ");
 //        py_printf("%lu poopies\n", params.size());
-       auto keys = type.keys();
+    //    auto i = std::find(keys.begin(), keys.end(), key) - keys.begin();
        for ( i=0; i < keys.size(); i++) {
            auto p = keys[i];
 //            py_printf("  > this is not my mom (%lu) ", i);
 //            py_printf("%s\n", p.name().c_str());
            if (p == key) break;
        };
-       if ( i == keys.size()) throw std::runtime_error("key \"" + key + "\" not found");
+       if ( i == keys.size() ) throw std::runtime_error("key \"" + key + "\" not found");
        return i;
    }
-//
-//    template <typename T>
-//    class FFICompoundReturn::value_getter{
-//        std::shared_ptr<void> data;
-//        FFIType type;
-//        FFIContainerType ctype;
-//    public:
-//        value_getter(
-//                std::shared_ptr<void> dat,
-//                FFIType typ,
-//                FFIContainerType ctyp
-//        ) : data(std::move(dat)), type(typ), ctype(ctyp) {}
-//        T extract_plain() {
-//            return FFITypeHandler<T>::cast(type, data);
-//        }
-//        std::vector<T> extract_vector() {
-//            return FFITypeHandler<std::vector<T>>::cast(type, data);
-//        }
 
-//        explicit operator T() {
-//            if (ctype == FFIContainerType::Vector) throw std::runtime_error("requested plain type but container type is Vector");
-//            return extract_plain();
-//        }
-//        explicit operator std::vector<T>() {
-//            if (ctype != FFIContainerType::Vector) throw std::runtime_error("requested std::vector but container type is not Vector");
-//            return extract_vector();
-//        }
-//    };
-//    template <typename T>
-//    FFICompoundReturn::value_getter<T> FFICompoundReturn::get_idx(size_t idx) {
-//        return value_getter<T>(data[idx], type.types()[idx], container_types()[idx]);
-//    };
-//    template <typename T>
-//    FFICompoundReturn::value_getter<T> FFICompoundReturn::get(std::string key) {
-//        auto idx = key_index(key);
-//        return value_getter<T>(data[idx], type.types()[idx], container_types()[idx]);
-//    };
-
-   ffiobj FFICompoundReturn::get(std::string key) {
+   ffiobj FFICompoundReturn::get(const std::string key) {
        auto idx = key_index(key);
        return objects[idx];
    }
@@ -1306,9 +1317,9 @@ namespace plzffi {
    }
 
    template <typename T>
-   void FFICompoundReturn::set(std::string key, T value, std::vector<size_t> shape) {
+   void FFICompoundReturn::set(const std::string key, T value, std::vector<size_t> shape) {
        auto idx = key_index(key);
-       if (debug::debug_print(DebugLevel::All)) {
+       if (debug::debug_print(DebugLevel::Excessive)) {
            py_printf("Setting key %s at index %d\n", key.c_str(), idx);
        }
        
@@ -1334,13 +1345,13 @@ namespace plzffi {
            );
    }
    template <typename T>
-   void FFICompoundReturn::set(std::string key, T* value, std::vector<size_t> shape) {
+   void FFICompoundReturn::set(const std::string key, T* value, std::vector<size_t> shape) {
        auto idx = key_index(key);
-       if (debug::debug_print(DebugLevel::All)) {
+       if (debug::debug_print(DebugLevel::Excessive)) {
            py_printf("Setting key %s at index %d\n", key.c_str(), idx);
        }
        validate_type<T>(type.types()[idx]);
-       if (debug::debug_print(DebugLevel::All)) {
+       if (debug::debug_print(DebugLevel::Excessive)) {
            py_printf("Type pair validated...\n", key.c_str(), idx);
        }
        auto shp = shape.empty() ? type.shapes()[idx] : shape;
@@ -1353,13 +1364,13 @@ namespace plzffi {
            );
    }
    template <typename T>
-   void FFICompoundReturn::set(std::string key, std::vector<T> value, std::vector<size_t> shape) {
+   void FFICompoundReturn::set(const std::string key, std::vector<T> value, std::vector<size_t> shape) {
        auto idx = key_index(key);
-       if (debug::debug_print(DebugLevel::All)) {
+       if (debug::debug_print(DebugLevel::Excessive)) {
            py_printf("Setting key %s at index %d\n", key.c_str(), idx);
        }
        validate_type<T>(type.types()[idx]);
-       if (debug::debug_print(DebugLevel::All)) {
+       if (debug::debug_print(DebugLevel::Excessive)) {
            py_printf("Type pair validated...\n", key.c_str(), idx);
        }
        auto shp = shape.empty() ? type.shapes()[idx] : shape;
@@ -1418,7 +1429,7 @@ namespace plzffi {
         FFIType type_char;
     public:
         FFIArgument(
-                std::string &name,
+                const std::string &name,
                 FFIType type,
                 std::vector<size_t> &shape
         ) : param_key(name), shape_vec(shape), type_char(type) {}
@@ -1537,7 +1548,7 @@ namespace plzffi {
             return k;
         }
 
-        size_t find_param_index(std::string& key) {
+        size_t find_param_index(const std::string& key) {
             size_t i;
             for (i = 0; i < params.size(); i++) {
                 auto p = params[i];
@@ -1546,7 +1557,7 @@ namespace plzffi {
             };
             return i;
         }
-        size_t param_index(std::string& key) {
+        size_t param_index(const std::string& key) {
             auto pos = idx_map.find(key);
             if (pos == idx_map.end()) {
                 size_t i = find_param_index(key);
@@ -1564,7 +1575,7 @@ namespace plzffi {
                 return i;
             }
         }
-        bool contains(std::string& key) {
+        bool contains(const std::string& key) {
             auto pos = idx_map.find(key);
             size_t i;
             if (pos == idx_map.end()) {
@@ -1581,12 +1592,12 @@ namespace plzffi {
             return i < params.size();
         }
         
-        FFIParameter get_parameter(std::string& key) { return params[param_index(key)]; }
+        FFIParameter get_parameter(const std::string& key) { return params[param_index(key)]; }
         FFIParameter get_parameter(const char* key) {
                 std::string k = key;
                 return get_parameter(k);
         }
-        void set_parameter(std::string& key, FFIParameter& param) {
+        void set_parameter(const std::string& key, FFIParameter& param) {
             if (!contains(key)) {
                 params.push_back(param);
                 idx_map[key] = params.size() - 1;
@@ -1599,14 +1610,14 @@ namespace plzffi {
                 std::string k = key;
                 set_parameter(k, param);
         }
-        void disable_parameter(std::string& key) {
+        void disable_parameter(const std::string& key) {
             idx_map[key] = -1; // underflow
         }
         void disable_parameter(const char* key) {
             std::string k = key;
             disable_parameter(k);
         }
-        void enable_parameter(std::string& key) {
+        void enable_parameter(const std::string& key) {
             idx_map[key] = find_param_index(key); // reset
         }
         void enable_parameter(const char* key) {

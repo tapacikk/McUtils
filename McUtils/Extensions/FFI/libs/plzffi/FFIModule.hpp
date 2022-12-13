@@ -119,10 +119,14 @@ namespace plzffi {
            if (debug::debug_print(DebugLevel::Excessive)) py_printf("  > calling function pointer on parameters...\n");
            return function_pointer(args);
        }
+    //    void call(Arguments &args, T*) {
+    //        if (debug::debug_print(DebugLevel::Excessive)) py_printf("  > calling function pointer on parameters...\n");
+    //        T res = function_pointer(args);
+    //        T[0] = res; // copy value in
+    //    }
        T call(FFIParameters &params) {
-           if (debug::debug_print(DebugLevel::Excessive)) py_printf("  > calling function pointer on parameters...\n");
            Arguments call_args {&params};
-           return function_pointer(call_args);
+           return call(call_args);
        }
 
        FFIMethodData method_data() { return data; }
@@ -163,7 +167,7 @@ namespace plzffi {
        FFIThreader(FFIMethod<T> &method, FFIThreadingMode mode) :
        method(method), mode(mode) {}
 
-       FFIThreader(FFIMethod<T> &method, std::string &mode_name) : method(method) {
+       FFIThreader(FFIMethod<T> &method, const std::string &mode_name) : method(method) {
            if (mode_name == "OpenMP") {
                mode = FFIThreadingMode::OpenMP;
            } else if (mode_name == "TBB") {
@@ -176,8 +180,7 @@ namespace plzffi {
            }
        }
 
-       std::vector<T>
-       call(FFIParameters &params, std::string &var) {
+       std::vector<T> call(FFIParameters &params, const std::string &var) {
            auto threaded_param = params.get_parameter(var);
            auto coords = threaded_param.value<C*>();
            auto shape = threaded_param.shape();
@@ -228,37 +231,37 @@ namespace plzffi {
        }
 
        void _loop_inner(
-               std::vector<T>& data, size_t i,
-               C* coords, std::vector<size_t>& shape,
+               std::vector<T>& data, const size_t i,
+               C* coords, const std::vector<size_t>& shape,
                FFIParameters &params, 
-               FFIParameter& threaded_param, std::string &var, size_t block_size
+               FFIParameter& threaded_param, const std::string &var, const size_t block_size
        );
        void _call_serial(
                std::vector<T>& data,
-               C* coords, std::vector<size_t>& shape,
+               C* coords, const std::vector<size_t>& shape,
                FFIParameters &params, 
-               FFIParameter& threaded_param, std::string &var, size_t block_size
+               FFIParameter& threaded_param, const std::string &var, const size_t block_size
                );
        void _call_omp(
                std::vector<T>& data,
-               C* coords, std::vector<size_t>& shape,
+               C* coords, const std::vector<size_t>& shape,
                FFIParameters &params, 
-               FFIParameter& threaded_param, std::string &var, size_t block_size
+               FFIParameter& threaded_param, const std::string &var, const  size_t block_size
                );
        void _call_tbb(
                std::vector<T>& data,
-               C* coords, std::vector<size_t>& shape,
+               C* coords, const std::vector<size_t>& shape,
                FFIParameters &params, 
-               FFIParameter& threaded_param, std::string &var, size_t block_size
+               FFIParameter& threaded_param, const std::string &var, const size_t block_size
                );
    };
 
    template <typename T, typename C>
    void FFIThreader<T, C>::_loop_inner(
-           std::vector<T>& data, size_t i,
-           C* coords, std::vector<size_t>& shape,
+           std::vector<T>& data, const size_t i,
+           C* coords, const std::vector<size_t>& shape,
            FFIParameters &params, 
-           FFIParameter& threaded_param, std::string &var, size_t block_size
+           FFIParameter& threaded_param, const std::string &var, const size_t block_size
            ) {
 //       auto new_params = params; // I copied *every* time
 //       auto data_ptr = std::shared_ptr<void>(chunk, [](C*){}); //TODO: make sure this isn't breaking...
@@ -291,9 +294,9 @@ namespace plzffi {
    template <typename T, typename C>
    void FFIThreader<T, C>::_call_serial(
            std::vector<T>& data,
-           C* coords, std::vector<size_t>& shape,
+           C* coords, const std::vector<size_t>& shape,
            FFIParameters &params, 
-           FFIParameter& threaded_param, std::string &var, size_t block_size
+           FFIParameter& threaded_param, const std::string &var, const size_t block_size
            ) {
 
        for (size_t w = 0; w < shape[0]; w++) {
@@ -305,9 +308,9 @@ namespace plzffi {
    template<typename T, typename C>
    void FFIThreader<T, C>::_call_omp(
            std::vector<T> &data,
-           C *coords, std::vector<size_t> &shape,
+           C *coords, const std::vector<size_t> &shape,
            FFIParameters &params,
-           FFIParameter& threaded_param, std::string &var, size_t block_size
+           FFIParameter& threaded_param, const std::string &var, const size_t block_size
            ) {
 #ifdef _OPENMP
 
@@ -324,9 +327,9 @@ namespace plzffi {
    template<typename T, typename C>
    void FFIThreader<T, C>::_call_tbb(
            std::vector<T> &data,
-           C *coords, std::vector<size_t> &shape,
+           C *coords, const std::vector<size_t> &shape,
            FFIParameters &params,
-           FFIParameter& threaded_param, std::string &var, size_t block_size
+           FFIParameter& threaded_param, const std::string &var, const size_t block_size
            ) {
 #ifdef _TBB
        tbb::parallel_for(
@@ -358,14 +361,14 @@ namespace plzffi {
       public:
        FFIModule() = default;
 
-       FFIModule(std::string& module_name, std::string& module_doc)
+       FFIModule(const std::string& module_name, const std::string& module_doc)
            : name(module_name),
              docstring(module_doc) { init(); }
        FFIModule(const char* module_name, const char* module_doc)
            : name(module_name),
              docstring(module_doc) { init(); }
 
-       FFIModule(std::string& module_name, std::string& module_doc, void (*module_loader)(FFIModule* mod))
+       FFIModule(const std::string& module_name, const std::string& module_doc, void (*module_loader)(FFIModule* mod))
            : name(module_name),
              docstring(module_doc),
              loader(module_loader) { init(); }
@@ -475,20 +478,21 @@ namespace plzffi {
            add_method(*meth);
        }
 
-       template <typename T>
-       FFIMethod<T> get_method(std::string& method_name) {
-           //            py_printf("Uh...?\n");
-           for (size_t i = 0; i < method_data.size(); i++) {
-               if (method_data[i].name == method_name) {
-                   //                if (debug_print()) py_printf(" > FFIModuleMethodCaller found appropriate type dispatch!\n");
+       size_t get_method_index(const std::string& method_name) {
+            for (size_t i = 0; i < method_data.size(); i++) {
+                if (method_data[i].name == method_name) {
                    if (debug::debug_print(DebugLevel::Excessive))
                      py_printf("  > method %s is the %lu-th method in %s\n", method_name.c_str(), i, name.c_str());
-                   return FFIModule::get_method_from_index<T>(i);
-               }
-           }
+                    return i;
+                }
+            }
            throw std::runtime_error("method " + method_name + " not found");
        }
-
+       template <typename T>
+       FFIMethod<T> get_method(const std::string& method_name) {
+            return FFIModule::get_method_from_index<T>(get_method_index(method_name));
+           throw std::runtime_error("method " + method_name + " not found");
+       }
        template <typename T>
        FFIMethod<T> get_method_from_index(size_t i) {
            if (debug::debug_print(DebugLevel::Excessive))
@@ -497,7 +501,7 @@ namespace plzffi {
            if (debug::debug_print(DebugLevel::Excessive))
                py_printf("  > casting method pointer...\n");
            auto methodptr = static_cast<FFIMethod<T>*>(method_pointers[i]);
-           if (methodptr == NULL) {
+           if (methodptr == NULL) { // is this a bad check...?
                std::string err = "Bad pointer for method '%s'" + method_data[i].name;
                throw std::runtime_error(err.c_str());
            }
@@ -507,7 +511,7 @@ namespace plzffi {
            return method;
        }
 
-       FFIMethodData get_method_data(std::string& method_name);
+       FFIMethodData get_method_data(const std::string& method_name);
 
        // pieces necessary to hook into the python runtime
        PyObject* get_py_name();
@@ -524,18 +528,18 @@ namespace plzffi {
        std::string ffi_module_attr() { return capsule_name; };
 
        template <typename T>
-       T call_method(std::string& method_name, FFIParameters& params) {
+       T call_method(const std::string& method_name, FFIParameters& params) {
            return get_method<T>(method_name).call(params);
        }
 
        template <typename T, typename C>
-       std::vector<T> call_method_threaded(std::string& method_name, FFIParameters& params, std::string& threaded_var, std::string& mode) {
+       std::vector<T> call_method_threaded(const std::string& method_name, FFIParameters& params, const std::string& threaded_var, const std::string& mode) {
            auto meth = get_method<T>(method_name);
            auto wat = FFIThreader<T, C>(meth, mode);
            return wat.call(params, threaded_var);
        }
 
-       size_t get_method_index(std::string& method_name);
+    //    size_t get_method_index(std::string& method_name);
 
        pyobj python_signature();
        pyobj py_call_method(pyobj method_name, pyobj params);
@@ -550,7 +554,7 @@ namespace plzffi {
         using pairs = FFITypePairs;
 
         template <typename D>
-        static pyobj call(FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        static pyobj call_method(FFIModule& mod, const std::string& method_name, FFIParameters& params) {
            if (debug::debug_print(DebugLevel::Excessive)) py_printf(" > FFIModuleMethodCaller found appropriate type dispatch!\n");
            pyobj obj;
            auto mdat = mod.get_method_data(method_name); // Don't support raw pointer returns...
@@ -563,48 +567,61 @@ namespace plzffi {
                if (debug::debug_print(DebugLevel::Excessive)) py_printf("  > evaluating non-vectorized potential\n");
                D val = mod.call_method<D>(method_name, params);
             //    if (debug::debug_print(DebugLevel::All)) py_printf("  > constructing python return value for typename/FFIType pair %s/%i\n", mcutils::type_name<D>::c_str(), T::value);
-               obj = pyobj::cast<D>(val);
+               obj = pyobj::cast<D>(std::move(val));
            }
            // need to actually return the values...
            return obj;
        }
         template <FFIType F>
-        static pyobj call(FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        static pyobj call_method(FFIModule& mod, const std::string& method_name, FFIParameters& params) {
             using T = typename FFITypeMap::find_type<F>;
-            return call<T>(mod, method_name, params);
+            return call_method<T>(mod, method_name, params);
         }
-        template <size_t N = 0>  // Caller that will step through the pairs till we get where we need to be
-        static auto call_caller(size_t idx, FFIType type, FFIModule& mod, std::string& method_name, FFIParameters& params) {
-            if (idx >= std::tuple_size_v<pairs>) {
-               std::string msg = "FFIType index error in calling method " + method_name + ". Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
-               throw std::runtime_error(msg);
+        struct call_method_caller {
+            template <typename T>
+            static auto call(
+                FFIType type, FFIModule& mod, const std::string& method_name, FFIParameters& params
+                ) {
+                return call_method<T>(mod, method_name, params);
             }
-            if (N == idx) {
-               using D = typename std::tuple_element_t<N, pairs>::type;
-               return call<D>(mod, method_name, params);
-            }
-            if constexpr (N + 1 < std::tuple_size_v<pairs>) {
-               return call_caller<N + 1>(idx, type, mod, method_name, params);
-            } else {
-               throw std::runtime_error("unreachable in call");
-            }
+        };
+        static auto call_method(
+            FFIType type, FFIModule& mod, const std::string& method_name, FFIParameters& params
+            ) {
+            return FFITypeDispatcher::dispatch<call_method_caller, FFIModule&, const std::string&, FFIParameters&>::call(
+                type, mod, method_name, params
+            );
         }
-        static auto call(FFIType type, FFIModule& mod, std::string& method_name, FFIParameters& params) {
-            return call_caller<0>(map::ffi_type_index(type), type, mod, method_name, params);
-        }
+        // template <size_t N = 0>  // Caller that will step through the pairs till we get where we need to be
+        // static auto call_caller(size_t idx, FFIType type, FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        //     if (idx >= std::tuple_size_v<pairs>) {
+        //        std::string msg = "FFIType index error in calling method " + method_name + ". Got idx " + std::to_string(idx) + " for FFIType " + std::to_string(static_cast<int>(type));
+        //        throw std::runtime_error(msg);
+        //     }
+        //     if (N == idx) {
+        //        using D = typename std::tuple_element_t<N, pairs>::type;
+        //        return call<D>(mod, method_name, params);
+        //     }
+        //     if constexpr (N + 1 < std::tuple_size_v<pairs>) {
+        //        return call_caller<N + 1>(idx, type, mod, method_name, params);
+        //     } else {
+        //        throw std::runtime_error("unreachable in call");
+        //     }
+        // }
+        // static auto call(FFIType type, FFIModule& mod, std::string& method_name, FFIParameters& params) {
+        //     return call_caller<0>(map::ffi_type_index(type), type, mod, method_name, params);
+        // }
 
        template <typename T, typename D>
        static pyobj call_threaded(
-               FFIModule& mod, std::string& method_name,
-               std::string& threaded_var, std::string& mode,
+               FFIModule& mod, const std::string& method_name,
+               const std::string& threaded_var, const std::string& mode,
                FFIParameters& params
                ) {
-            auto val = mod.call_method_threaded<T, D>(
-                method_name, params, threaded_var, mode
-                );
-            auto np = pyobj::cast<T>(val);
+            auto val = mod.call_method_threaded<T, D>(method_name, params, threaded_var, mode);
+            return pyobj::cast<T>(std::move(val)); // we explicitly don't need this value anymore
             //                auto new_arr = mcutils::python::numpy_copy_array(np);
-            return np;
+            // return np;
             //    } else {
             //        std::string garb = "type specifier mismatch in threading method " + method_name
             //                           + " with base return type " + mcutils::type_name<T>::c_str()
@@ -613,62 +630,99 @@ namespace plzffi {
             //        throw std::runtime_error(garb.c_str());
             //    }
        }
-       template <size_t N = 0, size_t M = 0>  // Caller that will step through the pairs till we get where we need to be
-       static auto call_threaded_caller1(
-           size_t idx_1, size_t idx_2,
-           FFIType type, FFIType thread_type,
-           FFIModule& mod,
-           std::string& method_name, std::string& threaded_var, std::string& mode,
-           FFIParameters& params
-       ) {  // we assume idx_2 has already been resolved
-
-            if (idx_1 >= std::tuple_size_v<pairs>) {
-               std::string msg = "FFIType index error in calling method " + method_name + ". Got idx " + std::to_string(idx_1) + " for FFIType " + std::to_string(static_cast<int>(type));
-               throw std::runtime_error(msg);
+       template <typename T>
+       struct call_threaded_thread_caller {
+            template <typename D>
+            static auto call(  // note the loss of type
+                FFIType thread_type,
+                FFIModule& mod, const std::string& method_name, 
+                const std::string& threaded_var, const std::string& mode,
+                FFIParameters& params
+            ) {
+                return call_threaded<T, D>(mod, method_name, threaded_var, mode, params);
             }
-            if (N == idx_1) {
-               using T = typename std::tuple_element_t<N, pairs>::type;
-               using D = typename std::tuple_element_t<M, pairs>::type;
-               return call_threaded<T, D>(mod, method_name, threaded_var, mode, params);
+       };
+       struct call_threaded_caller { // we resolve the return type first
+            template <typename T>
+            static auto call(
+                FFIType type, FFIType thread_type,
+                FFIModule& mod, const std::string& method_name, 
+                const std::string& threaded_var, const std::string& mode,
+                FFIParameters& params
+            ) {
+                return FFITypeDispatcher::dispatch<call_threaded_thread_caller<T>, FFIModule&, const std::string&, const std::string&, const std::string&, FFIParameters&>::call(
+                    thread_type,
+                    mod, method_name, threaded_var, mode, params
+                );
             }
-            if constexpr (N + 1 < std::tuple_size_v<pairs>) {
-               return call_threaded_caller1<N + 1, M>(idx_1, idx_2, type, thread_type, mod, method_name, threaded_var, mode, params);
-            } else {
-               throw std::runtime_error("unreachable in call_threaded");
-            }
-       }
-       template <size_t M = 0>  // Caller that will step through the pairs till we get where we need to be
-       static auto call_threaded_caller(
-           size_t idx_1,
-           size_t idx_2,
-           FFIType type,
-           FFIType thread_type,
-           FFIModule& mod,
-           std::string& method_name,
-           std::string& threaded_var,
-           std::string& mode,
-           FFIParameters& params
-       ) {
-            if (idx_2 >= std::tuple_size_v<pairs>) {
-               std::string msg = "FFIType index error in calling method " + method_name + ". Got idx " + std::to_string(idx_2) + " for threaded FFIType " + std::to_string(static_cast<int>(thread_type));
-               throw std::runtime_error(msg);
-            }
-            if (M == idx_2) {
-               return call_threaded_caller1<0, M>(idx_1, idx_2, type, thread_type, mod, method_name, threaded_var, mode, params);
-            }
-            if constexpr (M + 1 < std::tuple_size_v<pairs>) {
-               return call_threaded_caller<M + 1>(idx_1, idx_2, type, thread_type, mod, method_name, threaded_var, mode, params);
-            } else {
-               throw std::runtime_error("unreachable in call_threaded");
-            }
-       }
-        static auto call_threaded(FFIType type, FFIType thread_type, 
-                FFIModule& mod, std::string& method_name,
-               std::string& threaded_var, std::string& mode,
-               FFIParameters& params
+        };
+        static auto call_threaded(
+            FFIType type, FFIType thread_type, 
+            FFIModule& mod, const std::string& method_name, 
+            const std::string& threaded_var, const std::string& mode,
+            FFIParameters& params
         ) {
-            return call_threaded_caller<0>(map::ffi_type_index(type), map::ffi_type_index(thread_type), type, thread_type, mod, method_name, threaded_var, mode, params);
+            return FFITypeDispatcher::dispatch<call_threaded_caller, FFIType, FFIModule&, const std::string&, const std::string&, const std::string&, FFIParameters&>::call(
+                type, thread_type, mod, method_name, threaded_var, mode, params
+            );
         }
+
+    //    template <size_t N = 0, size_t M = 0>  // Caller that will step through the pairs till we get where we need to be
+    //    static auto call_threaded_caller1(
+    //        size_t idx_1, size_t idx_2,
+    //        FFIType type, FFIType thread_type,
+    //        FFIModule& mod,
+    //        std::string& method_name, std::string& threaded_var, std::string& mode,
+    //        FFIParameters& params
+    //    ) {  // we assume idx_2 has already been resolved
+
+    //         if (idx_1 >= std::tuple_size_v<pairs>) {
+    //            std::string msg = "FFIType index error in calling method " + method_name + ". Got idx " + std::to_string(idx_1) + " for FFIType " + std::to_string(static_cast<int>(type));
+    //            throw std::runtime_error(msg);
+    //         }
+    //         if (N == idx_1) {
+    //            using T = typename std::tuple_element_t<N, pairs>::type;
+    //            using D = typename std::tuple_element_t<M, pairs>::type;
+    //            return call_threaded<T, D>(mod, method_name, threaded_var, mode, params);
+    //         }
+    //         if constexpr (N + 1 < std::tuple_size_v<pairs>) {
+    //            return call_threaded_caller1<N + 1, M>(idx_1, idx_2, type, thread_type, mod, method_name, threaded_var, mode, params);
+    //         } else {
+    //            throw std::runtime_error("unreachable in call_threaded");
+    //         }
+    //    }
+    //    template <size_t M = 0>  // Caller that will step through the pairs till we get where we need to be
+    //    static auto call_threaded_caller(
+    //        size_t idx_1,
+    //        size_t idx_2,
+    //        FFIType type,
+    //        FFIType thread_type,
+    //        FFIModule& mod,
+    //        std::string& method_name,
+    //        std::string& threaded_var,
+    //        std::string& mode,
+    //        FFIParameters& params
+    //    ) {
+    //         if (idx_2 >= std::tuple_size_v<pairs>) {
+    //            std::string msg = "FFIType index error in calling method " + method_name + ". Got idx " + std::to_string(idx_2) + " for threaded FFIType " + std::to_string(static_cast<int>(thread_type));
+    //            throw std::runtime_error(msg);
+    //         }
+    //         if (M == idx_2) {
+    //            return call_threaded_caller1<0, M>(idx_1, idx_2, type, thread_type, mod, method_name, threaded_var, mode, params);
+    //         }
+    //         if constexpr (M + 1 < std::tuple_size_v<pairs>) {
+    //            return call_threaded_caller<M + 1>(idx_1, idx_2, type, thread_type, mod, method_name, threaded_var, mode, params);
+    //         } else {
+    //            throw std::runtime_error("unreachable in call_threaded");
+    //         }
+    //    }
+    //     static auto call_threaded(FFIType type, FFIType thread_type, 
+    //             FFIModule& mod, std::string& method_name,
+    //            std::string& threaded_var, std::string& mode,
+    //            FFIParameters& params
+    //     ) {
+    //         return call_threaded_caller<0>(map::ffi_type_index(type), map::ffi_type_index(thread_type), type, thread_type, mod, method_name, threaded_var, mode, params);
+    //     }
 //         template <typename T, typename D>
 //         call_threaded(FFIType type, FFIType threaded_type,
 //                FFIModule &mod, std::string &method_name,
@@ -1216,15 +1270,15 @@ namespace plzffi {
        return mcutils::python::from_python_capsule<FFIModule>(cap_obj, mod.ffi_module_attr().c_str());
    }
 
-   size_t FFIModule::get_method_index(std::string &method_name) {
-       for (size_t i = 0; i < method_data.size(); i++) {
-           if (method_data[i].name == method_name) { return i; }
-       }
-       throw std::runtime_error("method " + method_name + " not found");
-   }
+//    size_t FFIModule::get_method_index(std::string &method_name) {
+//        for (size_t i = 0; i < method_data.size(); i++) {
+//            if (method_data[i].name == method_name) { return i; }
+//        }
+//        throw std::runtime_error("method " + method_name + " not found");
+//    }
 
-   FFIMethodData FFIModule::get_method_data(std::string &method_name) {
-       for (auto data : method_data) {
+   FFIMethodData FFIModule::get_method_data(const std::string &method_name) { //...why is this like this???
+       for (auto &data : method_data) {
            if (data.name == method_name) {
 //                py_printf("Method %s is the %lu-th method in %s\n", method_name.c_str(), i, name.c_str());
                return data;
@@ -1245,12 +1299,7 @@ namespace plzffi {
        auto args = FFIParameters(params);
 
        if (debug::debug_print(DebugLevel::Excessive)) py_printf(" > calling on parameters...\n");
-       return FFIMethodCaller::call(
-               argtype,
-               *this,
-               mname,
-               args
-       );
+       return FFIMethodCaller::call_method(argtype, *this, mname, args);
    }
 
    pyobj FFIModule::py_call_method_threaded(

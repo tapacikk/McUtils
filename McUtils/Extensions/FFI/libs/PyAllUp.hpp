@@ -889,14 +889,18 @@ namespace mcutils {
         }
         template <typename T>
         std::vector<size_t> manage_shape(std::vector<T>& vec, std::vector<size_t>& base_shape) {
-            auto shp = extract_shape<T>(vec);
-//            py_printf( "          - extracted shape: ( ");
-//            for (auto s: shp) py_printf( "%lu ", s);
-//            py_printf(")\n");
-//            py_printf( "          - base shape: ( ");
-//            for (auto s: base_shape) py_printf( "%lu ", s);
-//            py_printf(")\n");
-            return manage_shape(total_elements(shp), base_shape);
+            if (base_shape.empty()) {
+                return {vec.size()};
+            } else {
+                auto shp = extract_shape<T>(vec);
+    //            py_printf( "          - extracted shape: ( ");
+    //            for (auto s: shp) py_printf( "%lu ", s);
+    //            py_printf(")\n");
+    //            py_printf( "          - base shape: ( ");
+    //            for (auto s: base_shape) py_printf( "%lu ", s);
+    //            py_printf(")\n");
+                return manage_shape(total_elements(shp), base_shape);
+            }
         }
 
         template<typename T>
@@ -911,7 +915,11 @@ namespace mcutils {
             auto nd = shape.size();
 //            py_printf("huh fack %lu %lu %lu %lu\n", dims[0], dims[1], dims[2], dims[3]);
             if (copy) {
-                if (pyadeeb::debug_print(DebugLevel::Excessive)) py_printf("     --> creating new numpy array of dtype %s by copying buffer\n", mcutils::type_name<T>::c_str());
+                if (pyadeeb::debug_print(DebugLevel::Excessive)) {
+                    py_printf("     --> creating new numpy array of dtype %s by copying buffer of size %lu shape (", mcutils::type_name<T>::c_str(), buffer_size);
+                    for (auto s: shape) py_printf( "%lu ", s);
+                    py_printf(")\n");
+                };
                 PyObject* arr = PyArray_SimpleNew(
                         nd,
                         dims,
@@ -927,7 +935,7 @@ namespace mcutils {
  //               if (arr == NULL) {
  //                   throw std::runtime_error("bad numpy shit");
  //               }
-                Py_XINCREF(arr);
+                // Py_XINCREF(arr);
                 return arr;
             } else {
                 if (pyadeeb::debug_print(DebugLevel::Excessive)) py_printf("     --> creating new numpy array of dtype %s by reusing buffer\n", mcutils::type_name<T>::c_str());
@@ -941,7 +949,7 @@ namespace mcutils {
                 if (arr == NULL) {
                     throw std::runtime_error("bad numpy shit");
                 }
-                Py_XINCREF(arr);
+                // Py_XINCREF(arr);
                 return arr;
             }
 
@@ -1147,7 +1155,7 @@ namespace mcutils {
                 std::vector<size_t>& shape,
                 bool copy = true
         ) {
-            if (pyadeeb::debug_print(DebugLevel::Excessive)) py_printf( "     --> flattening nested buffer of vectors\n");
+            if (pyadeeb::debug_print(DebugLevel::All)) py_printf( "     --> flattening nested buffer of vectors\n");
             using D = typename base_type<V, std::vector>::value;
 //            using V = typename sub_type<T, std::vector>::value;
 
@@ -1162,23 +1170,40 @@ namespace mcutils {
 
             auto nels = total_elements(fullshape);
             auto nvecs = nels/offset; // number of vecs to flatten
+            size_t cur_pos = 0;
 
             // hacky way to concat the arrays, skipping the final
             // elements which we assume will be primitive typed
-            if (pyadeeb::debug_print(DebugLevel::Excessive)) {
-                py_printf( "          - core shape: ( ");
-                for (auto s: core_shape) py_printf( "%lu ", s);
-                py_printf(")\n");
-                py_printf( "          - %lu subvectors\n", nels);
+            if (pyadeeb::debug_print(DebugLevel::All)) {
+                py_printf( "          - full shape: ( ");
+                    for (auto s: fullshape) py_printf( "%lu ", s);
+                    py_printf(")\n");
+                py_printf( "          - %lu subvectors\n", nvecs);
+                py_printf( "          - subvector size?: %lu\n", offset);
             }
 
-            size_t cur_pos = 0;
-            D new_vec[nels];
+            // if (pyadeeb::debug_print(DebugLevel::All)) {
+            //     py_printf( "          - allocating buffer of size");
+            //     py_printf( "..........???????!\n");
+            // }
+
+            if (pyadeeb::debug_print(DebugLevel::Excessive)) {
+                py_printf( "          - allocating buffer %s[%lu]\n", mcutils::type_name<D>::value.c_str(), nels);
+            }
+            
+
+
+            auto new_vec = new D[nels]; // allocate on _heap_
+
+            // if (pyadeeb::debug_print(DebugLevel::All)) {
+            //     py_printf( "..........???????!\n");
+            // }
+            
             if constexpr (std::is_same_v<D, bool>) {
                 bool subbuffer[offset];
                 for (size_t i = 0; i < nvecs; i++) {
                     auto mindex = get_multindex(core_shape, nels, i);
-                    apply_multindex<D, V>(buffer, mindex, subbuffer); // returns raw pointer to hopefully ensure no copies
+                    apply_multindex<D, V>(buffer, mindex, subbuffer); // fills buffer instead of returning buffer b.c. vec<bool> is special
                     std::copy(subbuffer, subbuffer + offset, new_vec + cur_pos);
                     cur_pos += offset;
                     //                for (size_t j = 0; j < subv.size(); j++) {
@@ -1186,15 +1211,14 @@ namespace mcutils {
                     //                }
                 }
             } else {
+
                 for (size_t i = 0; i < nvecs; i++) {
                     auto mindex = get_multindex(core_shape, nvecs, i);
 
-                    if (pyadeeb::debug_print(DebugLevel::Excessive)) {
-                        py_printf( "          - pos: %lu\n", i);
-                        py_printf( "          - idx: ( ");
-                        for (auto s: mindex) py_printf( "%lu ", s);
-                        py_printf(")\n");
-                    }
+                    // py_printf( "          - pos: %lu ", i);
+                    // if (pyadeeb::debug_print(DebugLevel::Excessive)) {
+                    //     py_printf("idx: ( "); for (auto s: mindex) py_printf( "%lu ", s); py_printf(")\n");
+                    // }
 
                     //                std::vector<V> v = buffer[mindex[0]]; // does this copy...?
                     D *subv = apply_multindex<D, V>(buffer, mindex); // returns raw pointer to hopefully ensure no copies
@@ -1206,7 +1230,11 @@ namespace mcutils {
                 }
             }
 
-            return numpy_object_from_data<D>(new_vec, nels, shape, true); // need a copy now
+            // if (pyadeeb::debug_print(DebugLevel::All)) {
+            //     py_printf( "          - finished populating:\n");
+            // }
+
+            return numpy_object_from_data<D>(new_vec, nels, shape, false); // will be managed by numpy since we heap allocated
 //            return numpy_object_from_data<std::vector<T>>(buffer, shape, copy);
         }
         template<>
@@ -1256,7 +1284,8 @@ namespace mcutils {
                 auto new_shape = manage_shape<T>(vec, shape);
                 return numpy_object_from_data<T>(buffer, new_shape, copy);
             } else {
-                npy_intp dims[0];
+                std::vector<npy_intp> dim_vec;
+                auto dims = (npy_intp*) dim_vec.data();
                 auto npy_type = numpy_type<T>::value();
                 auto arr = PyArray_EMPTY(0, dims, npy_type, false);
                 return arr;
@@ -1273,7 +1302,8 @@ namespace mcutils {
                 auto new_shape = manage_shape<std::vector<T>>(vec, shape); // do I want to manage now???
                 return numpy_object_from_data<T>(buffer, vec.size(), new_shape, copy);
             } else {
-                npy_intp dims[0];
+                std::vector<npy_intp> dim_vec;
+                auto dims = (npy_intp*) dim_vec.data();
                 auto npy_type = numpy_type<T>::value();
                 auto arr = PyArray_EMPTY(0, dims, npy_type, false);
                 return arr;
@@ -1297,7 +1327,8 @@ namespace mcutils {
                 return numpy_object_from_data<bool>(buffer, new_shape, copy);
 //                return numpy_copy_array(arr); // We'll let other parts of the code-base do copies if they want
             } else {
-                npy_intp dims[0];
+                std::vector<npy_intp> dim_vec;
+                auto dims = (npy_intp*) dim_vec.data();
                 auto npy_type = numpy_type<bool>::value();
                 auto arr = PyArray_EMPTY(0, dims, npy_type, false);
                 return arr;
