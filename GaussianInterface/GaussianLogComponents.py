@@ -95,9 +95,9 @@ GaussianLogComponents["Header"] = {
 #
 
 # region InputZMatrix
-tag_start = "Z-matrix:"
+tag_start = "Symbolic Z-matrix:"
 tag_end   = """ 
-"""
+ ITRead"""
 
 def parser(zmat):
     return zmat
@@ -333,6 +333,8 @@ mode      = " List "
 
 def parser(forces):
     #"""Parses a Force Constants block"""
+    if forces is None:
+        print("forces is none")
     forces = str(forces[-1]).split('\n') #assumes last instance is what you want
 
     l = []
@@ -725,6 +727,64 @@ GaussianLogComponents["Footer"] = {
     "parser"   : parser,
     "mode"     : mode
 }
+########################################################################################################################
+#
+#                                           NBO Summary
+#
+
+tag_start = """ Natural Bond Orbitals (Summary):
+
+           NBO                  Occupancy  
+ -----------------------------------------------"""
+tag_end   = " Leave Link"
+mode      = " List "
+
+
+def parser(NBOs):
+    #"""Parses a NBO Summary block"""
+    NBO_occupancy = [[], []]
+    if NBOs is None:
+        print("NBOs is none")
+    NBOs = NBOs[0].split('\n') #assumes last instance is what you want
+
+    l = []
+    for s in range(len(NBOs)):
+        NBOs[s] = NBOs[s].split(' ')
+        pop_list = []
+        for r in range(len(NBOs[s])):
+            if len(NBOs[s][r]) == 0: pop_list.append(r - len(pop_list))
+        for p in pop_list:
+            NBOs[s].pop(p)
+        if len(NBOs[s]) > 0:
+            if NBOs[s][0][:-1].isnumeric():
+                NBO_occupancy[0].append(NBOs[s][0][:-1])
+                NBO_occupancy[1].append(NBOs[s][-1])
+
+    # for s in range(len(NBOs)):
+    #     if "                " in forces[s]:
+    #         l.append(s)
+    # num_coords = l[1] - l[0] - 1
+    # forces_mat = np.zeros((num_coords, num_coords))
+    #
+    # for s in forces:
+    #     s = s.replace("D", "E")
+    #     if "                " in s:
+    #         coord_spec = np.fromstring(s, dtype=int, sep=' ')
+    #     elif len(s) > 0:
+    #         row = np.fromstring(s, sep=' ')
+    #         row_coord = int(row[0])
+    #         for i in range(1, len(row)):
+    #             forces_mat[row_coord - 1][coord_spec[i - 1] - 1] = row[i]
+    return NBO_occupancy
+
+mode = "List"
+
+GaussianLogComponents["NBOSummary"] = {
+    "tag_start": tag_start,
+    "tag_end"  : tag_end,
+    "parser"   : parser,
+    "mode"     : mode
+}
 
 # endregion
 
@@ -769,10 +829,11 @@ glk = ( # this must be sorted by what appears when
     "ZMatrices",
     "ScanEnergies",
     "OptimizedScanEnergies",
+    "ForceConstants",
     "OptimizationScan",
     "Blurb",
-    "Footer",
-    "ForceConstants"
+    "NBOSummary",
+    "Footer"
 )
 list_type = { k:-1 for k in GaussianLogComponents if GaussianLogComponents[k]["mode"] == "List" }
 GaussianLogOrdering = { k:i for i, k in enumerate([k for k in glk if k not in list_type]) }
