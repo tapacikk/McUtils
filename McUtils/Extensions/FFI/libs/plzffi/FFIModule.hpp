@@ -84,14 +84,14 @@ namespace plzffi {
        FFIMethod(
                std::string &method_name,
                std::vector<FFIArgument> &arg,
-               FFIType return_type,
+               const FFIType return_type,
                bool vectorized,
                T (*function)(Arguments &)
        ) : data(FFIMethodData{method_name, arg, return_type, FFIEmptyCompoundType,  vectorized}), function_pointer(function) { type_check(); };
        FFIMethod(
                const char *method_name,
                std::vector<FFIArgument> arg,
-               FFIType return_type,
+               const FFIType return_type,
                bool vectorized,
                T (*function)(Arguments &)
        ) : data(FFIMethodData{method_name, arg, return_type, FFIEmptyCompoundType,  vectorized}), function_pointer(function) { type_check(); };
@@ -129,10 +129,10 @@ namespace plzffi {
            return call(call_args);
        }
 
-       FFIMethodData method_data() { return data; }
-       std::string method_name() { return data.name; }
-       std::vector<FFIArgument> method_arguments() { return data.args; }
-       FFIType return_type() { return data.ret_type; }
+       auto method_data() const { return data; }
+       auto method_name() const { return data.name; }
+       auto method_arguments() const { return data.args; }
+       auto return_type() const { return data.ret_type; }
 
        pyobj python_signature() {
            auto name = data.name;
@@ -180,81 +180,122 @@ namespace plzffi {
            }
        }
 
-       std::vector<T> call(FFIParameters &params, const std::string &var) {
+       auto call_inner(C* coords, const std::vector<size_t>& shape, FFIParameters& params, const std::string& var, FFIParameter& new_param, size_t block_size) {
+           if constexpr (std::is_same_v<T, void>) {
+               switch (mode) {
+                 case FFIThreadingMode::OpenMP:
+                   _call_omp(coords, shape, params, new_param, var, block_size);
+                   break;
+                 case FFIThreadingMode::TBB:
+                   _call_tbb(coords, shape, params, new_param, var, block_size);
+                   break;
+                 case FFIThreadingMode::SERIAL:
+                   _call_serial(coords, shape, params, new_param, var, block_size);
+                   break;
+                 default:
+                   std::string msg = "FFIThreader: unknown threading method " + std::to_string(static_cast<int>(mode));
+                   throw std::runtime_error("FFIThreader: unknown threading method");
+               }
+           } else {
+               std::vector<T> ret_data(shape[0]);  // set up values for return
+               switch (mode) {
+                 case FFIThreadingMode::OpenMP:
+                   _call_omp(ret_data, coords, shape, params, new_param, var, block_size);
+                   break;
+                 case FFIThreadingMode::TBB:
+                   _call_tbb(ret_data, coords, shape, params, new_param, var, block_size);
+                   break;
+                 case FFIThreadingMode::SERIAL:
+                   _call_serial(ret_data, coords, shape, params, new_param, var, block_size);
+                   break;
+                 default:
+                   std::string msg = "FFIThreader: unknown threading method " + std::to_string(static_cast<int>(mode));
+                   throw std::runtime_error("FFIThreader: unknown threading method");
+               }
+               return ret_data;
+           }
+       }
+       auto call(FFIParameters& params, const std::string& var) {
            auto threaded_param = params.get_parameter(var);
            auto coords = threaded_param.value<C*>();
            auto shape = threaded_param.shape();
 
            params.disable_parameter(var);
 
-           std::vector<T> ret_data(shape[0]); // set up values for return
-           
-           std::vector<size_t> shp; // Final data shape...
+           std::vector<size_t> shp;  // Final data shape...
            // TODO: want to go to a version that can do multiple elements at once
-           size_t block_size; // params.value<size_t>('chunk_size', 1); // precompute the block size for taking chunks of data
+           size_t block_size;  // params.value<size_t>('chunk_size', 1); // precompute the block size for taking chunks of data
            if (shape.size() > 1) {
-               shp.resize(shape.size()-1);
+               shp.resize(shape.size() - 1);
                block_size = shape[1];
                shp[0] = block_size;
                for (size_t b = 2; b < shape.size(); b++) {
-                   shp[b-1] = shape[b];
-                   block_size *= shape[b];
+                 shp[b - 1] = shape[b];
+                 block_size *= shape[b];
                }
            } else {
-               block_size=1;
+               block_size = 1;
            }
 
            FFIArgument arg(var, FFITypeHandler<C>().ffi_type(), shp);
            FFIParameter new_param(arg);
 
-           switch (mode) {
-               case FFIThreadingMode::OpenMP:
-                   _call_omp(ret_data, coords, shape, params, 
-                            new_param, var, block_size
-                           );
-                   break;
-               case FFIThreadingMode::TBB:
-                   _call_tbb(ret_data, coords, shape, params, 
-                            new_param, var, block_size);
-                   break;
-               case FFIThreadingMode::SERIAL:
-                   _call_serial(ret_data, coords, shape, params, 
-                            new_param, var, block_size);
-                   break;
-               default:
-                   std::string msg="FFIThreader: unknown threading method " + std::to_string(static_cast<int>(mode));
-                   throw std::runtime_error("FFIThreader: unknown threading method");
+           if constexpr (std::is_same_v<T, void>) {
+               call_inner(coords, shape, params, var, new_param, block_size);
+               params.enable_parameter(var);
+           } else {
+               auto res = call_inner(coords, shape, params, var, new_param, block_size);
+               params.enable_parameter(var);
+               return res;
            }
-        //    params.set_parameter(var, threaded_param); // restore at the end for safety?
-
-           params.enable_parameter(var);
-           return ret_data;
        }
 
        void _loop_inner(
-               std::vector<T>& data, const size_t i,
-               C* coords, const std::vector<size_t>& shape,
-               FFIParameters &params, 
-               FFIParameter& threaded_param, const std::string &var, const size_t block_size
+           std::vector<T>& data, const size_t i,
+           C* coords, const std::vector<size_t>& shape,
+           FFIParameters& params, FFIParameter& threaded_param,
+           const std::string& var, const size_t block_size
+       );
+       void _loop_inner(
+           const size_t i,
+           C* coords, const std::vector<size_t>& shape,
+           FFIParameters& params, FFIParameter& threaded_param,
+           const std::string& var, const size_t block_size
+       );
+
+       void _call_serial(
+           std::vector<T>& data,
+           C* coords, const std::vector<size_t>& shape,
+           FFIParameters& params, FFIParameter& threaded_param,
+           const std::string& var, const size_t block_size
        );
        void _call_serial(
-               std::vector<T>& data,
-               C* coords, const std::vector<size_t>& shape,
-               FFIParameters &params, 
-               FFIParameter& threaded_param, const std::string &var, const size_t block_size
-               );
+           C* coords, const std::vector<size_t>& shape,
+           FFIParameters& params, FFIParameter& threaded_param,
+           const std::string& var, const size_t block_size
+       );
        void _call_omp(
-               std::vector<T>& data,
-               C* coords, const std::vector<size_t>& shape,
-               FFIParameters &params, 
-               FFIParameter& threaded_param, const std::string &var, const  size_t block_size
-               );
+           std::vector<T>& data,
+           C* coords, const std::vector<size_t>& shape,
+           FFIParameters& params, FFIParameter& threaded_param,
+           const std::string& var, const size_t block_size
+       );
+       void _call_omp(
+           C* coords, const std::vector<size_t>& shape,
+           FFIParameters& params, FFIParameter& threaded_param,
+           const std::string& var, const size_t block_size
+       );
        void _call_tbb(
-               std::vector<T>& data,
-               C* coords, const std::vector<size_t>& shape,
-               FFIParameters &params, 
-               FFIParameter& threaded_param, const std::string &var, const size_t block_size
-               );
+           std::vector<T>& data,
+           C* coords, const std::vector<size_t>& shape,
+           FFIParameters& params, FFIParameter& threaded_param,
+           const std::string& var, const size_t block_size
+       );
+       void _call_tbb(
+           C* coords, const std::vector<size_t>& shape,
+           FFIParameters& params, FFIParameter& threaded_param,
+           const std::string& var, const size_t block_size
+       );
    };
 
    template <typename T, typename C>
@@ -264,32 +305,29 @@ namespace plzffi {
            FFIParameters &params, 
            FFIParameter& threaded_param, const std::string &var, const size_t block_size
            ) {
-//       auto new_params = params; // I copied *every* time
-//       auto data_ptr = std::shared_ptr<void>(chunk, [](C*){}); //TODO: make sure this isn't breaking...
-//       FFIParameter coords_param(data_ptr, arg);
-    //    py_printf("Looping over %s: structure %lu with block_size %lu...\n", var.c_str(), i, block_size);
        FFIParameters extra;
        auto new_param = threaded_param; // copy this...?
        auto chunk = coords + (i * block_size);
        new_param.set<C*>(chunk);
-    //    if constexpr(std::is_same_v<C, double>) {
-    //     printf(">>>> (");
-    //     for (auto i = 0; i < 9; i ++) {
-    //         printf("%f ", chunk[i]);
-    //     }
-    //     printf(")\n");
-    //    }
        extra.set_parameter(var, new_param);
-    //    printf(" ... done seeting to %lu\n", extra.find_param_index(var));
-    //    assert(extra.contains(var));
-    //    std::vector<FFIParameters> pset {extra, params};
        Arguments call_args({&extra, &params});
-    //    auto v1 = extra.value<C*>(var);
-    //    printf("...that worked?\n");
-    //    auto v = call_args.value<double*>("coords");
        auto val = method.call(call_args); // done for thread safety
-    //    py_printf("Saving result for structure %lu...\n", i);
        data[i] = val;
+   }
+   template <typename T, typename C>
+   void FFIThreader<T, C>::_loop_inner(
+           const size_t i,
+           C* coords, [[maybe_unused]] const std::vector<size_t>& shape,
+           FFIParameters &params, 
+           FFIParameter& threaded_param, const std::string &var, const size_t block_size
+           ) {
+       FFIParameters extra;
+       auto new_param = threaded_param; // copy this...?
+       auto chunk = coords + (i * block_size);
+       new_param.set<C*>(chunk);
+       extra.set_parameter(var, new_param);
+       Arguments call_args({&extra, &params});
+       method.call(call_args);
    }
 
    template <typename T, typename C>
@@ -302,6 +340,18 @@ namespace plzffi {
 
        for (size_t w = 0; w < shape[0]; w++) {
            _loop_inner(data, w, coords, shape, params, threaded_param, var, block_size);
+       }
+//            py_printf(">>>> boopy %f\n", pots.vector()[0]);
+   }
+   template <typename T, typename C>
+   void FFIThreader<T, C>::_call_serial(
+           C* coords, const std::vector<size_t>& shape,
+           FFIParameters &params, 
+           FFIParameter& threaded_param, const std::string &var, const size_t block_size
+           ) {
+
+       for (size_t w = 0; w < shape[0]; w++) {
+           _loop_inner(w, coords, shape, params, threaded_param, var, block_size);
        }
 //            py_printf(">>>> boopy %f\n", pots.vector()[0]);
    }
@@ -324,6 +374,23 @@ namespace plzffi {
 
 #endif
    }
+   template<typename T, typename C>
+   void FFIThreader<T, C>::_call_omp(
+           [[maybe_unused]] C *coords, [[maybe_unused]] const std::vector<size_t> &shape,
+           [[maybe_unused]] FFIParameters &params,
+           [[maybe_unused]] FFIParameter& threaded_param, [[maybe_unused]] const std::string &var, [[maybe_unused]] const size_t block_size
+           ) {
+#ifdef _OPENMP
+
+#pragma omp parallel for
+       for (size_t w = 0; w < shape[0]; w++) {
+           _loop_inner(w, coords, shape, params, threaded_param, var, block_size);
+       }
+#else
+       throw std::runtime_error("OpenMP not installed");
+
+#endif
+   }
 
    template<typename T, typename C>
    void FFIThreader<T, C>::_call_tbb(
@@ -338,6 +405,25 @@ namespace plzffi {
                [&](const tbb::blocked_range <size_t> &r) {
                    for (size_t w = r.begin(); w < r.end(); ++w) {
                        _loop_inner(data, w, coords, shape, params, threaded_param, var, block_size);
+                   }
+               }
+       );
+#else
+       throw std::runtime_error("TBB not installed");
+#endif
+   }
+   template<typename T, typename C>
+   void FFIThreader<T, C>::_call_tbb(
+           [[maybe_unused]] C *coords, [[maybe_unused]] const std::vector<size_t> &shape,
+           [[maybe_unused]] FFIParameters &params,
+           [[maybe_unused]] FFIParameter& threaded_param, [[maybe_unused]] const std::string &var, [[maybe_unused]] const size_t block_size
+           ) {
+#ifdef _TBB
+       tbb::parallel_for(
+               tbb::blocked_range<size_t>(0, shape[0]),
+               [&](const tbb::blocked_range <size_t> &r) {
+                   for (size_t w = r.begin(); w < r.end(); ++w) {
+                       _loop_inner(w, coords, shape, params, threaded_param, var, block_size);
                    }
                }
        );
@@ -421,7 +507,7 @@ namespace plzffi {
        void add(
            const char* method_name,
            std::vector<FFIArgument> arg,
-           FFIType return_type,
+           const FFIType return_type,
            T (*function)(Arguments&)
        ) {
            // TODO: need to introduce destructor to FFIModule to clean up all of these methods once we go out of scope
@@ -443,7 +529,7 @@ namespace plzffi {
        void add(
            const char* method_name,
            std::vector<FFIArgument> arg,
-           FFIType return_type,
+           const FFIType return_type,
            std::vector<T> (*function)(Arguments&)
        ) {
            auto meth = new FFIMethod<std::vector<T>>(method_name, arg, return_type, true, function);
@@ -497,14 +583,20 @@ namespace plzffi {
        template <typename T>
        FFIMethod<T> get_method_from_index(size_t i) {
            if (debug::debug_print(DebugLevel::Excessive))
-               py_printf("  > checking return type...\n");
-           FFITypeHandler<T>::validate(method_data[i].ret_type);
+                py_printf("  > checking return type...\n");
+           if constexpr (std::is_same_v<T, void>) {
+                if (method_data[i].ret_type != FFIType::Void) {
+                    throw std::runtime_error("void type mismatch");
+                }
+           } else {
+                FFITypeHandler<T>::validate(method_data[i].ret_type);
+           }
            if (debug::debug_print(DebugLevel::Excessive))
-               py_printf("  > casting method pointer...\n");
+                py_printf("  > casting method pointer...\n");
            auto methodptr = static_cast<FFIMethod<T>*>(method_pointers[i]);
-           if (methodptr == NULL) { // is this a bad check...?
-               std::string err = "Bad pointer for method '%s'" + method_data[i].name;
-               throw std::runtime_error(err.c_str());
+           if (methodptr == NULL) {  // is this a bad check...?
+                std::string err = "Bad pointer for method '%s'" + method_data[i].name;
+                throw std::runtime_error(err.c_str());
            }
 
            auto method = *methodptr;
@@ -529,15 +621,27 @@ namespace plzffi {
        std::string ffi_module_attr() { return capsule_name; };
 
        template <typename T>
-       T call_method(const std::string& method_name, FFIParameters& params) {
-           return get_method<T>(method_name).call(params);
+       auto call_method(const std::string& method_name, FFIParameters& params) {
+           auto caller = get_method<T>(method_name);
+           if constexpr (std::is_same_v<T, void>) {
+               caller.call(params);
+           } else {
+               return caller.call(params);
+           }
        }
-
        template <typename T, typename C>
-       std::vector<T> call_method_threaded(const std::string& method_name, FFIParameters& params, const std::string& threaded_var, const std::string& mode) {
-           auto meth = get_method<T>(method_name);
-           auto wat = FFIThreader<T, C>(meth, mode);
-           return wat.call(params, threaded_var);
+       auto call_method_threaded(const std::string& method_name, FFIParameters& params, const std::string& threaded_var, const std::string& mode) {
+           if constexpr (std::is_same_v<C, void>) {
+               throw std::runtime_error("can't thread over void argument");
+           } else {
+               auto meth = get_method<T>(method_name);
+               auto wat = FFIThreader<T, C>(meth, mode);
+               if constexpr (std::is_same_v<T, void>) {
+                    wat.call(params, threaded_var);
+               } else {
+                    return wat.call(params, threaded_var);
+               }
+           }
        }
 
     //    size_t get_method_index(std::string& method_name);
@@ -594,19 +698,24 @@ namespace plzffi {
            if (debug::debug_print(DebugLevel::Excessive)) py_printf(" > FFIModuleMethodCaller found appropriate type dispatch!\n");
            pyobj obj;
            auto mdat = mod.get_method_data(method_name); // Don't support raw pointer returns...
-           if (mdat.vectorized) {
-               py_printf(DebugLevel::Excessive, "  > evaluating vectorized potential\n");
-               auto val = mod.call_method<std::vector<D> >(method_name, params);
-            //    if (debug::debug_print(DebugLevel::All)) py_printf("  > constructing python return value for typename/FFIType pair std::vector<%s>/%i\n", mcutils::type_name<D>::c_str(), T::value);
-               obj = pyobj::cast<D>(std::move(val));
+           if constexpr (std::is_same_v<D, void>) {
+                mod.call_method<D>(method_name, params);
+                return pyobj::None();
            } else {
-               if (debug::debug_print(DebugLevel::Excessive)) py_printf("  > evaluating non-vectorized potential\n");
-               D val = mod.call_method<D>(method_name, params);
-            //    if (debug::debug_print(DebugLevel::All)) py_printf("  > constructing python return value for typename/FFIType pair %s/%i\n", mcutils::type_name<D>::c_str(), T::value);
-               obj = pyobj::cast<D>(std::move(val));
+            if (mdat.vectorized) {
+                py_printf(DebugLevel::Excessive, "  > evaluating vectorized potential\n");
+                auto val = mod.call_method<std::vector<D> >(method_name, params);
+                //    if (debug::debug_print(DebugLevel::All)) py_printf("  > constructing python return value for typename/FFIType pair std::vector<%s>/%i\n", mcutils::type_name<D>::c_str(), T::value);
+                obj = pyobj::cast<D>(std::move(val));
+            } else {
+                if (debug::debug_print(DebugLevel::Excessive)) py_printf("  > evaluating non-vectorized potential\n");
+                D val = mod.call_method<D>(method_name, params);
+                //    if (debug::debug_print(DebugLevel::All)) py_printf("  > constructing python return value for typename/FFIType pair %s/%i\n", mcutils::type_name<D>::c_str(), T::value);
+                obj = pyobj::cast<D>(std::move(val));
+            }
+            // need to actually return the values...
+            return obj;
            }
-           // need to actually return the values...
-           return obj;
        }
         template <FFIType F>
         static pyobj call_method(FFIModule& mod, const std::string& method_name, FFIParameters& params) {
@@ -616,44 +725,61 @@ namespace plzffi {
         struct call_method_caller {
             template <typename T>
             static auto call(
-                [[maybe_unused]] FFIType type, FFIModule& mod, const std::string& method_name, FFIParameters& params
+                [[maybe_unused]] const FFIType type, FFIModule& mod, const std::string& method_name, FFIParameters& params
                 ) {
                 return call_method<T>(mod, method_name, params);
             }
         };
         static auto call_method(
-            FFIType type, FFIModule& mod, const std::string& method_name, FFIParameters& params
+            const FFIType type, FFIModule& mod, const std::string& method_name, FFIParameters& params
             ) {
             return FFITypeDispatcher::dispatch<call_method_caller>::call(
                 type, mod, method_name, params
             );
         }
 
-       template <typename T, typename D>
-       static pyobj call_threaded(
-               FFIModule& mod, const std::string& method_name,
-               const std::string& threaded_var, const std::string& mode,
-               FFIParameters& params
-               ) {
-            auto val = mod.call_method_threaded<T, D>(method_name, params, threaded_var, mode);
-            return pyobj::cast<T>(std::move(val)); // we explicitly don't need this value anymore
-       }
-       template <typename T>
-       struct call_threaded_thread_caller {
+        template <typename T, typename D>
+        static auto call_threaded(
+            FFIModule& mod,
+            const std::string& method_name,
+            const std::string& threaded_var,
+            const std::string& mode,
+            FFIParameters& params
+        ) {
+            if constexpr (std::is_same_v<D, void>) {
+                // throw std::runtime_error("can't thread over void");
+                return pyobj::None(); 
+            } else {
+                if constexpr(std::is_same_v<T, void>) {
+                    mod.call_method_threaded<T, D>(method_name, params, threaded_var, mode);
+                    return pyobj::None();
+                } else {
+                    auto val = mod.call_method_threaded<T, D>(method_name, params, threaded_var, mode);
+                    return pyobj::cast<T>(std::move(val));  // we explicitly don't need this value anymore
+                }
+            }
+        }
+        template <typename T>
+        struct call_threaded_thread_caller {
             template <typename D>
             static auto call(  // note the loss of type
-                [[maybe_unused]] FFIType thread_type,
-                FFIModule& mod, const std::string& method_name, 
+                [[maybe_unused]] const FFIType thread_type,
+                FFIModule& mod, const std::string& method_name,
                 const std::string& threaded_var, const std::string& mode,
                 FFIParameters& params
             ) {
-                return call_threaded<T, D>(mod, method_name, threaded_var, mode, params);
+                if constexpr (std::is_same_v<D, void>) {
+                    throw std::runtime_error("can't thread over void");
+                    return pyobj::None();
+                } else {
+                    return call_threaded<T, D>(mod, method_name, threaded_var, mode, params);
+                }
             }
-       };
+        };
        struct call_threaded_caller { // we resolve the return type first
             template <typename T>
             static auto call(
-                [[maybe_unused]] FFIType type, FFIType thread_type,
+                [[maybe_unused]] const FFIType type, const FFIType thread_type,
                 FFIModule& mod, const std::string& method_name, 
                 const std::string& threaded_var, const std::string& mode,
                 FFIParameters& params
@@ -665,7 +791,7 @@ namespace plzffi {
             }
         };
         static auto call_threaded(
-            FFIType type, FFIType thread_type, 
+            const FFIType type, const FFIType thread_type, 
             FFIModule& mod, const std::string& method_name, 
             const std::string& threaded_var, const std::string& mode,
             FFIParameters& params
@@ -909,7 +1035,9 @@ namespace plzffi {
 
        debug::set_debug_level(debug_level);
 
-       py_printf(DebugLevel ::Excessive, "Calling method from python...\n");
+       if (debug::debug_print(DebugLevel ::Excessive)) {
+           py_printf("Calling method from python... %p, %p, %p\n", cap, method_name, params);
+       }
 
        try {
            py_printf(DebugLevel ::Excessive, "Extracting module...\n");

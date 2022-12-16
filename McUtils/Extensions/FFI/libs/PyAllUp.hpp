@@ -146,7 +146,7 @@ namespace mcutils {
                                     if (ref != NULL && pyadeeb::debug_print(DebugLevel::Excessive) && ref->ob_refcnt == 1) {
                                         py_printf("     --->  freeing shared_ptr to object of type %s at %p\n", ref->ob_type->tp_name, ref);
                                     }
-                                    Py_XDECREF(ref);
+                                    // Py_XDECREF(ref);
                                 }
                                 )
                         ),
@@ -174,12 +174,34 @@ namespace mcutils {
 //                Py_XDECREF(ptr); // handled by the shared ptr now
             }
 
+            static PyObject* new_NONE() { Py_RETURN_NONE; }
+            static pyobj None() { return pyobj(new_NONE()); }
+            static PyObject* new_TRUE() { Py_RETURN_TRUE; }
+            static pyobj True() { return pyobj(new_TRUE()); }
+            static PyObject* new_FALSE() { Py_RETURN_FALSE; }
+            static pyobj False() { return pyobj(new_FALSE()); }
+
             std::string type_name() {
                 return python_type_name(obj()->ob_type);
             }
 
+            // bool apply_check(bool(*checker)(PyObject*), bool raise=false, const std::string& err="PyObject check failed") {
+            //     auto res = checker(obj());
+            //     if (raise && !res) {
+            //         throw std::runtime_error(err);
+            //     }
+            //     return res;
+            // }
+            void* as_void_ptr() {
+                if (!PyLong_Check(obj())) {
+                    std::string msg = "object " + repr() + " is not an address to memory";
+                    // apply_check(PyLong_Check, true, msg);
+                    throw std::runtime_error(msg);
+                }
+                return (void *)PyLong_AsVoidPtr(obj());
+            }
 
-            PyObject* obj() {return ptr.get();}
+            PyObject* obj() const {return ptr.get();}
 
             bool operator==(const pyobj &other) {return obj() == other.ptr.get();}
             bool operator!=(const pyobj &other) {return obj() != other.ptr.get();}
@@ -188,7 +210,7 @@ namespace mcutils {
             void decref() { // don't let PyObject* ref count get to 0 while pyobj still alive
                 auto p = ptr.get();
                 if (p!=NULL && p->ob_refcnt > 1) {
-                    Py_XDECREF(ptr.get());
+                    // Py_XDECREF(ptr.get());
                 }
             }
             void steal() { // mark as stolen ref so refcount can drop when necessary
@@ -202,7 +224,7 @@ namespace mcutils {
             std::string repr() { return get_python_repr(obj()); }
 
             template<typename T>
-            T convert();
+            T convert() const;
             template <typename T>
             static pyobj cast(T val, bool is_new);
             template <typename T>
@@ -223,31 +245,6 @@ namespace mcutils {
                 std::string ats = attr;
                 return getattr<T>(ats);
             }
-
-//            template<typename T>
-//            std::vector<T> getattr_iterable(std::string& attr);
-//            template<typename T>
-//            std::vector<T> getattr_iterable(std::string attr) {
-//                std::string ats = attr;
-//                return getattr_iterable<T>(ats);
-//            }
-//            template<typename T>
-//            std::vector<T> getattr_iterable(const char* attr) {
-//                std::string ats = attr;
-//                return getattr_iterable<T>(ats);
-//            }
-//            template<typename T>
-//            T* getattr_ptr(std::string& attr);
-//            template<typename T>
-//            T* getattr_ptr(std::string attr) {
-//                std::string ats = attr;
-//                return getattr_ptr<T>(ats);
-//            }
-//            template<typename T>
-//            T* getattr_ptr(const char* attr) {
-//                std::string ats = attr;
-//                return getattr_ptr<T>(ats);
-//            }
 
             template<typename T>
             T get_item(size_t idx);
@@ -407,9 +404,7 @@ namespace mcutils {
             return val;
         }
         template <>
-        pyobj from_python<pyobj>(pyobj data) {
-            return data;
-        }
+        pyobj from_python<pyobj>(pyobj data) { return data; }
         template <>
         int from_python<int>(const pyobj data) { return from_python<int>(data, "i"); }
         template <>
@@ -435,7 +430,7 @@ namespace mcutils {
         template <>
         double from_python<double>(const pyobj data) { return from_python<double>(data, "d"); }
         template <>
-        bool from_python<bool>(const pyobj data) { return from_python<int>(data, "p"); }
+        bool from_python<bool>(const pyobj data) { return PyObject_IsTrue(data.obj()); } // I guess this is more direct...
         template <>
         std::string from_python<std::string >(pyobj data) {
             // we're ditching even the pretense of python 2 support
@@ -1478,7 +1473,7 @@ namespace mcutils {
             }
         };
         template<typename T>
-        T pyobj::convert() {
+        T pyobj::convert() const {
             return PyObject_converter<T>(*this).value();
         }
         template<typename T>
@@ -1528,6 +1523,7 @@ namespace mcutils {
                 PyErr_SetString(PyExc_TypeError, err.c_str());
                 throw std::runtime_error("no obj issue");
             }
+            
             PyObject* ret = PyObject_GetAttrString(obj, attr.c_str());
             if (ret == NULL) {
                 if (pyadeeb::debug_print(DebugLevel::Normal)) py_printf( "ERROR: failed to get attr %s\n", attr.c_str());

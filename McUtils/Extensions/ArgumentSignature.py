@@ -48,6 +48,10 @@ class ArgumentType(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def dtypes(self):
         raise NotImplementedError()
+    @property
+    @abc.abstractmethod
+    def typechar(self):
+        raise NotImplementedError()
     @abc.abstractmethod
     def isinstance(self, arg):
         raise NotImplementedError()
@@ -120,6 +124,9 @@ class PrimitiveType(ArgumentType):
     @property
     def dtypes(self):
         return self._dtypes
+    @property
+    def typechar(self):
+        return self._capi_spec
     def isinstance(self, arg):
         return isinstance(arg, self._types)
     def cast(self, arg):
@@ -158,6 +165,9 @@ class ArrayType(ArgumentType):
     @property
     def dtypes(self):
         return self.base.dtypes
+    @property
+    def typechar(self):
+        return self.base.typechar
     def isinstance(self, arg):
         return isinstance(arg, self.types) and arg.dtype in self.base.dtypes
     def cast(self, arg):
@@ -197,6 +207,9 @@ class PointerType(ArgumentType):
     @property
     def dtypes(self):
         return self.base.dtypes
+    @property
+    def typechar(self):
+        return self.base.typechar
     def isinstance(self, arg):
         return self.base.isinstance(arg)
     def cast(self, arg):
@@ -212,6 +225,16 @@ class PointerType(ArgumentType):
 
 # this is the block where we just declare a shit ton of types...
 # Python types that handle the most common case
+VoidType = PrimitiveType(
+    "void",
+    None,
+    "void",
+    "void",
+    (),
+    (),
+    None,#serializer
+    None#deserializer
+)
 RealType = PrimitiveType(
     "Real",
     ctypes.c_double,
@@ -292,6 +315,7 @@ class Argument:
     """
 
     arg_types = [
+        VoidType,
         RealType,
         IntType,
         BoolType
@@ -364,9 +388,12 @@ class Argument:
 
     @classmethod
     def infer_type_str(cls, argstr):
+        cls._prep_typesets()
         type = None
         if argstr in cls._typesets:
             type = cls._typesets[argstr]
+        elif argstr in cls._typestrs:
+            type = cls._typestrs[argstr]
         else:
             ptr_pat = "\*({})".format( "|".join(cls._typestrs.keys()))
             match = re.match(ptr_pat, argstr)
@@ -385,6 +412,16 @@ class Argument:
     def prep_value(self, val):
         return self.dtype.c_cast(val)
 
+    def is_pointer(self):
+        return isinstance(self.dtype, PointerType)
+    def is_array(self):
+        return isinstance(self.dtype, ArrayType)
+    @property
+    def dtypes(self):
+        return self.dtype.dtypes
+    @property
+    def typechar(self):
+        return self.dtype.typechar
     @property
     def cpp_signature(self):
         return "{} {}".format(
@@ -457,7 +494,9 @@ class FunctionSignature:
     @property
     def args(self):
         return self._arguments
-
+    @property
+    def return_argtype(self):
+        return self._ret_type
     @property
     def return_type(self):
         res = self._ret_type

@@ -268,22 +268,24 @@ class CLoader:
         if self.requires_make:
             lib_d = os.path.abspath(self.lib_lib_dir)
             lib_pairs = {}
-            for lib_f in os.listdir(lib_d):
-                lib = os.path.join(lib_d, lib_f)
-                if lib_f.startswith('lib') and (lib_f.endswith(".so") or lib_f.endswith(".pyd")):
-                    lib_dir = os.path.join(lib_d, lib_f[3:].split(".")[0])
-                    lib_pairs[lib_dir] = lib_f
-                elif os.path.isdir(lib):
-                    if lib not in lib_pairs:
-                        lib_pairs[lib] = None
+            if os.path.isdir(lib_d):
+                for lib_f in os.listdir(lib_d):
+                    lib = os.path.join(lib_d, lib_f)
+                    if lib_f.startswith('lib') and (lib_f.endswith(".so") or lib_f.endswith(".pyd")):
+                        lib_dir = os.path.join(lib_d, lib_f[3:].split(".")[0])
+                        lib_pairs[lib_dir] = lib_f
+                    elif os.path.isdir(lib):
+                        if lib not in lib_pairs:
+                            lib_pairs[lib] = None
             for lib, f in lib_pairs.items():
                 if f is None:
                     self.custom_make(self.requires_make, lib)
 
             # need to reload
-            for lib_f in os.listdir(lib_d):
-                if lib_f.startswith('lib') and (lib_f.endswith(".so") or lib_f.endswith(".pyd")):
-                    lib_files.append(lib_f)
+            if os.path.isdir(lib_d):
+                for lib_f in os.listdir(lib_d):
+                    if lib_f.startswith('lib') and (lib_f.endswith(".so") or lib_f.endswith(".pyd")):
+                        lib_files.append(lib_f)
 
         return lib_files
 

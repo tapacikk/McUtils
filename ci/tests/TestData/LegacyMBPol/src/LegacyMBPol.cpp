@@ -1,6 +1,6 @@
 
 
-#include "Python.h"
+//#include "Python.h"
 #include "plzffi/FFIModule.hpp"
 //#include "plzffi/FFIDynamicLibrary.hpp"
 #include <numeric>
@@ -11,8 +11,10 @@ using namespace plzffi;
 
 // Put all module functions in here
 // Declare our linkage
-double calcpot_(int*, double*, const double*);// comes from libmbpol.so
-double calcpotg_(int *nw, double *Vpot, const double *x, double *g);// comes from libmbpol.so
+extern "C" {
+    double calcpot_(int*, double*, const double*);// comes from libmbpol.so
+    double calcpotg_(int *nw, double *Vpot, const double *x, double *g);// comes from libmbpol.so
+}
 
 namespace LegacyMBPol {
 

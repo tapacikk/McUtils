@@ -18,92 +18,115 @@ class FFIType(enum.Enum):
     you gotta do it using a NumPy array.
     """
 
-    type_map = {}
+    _type_map = {}
+
+    GENERIC = -1
+
+    Void = 1
+    _type_map[Void] = ("void", None)
+
+    # for k in type_map[NUMPY_Float64]: type_map[k] = NUMPY_Float64
 
     PY_TYPES=1000
 
     UnsignedChar = PY_TYPES + 10
-    type_map[UnsignedChar] = ("b", int)
+    _type_map[UnsignedChar] = ("b", int)
     Short = PY_TYPES + 20
-    type_map[Short] = ("h", int)
+    _type_map[Short] = ("h", int)
     UnsignedShort = PY_TYPES + 21
-    type_map[UnsignedShort] = ("H", int)
+    _type_map[UnsignedShort] = ("H", int)
     Int = PY_TYPES + 30
-    type_map[Int] = ("i", int)
+    _type_map[Int] = ("i", int)
     UnsignedInt = PY_TYPES + 31
-    type_map["I"] = UnsignedInt
-    type_map[UnsignedInt] = ("I", int)
+    _type_map["I"] = UnsignedInt
+    _type_map[UnsignedInt] = ("I", int)
     Long = PY_TYPES + 40
-    type_map[Long] = ("l", int)
+    _type_map[Long] = ("l", int)
     UnsignedLong = PY_TYPES + 41
-    type_map[UnsignedLong] = ("L", int)
+    _type_map[UnsignedLong] = ("L", int)
     LongLong = PY_TYPES + 50
-    type_map["k"] = LongLong
-    type_map[LongLong] = ("k", int)
+    _type_map["k"] = LongLong
+    _type_map[LongLong] = ("k", int)
     UnsignedLongLong = PY_TYPES + 51
-    type_map["K"] = UnsignedLongLong
-    type_map[UnsignedLongLong] = ("K", int)
+    _type_map["K"] = UnsignedLongLong
+    _type_map[UnsignedLongLong] = ("K", int)
     PySizeT = PY_TYPES + 60
-    type_map[PySizeT] = ("n", int)
+    _type_map[PySizeT] = ("n", int)
 
     Float = PY_TYPES + 70
-    type_map["f"] = Float
-    type_map[Float] = ("f", float)
+    _type_map["f"] = Float
+    _type_map[Float] = ("f", float)
     Double = PY_TYPES + 71
-    type_map["d"] = Double
-    type_map[Double] = ("d", float)
+    _type_map["d"] = Double
+    _type_map[Double] = ("d", float)
 
     Bool = PY_TYPES + 80
-    type_map[Bool] = ("p", bool)
+    _type_map[Bool] = ("p", bool)
     String = PY_TYPES + 90
-    type_map[String] = ("s", str)
+    _type_map[String] = ("s", str)
     PyObject = PY_TYPES + 100
-    type_map["O"] = PyObject
-    type_map[PyObject] = ("O", object)
+    _type_map["O"] = PyObject
+    _type_map[PyObject] = ("O", object)
 
     Compound = PY_TYPES + 500
-    type_map[PyObject] = (None, dict)
+    _type_map[Compound] = ("compound", dict)
 
     # supports the NumPy NPY_TYPES enum
     # 200 is python space
     NUMPY_TYPES = 2000
 
     NUMPY_Int8 = NUMPY_TYPES + 10
-    type_map[NUMPY_Int8] = ("np.int8", np.int8)
+    _type_map[NUMPY_Int8] = ("int8", np.int8)
     NUMPY_UnsignedInt8 = NUMPY_TYPES + 11
-    type_map[NUMPY_UnsignedInt8] = ("np.uint8", np.uint8)
+    _type_map[NUMPY_UnsignedInt8] = ("uint8", np.uint8)
     NUMPY_Int16 = NUMPY_TYPES + 12
-    type_map[NUMPY_Int16] = ("np.int16", np.int16)
+    _type_map[NUMPY_Int16] = ("int16", np.int16)
     NUMPY_UnsignedInt16 = NUMPY_TYPES + 13
-    type_map[NUMPY_UnsignedInt16] = ("np.uint16", np.uint16)
+    _type_map[NUMPY_UnsignedInt16] = ("uint16", np.uint16)
     NUMPY_Int32 = NUMPY_TYPES + 14
-    type_map[NUMPY_Int32] = ("np.int32", np.int32)
+    _type_map[NUMPY_Int32] = ("int32", np.int32)
     NUMPY_UnsignedInt32 = NUMPY_TYPES + 15
-    type_map["np.uint32"] = NUMPY_UnsignedInt32
-    type_map[NUMPY_UnsignedInt32] = ("np.uint32", np.uint32)
+    _type_map[NUMPY_UnsignedInt32] = ("uint32", np.uint32)
     NUMPY_Int64 = NUMPY_TYPES + 16
-    type_map[NUMPY_Int64] = ("np.int64", np.int64)
+    _type_map[NUMPY_Int64] = ("int64", np.int64)
     NUMPY_UnsignedInt64 = NUMPY_TYPES + 17
-    type_map[NUMPY_UnsignedInt64] = ("np.uint64", np.uint64)
+    _type_map[NUMPY_UnsignedInt64] = ("uint64", np.uint64)
 
-    NUMPY_Float16 = PY_TYPES + 20
-    type_map[NUMPY_Float16] = ("np.float16", np.float16)
-    NUMPY_Float32 = PY_TYPES + 21
-    type_map[NUMPY_Float32] = ("np.float32", np.float32)
-    NUMPY_Float64 = PY_TYPES + 22
-    type_map[NUMPY_Float64] = ("np.float64", np.float64)
-    NUMPY_Float128 = PY_TYPES + 23
-    type_map[NUMPY_Float128] = ("np.float128", np.float128)
+    NUMPY_Float16 = NUMPY_TYPES + 20
+    _type_map[NUMPY_Float16] = ("float16", np.float16)
+    NUMPY_Float32 = NUMPY_TYPES + 21
+    _type_map[NUMPY_Float32] = ("float32", np.float32)
+    NUMPY_Float64 = NUMPY_TYPES + 22
+    _type_map[NUMPY_Float64] = ("float64", np.float64)
+    NUMPY_Float128 = NUMPY_TYPES + 23
+    _type_map[NUMPY_Float128] = ("float128", np.float128)
 
     NUMPY_Bool = NUMPY_TYPES + 30
-    type_map[NUMPY_Bool] = ("np.bool", np.bool)
+    _type_map[NUMPY_Bool] = ("bool", np.bool)
 
     @classmethod
     def type_data(cls, val):
-        mapp = cls.type_map.value
+        mapp = cls._type_map.value
         if isinstance(val, cls):
             val = val.value
         return mapp[val]
+
+    _rev_map = {}
+    @classmethod
+    def resolve_ffi_type(cls, val):
+        mapp = cls._rev_map.value
+        if len(mapp) == 0: # initialize reverse map
+            for k,v in cls._type_map.value.items():
+                if isinstance(v, tuple):
+                    for kk in v:
+                        mapp[kk] = k
+        return FFIType(mapp[val])
+
+class FFIContainerType(enum.Enum):
+    Untyped = 0
+    Raw = 1
+    Vector = 2
+    Array = 3
 
 class DebugLevels(enum.Enum):
     Quiet = 0
@@ -141,20 +164,66 @@ class FFIArgument(FFISpec):
     """
     An argument spec for data to be passed to an FFIMethod
     """
-    __fields__ = ["name", "dtype", "shape"]
-    def __init__(self, name=None, dtype=None, shape=None, value=None):
+    __fields__ = ["name", "dtype", "shape", "container_type"]
+    def __init__(self, name=None, dtype=None, shape=None, container_type=None, value=None):
         if shape is None:
             shape = ()
-        super().__init__(name=name, dtype=dtype, shape=shape)
+        if container_type is None:
+            container_type = 'Untyped'
+        super().__init__(name=name, dtype=dtype, shape=shape, container_type=container_type)
         self.arg_name = name
-        self.arg_type = FFIType(dtype)
+        self.arg_type = self.infer_dtype(dtype)
         self.arg_shape = shape
+        self.container_type = self.infer_ctype(container_type)
+    _base_dtype_map = {
+        'int8':FFIType
+    }
+    @classmethod
+    def infer_dtype(cls, dtype):
+        if dtype is None:
+            raise ValueError("can't infer dtype for value `None`")
+        if isinstance(dtype, FFIType):
+            return dtype
+        elif isinstance(dtype, (int, np.integer)):
+            return FFIType(dtype)
+        elif isinstance(dtype, str):
+            try:
+                return FFIType[dtype]
+            except KeyError:
+                return FFIType.resolve_ffi_type(dtype)
+        elif isinstance(dtype, np.dtype):
+            return FFIType.resolve_ffi_type(dtype.name)
+        else:
+            return FFIType.resolve_ffi_type(dtype)
+            # for type_val, pair in FFIType.type_map.value.items():
+            #         if isinstance(pair, tuple) and pair[1] == dtype:
+            #             return FFIType(type_val)
+            # raise ValueError("can't infer FFIType for {}".format(dtype))
+    @classmethod
+    def infer_ctype(cls, container_type):
+        if isinstance(container_type, FFIContainerType):
+            return container_type
+        elif isinstance(container_type, str):
+            return FFIContainerType[container_type]
+        else:
+            return FFIContainerType(container_type)
+    @classmethod
+    def from_arg_sig(cls, arg):
+        #arg is an ArgumentSignature.Argument but I need to do a more serious
+        # refactor later so I won't import that module yet
+        return cls(
+            arg.name,
+            arg.typechar,
+            shape=None, # no shapes built into Argument at this point,
+            container_type=FFIContainerType.Raw if (arg.is_pointer() or arg.is_array()) else None
+        )
     def __repr__(self):
-        return "{}('{}', {}, {})".format(
+        return "{}('{}', {}, {}, {})".format(
             type(self).__name__,
             self.arg_name,
             self.arg_type,
-            self.arg_shape
+            self.arg_shape,
+            self.container_type,
         )
     def cast(self, val):
         """
@@ -164,19 +233,21 @@ class FFIArgument(FFISpec):
         :return:
         :rtype:
         """
+
         type_str, dtype = FFIType.type_data(self.arg_type)
         if isinstance(dtype, np.dtype): # have a numpy type
-            dat = np.asarray(val, dtype=dtype)
+            dat = np.asanyarray(val, dtype=dtype)
         elif len(self.arg_shape) > 0:
-            dat = np.asarray(val, dtype=dtype)
+            dat = np.asanyarray(val, dtype=dtype)
         else:
-            if not isinstance(val, dtype):
+            if isinstance(val, np.ndarray):
+                dat = np.ascontiguousarray(val.astype(dtype))
+            elif not isinstance(val, dtype):
                 dat = dtype(val)
             else:
                 dat = val
 
         # do some shape checks...
-
         return FFIParameter(self, dat)
 class FFIParameter:
     """
@@ -196,11 +267,26 @@ class FFIParameter:
     @property
     def arg_shape(self):
         argshp = self.arg.arg_shape
-        if 0 in argshp:
+        if isinstance(self.val, np.ndarray) and (0 in argshp or len(argshp) == 0):
             argshp = self.val.shape # gotta be a numpy value
         return argshp
     @property
+    def container_type(self):
+        return self.arg.container_type
+    @property
     def arg_value(self):
+        if (
+                len(self.arg_shape) > 0
+                or
+                self.container_type == FFIContainerType.Raw
+                or
+                self.container_type == FFIContainerType.Vector
+        ) and not isinstance(self.val, np.ndarray):
+            self.val = np.ascontiguousarray(np.array(self.val)) # to be able to treat as a pointer
+            # raise Exception(self.val)
+            # if val.shape == ():
+            #     val = np.array([self.val])
+            # self.val = val
         return self.val
     def __repr__(self):
         return "{}({}, {}, {})->{}".format(
@@ -217,15 +303,28 @@ class FFIParameters:
     """
     def __init__(self, dats):
         self.dats = dats
+        self._params = None
+        self._map = None
     def __iter__(self):
         return iter(self.ffi_parameters)
     @property
     def ffi_parameters(self):
-        if isinstance(self.dats, collections.OrderedDict):
-            dat = tuple(self.dats.values())
-        else:
-            dat = self.dats
-        return dat
+        if self._params is None:
+            if isinstance(self.dats, (dict, collections.OrderedDict)):
+                dat = tuple(self.dats.values())
+            else:
+                dat = self.dats
+            self._params = dat # trying to keep stuff from going out of scope?
+        return self._params
+    @property
+    def ffi_map(self):
+        if self._map is None:
+            self._map = {}
+            for p in self.ffi_parameters:
+                self._map[p.arg_name] = p
+        return self._map
+    def __getitem__(self, item):
+        return self.ffi_map[item].arg_value
 
 class FFIMethod(FFISpec):
     """
@@ -246,11 +345,13 @@ class FFIMethod(FFISpec):
     def arg_names(self):
         return tuple(x.arg_name for x in self.args)
 
-    def collect_args(self, *args, excluded_args=None, **kwargs):
+    @classmethod
+    def collect_args_from_list(cls, arg_list, *args, excluded_args=None, **kwargs):
         arg_dict = collections.OrderedDict()
 
         req_dict = collections.OrderedDict(
-            (k.arg_name, k) for k in self.args
+            (k.arg_name, k)
+            for k in arg_list
         )
 
         for k in kwargs:
@@ -269,11 +370,14 @@ class FFIMethod(FFISpec):
 
         if len(req_dict) > 0:
             raise ValueError("{}.{}: missing required arguments {}".format(
-                type(self).__name__,
+                cls.__name__,
                 'collect_args',
                 tuple(req_dict.values())
             ))
         return arg_dict
+
+    def collect_args(self, *args, excluded_args=None, **kwargs):
+        return self.collect_args_from_list(self.args, *args, excluded_args=excluded_args, **kwargs)
 
     @classmethod
     def from_signature(cls, sig, module=None):
@@ -286,7 +390,12 @@ class FFIMethod(FFISpec):
             module=module
         )
 
-
+    def call(self, *args, debug=False, **kwargs):
+        fack = self.collect_args(*args, **kwargs)
+        return self.mod.call_method(self.name, fack, debug=debug)
+    def call_threaded(self, *args, threading_var=None, threading_mode="serial", debug=False, **kwargs):
+        fack = self.collect_args(*args, **kwargs)
+        return self.mod.call_method_threaded(self.name, fack, threading_var, mode=threading_mode, debug=debug)
     def __call__(self, *args, threading_var=None, threading_mode="serial", debug=False, **kwargs):
         fack = self.collect_args(*args, **kwargs)
         if threading_var is None:
@@ -393,12 +502,12 @@ class FFIModule(FFISpec):
         :rtype:
         """
         req_attrs = ("arg_type", "arg_name", "arg_shape", "arg_value")
-        if isinstance(params, collections.OrderedDict):
+        if isinstance(params, (dict, collections.OrderedDict)):
             params = FFIParameters(params)
         for p in params:
             if not all(hasattr(p, x) for x in req_attrs):
                 raise AttributeError("parameter {} needs attributes {}".format(p, req_attrs))
-        return self.mod.call_method(self.captup, name, params,  self.get_debug_level(debug))
+        return self.mod.call_method(self.captup, name, params, self.get_debug_level(debug))
     def call_method_threaded(self, name, params, thread_var, mode="serial", debug=False):
         """
         Calls a method with threading enabled
@@ -415,7 +524,7 @@ class FFIModule(FFISpec):
         :rtype:
         """
         req_attrs = ("arg_type", "arg_name", "arg_shape", "arg_value")
-        if isinstance(params, collections.OrderedDict):
+        if isinstance(params, (dict, collections.OrderedDict)):
             params = FFIParameters(params)
         for p in params:
             if not all(hasattr(p, x) for x in req_attrs):

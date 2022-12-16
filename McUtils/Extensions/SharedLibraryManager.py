@@ -157,6 +157,16 @@ class SharedLibraryFunction:
             res = res.value
         return res
 
+    def _call(self, args, kwargs): # here to be overloaded
+        args = self._sig.prep_args(args, kwargs, defaults=self.defaults)
+        if self._dir is not None:
+            with SharedLibraryLoader.InDir(self._dir):
+                res = self.function(*args)
+        else:
+            res = self.function(*args)
+        args = dict(zip((a.name for a in self._sig.args), args))
+        return res, args
+
     def call(self, *args, **kwargs):
         """
         Calls the function we loaded.
@@ -172,14 +182,7 @@ class SharedLibraryFunction:
             kwargs = self._sig.populate_kwargs(args, kwargs,  defaults=self.defaults)
             args = None
             kwargs = self.arg_prepper(kwargs)
-
-        args = self._sig.prep_args(args, kwargs, defaults=self.defaults)
-        if self._dir is not None:
-            with SharedLibraryLoader.InDir(self._dir):
-                res = self.function(*args)
-        else:
-            res = self.function(*args)
-        args = dict(zip((a.name for a in self._sig.args), args))
+        res, args = self._call(args, kwargs)
         return self.return_handler(res, args)
 
     def __call__(self, *args, **kwargs):
@@ -187,6 +190,7 @@ class SharedLibraryFunction:
 
 class SharedLibrary:
 
+    method_type = SharedLibraryFunction
     def __init__(
             self,
             library,
@@ -201,7 +205,7 @@ class SharedLibrary:
     def register(self, tag, name=None, docstring=None, defaults=None, return_handler=None, prep_args=None, **params):
         if name is None:
             name = tag
-        fn = SharedLibraryFunction(
+        fn = self.method_type(
             self._loader,
             FunctionSignature.construct(name, **params),
             docstring=docstring,

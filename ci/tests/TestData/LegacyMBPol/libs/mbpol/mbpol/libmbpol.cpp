@@ -12,7 +12,7 @@
 //
 //} // namespace
 
-//extern "C" {
+extern "C" {
 
 void calcpot_(int *nw, double *Vpot, const double *x) {
     x2o::mbpol model;
@@ -26,4 +26,4 @@ void calcpotg_(int *nw, double *Vpot, const double *x, double *g) {
 
 //}
 
-//} // extern "C"
+} // extern "C"

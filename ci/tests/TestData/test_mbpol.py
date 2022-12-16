@@ -13,14 +13,14 @@ parser.add_argument('--timerep', dest='time_report', action='store_const', const
 parser.add_argument('--novec', dest='test_unvectorized', action='store_const', const=True, default=False)
 parser.add_argument('--threading', dest='threading', default='serial', type=str, nargs="?")
 parser.add_argument('--iterations', dest='iterations', default=10, type=int, nargs="?")
-parser.add_argument('--structs', dest='structs', default=10, type=int, nargs="?")
+parser.add_argument('--structs', dest='structs', default=5, type=int, nargs="?")
 opts = parser.parse_args()
 
 from McUtils.Extensions import *
 from Peeves.Timer import Timer
 import numpy as np, time
 
-lib_file = os.path.join(test_dir, 'libmbpol.so')
+lib_file = os.path.join(test_dir, 'LegacyMBPol', 'libs', 'libmbpol.so')
 mbpol_so = SharedLibrary(
     lib_file,
     get_pot=dict(
@@ -47,6 +47,166 @@ mbpol_so = SharedLibrary(
         }
     )
 )
+
+# raise Exception(mbpol_so.get_pot(nwaters=1, coords=np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])))
+
+DynamicFFILibrary.configure_loader(
+    threaded=True,
+    extra_compile_args=(['-ftime-report'] if opts.time_report else []) + (['-O0'] if opts.cmode == 'fast' else []),
+    include_dirs=['/usr/local/opt/llvm/include'],
+    runtime_dirs=['/usr/local/opt/llvm/lib', '/usr/local/opt/llvm/lib/c++'],
+    extra_link_args=['-mmacosx-version-min=12.0'],
+    # recompile=opts.recompile
+)
+DynamicFFIFunctionLoader.load()
+# #
+#
+#
+# test_lib = os.path.join(
+#     os.path.dirname(sys.modules['McUtils'].__file__),
+#     "McUtils", "Extensions",
+#     "FFI", "libs", "DynamicFFILibrary", "DynamicFFILibrary.so"
+# )
+# test_ffi = DynamicFFILibrary(
+#     test_lib,
+#     test_print = dict(
+#         name='print_hi',
+#         return_type='void'
+#     ),
+#     print_int = dict(
+#         name='print_int',
+#         i=int,
+#         return_type='void'
+#     ),
+#     print_ret_int = dict(
+#         name='print_ret_int',
+#         i=int,
+#         return_type=int
+#     ),
+#     print_int_ptr = dict(
+#         name='print_int_ptr',
+#         i=(int,),
+#         return_type=int
+#     ),
+#     test_int_crd = dict(
+#         name='print_int_crd',
+#         i=(int,),
+#         crd=(float,),
+#         return_type='void'
+#     ),
+#     print_ij = dict(
+#         name='print_ij',
+#         i=(int,),
+#         j=(int,),
+#         return_type='void'
+#     ),
+#
+#     print_coords=dict(
+#         nwaters=(int,),
+#         energy=[float],
+#         coords=[float],
+#         return_type=float,
+#         prep_args=lambda kw: [
+#             kw.__setitem__('energy', np.ones(len(kw['coords']) if kw['coords'].ndim > 2 else 1)),
+#             kw][-1],
+#         defaults={'energy': None},
+#         return_handler=lambda r, kw: kw['energy']
+#     )
+# )
+
+# raise Exception(
+#     test_ffi.print_ret_int(
+#         i=102
+#         # i=np.array([1, 3], dtype='int8'),
+#         # j=np.array([2, 4], dtype='int8')
+#         # , threading_vars=['i', 'j']
+#         , debug='excessive' if opts.debug else False
+#     )
+# )
+#
+# test_ffi.test_print(debug='excessive')
+
+# res = test_ffi.print_coords(
+#     nwaters=1,
+#     coords=np.array([
+#         [
+#             [0, 0, 0],
+#             [1, 0, 0],
+#             [0, 1, 0]
+#         ],
+#         [
+#             [0, 0, 0],
+#             [1, 0, 0],
+#             [0, 1, 0]
+#         ],
+#     ], dtype=float
+#     ),
+#     threading_vars=['energy', 'coords']
+# )
+# raise Exception(res)
+
+
+# CLoader(os.path.join(test_dir, "LegacyMBPol", "libs", 'mbpol')).custom_make(
+#     True, os.path.join(test_dir, "LegacyMBPol", "libs", 'mbpol')
+# )
+
+lib_file = os.path.join(test_dir, "LegacyMBPol", "libs", "libmbpol.so")
+# lib_file = os.path.join(test_dir, "libmbpol.so")
+mbpol_ffi = DynamicFFILibrary(
+    lib_file,
+    get_pot=dict(
+        name='calcpot_',
+        nwaters=(int,),
+        energy=[float],
+        coords=[float],
+        return_type=float,
+        prep_args=lambda kw:[
+            kw.__setitem__('energy', np.zeros(len(kw['coords']) if kw['coords'].ndim > 2 else 1)),
+            kw][-1],
+        defaults={'energy': None},
+        return_handler=lambda r, kw: kw['energy'] / 627.5094740631
+    ),
+    get_pot_grad = dict(
+        name='calcpotg_',
+        nwaters=(int,),
+        energy=(float,),
+        coords=[float],
+        grad=[float],
+        return_type=float,
+        prep_args=lambda kw:[
+            kw.__setitem__('grad', np.zeros(kw['coords'].shape)),
+            kw.__setitem__('energy', np.zeros(len(kw['coords']) if kw['coords'].ndim > 2 else 1)),
+            kw][-1],
+        defaults={'grad':None, 'energy': None},
+        return_handler=lambda r, kw: {
+            'grad':kw['grad'] / 627.5094740631,
+            'energy': kw['energy'] / 627.5094740631
+        }
+    )
+)
+
+# print(id(mbpol_ffi), id(mbpol_ffi.get_pot_grad))
+# coords = np.array([
+#     [
+#         [0, 0, 0],
+#         [1., 0, 0],
+#         [0, 1., 0]
+#     ],
+#     [
+#         [0, 0, 0],
+#         [2., 0, 0],
+#         [0, 1., 0]
+#     ]
+# ], dtype=float)
+# raise Exception(
+#     mbpol_ffi.get_pot(
+#         nwaters=1,
+#         coords=coords
+#         , threading_vars=['energy', 'coords']
+#         , threading_mode=opts.threading
+#         , debug='excessive' if opts.debug else False
+#     )
+# )
 
 # might need export CC=/usr/local/opt/llvm/bin/clang
 lib_dir = os.path.join(test_dir, 'LegacyMBPol')
@@ -137,6 +297,16 @@ with Timer(tag="threaded", number=test_its) as t4:
 check_eng_grad(res)
 
 print("Relative timing: ", t4.latest / t3.latest)
+
+with Timer(tag="libffi vectorized", number=test_its) as t6:
+    for _ in range(test_its):
+        res = mbpol_ffi.get_pot_grad(nwaters=1, coords=waters, threading_vars=['coords', 'energy', 'grad'],
+                                 threading_mode=opts.threading
+                                     # , debug='excessive' if opts.debug else False
+                                     )
+check_eng_grad(res)
+
+print("Relative timing: ", t6.latest / t3.latest)
 
 
 # # Either I fucked this up or there's some crazy RVO b.c. this is barely faster
