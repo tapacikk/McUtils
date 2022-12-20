@@ -3,7 +3,7 @@ from .Derivatives import FiniteDifferenceDerivative
 from ...Coordinerds import CoordinateSet, CoordinateSystem
 from ..Symbolic import TensorDerivativeConverter
 from ...Numputils import vec_tensordot
-import numpy as np, itertools
+import numpy as np, itertools, copy
 
 __all__ = [
     'FunctionExpansion'
@@ -121,39 +121,109 @@ class FunctionExpansion:
             else:
                 self._tensors = TensorDerivativeConverter(self._transf, self._derivs).convert()
         return self._tensors
+    @expansion_tensors.setter
+    def expansion_tensors(self, tensors):
+        """
+        Are we going to assume in setting the tensors that
+        people have done any requisite coordinate transformations?
 
-    def get_expansions(self, coords, squeeze=True):
+        -> I think that's leaving room open for nasty surprises since we have
+        the `_transf_ member
+        -> but the `expansion_tensors` are in general expected to ... be transformed?
+
+        Which means that we need _two_ properties 1) these tensors and 2) the derivs
+        neither of which is transformed when being set
+        """
+        self._tensors = tensors
+
+    @property
+    def derivative_tensors(self):
+        """
+        Provides the base derivative tensors
+        independent of any coordinate transformations
+
+        :return:
+        :rtype: Iterable[np.ndarray]
+        """
+        return self._derivs
+    @derivative_tensors.setter
+    def derivative_tensors(self, derivs):
+        self._tensors = derivs
+
+    def get_expansions(self, coords, subexpansions=None, outer=True, squeeze=True):
         """
 
         :param coords: Coordinates to evaluate the expansion at
         :type coords: np.ndarray | CoordinateSet
+        :param subexpansions: A set of tensor expansion indices to use if we have a multiexpansion
+        but only want some subset of the relevant points
+        :type subexpansions: int | Iterable[int]
         :return:
         :rtype:
         """
+
+        if not outer and not self.is_multiexpansion:
+            raise ValueError("outer doesn't make sense without multiexpansion")
+        outer = (not self.is_multiexpansion) or outer
+        # doesn't really make sense if we don't have stuff to take the outer product over
 
         coords = np.asanyarray(coords)
         cshape = coords.shape # so we can squeeze at the end if need be
         if coords.ndim == 1:
             coords = coords[np.newaxis]
-        elif coords.ndim > 2:
-            coords = np.reshape(coords, (-1, cshape[-1]))
+            outer = True # again...doesn't make sense _not_ to take an outer product here
+        elif coords.ndim >= 2:
+            if outer:
+                if coords.ndim > 2: # we want to apply each expansion to each point
+                    coords = np.reshape(coords, (-1, cshape[-1]))
+            else:
+                # we assume the first dimension is shared between the
+                # multi-expansion and the coordinates
+                coords = np.reshape(coords, (cshape[0], -1, cshape[-1]))
 
         center = self._center
         if center is None:
             # we assume we have a vector of points
             disp = coords
         else:
-            if center.ndim == 1:
-                center = center[np.newaxis]
+            # by default we take the outer product through
+            # broacasting, but if outer==False I want to be
+            # able to just thread things and require that the number
+            # of vectors of points is the same as the numbers of expansions
+            # which I think has to map onto the number of centers
+            if outer:
+                if center.ndim == 1:
+                    center = center[np.newaxis]
+                else:
+                    center = center[np.newaxis, :, :]
+                    coords = coords[:, np.newaxis]
             else:
-                center = center[np.newaxis, :, :]
-                coords = coords[:, np.newaxis]
+                # we need to coerce things into the appropriate form
+                # and by now we _know_ coords is rank three and now we just
+                # need to make sure that center has the appropriate shape
+                # for this
+                if center.ndim == 1:
+                    center = center[np.newaxis, np.newaxis]
+                else:
+                    center = center[:, np.newaxis, :] # need to broadcast along axis 1
+                    # coords = coords[:, np.newaxis]
+
             disp = coords - center
+
+        if isinstance(subexpansions, (int, np.integer)):
+            subexpansions = [subexpansions]
 
         expansions=[]
         for i, tensr in enumerate(self.expansion_tensors):
+            if subexpansions is not None:
+                tensr = tensr[subexpansions] # I think it's really this simple...?
+                # TBH I'm not entirely sure why one would want to use this kind of subexpansion
+                # since it's generally not that expensive to build one of the smaller expansions
+                # but it's nice to have the option since I can see this being a small optimization on the
+                # edge somewhere.
             # contract the tensor by the displacements until it's completely reduced
-            tensr = np.broadcast_to(tensr[np.newaxis], (disp.shape[0],) + tensr.shape)
+            if outer:
+                tensr = np.broadcast_to(tensr[np.newaxis], (disp.shape[0],) + tensr.shape)
             for j in range(i+1):
                 # try:
                 tensr = vec_tensordot(disp, tensr, axes=[[-1], [tensr.ndim-1]])
@@ -167,10 +237,17 @@ class FunctionExpansion:
         if len(cshape) == 1:
             expansions = [np.squeeze(e) for e in expansions]
         elif len(cshape) > 2:
-            expansions = [np.reshape(e, cshape[:-1]) for e in expansions]
+            new_shape = cshape[:-1]
+            if outer:
+                # need to reshape including the broadcast shape...
+                # but at each order the contraction should be complete
+                # meaning we lose the final dimension
+                new_shape = (-1) + new_shape
+            expansions = [np.reshape(e, new_shape) for e in expansions]
+
 
         return expansions
-    def expand(self, coords, squeeze=True):
+    def expand(self, coords, outer=True, squeeze=True):
         """Returns a numerical value for the expanded coordinates
 
         :param coords:
@@ -179,7 +256,7 @@ class FunctionExpansion:
         :rtype: float | np.ndarray
         """
         ref = self.ref
-        exps = self.get_expansions(coords, squeeze=squeeze)
+        exps = self.get_expansions(coords, outer=outer, squeeze=squeeze)
         return ref + sum(exps)
 
     def __call__(self, coords, **kw):

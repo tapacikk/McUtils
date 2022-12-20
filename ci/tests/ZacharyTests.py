@@ -1068,7 +1068,7 @@ class ZacharyTests(TestCase):
             ),
             .005)
 
-    @validationTest
+    @debugTest
     def test_MultiExpansion(self):
         dtype = np.float32
 
@@ -1089,10 +1089,12 @@ class ZacharyTests(TestCase):
         exp1([exp1.center, exp2.center, exp3.center, exp4.center])
         d1([exp1.center, exp2.center, exp3.center, exp4.center])
 
-        multi([exp1.center, exp2.center, exp3.center, exp4.center])
+        mult_test_1 = multi([exp1.center, exp2.center, exp3.center, exp4.center])
 
 
+        mult_test_2 = multi([exp1.center, exp2.center, exp3.center, exp4.center], outer=False)
 
+        self.assertTrue(np.allclose(mult_test_2, np.diag(mult_test_1)))
 
         #
         #
@@ -1402,7 +1404,7 @@ class ZacharyTests(TestCase):
         raise Exception(c)
         TensorExpression.OuterPowerTerm(TensorExpression.ConstantArray([1, 2, 3], name="bloop"), 2)
 
-    @debugTest
+    @validationTest
     def test_RBFInterp1D(self):
         # 1D
         np.random.seed(0)
@@ -1467,7 +1469,7 @@ class ZacharyTests(TestCase):
         #     ]
         # )
 
-    @debugTest
+    @validationTest
     def test_RBFInterpolator(self):
 
         #
@@ -1499,7 +1501,8 @@ class ZacharyTests(TestCase):
             # extra_degree=2,
             kernel='thin_plate_spline',
             clustering_radius=.01,
-            multicenter_monomials=True
+            multicenter_monomials=True,
+
             # monomial_basis=True
         )
 
@@ -1530,7 +1533,7 @@ class ZacharyTests(TestCase):
 
         h = .001
         test_pts = pts[:3] + np.array([[0, h]]*3)
-        extrap = interp(test_pts, neighbors=15)
+        extrap = interp(test_pts, neighbors=15, zero_tol=-1)
         true = np.product(np.sin(test_pts), axis=1)
 
         # if not np.allclose(
@@ -1554,7 +1557,7 @@ class ZacharyTests(TestCase):
         )
 
         test_pts = pts[:10]
-        dervs = interp(test_pts, neighbors=15, deriv_order=1)[1]
+        dervs = interp(test_pts, neighbors=15, deriv_order=1, zero_tol=-1)[1]
         reals = np.array(
             [
                 dvals_x,
@@ -1577,10 +1580,10 @@ class ZacharyTests(TestCase):
             atol=.1
         ), msg="bad deriv interpolation at interpolation points \nerror: {} in\n{} \nvs\n {}".format(dervs-reals, dervs, reals))
 
-        # np.random.seed(0)
-        # test_vals = np.unique(np.random.randint(0, len(pts)-1, size=200))
-        # errors = [[], [], []]
-        # print_errors = False
+        np.random.seed(0)
+        test_vals = np.unique(np.random.randint(0, len(pts)-1, size=200))
+        errors = [[], [], []]
+        print_errors = False
         # prob_n = 8
         # c = pts[test_vals[prob_n:prob_n+1]]+.1
         #
@@ -1663,7 +1666,46 @@ class ZacharyTests(TestCase):
         # )
         # raise Exception(interp(pts[:2], deriv_order=1, neighbors=5))
 
-    @debugTest
+    @validationTest
+    def test_RBFInterpolatorResiliance(self):
+
+        #
+        np.random.seed(1)
+        npts = 1000
+        ndim = 2
+        pts = np.random.uniform(low=-np.pi / 2, high=np.pi / 2, size=(npts, ndim))
+        og = pts
+        vals = og_vals = np.product(np.sin(pts), axis=1)
+        dvals_x = np.sin(pts[:, 1]) * np.cos(pts[:, 0])
+        dvals_y = np.sin(pts[:, 0]) * np.cos(pts[:, 1])
+        dvals = np.array([dvals_x, dvals_y]).T
+        og_d = dvals
+        dvals_xx = -np.sin(pts[:, 0]) * np.sin(pts[:, 1])
+        dvals_xy = np.cos(pts[:, 1]) * np.cos(pts[:, 0])
+        dvals_yy = -np.sin(pts[:, 1]) * np.sin(pts[:, 0])
+        d2vals = np.moveaxis(np.array([[dvals_xx, dvals_xy], [dvals_xy, dvals_yy]]), -1, 0)
+        og_dd = d2vals
+
+        # import McUtils.Plots as plt
+        #
+        # plt.ScatterPlot3D(*pts.T, vals, plot_range=[[-np.pi/2, np.pi/2], [-np.pi/2, np.pi/2], [-1, 1]]).show()
+
+        interp = RBFDInterpolator(
+            pts,
+            vals,
+            dvals,
+            d2vals,
+            # extra_degree=2,
+            kernel='thin_plate_spline',
+            clustering_radius=.01,
+            multicenter_monomials=True,
+
+            # monomial_basis=True
+        )
+
+        test_vals = interp(pts, neighbors=15, zero_tol=-1, resiliance_test_options={})
+
+    @validationTest
     def test_HigherElementaryDerivs(self):
         sym = Symbols('x', 'y')
         fn = sym.morse(sym.x, de=2, a=1) + sym.morse(sym.y, de=2, a=1)

@@ -6,6 +6,7 @@ import numpy as np, math
 import scipy.spatial as spat
 import itertools, typing, dataclasses
 from ..Numputils import vec_outer, unique as nput_unique
+from .Taylor import FunctionExpansion
 from .Symbolic import TensorExpression
 
 __all__ = [
@@ -766,8 +767,25 @@ class RBFDInterpolator:
             w, degree, extra, error = res
             data = None
 
+        #TODO: should I be tracking the indices of the points as well?
+        # currently we just let those disappear but it's entirely possible
+        # that someone might want to do some extra testing (a la resiliance test)
+        # which would make it relevant to have access to extra information
+        # relating to the original data...?
         new = self.InterpolationData(w, grid, degree, scaling_data, extra_shift=extra, interpolation_error=error, solver_data=data)
         return new
+
+    def construct_function_expansion(self, inds):
+        grid = self.grid[inds]
+        vals = self.vals[inds]
+        derivs = [d[inds] for d in self.derivs]
+
+        return FunctionExpansion(
+            derivs,
+            center=grid,
+            ref=vals,
+            weight_coefficients=False # I'm _pretty_ sure that's what I want?
+        )
 
     class Interpolator:
         __slots__ = ['data', 'parent']
@@ -830,7 +848,8 @@ class RBFDInterpolator:
              zero_tol=1e-8,
              return_error=False,
              use_cache=True,
-             retries=3
+             retries=3,
+             resiliance_test_options=None
              # extrapolation_warning=None
              ):
         pts = np.asanyarray(pts)
@@ -848,7 +867,9 @@ class RBFDInterpolator:
         interp_data = np.full(len(pts), None) if return_interpolation_data else None
         der_sets = [
                     np.empty((len(pts),) + d.shape[1:])
-                    for d in self.derivs
+                        if reshape_derivatives else
+                    np.empty((len(pts), self.triu_num(pts.shape[-1], d.ndim-1)))
+                        for d in self.derivs
                 ] if deriv_order > 0 else None
         errors = np.empty((len(pts), 2)) if return_error else None
 
@@ -862,15 +883,19 @@ class RBFDInterpolator:
                 zero_pos = zero_pos[0]
                 if len(zero_pos) > 0:
                     val_sets[zero_pos] = self.vals[sample_pos]
-                    for n,d in enumerate(self.derivs):
-                        der_sets[n][zero_pos] = d[sample_pos]
+                    if deriv_order > 0:
+                        for n,d in enumerate(self.derivs):
+                            der_sets[n][zero_pos] = d[sample_pos]
                     if return_error:
                         errors[zero_pos] = np.broadcast_to([[0, 0]], (len(zero_pos), 2))
                     sub_map = np.setdiff1d(np.arange(len(pts)), zero_pos)
                     hoods = hoods[sub_map]
                     pts = pts[sub_map]
 
-        ind_grps, pts_grps = self.create_neighbor_groups(hoods, merge_limit=merge_neighbors)
+        if len(hoods) > 0:
+            ind_grps, pts_grps = self.create_neighbor_groups(hoods, merge_limit=merge_neighbors)
+        else:
+            ind_grps = pts_grps = []
 
         # print(ind_grps, pts_grps)
         cache = self._pos_cache if use_cache else {}
@@ -878,18 +903,24 @@ class RBFDInterpolator:
             k = tuple(vals_inds)
             if k not in cache:
                 neighs = self.neighborhood_size if neighbors is None else neighbors
-                et = self.error_threshold
+                et = self.error_threshold # for the cases where we have errors _at the points_
                 for n in range(retries):
                     try:
                         if n == retries - 1:
                             self.error_threshold = None # always gotta succeed in the end...
-                        interp_stuff = self.construct_interpolation(vals_inds, solver_data=return_interpolation_data, return_error=return_error)
+                        interp_stuff = self.construct_interpolation(vals_inds,
+                                                                    solver_data=return_interpolation_data,
+                                                                    return_error=return_error
+                                                                    )
                     except RBFDError:
                         # print(">>", n, vals_inds)
                         neighs = neighs * 2 # just try to expand a little bit to fix things...
                         new_nearest = self.get_neighborhood(pts[pts_inds], neighbors=neighs)
                         vals_inds = np.unique(np.concatenate([vals_inds, new_nearest.flatten()]))
                     else:
+                        if resiliance_test_options is not None:
+                            expansion = self.construct_function_expansion(vals_inds)
+                            self.resiliance_test(expansion, interp_stuff, **resiliance_test_options)
                         break
                     finally:
                         self.error_threshold = et
@@ -943,17 +974,43 @@ class RBFDInterpolator:
 
         return res
 
+    def resiliance_test(self, expansion, interpolation_data, mesh_spacing=0.01, tolerance=0.05):
+        # allow 5% error (maybe scaled by mesh spacing)?
+        # -> presumably we have some kind of assurance based on the
+        # order of the polynomial approximation for how large our error is?
+        # we could calculate the interpolation at all of its target points...?
+
+        points = expansion.center + mesh_spacing
+        expand = expansion(points, outer=False)
+        interp = self.apply_interpolation(points, interpolation_data)[0]
+        m = np.min([np.min(expand), np.min(interp)])
+        M = np.max([np.max(expand), np.max(interp)])
+
+        error = np.abs(expand - interp) / (M - m)
+
+        if np.max(error) > tolerance:
+            raise RBFDError("failed resiliance test (mesh spacing {} leads to scaled deviation from expansion greater than {})".format(
+                mesh_spacing,
+                tolerance
+            ))
+
     def __call__(self, pts, deriv_order=0, neighbors=None, merge_neighbors=None, reshape_derivatives=True,
                  return_interpolation_data=False,
                  use_cache=True,
-                 return_error=False
+                 return_error=False,
+                 zero_tol=1e-8,
+                 retries=3,
+                 resiliance_test_options=None
                  ):
         return self.eval(pts,
                          deriv_order=deriv_order, neighbors=neighbors,
                          merge_neighbors=merge_neighbors, reshape_derivatives=reshape_derivatives,
                          return_interpolation_data=return_interpolation_data,
                          use_cache=use_cache,
-                         return_error=return_error
+                         return_error=return_error,
+                         zero_tol=zero_tol,
+                         retries=retries,
+                         resiliance_test_options=resiliance_test_options
                          )
 
     @property
