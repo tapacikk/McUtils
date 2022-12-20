@@ -118,19 +118,25 @@ class ModuleLoader:
         if retag:
             self.loader = DynamicModuleLoader(rootdir=rootdir, rootpkg=rootpkg, retag=retag)
         else:
+            self.root_dir = rootdir
             self.loader = None
 
     def load(self, file, pkg=None):
         if self.loader is not None:
             return self.loader.load(file, pkg=pkg)
         else:
-            if pkg is None:
-                rootdir = os.path.dirname(file)
+            rootdir = os.path.dirname(file)
+            if rootdir == "" or not os.path.isdir(rootdir):
+                rootdir = self.root_dir
+            if rootdir is not None:
                 sys.path.insert(0, rootdir)
-                try:
-                    mod = importlib.import_module(os.path.basename(os.path.splitext(file)[0]))
-                finally:
+            try:
+                if pkg is None:
+                    file = os.path.splitext(file)[0]
+                    mod = importlib.import_module(file)
+                else:
+                    mod = importlib.import_module(file, package=pkg)
+            finally:
+                if rootdir is not None:
                     sys.path.pop(0)
-            else:
-                mod = importlib.import_module(file, package=pkg)
             return mod

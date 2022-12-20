@@ -140,6 +140,22 @@ class DynamicFFILibrary(SharedLibrary):
     """
     method_type = DynamicFFIFunction
 
+    def __init__(
+            self,
+            library,
+            compiler_options=None,
+            **functions
+    ):
+        super().__init__(library, **functions)
+        self._loaded = False
+        self.compiler_opts = compiler_options
+
+    def get_function(self, item):
+        if not self._loaded and self.compiler_opts is not None:
+            self.configure_loader(**self.compiler_opts)
+        self._loaded = True
+        return super().get_function(item)
+
     @classmethod
     def configure_loader(cls, **compile_opts):
         DynamicFFIFunctionLoader.configure(**compile_opts)

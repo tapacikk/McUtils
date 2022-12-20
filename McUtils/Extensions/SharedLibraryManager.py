@@ -216,11 +216,14 @@ class SharedLibrary:
         self._functions[tag] = fn
         return fn
 
-    def __getattr__(self, item):
+    def get_function(self, item):
         if item in self._functions:
             return self._functions[item]
         else:
             raise ValueError("no shared library function {}".format(item))
+
+    def __getattr__(self, item):
+        return self.get_function(item)
 
     def __repr__(self):
         return "{}({})".format(
