@@ -197,10 +197,23 @@ class Logger:
         """
         if key in cls._loggers:
             logger = cls._loggers[key]
+        elif isinstance(key, Logger):
+            logger = key
+        elif key is True:
+            logger = Logger()
         else:
-            logger = None
+            if isinstance(key, str):
+                try:
+                    ll = LogLevel[key]
+                except KeyError:
+                    logger = None
+                else:
+                    logger = Logger(log_level=ll)
+            else:
+                logger = None
         if logger is None:
             logger = NullLogger()
+
         return logger
 
     @staticmethod

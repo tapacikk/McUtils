@@ -237,6 +237,7 @@ class Plot(Graphics):
         for k in self.known_styles:
             if k in opts:
                 plot_style[k] = opts[k]
+                del opts[k]
         for k in self.default_plot_style:
             if k not in plot_style:
                 plot_style[k] = self.default_plot_style[k]
@@ -885,7 +886,7 @@ class Plot2D(Plot):
     """
     A base class for plots of 3D data but plotted on 2D axes
     """
-    known_styles = {"corner_mask", "colors", "alpha", "cmap", "norm", "vmin, vmax", "origin",
+    known_styles = {"corner_mask", "colors", "alpha", "cmap", "norm", "vmin", "vmax", "origin",
                     "extent", "locator", "extend", "xunits, yunits", "antialiased", "nchunk",
                     "linewidths", "linestyles", "hatches", "data"}
     method='contour'
@@ -951,13 +952,13 @@ class TriDensityPlot(Plot2D):
 class TriContourLinesPlot(Plot2D):
     method = 'tricontour'
     known_styles = {"triangles", "mask", "levels", "colors",
-                    "alpha", "cmap", "norm", "vmin, vmax", "origin", "extent", "locator", "extend",
+                    "alpha", "cmap", "norm", "vmin", "vmax", "origin", "extent", "locator", "extend",
                     "xunits, yunits", "antialiased", "linewidths", "linestyles"}
 @Plot.register
 class TriContourPlot(Plot2D):
     method = 'tricontourf'
     known_styles = {"triangles", "mask", "levels", "colors",
-                    "alpha", "cmap", "norm", "vmin, vmax", "origin", "extent", "locator", "extend",
+                    "alpha", "cmap", "norm", "vmin", "vmax", "origin", "extent", "locator", "extend",
                     "xunits, yunits", "antialiased", "hatches"}
 
 class ListPlot2D(Plot2D):

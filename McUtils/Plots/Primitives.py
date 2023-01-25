@@ -53,7 +53,7 @@ class Disk(GraphicsPrimitive):
             kw = dict(kw, **self.opts)
             kw = dict(kw, s=[(10*self.rad)**2], **kwargs)
             s = axes.scatter(*pt, **kw)
-            print(pt, axes)
+            # print(pt, axes)
 
         return s
 

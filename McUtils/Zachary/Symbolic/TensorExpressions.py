@@ -1,5 +1,7 @@
 
 import abc, numpy as np, typing, weakref, hashlib
+import collections
+
 from ...Numputils import vec_outer, vec_tensordot
 
 __all__ = [
@@ -10,9 +12,10 @@ __all__ = [
 
 
 class TensorExpression:
-    def __init__(self, expr:'TensorExpression.Term', **vars):
+    def __init__(self, expr:'TensorExpression.Term|List', **vars):
         self.expr = expr
         self.vars = vars
+        self._prims = None
     def eval(self, subs:dict=None, print_terms=False):
         if subs is None:
             subs = self.vars
@@ -30,7 +33,43 @@ class TensorExpression:
             TensorExpression.Term._array_cache[p] = v
 
         try:
-            res = self.expr.asarray(print_terms=print_terms)
+            if isinstance(self.expr, TensorExpression.Term):
+                res = self.expr.asarray(print_terms=print_terms)
+                if isinstance(res, TensorExpression.ArrayStack):
+                    res = res.array
+            else: # depth-first evaluation
+                dfs_queue = collections.deque([self.expr])
+                stack = collections.deque()
+                sentinel = object() # for reconstructing arrays
+                res = None # by construction we should never use this...?
+                while dfs_queue:
+                    e = dfs_queue.popleft()
+                    # print("<<<<", id(e), str(e)[:25].replace("\n", ""))
+                    if isinstance(e, TensorExpression.Term):
+                        ar = e.asarray(print_terms=print_terms)
+                        if isinstance(ar, TensorExpression.ArrayStack):
+                            ar = ar.array
+                        # print(ar.shape)
+                        res.append(ar)
+                    elif e is sentinel:
+                        # print("  ="*10)
+                        new_res = stack.pop()
+                        if new_res is not None: # hit the bottom of the stack
+                            new_res.append(res)
+                            res = new_res
+                        elif dfs_queue:
+                            raise ValueError("sentinel at bad time")
+                        else:
+                            break
+                    else:
+                        stack.append(res)
+                        res = []
+                        # stick a sentinel in so we know when we've finished the array and can pop back out
+                        dfs_queue.appendleft(sentinel)
+                        # for sub_e in reversed(e):
+                            # print("   >>>>", id(sub_e), str(sub_e)[:25].replace("\n", ""))
+                        dfs_queue.extendleft(reversed(e))
+
         finally:
             TensorExpression.Term._array_cache = _ac
             # for p,v in cache.items():
@@ -38,21 +77,24 @@ class TensorExpression:
             #         del TensorExpression.Term._array_cache[p]
             #     else:
             #         TensorExpression.Term._array_cache[p] = v
-
-        if isinstance(res, TensorExpression.ArrayStack):
-            res = res.array
         return res
     @property
     def primitives(self):
-        return self.get_prims()
+        if self._prims is None:
+            self._prims = self.get_prims()
+        return self._prims
     def walk(self, callback):
-        bfs_queue = [self.expr]
+        bfs_queue = collections.deque([self.expr])
         visited = set()
         while bfs_queue:
-            e = bfs_queue.pop()
-            bfs_queue.extend(c for c in e.children if isinstance(c, TensorExpression.Term))
-            callback(e)
-            visited.add(e)
+            e = bfs_queue.popleft()
+            if isinstance(e, TensorExpression.Term):
+                if e not in visited:
+                    bfs_queue.extend(c for c in e.children if isinstance(c, TensorExpression.Term))
+                    callback(e)
+                    visited.add(e)
+            else:
+                bfs_queue.extend(e) # flattening arrays
     def get_prims(self):
         kids = set()
         def add_if_prim(e):
@@ -275,6 +317,7 @@ class TensorExpression:
             if self in self._array_cache:  # this allows me to share arrays as long as the hash is right
                 return self._array_cache[self]
             else:
+                # print(self)
                 try:
                     res = self.array_generator(print_terms=print_terms, **kw)
                 except TensorExpansionError:
@@ -318,7 +361,10 @@ class TensorExpression:
             raise NotImplementedError("base class")
         def __repr__(self):
             if self.name is None:
-                return self.to_string()
+                name = self.to_string()
+                # if name is None or name == "None":
+                #     raise ValueError("bad name for type {}".format(type(self).__name__))
+                return name
             else:
                 return self.name
         @abc.abstractmethod
@@ -593,10 +639,18 @@ class TensorExpression:
                 # print("???")
                 arr = scaling * term
             else: # manage broadcasting for effectively a vecouter
-                axes = [
-                    np.setdiff1d(np.arange(term.ndim), [term.ndim+a if a<0 else a for a in self.axes[0]]),
-                    np.setdiff1d(np.arange(scaling.ndim), [term.ndim+a if a<0 else a for a in self.axes[1]])
-                ]
+                mask = np.ones(term.ndim, dtype=np.uint8)
+                mask[[term.ndim+a if a < 0 else a for a in self.axes[0]]] = 0
+                ax1 = np.where(mask)[0]
+
+                mask = np.ones(scaling.ndim, dtype=np.uint8)
+                mask[[term.ndim+a if a < 0 else a for a in self.axes[1]]] = 0
+                ax2 = np.where(mask)[0]
+
+                axes = [ax1, ax2]
+                    # np.setdiff1d(np.arange(term.ndim), [term.ndim+a if a < 0 else a for a in self.axes[0]]),
+                    # np.setdiff1d(np.arange(scaling.ndim), [term.ndim+a if a < 0 else a for a in self.axes[1]])
+                # ]
                 # print(term.shape)
                 # print(scaling.shape)
                 # print(axes)
@@ -606,12 +660,14 @@ class TensorExpression:
                     arr = scaling.rev_outer(term, axes=axes)
                 else:
                     arr = vec_outer(term, scaling, axes=axes)
+                # print(self)
+                # print(arr.shape)
             return arr
 
         def to_string(self):
             meh_1 = '({})'.format(self.scaling) if isinstance(self.scaling, TensorExpression.SumTerm) else self.scaling
             meh_2 = '({})'.format(self.term) if isinstance(self.term, TensorExpression.SumTerm) else self.term
-            return '{}({}*{})'.format(type(self).__name__, meh_1, meh_2)
+            return '{}({}*{})'.format(type(self).__name__, meh_2, meh_1)
 
         def reduce_terms(self, check_arrays=False):
             return self
@@ -1243,7 +1299,7 @@ class TensorExpression:
                     self.term, name=self.fname, f=self.func, array=None,
                     derivative_order=self.deriv_order + 1
                 ),
-                axes=[[], []]
+                axes=[[-1] if self.term.rank() > 0 else [], [-1] if self.term.rank() > 0 else []]
                 #TODO: I _know_ this is wrong in general
                 #      but I'm not sure about all the correct rules yet
             )
@@ -1274,11 +1330,20 @@ class TensorExpression:
             if isinstance(self._arr, np.ndarray):
                 buf = self._arr.view(np.uint8)
                 h = hashlib.sha1(buf).hexdigest()
+            elif self._arr is None:
+                if self.base_array is not None:
+                    buf = self.base_array.view(np.uint8)
+                    h = hashlib.sha1(buf).hexdigest()
+                else:
+                    h = hash(self.base_array)
             else:
                 h = hash(self._arr)
             return hash((self.name, h))
         def to_string(self):
-            return str(self._arr)
+            if self._arr is None:
+                return str(self.base_array)
+            else:
+                return str(self._arr)
         def deriv(self):
             a = self.base_array
             return TensorExpression.ConstantArray(np.zeros(a.shape + (a.shape[-1],)), parent=self)

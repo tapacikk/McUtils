@@ -787,7 +787,7 @@ class HDF5Serializer(BaseSerializer):
             else:
                 try:
                     ds[...] = data
-                except TypeError:
+                except (TypeError, AttributeError):
                     self._destroy_and_add(h5_obj, key, data)
                 except:
                     raise IOError("failed to write key '{}' to HDF5 dataset {}".format(key, ds))

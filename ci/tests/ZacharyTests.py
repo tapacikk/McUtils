@@ -1718,33 +1718,82 @@ class ZacharyTests(TestCase):
             fexpr.deriv(order=3)([[1, 2], [3, 4]])
         ))
 
-    @validationTest
+    @debugTest
     def test_RBFTiming(self):
-        for npts in [50, 100, 200, 300, 400, 500]:
+        # for npts in [50, 100, 200, 300, 400, 500]:
+        #     np.random.seed(1)
+        #     npts = npts
+        #     ndim = 2
+        #     pts = np.random.uniform(size=(npts, ndim))
+        #     vals = np.product(np.sin(pts), axis=1)
+        #     dvals_x = np.sin(pts[:, 1])*np.cos(pts[:, 0])
+        #     dvals_y = np.sin(pts[:, 0])*np.cos(pts[:, 1])
+        #     dvals_xx = -np.sin(pts[:, 0])*np.sin(pts[:, 1])
+        #     dvals_xy = np.cos(pts[:, 1])*np.cos(pts[:, 0])
+        #     dvals_yy = -np.sin(pts[:, 1])*np.sin(pts[:, 0])
+        #
+        #     interp = RBFDInterpolator(
+        #         pts,
+        #         vals,
+        #         np.array([dvals_x, dvals_y]).T,
+        #         np.moveaxis(np.array([[dvals_xx, dvals_xy], [dvals_xy, dvals_yy]]), -1, 0),
+        #         extra_degree=2,
+        #         kernel='gaussian',
+        #         clustering_radius=.05
+        #     )
+        #
+        #     from Peeves.Timer import Timer
+        #     with Timer(tag="{} pts:".format(len(interp.grid))):
+        #         interp(interp.grid + .1, deriv_order=0, neighbors=5)
+
+
+        for npts in [300]:
             np.random.seed(1)
             npts = npts
-            ndim = 2
+            ndim = 9
             pts = np.random.uniform(size=(npts, ndim))
             vals = np.product(np.sin(pts), axis=1)
-            dvals_x = np.sin(pts[:, 1])*np.cos(pts[:, 0])
-            dvals_y = np.sin(pts[:, 0])*np.cos(pts[:, 1])
-            dvals_xx = -np.sin(pts[:, 0])*np.sin(pts[:, 1])
-            dvals_xy = np.cos(pts[:, 1])*np.cos(pts[:, 0])
-            dvals_yy = -np.sin(pts[:, 1])*np.sin(pts[:, 0])
+
+            dvals = []
+            for i in range(ndim):
+                vals = 1
+                for k in range(ndim):
+                    if k != i:
+                        vals = vals * np.sin(pts[:, k])
+                    else:
+                        vals = vals * np.cos(pts[:, k])
+                dvals.append(vals)
+            dvals = np.moveaxis(np.array(dvals), -1, 0)
+
+            d2vals = []
+            for i in range(ndim):
+                for j in range(ndim):
+                    vals = 1
+                    for k in range(ndim):
+                        if k != i and k != j:
+                            vals = vals * np.sin(pts[:, k])
+                        elif i == j:
+                            vals = -vals * np.sin(pts[:, k])
+                        else:
+                            vals = vals * np.cos(pts[:, k])
+                    d2vals.append(vals)
+            d2vals = np.moveaxis(np.array(d2vals).reshape((ndim, ndim, -1)), -1, 0)
 
             interp = RBFDInterpolator(
                 pts,
                 vals,
-                np.array([dvals_x, dvals_y]).T,
-                np.moveaxis(np.array([[dvals_xx, dvals_xy], [dvals_xy, dvals_yy]]), -1, 0),
-                extra_degree=2,
-                kernel='gaussian',
+                dvals,
+                d2vals,
+                # extra_degree=2,
+                # kernel='gaussian',
+                neighborhood_size=28,
                 clustering_radius=.05
             )
 
             from Peeves.Timer import Timer
-            with Timer(tag="{} pts:".format(len(interp.grid))):
-                interp(interp.grid, deriv_order=0, neighbors=5)
+            # from Peeves import BlockProfiler
+            with BlockProfiler(name="{} pts:".format(len(interp.grid))):
+                interp(interp.grid[:25] + .2, deriv_order=0, neighbors=5)
 
     @validationTest
     def test_RBFForms(self):

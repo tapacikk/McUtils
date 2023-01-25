@@ -7,12 +7,13 @@ import scipy.interpolate as interpolate
 import scipy.spatial as spat
 from .Mesh import Mesh, MeshType
 
-from .RBFDInterpolator import RBFDInterpolator
+from .NeighborBasedInterpolators import *
 
 __all__ = [
     "Interpolator",
     "Extrapolator",
     "RBFDInterpolator",
+    "InverseDistanceWeightedInterpolator",
     "ProductGridInterpolator",
     "UnstructuredGridInterpolator"
 ]
