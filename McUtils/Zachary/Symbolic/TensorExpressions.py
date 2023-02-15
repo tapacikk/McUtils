@@ -242,7 +242,17 @@ class TensorExpression:
                 for _ in range(self.stack_dim):
                     other = np.expand_dims(other, 0)
                 other = np.broadcast_to(other, self.stack_shape + ogs)
-            return type(self)(self.stack_shape, vec_tensordot(self.array, other, axes=axes))
+            sd = self.stack_dim
+            ax1, ax2 = axes
+            if isinstance(ax1, int):
+                ax1 = [ax1]
+            if isinstance(ax2, int):
+                ax2 = [ax2]
+            axes = [
+                [sd + a if a >= 0 else a for a in ax1],
+                [sd + b if b >= 0 else b for b in ax2]
+            ]
+            return type(self)(self.stack_shape, vec_tensordot(self.array, other, shared=len(self.stack_shape), axes=axes))
 
         def outer(self, other, axes=None):
             if isinstance(other, TensorExpression.ArrayStack):
@@ -869,7 +879,10 @@ class TensorExpression:
                     new = cls(simp, sela, selb)
             elif isinstance(simp, TensorExpression.SumTerm):
                 new = TensorExpression.SumTerm(
-                    *(x.shift(self.a, self.b).simplify(check_arrays=check_arrays) for x in simp.terms),
+                    *(
+                        x.shift(self.a, self.b).simplify(check_arrays=check_arrays)
+                        for x in simp.terms
+                    ),
                     array=self._arr
                 )
                 if check_arrays:
@@ -995,18 +1008,20 @@ class TensorExpression:
             return self.left.ndim + self.right.ndim - 2
 
         def deriv(self):
-            return (
-                    type(self)(self.left.dQ(),
-                               self.i + 1 if isinstance(self.i, (int, np.integer)) else [x + 1 for x in self.i],
-                               # not sure if this is right...
-                               self.j,
-                               self.right
-                               ) + type(self)(
-                self.left,
-                self.i,
-                self.j + 1 if isinstance(self.j, (int, np.integer)) else [x + 1 for x in self.j],
-                self.right.dQ()
-            ).shift(self.left.ndim - (0 if isinstance(self.j, (int, np.integer)) else len(self.j) - 1), 1)
+            t1 = type(self)(self.left.dQ(),
+                            self.i + 1 if isinstance(self.i, (int, np.integer)) else [x + 1 for x in self.i],
+                            # not sure if this is right...
+                            self.j,
+                            self.right
+                            )
+            t2 = type(self)(self.left,
+                            self.i,
+                            self.j + 1 if isinstance(self.j, (int, np.integer)) else [x + 1 for x in self.j],
+                            self.right.dQ()
+                            )
+            return t1 + t2.shift(
+                self.left.ndim - (0 if isinstance(self.j, (int, np.integer)) else len(self.j) - 1),
+                1
             )
 
         def to_string(self):
@@ -1678,7 +1693,9 @@ class TensorDerivativeConverter:
     TensorExpansionError=TensorExpansionError
 
     #TODO: add way to not recompute terms over and over
-    def __init__(self, jacobians, derivatives=None,
+    def __init__(self,
+                 jacobians,
+                 derivatives=None,
                  mixed_terms=None,
                  jacobians_name='Q',
                  values_name='V'
@@ -1695,6 +1712,23 @@ class TensorDerivativeConverter:
 
         if derivatives is None:
             derivatives = [0] * len(jacobians)
+
+        if jacobians[0].ndim > 2:
+            stack_shape = jacobians[0].shape[:-2]
+            jacobians = [
+                TensorExpression.ArrayStack(
+                    stack_shape,
+                    j
+                )
+                for j in jacobians
+            ]
+            derivatives = [
+                TensorExpression.ArrayStack(
+                    stack_shape,
+                    d
+                ) if not (isinstance(d, (int, float, np.integer, np.floating)) and d == 0) else 0
+                for d in derivatives
+            ]
 
         self.terms = TensorExpansionTerms(jacobians, derivatives, qxv_terms=mixed_terms, q_name=jacobians_name, v_name=values_name)
 
@@ -1717,4 +1751,8 @@ class TensorDerivativeConverter:
                 print(">> order: ", i, deriv)
             arrays.append(deriv.array)
 
+        arrays = [
+            a.array if isinstance(a, TensorExpression.ArrayStack) else a
+            for a in arrays
+        ]
         return arrays

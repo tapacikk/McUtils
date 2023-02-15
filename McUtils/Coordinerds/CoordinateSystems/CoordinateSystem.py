@@ -76,7 +76,13 @@ class CoordinateSystem:
         self.coordinate_shape = coordinate_shape
         self.converter_options = converter_options
         self._validate()
-
+    def __call__(self, coords, **opts): # just a convenience...
+        from .CoordinateSet import CoordinateSet
+        opts = dict(self.converter_options, **opts)
+        return CoordinateSet(coords,
+                             self,
+                             converter_options=opts
+                             )
     def pre_convert(self, system):
         """
         A hook to allow for handlign details before converting
@@ -423,8 +429,7 @@ class CoordinateSystem:
                 # derivative that we have
                 if isinstance(derivs, np.ndarray):  # just protection for the next step, basically if we only get firsts out
                     derivs = [derivs]
-                derivs = derivs[
-                    num_derivs - 1]  # so that we can set the derivative order below the total possible returned...
+                derivs = derivs[num_derivs - 1]  # so that we can set the derivative order below the total possible returned...
 
                 # now we figure out how much shape is in 'c'
                 c_dims = np.prod(c.shape)

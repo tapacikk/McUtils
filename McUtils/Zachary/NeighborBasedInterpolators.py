@@ -80,19 +80,35 @@ class NeighborBasedInterpolator(metaclass=abc.ABCMeta):
 
         self.logger = Logger.lookup(logger)
 
+    @staticmethod
+    def _decluster(pts, radius):
+        mask = np.ones(len(pts), dtype=bool)
+        for i in range(len(pts) - 1):
+            if mask[i]:
+                test_pos = np.where(mask[i + 1:])
+                if len(test_pos) == 0 or len(test_pos[0]) == 0:
+                    break
+                samp_pos = i + 1 + test_pos[0]
+                dists = np.linalg.norm(pts[samp_pos] - pts[i][np.newaxis], axis=1)
+                mask[samp_pos] = dists > radius
+        return pts[mask]
     @classmethod
-    def decluster_data(cls, pts, vals, derivs, radius, return_mask=False):
+    def decluster_data(cls, pts, vals, derivs, radius, return_mask=False): #TODO: I think this is broken maybe?
         rpts, _, _ = cls.RescalingData.renormalize_grid(pts)
-        chunk_size = int(1e5)
-        num_chunks = int(len(pts)/chunk_size) + 1
+        chunk_size = int(1e4)
+        num_chunks = int(len(rpts)/chunk_size) + 1
         N = len(rpts)
         bad_pos = []
         for i in range(num_chunks):
+            row_start = i * chunk_size
+            row_end = min((i+1) * chunk_size, N)
+            if row_start >= N:
+                continue
             for j in range(num_chunks):
-                row_start = i * chunk_size
-                row_end = min((i+1) * chunk_size, N)
                 col_start = j * chunk_size
                 col_end = min((j+1) * chunk_size, N)
+                if col_start >= N:
+                    continue
                 rinds, cinds = np.triu_indices(row_end - row_start, m=col_end - col_start, k=1)
                 v = rpts[row_start + rinds] - rpts[col_start + cinds]
                 dvec = np.linalg.norm(v, axis=1)

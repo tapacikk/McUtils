@@ -23,7 +23,7 @@ class CoordinateSet(np.ndarray):
     """
     # note that the subclassing procedure here is very non-standard because of how ndarray works
 
-    def __new__(cls, coords, system = CartesianCoordinates3D, converter_options = None):
+    def __new__(cls, coords, system=CartesianCoordinates3D, converter_options=None):
         self = np.asarray(coords).view(cls)
         self.system = system
         self.converter_options = converter_options
@@ -143,7 +143,9 @@ class CoordinateSet(np.ndarray):
                  analytic_deriv_order=None,
                  **fd_options
                  ):
-        """Delegates to the jacobian function of the current coordinate system
+        """
+        Delegates to the jacobian function of the current coordinate system.
+
 
         :param system:
         :type system:

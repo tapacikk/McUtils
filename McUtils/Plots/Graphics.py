@@ -155,12 +155,14 @@ class GraphicsBase(metaclass=ABCMeta):
                     self._init_opts[key] = val
 
     layout_keys = {
+        'name',
         'figure',
         'tighten',
         'axes',
         'subplot_kw',
         'parent',
         'image_size',
+        'figsize',
         'padding',
         'aspect_ratio',
         'interactive',
@@ -178,6 +180,7 @@ class GraphicsBase(metaclass=ABCMeta):
     }
     def __init__(self,
                  *args,
+                 name=None,
                  figure=None,
                  tighten=False,
                  axes=None,
@@ -211,6 +214,8 @@ class GraphicsBase(metaclass=ABCMeta):
         :param opts:
         :type opts:
         """
+
+        self.name = name
 
         self._init_opts = dict(opts, # for copying
                                tighten=tighten,
@@ -709,6 +714,7 @@ class GraphicsBase(metaclass=ABCMeta):
         """
 
         self.axes = self.copy_axes()
+        self.figure.close()
         self.figure = self.axes.figure
 
         return self
@@ -819,18 +825,30 @@ class GraphicsBase(metaclass=ABCMeta):
                 or self.resolve_axes_graphics(self.axes) is self
         ): # parent manages cleanup
             if self.inset:
+                # print("removing inset axes: {}".format(self))
                 self.axes.remove()
             else:
+                # print("closing: {}".format(self))
                 if self._mpl_loaded:
                     with self.pyplot as plt:
                         return plt.close(self.figure)
                 self.remove_figure_mapping(self.figure)
+        # else:
+        #     print("close failed: {}".format(self))
 
     def __del__(self):
         try:
             self.close()
         except AttributeError:
             pass
+
+    def __repr__(self):
+        return "{}({}, figure={}<{}>)".format(
+            type(self).__name__,
+            id(self) if self.name is None else self.name,
+            self.figure,
+            id(self.figure)
+        )
 
     def clear(self):
         ax = self.axes  # type: matplotlib.axes.Axes

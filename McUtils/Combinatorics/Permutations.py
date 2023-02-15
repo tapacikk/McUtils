@@ -1946,6 +1946,11 @@ class SymmetricGroupGenerator:
         if flatten:
             perms = np.concatenate([np.concatenate(x, axis=0) for x in perms], axis=0)
         return perms
+    def num_terms(self, n):
+        if isinstance(n, (int, np.integer)):
+            n = [n]
+        partitioners, _ = self._get_partition_perms(n)
+        return [p.num_elements for p in partitioners]
 
     def to_indices(self, perms, sums=None, assume_sorted=False, assume_standard=False,
                    check_partition_counts=True,
