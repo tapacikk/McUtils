@@ -119,7 +119,22 @@ class GraphicsBase(metaclass=ABCMeta):
         incl = {k: props[k] for k in props.keys() & filter_set}
         return incl, excl
 
-    def _get_def_opt(self, key, val, theme):
+    def get_raw_attr(self, key):
+        exc = None
+        try:
+            v = object.__getattribute__(self, '_' + key)  # we overloaded getattr
+        except AttributeError as e:
+            try:
+                v = object.__getattribute__(self._prop_manager, '_' + key)  # we overloaded getattr
+            except AttributeError as e:
+                exc = e
+            else:
+                exc = None
+        if exc is not None:
+            raise exc # from None
+        return v
+
+    def _get_def_opt(self, key, val, theme, parent=None):
         if val is None:
             try:
                 v = object.__getattribute__(self, '_'+key) # we overloaded getattr
@@ -127,7 +142,13 @@ class GraphicsBase(metaclass=ABCMeta):
                 try:
                     v = object.__getattribute__(self._prop_manager, '_' + key)  # we overloaded getattr
                 except AttributeError:
-                    v = None
+                    if parent is not None:
+                        try:
+                            v = parent.get_raw_attr(key)
+                        except AttributeError:
+                            v = None
+                    else:
+                        v = None
             if v is None and key in self.default_style:
                 v = self.default_style[key]
             if v is None and theme is not None and key in theme:
@@ -247,20 +268,21 @@ class GraphicsBase(metaclass=ABCMeta):
         self.mpl_backend = mpl_backend
         if isinstance(figure, GraphicsBase):
             parent = figure
-        if parent is not None and (axes is None or parent.axes is axes): # check inset
-            # TODO: generalize this to a set of inherited props...
-            if image_size is None: # gotta copy in some layout stuff..
-                image_size = parent.image_size
-            else:
-                parent.image_size = image_size
-            if aspect_ratio is None:
-                aspect_ratio = parent.aspect_ratio
-            else:
-                parent.aspect_ratio = aspect_ratio
-            if interactive is None:
-                interactive = parent.interactive
-            else:
-                parent.interactive = interactive
+        inherit_layout =parent is not None and (axes is None or parent.axes is axes) # check inset
+        # # TODO: generalize this to a set of inherited props...
+        # if image_size is None: # gotta copy in some layout stuff..
+        #     image_size = parent.image_size
+        # else:
+        #     parent.image_size = image_size
+        # if aspect_ratio is None:
+        #     aspect_ratio = parent.aspect_ratio
+        # else:
+        #     parent.aspect_ratio = aspect_ratio
+        # if interactive is None:
+        #     interactive = parent.interactive
+        # else:
+        #     parent.interactive = interactive
+        if inherit_layout:
             prop_manager = parent._prop_manager
 
         theme = self._get_def_opt('theme', theme, {})
@@ -282,9 +304,10 @@ class GraphicsBase(metaclass=ABCMeta):
         interactive = self._get_def_opt('interactive', interactive, theme)
         self.interactive = interactive
 
-        aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio, theme)
-        image_size = self._get_def_opt('image_size', image_size, theme)
-        padding = self._get_def_opt('padding', padding, theme)
+        theme_parent = parent if inherit_layout else None
+        aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio,  theme, theme_parent)
+        image_size = self._get_def_opt('image_size', image_size, theme, theme_parent)
+        padding = self._get_def_opt('padding', padding, theme, theme_parent)
         if figure is None and image_size is not None and 'figsize' not in subplot_kw:
             try:
                 w, h = image_size
@@ -316,7 +339,6 @@ class GraphicsBase(metaclass=ABCMeta):
             self.add_axes_graphics(self.axes, self)
         else:
             self.add_figure_graphics(self.figure, self)
-
 
         if not self.interactive:
             self.pyplot.mpl_disconnect()

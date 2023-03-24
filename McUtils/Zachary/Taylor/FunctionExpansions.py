@@ -11,19 +11,14 @@ __all__ = [
 
 ########################################################################################################################
 #
-#                                           FunctionExpansion
+#                                           Polynomial
 #
-class FunctionExpansionException(Exception):
-    pass
-class FunctionExpansion:
+class Polynomial:
     """
-    A class for handling expansions of an arbitrary function
-    given a set of derivatives and also allows for coordinate
-    transformations if the appropriate derivatives are supplied.
+    A handler for dealing with multidimensional polynomials
 
-    Can be used to handle multiple expansions simultaneously, but requires
+    Can be used to handle multiple polynomials simultaneously, but requires
     that all expansions are provided up to the same order.
-
     """
 
     def __init__(self,
@@ -60,52 +55,16 @@ class FunctionExpansion:
     def center(self):
         return self._center
     @property
-    def is_multiexpansion(self):
+    def is_multi(self):
         return self._derivs[0].ndim > 1
     @classmethod
-    def multiexpansion(cls, *expansions):
+    def multipolynomial(cls, *expansions):
         return cls(
             list(zip(*[e.expansion_tensors for e in expansions])),
             center=np.asanyarray([e.center for e in expansions]),
             ref=np.asanyarray([e.ref for e in expansions]),
             weight_coefficients=False
         )
-    @classmethod
-    def expand_function(cls,
-                        f, point,
-                        order=4,
-                        basis=None,
-                        function_shape=None,
-                        transforms=None,
-                        weight_coefficients=True,
-                        **fd_options
-                        ):
-        """
-        Expands a function about a point up to the given order
-
-        :param f:
-        :type f: function
-        :param point:
-        :type point: np.ndarray | CoordinateSet
-        :param order:
-        :type order: int
-        :param basis:
-        :type basis: None | CoordinateSystem
-        :param fd_options:
-        :type fd_options:
-        :return:
-        :rtype:
-        """
-
-        derivs = FiniteDifferenceDerivative(f, function_shape=function_shape)(point, **fd_options)
-        ref = f(point)
-        dts = [derivs.derivative_tensor(i) for i in range(1, order+1)]
-        if transforms is None:
-            if basis is not None and isinstance(point, CoordinateSet):
-                transforms = [point.jacobian(basis, order=i) for i in range(order)]
-            else:
-                transforms = None
-        return cls(dts, center=point, ref=ref, transforms=transforms, weight_coefficients=weight_coefficients)
 
     @property
     def expansion_tensors(self):
@@ -162,9 +121,9 @@ class FunctionExpansion:
         :rtype:
         """
 
-        if not outer and not self.is_multiexpansion:
+        if not outer and not self.is_multi:
             raise ValueError("outer doesn't make sense without multiexpansion")
-        outer = (not self.is_multiexpansion) or outer
+        outer = (not self.is_multi) or outer
         # doesn't really make sense if we don't have stuff to take the outer product over
 
         coords = np.asanyarray(coords)
@@ -357,10 +316,11 @@ class FunctionExpansion:
                 center=self._center,
                 weight_coefficients=False
             ))
-        return cls.multiexpansion(*res)
+        return cls.multipolynomial(*res)
 
     @classmethod
     def from_indices(cls, inds, ref=0, expansion_order=None, ndim=None, symmetrize=True, **opts):
+        #TODO: handle via `SparseArray` methods
         if isinstance(inds, dict):
             inds = tuple(inds.items())
         ref = ref
@@ -391,6 +351,176 @@ class FunctionExpansion:
             **opts
         )
 
+    def _build_binomial_inds(self, g_partitions, w_partitions):
+        """
+        An unnecessarily efficient algorithm to get the set
+        pairs of indices into the integer partitions of `g` and `w`
+        plus an optional permutation of `g` which will lead to non-zero
+        terms when the product of the pairwise binomial terms is computed
+
+
+        :param g_partitions:
+        :type g_partitions:
+        :param w_partitions:
+        :type w_partitions:
+        :return:
+        :rtype:
+        """
+
+        w_start = 0
+        w_lens = np.count_nonzero(w_partitions, axis=1)
+        g_lens = np.count_nonzero(g_partitions, axis=1)
+
+        # build a mask telling us which leading terms are greater than
+        # or equal to a given number
+        len_mask = [
+            np.arange(len(w_partitions))
+        ]
+        for i in range(1, max(w_lens)+1):
+            cur = len_mask[-1]
+            new = cur[w_lens[cur] >= i]
+            len_mask.append(new)
+
+        permutation_breakpoint = w_partitions[0]//2 + w_partitions[0] % 2
+        partition_perm_inds = []
+        for i, g in enumerate(g_partitions):
+            # need to track _where_ we start in the w_partitions
+            ng = g_lens[i]
+            w_choice = w_partitions[len_mask[ng]]
+            for j, w in enumerate(w_choice):
+                if w[0] < g[0]: # I should be able to build a first-element mask
+                    break
+                if all(gg<=ww for gg,ww in zip(g[1:ng],w[1:ng])): # It's an open question if this can be faster?
+                    partition_perm_inds.append([(i, len_mask[ng][j]), None])
+                    if w[0] <= permutation_breakpoint:
+                        # need to test against permutatons to see if it'll work
+                        # TODO: use a bell-ringer pattern but with quick aborts by
+                        #       ordering conditions
+                        base_perm = np.arange(ng)
+                        shift_idx = 0
+                        for p in range():
+                            ...
+
+
+
+
+    def shift(self, new_origin):
+        """
+        Uses binomial expansion to new polynomial centered at the `new_origin`
+
+        :param new_origin:
+        :type new_origin:
+        :return:
+        :rtype:
+        """
+        from ...Combinatorics import Binomial, IntegerPartitionPermutations
+
+        raise NotImplementedError("shifted polys on hold for a moment")
+
+        cur_tensors = self.expansion_tensors
+        n = len(cur_tensors)
+        new_tensors = [0]*(n+1)
+
+        delta = self.center - new_origin #????
+        delta_prime = np.array([
+            np.concatenate([delta[:i], [1], delta[i+1:]])
+            for i in range(len(delta))
+        ]).T
+
+        binomials = Binomial(n+1)
+        delta_tensors = np.full((n+1, n+1), None, dtype=object)
+        binomial_tensors = np.full((n+1, n+1), None, dtype=object)
+
+        iparts = [IntegerPartitionPermutations(i, dim=len(delta)) if i > 0 else None for i in range(n+1)]
+        for g in range(n+1):
+            if g > 0:
+                gidx = iparts[g].partitions
+
+            for w in range(g, n+1):
+                if g > 0:
+                    widx = iparts[w].partitions
+                    binomial_tensors[w, g] = ...
+                    # outer(d[w, g], dp, expand_axes=[w, -1]) -> would otherwise be an outer + a moveaxis
+                    delta_tensors[w, g] = np.expand_dims(
+                            delta_tensors[w-1, g-1],
+                            [-1, w]
+                        ) * np.expand_dims(
+                            delta_prime,
+                            np.concatenate([
+                                np.arange(w),
+                                np.arange(w, (w-1)+(g-1))
+                            ])
+                        )
+
+                    D = binomial_tensors[w][g] * delta_tensors[w][g]
+                else:
+                    delta_tensors[w, 0] = np.expand_dims(
+                            delta_tensors[w - 1, 0],
+                            [-1]
+                        ) * np.expand_dims(
+                            delta,
+                            np.arange(w)
+                        )
+                    D = delta_tensors[w][g]
+
+                D *= (-1)**(w-g)
+
+                new_tensors[g] += np.tensordot(cur_tensors[w], D, axes=list(range(w)))
+
+
+
+
+
+
+
+
+########################################################################################################################
+#
+#                                           FunctionExpansion
+#
+class FunctionExpansionException(Exception):
+    pass
+class FunctionExpansion(Polynomial):
+    """
+    Specifically for expanding functions
+    """
+
+    @classmethod
+    def expand_function(cls,
+                        f, point,
+                        order=4,
+                        basis=None,
+                        function_shape=None,
+                        transforms=None,
+                        weight_coefficients=True,
+                        **fd_options
+                        ):
+        """
+        Expands a function about a point up to the given order
+
+        :param f:
+        :type f: function
+        :param point:
+        :type point: np.ndarray | CoordinateSet
+        :param order:
+        :type order: int
+        :param basis:
+        :type basis: None | CoordinateSystem
+        :param fd_options:
+        :type fd_options:
+        :return:
+        :rtype:
+        """
+
+        derivs = FiniteDifferenceDerivative(f, function_shape=function_shape)(point, **fd_options)
+        ref = f(point)
+        dts = [derivs.derivative_tensor(i) for i in range(1, order + 1)]
+        if transforms is None:
+            if basis is not None and isinstance(point, CoordinateSet):
+                transforms = [point.jacobian(basis, order=i) for i in range(order)]
+            else:
+                transforms = None
+        return cls(dts, center=point, ref=ref, transforms=transforms, weight_coefficients=weight_coefficients)
 
 
 

@@ -1082,7 +1082,7 @@ class ZacharyTests(TestCase):
         exp2 = FunctionExpansion.expand_function(sin_xy, point-disp, function_shape=((2,), 0), order=4, stencil=6)
         exp3 = FunctionExpansion.expand_function(sin_xy, point+disp, function_shape=((2,), 0), order=4, stencil=6)
         exp4 = FunctionExpansion.expand_function(sin_xy, point+2*disp, function_shape=((2,), 0), order=4, stencil=6)
-        multi = FunctionExpansion.multiexpansion(exp1, exp2, exp3, exp4)
+        multi = FunctionExpansion.multipolynomial(exp1, exp2, exp3, exp4)
 
         d1 = exp1.deriv()
 
