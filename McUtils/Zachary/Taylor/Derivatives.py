@@ -173,7 +173,7 @@ class DerivativeGenerator:
         """
 
         # set up the coordinate parameters
-        if isinstance(center, (int, float, np.integer, np.float)):
+        if isinstance(center, (int, float, np.integer, np.floating)):
             center = [center]
         center = np.asarray(center)
 
@@ -329,7 +329,7 @@ class DerivativeGenerator:
         if mesh_spacing is None:
             mesh_spacing = self.mesh_spacing
         displacement = self.displacement_function(self._coord_index(coord)[0], mesh_spacing)
-        if isinstance(displacement, (float, np.float)):
+        if isinstance(displacement, (float, np.floating)):
             displacement = np.full(self.coord_shape, displacement)
         elif displacement.shape == self.coord_shape[-1:]:
             displacement = np.broadcast_to(displacement, self.coord_shape)

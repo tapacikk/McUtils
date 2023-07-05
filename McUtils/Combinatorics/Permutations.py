@@ -497,7 +497,7 @@ class UniquePermutations:
 
         return ndim_fac // subfac
 
-    def permutations(self, initial_permutation=None, return_indices=False, num_perms=None):
+    def permutations(self, initial_permutation=None, return_indices=False, num_perms=None, position_blocks=None):
         """
         Returns the permutations of the input array
         :param initial_permutation:
@@ -514,15 +514,85 @@ class UniquePermutations:
         :rtype:
         """
 
-        if initial_permutation is None:
-            initial_permutation = self.part
-            if num_perms is None:
-                num_perms = self.num_permutations
-        else:
-            if num_perms is None:
-                num_perms = self.num_permutations - self.index_permutations(initial_permutation)
+        if position_blocks is None:
+            if initial_permutation is None:
+                initial_permutation = self.part
+                if num_perms is None:
+                    num_perms = self.num_permutations
+            else:
+                if num_perms is None:
+                    num_perms = self.num_permutations - self.index_permutations(initial_permutation)
 
-        return self.get_subsequent_permutations(initial_permutation, return_indices=return_indices, num_perms=num_perms)
+            return self.get_subsequent_permutations(initial_permutation, return_indices=return_indices, num_perms=num_perms)
+        else:
+            # we'll read a position block spec like [3, 3, 4, 4, 4, 6, 6]
+            # to mean that the first two elements can only go as far as position 3,
+            # the third through fifth can only go as far as position 4
+            # and the sixth and seventh can go anywhere
+
+            # from this, we treat this by pairs of blocks, first getting all valid permutations for the final five elements
+            # under this constraint by taking all permutations of the final two elements and taking their direct product with
+            # the permutations of the third through fifth elements, since all of the space up through position 4 is taken up
+            # by elements that can only go up through position 4
+
+            # next, we take the permutations of the final 5 elements and instead of taking a plain direct product with the first two,
+            # since it's possible for the first two to go up through position 3 we need to first enumerate the partitions of
+            # the first two elements AND two dummy elements that will correspond to the first two elements of the partition of
+            # each permutation of the final 5
+
+            # these two sets of permutations can be composed by determining where the dummy elements go in the permutations of
+            # the first four and simply populating the appropriate locations in a tensor of permutations
+
+            # in this way, we can build up the full set of valid permutations by taking direct-products with substitution of
+            # each valid subblock
+
+            block_edges = np.where(np.diff(position_blocks) != 0)
+            if len(block_edges) == 0:
+                return self.permutations(initial_permutation=initial_permutation, return_indices=return_indices, num_perms=num_perms, position_blocks=None)
+
+            # if initial_permutation is None:
+            #     initial_permutation = self.part
+            #     if num_perms is None:
+            #         num_perms = self.num_permutations
+            # else:
+            #     if num_perms is None:
+            #         num_perms = self.num_permutations - self.index_permutations(initial_permutation)
+
+            idx_blocks = np.split(position_blocks, block_edges[0]+1)
+            groups = np.split(self.part, block_edges[0]+1)
+
+            perm_blocks = []
+            cur = 0
+            for part, block in zip(groups, idx_blocks):
+                end = block[0] + 1
+                block_len = end - cur
+                cur += len(part)
+                padding = block_len - len(part)
+                padding_indices = np.flip(np.arange(padding))
+                padded_part = np.concatenate([part + padding, padding_indices])
+                perm_blocks.append([UniquePermutations(padded_part).permutations(), padding_indices])
+
+            num_perms = np.prod([len(b[0]) for b in perm_blocks], dtype=int)
+            storage = np.zeros((num_perms, len(self.part)), dtype=self.part.dtype)
+            end_idx = len(self.part)
+            for block, swaps in reversed(perm_blocks):
+                reps = num_perms // len(block)
+                nswaps = len(swaps)
+                if nswaps > 0:
+                    inserts = storage[:, end_idx:end_idx+nswaps].copy()
+                    insert_where = [np.where(block==s)[1] for s in swaps] # note that swaps is inverted from arange
+                    block_size, nel = block.shape
+                    bs = end_idx - nel + nswaps
+                    for i in range(reps):
+                        storage[i*block_size:(i+1)*block_size, bs:bs+nel] = block - nswaps
+                        for j,w in enumerate(insert_where):
+                            storage[np.arange(i*block_size, (i+1)*block_size), w] = inserts[i*block_size:(i+1)*block_size, j]
+                else:
+                    bs = end_idx - len(block[0])
+                    storage[:, bs:end_idx] = np.broadcast_to(block[np.newaxis], (reps,) + block.shape).reshape((reps * block.shape[0], block.shape[1]))
+                end_idx = bs
+
+            return storage
 
     @classmethod
     def get_subsequent_permutations(cls, initial_permutation, return_indices=False, classes=None, counts=None, num_perms=None):
@@ -570,6 +640,8 @@ class UniquePermutations:
         This adaption is done just by pretending the the numbers are all negated so all ordering relations
         flip
 
+        We also make it so a given partition element can only go out to `max_pos`
+
         :param storage:
         :type storage:
         :param inds:
@@ -579,17 +651,17 @@ class UniquePermutations:
         """
 
         swap = np.arange(len(partition))
-        for i in range(len(storage)):
-            storage[i] = partition
+        for n in range(len(storage)):
+            storage[n] = partition
             if inds is not None:
-                inds[i] = swap
+                inds[n] = swap
 
             # find largest index such that the next element in the
             # partition is smaller (i.e. find where we need to do our next swap)
             # I'd like to do this with numpy builtins instead of a loop
             # or maybe some partial ordering approach or something
             # but don't have it quite figured out yet
-            for i in range(dim-2, -1, -1):
+            for i in range(dim - 2, -1, -1):
                 if partition[i] > partition[i+1]:
                     break
             else:
@@ -598,7 +670,7 @@ class UniquePermutations:
             # find the next-smallest index such that
             # the partition element is smaller than the one at the swap
             # position
-            for j in range(dim-1, i, -1):
+            for j in range(dim - 1, i, -1):
                 if partition[i] > partition[j]:
                     break
 
@@ -835,17 +907,18 @@ class UniquePermutations:
 
         ndim = dim
 
+        # back track the initial number of states
         n_steps = int(np.ceil(len(perms)/block_size))
-        block_counts = np.zeros((n_steps, len(counts)), dtype=counts.dtype)
+        block_counts = np.zeros((n_steps, len(counts)))#, dtype=counts.dtype)
         for i in range(n_steps):
             block_counts[i] = counts
 
-        block_tree_datas = np.zeros((n_steps, dim, 2), dtype=counts.dtype)
+        block_tree_datas = np.zeros((n_steps, dim, 2))#, dtype=counts.dtype)
         cur_dims = np.full(n_steps, dim - 1)
         block_tree_datas[:, cur_dims[0], 1] = num_permutations
 
         half_dim = ndim // 2
-        for _ in prange(n_steps):
+        for _ in prange(n_steps): # we iterate over initial states
             idx_start = block_size * _
 
             cur_dim = cur_dims[_]
@@ -2181,7 +2254,8 @@ class SymmetricGroupGenerator:
                                 ndim,
                                 cls_inds, class_negs,
                                 perm_counts, cum_counts,
-                                mask, can_be_negative
+                                mask, can_be_negative,
+                                full_rep_changes, changed_positions
                                 ):
         # if we run into negatives we need to mask them out
         if len(can_be_negative[i]) == 0:
@@ -2201,6 +2275,10 @@ class SymmetricGroupGenerator:
             new_perms = new_rep_perm[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
             stored_inds = np.reshape(sel[:, np.newaxis] + idx_starts[np.newaxis, :], -1)
             storage[stored_inds] = new_perms.reshape(-1, ndim)
+
+            if changed_positions is not None:
+                full_change_mask = full_rep_changes[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
+                changed_positions[stored_inds] = cls._compute_changed_index_numbers(full_change_mask.reshape(-1, ndim))
         else:
             sel = []
             new_perms = None
@@ -2281,11 +2359,33 @@ class SymmetricGroupGenerator:
 
                 # filter_from_ind_spec(i, j, block_idx, block_sizes, perm_pos, full_inds_sorted, inv)
 
+    @classmethod
+    def changed_index_number(cls, idx, radix):
+        return np.ravel_multi_index(np.sort(idx)+1, [radix+1]*len(idx))
+    @classmethod
+    def _compute_changed_index_numbers(cls, mask):
+        # we loop for this because I'm not totally sure how to do better here...
+        if not mask.any():
+            return np.zeros(len(mask))
+        radix = len(mask[0])
+        indices = np.where(mask,
+                        np.broadcast_to(np.arange(radix)[np.newaxis], mask.shape),
+                        np.full(mask.shape, -1)
+                        )
+        sorted = np.sort(indices, axis=-1)
+        # now we prune out bad elements
+        max_col = np.min(np.where(sorted > -1)[1])
+        sorted = sorted[:, max_col:]+1
+        # raise Exception(sorted, max_col)
+        return np.ravel_multi_index(sorted.T, [radix+1]*(radix-max_col))
+        # return np.array([cls.changed_index_number(np.where(m)[0], radix) for m in mask])
+
     def _build_direct_sums(self,
                            input_perm_classes,
                            counts,
                            classes,
                            return_indices=False,
+                           return_change_positions=False,
                            return_excitations=True,
                            filter_negatives=True,
                            allow_widen_dtypes=True,
@@ -2309,9 +2409,12 @@ class SymmetricGroupGenerator:
         :rtype:
         """
 
-        input_perm_classes = [(_as_pos_neg_dtype(x[0]), _as_pos_neg_dtype(x[1]), x[2],
-                               UniquePermutations.get_standard_permutation(_as_pos_neg_dtype(x[1]), _as_pos_neg_dtype(x[0]))
-                               ) for x in input_perm_classes]
+        #prepare initial permutation data for grouping
+        input_perm_classes = [
+            (_as_pos_neg_dtype(x[0]), _as_pos_neg_dtype(x[1]), x[2],
+             UniquePermutations.get_standard_permutation(_as_pos_neg_dtype(x[1]), _as_pos_neg_dtype(x[0]))
+             ) for x in input_perm_classes
+        ]
 
         # set up storage
         num_perms = UniquePermutations.count_permutations(counts)
@@ -2411,6 +2514,11 @@ class SymmetricGroupGenerator:
         storage = np.zeros((total_perm_count, ndim), dtype=dtype)
         if return_indices:
             indices = np.zeros((total_perm_count,), dtype=inds_dtype)
+        if return_change_positions:
+            changed_positions = np.full((total_perm_count,), -1, dtype=int)
+        else:
+            changed_positions = None
+
 
         if filter is not None or (filter_negatives and any(len(x)>0 for x in can_be_negative)):
             mask = np.full((total_perm_count,), True)
@@ -2426,6 +2534,7 @@ class SymmetricGroupGenerator:
                           classes=classes,
                           input_perm_classes=input_perm_classes,
                           class_negatives=class_negatives,
+                          changed_positions=changed_positions,
                           excluded_permutations=excluded_permutations
                           ):
             """
@@ -2449,6 +2558,11 @@ class SymmetricGroupGenerator:
             """
 
             class_perms = np.array([c[perm] for c in classes])
+            if changed_positions is not None:
+                changes = class_perms != 0
+            else:
+                changes = None
+
             class_neg_list = [
                 np.concatenate([cls_pos[j] for j in neg]) if len(neg) > 0 else ()
                 for neg in class_negatives
@@ -2484,6 +2598,11 @@ class SymmetricGroupGenerator:
                 # else:
                 #     keep = np.arange(len(added))
                 new_rep_perm = rep[np.newaxis, :] + class_perms[cls_inds[i], :]
+                if changes is not None:
+                    full_rep_changes = changes[cls_inds[i], :]
+                    # print(full_rep_changes)
+                else:
+                    full_rep_changes = None
                 if filter_negatives and mask is not None:
                     class_negs = tuple(np.array(class_neg_list[j], dtype=class_negatives[0].dtype) for j in cls_inds[i])
                     comp, sel, new_perms = self._filter_negatives_perms(
@@ -2492,7 +2611,8 @@ class SymmetricGroupGenerator:
                                 ndim,
                                 cls_inds, class_negs,
                                 perm_counts, cum_counts,
-                                mask, can_be_negative
+                                mask, can_be_negative,
+                                full_rep_changes, changed_positions
                                 )
                 else:
                     comp = cls_inds[i]
@@ -2500,6 +2620,10 @@ class SymmetricGroupGenerator:
                     new_perms = new_rep_perm[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
                     stored_inds = np.reshape(sel[:, np.newaxis] + idx_starts[np.newaxis, :], -1)
                     storage[stored_inds] = new_perms.reshape(-1, ndim)
+                    if changes is not None:
+                        full_change_mask = full_rep_changes[sel[:, np.newaxis, np.newaxis], perms[np.newaxis, :, :]]
+                        changed_positions[stored_inds] = self._compute_changed_index_numbers(full_change_mask.reshape(-1, ndim))
+
 
                     # raise NotImplementedError("need to get storage right but never touch this code path anymore")
                     # comp = cls_inds[i]
@@ -2546,15 +2670,19 @@ class SymmetricGroupGenerator:
                 storage = storage[mask]
             if return_indices:
                 indices = indices[mask]
+            if return_change_positions:
+                changed_positions = changed_positions[mask]
         perm_counts = np.sum(perm_counts, axis=1)
 
         if not return_excitations:
             storage = None
 
+        ret = (storage, perm_counts)
         if return_indices:
-            return storage, perm_counts, indices
-        else:
-            return storage, perm_counts
+            ret = ret + (indices,)
+        if return_change_positions:
+            ret = ret + (changed_positions,)
+        return ret
 
     def _get_direct_sum_rule_groups(self, rules, dim, dtype):
         # first up we pad the rules
@@ -2660,6 +2788,7 @@ class SymmetricGroupGenerator:
                                          assume_sorted=False,
                                          return_indices=False,
                                          return_excitations=True,
+                                         return_change_positions=False,
                                          full_basis=None,
                                          split_results=False,
                                          excluded_permutations=None,
@@ -2702,7 +2831,7 @@ class SymmetricGroupGenerator:
 
         if perms.ndim == 1:
             perms = perms[np.newaxis]
-        # og_perms = perms # for debug
+        og_perms = perms # for debug
         # next we pad up the perms as needed
         if perms.shape[1] < dim:
             perms = np.concatenate([
@@ -2825,6 +2954,8 @@ class SymmetricGroupGenerator:
         perms = []
         if return_indices:
             indices = []
+        if return_change_positions:
+            changes = []
 
         # we now set up filtering so that we can efficiently prune branches
         # as we calculate partition permutations
@@ -2860,11 +2991,14 @@ class SymmetricGroupGenerator:
                     perm_block = []
                     if return_indices:
                         ind_block = []
+                    if return_change_positions:
+                        change_block = []
 
                     for counts, classes, exc in zip(rule_counts, rule_classes, excluded_permutations):
                         res = self._build_direct_sums(input_classes, counts, classes,
                                                       return_indices=return_indices,
                                                       return_excitations=return_excitations,
+                                                      return_change_positions=return_change_positions,
                                                       filter=filter, inds_dtype=inds_dtype,
                                                       excluded_permutations=exc,
                                                       full_basis=full_basis
@@ -2876,11 +3010,39 @@ class SymmetricGroupGenerator:
                                 res_perms = np.split(res[0], split_blocks)
                             if return_indices:
                                 ind_block.append(np.split(res[2], split_blocks))
+                            if return_change_positions:
+                                if return_indices:
+                                    change_block.append(np.split(res[3], split_blocks))
+                                else:
+                                    change_block.append(np.split(res[2], split_blocks))
+                                # x = input_classes[0]
+                                # p0 = UniquePermutations.get_standard_permutation(_as_pos_neg_dtype(x[1]), _as_pos_neg_dtype(x[0]))
+                                # test = res_perms[0] - p0[np.newaxis]
+                                # radix = len(test[0])
+                                # test_changes = np.array([
+                                #     self.changed_index_number(np.where(idx != 0)[0], radix)
+                                #     for idx in test
+                                # ])
+                                # if (test_changes != change_block[-1][0]).any():
+                                #     raise Exception(
+                                #         p0,
+                                #         [
+                                #             np.where(idx != 0)[0]
+                                #             for idx in test
+                                #         ],
+                                #         test_changes,
+                                #         change_block[-1][0]
+                                #     )
                         else:
                             if return_excitations:
                                 res_perms = res[0]
                             if return_indices:
                                 ind_block.append(res[2])
+                            if return_change_positions:
+                                if return_indices:
+                                    change_block.append(res[3])
+                                else:
+                                    change_block.append(res[2])
                         if return_excitations:
                             perm_block.append(res_perms)
 
@@ -2918,6 +3080,18 @@ class SymmetricGroupGenerator:
                                     argsorts = np.argsort(sorts)
                                 new_inds = [new_inds[i] for i in argsorts]
                             indices.append(new_inds)
+                        if return_change_positions:
+                            new_chng = [
+                                np.concatenate(blocks)
+                                for blocks in zip(*change_block)
+                            ]
+                            if preserve_ordering and sorts is not None and len(new_inds) > 0:
+                                # if not return_excitations:
+                                #     cumlens = np.cumsum([0] + [len(x) for x in sorts[:-1]])
+                                #     sorts = np.concatenate([x + s for x, s in zip(sorts, cumlens)])
+                                #     argsorts = np.argsort(sorts)
+                                new_chng = [new_chng[i] for i in argsorts]
+                            changes.append(new_chng)
                     else:
                         if return_excitations:
                             new_perms = np.concatenate(perm_block, axis=0)
@@ -2925,6 +3099,9 @@ class SymmetricGroupGenerator:
                         if return_indices:
                             new_inds = np.concatenate(ind_block)
                             indices.append(new_inds)
+                        if return_change_positions:
+                            new_chng = np.concatenate(change_block)
+                            changes.append(new_chng)
 
                     if return_excitations:
                         subend = time.time()
@@ -2977,6 +3154,19 @@ class SymmetricGroupGenerator:
                         if not return_excitations:
                             inv = np.argsort(sum_sorting)
                         indices = [indices[i] for i in inv]
+                if return_change_positions:
+                    if preserve_ordering:
+                        new_chng = []
+                        for d,s in zip(changes, perm_sorting):
+                            if len(d) > 0:
+                                new_chng += [d[i] for i in np.argsort(s)]
+                        changes = new_chng
+                    else:
+                        changes = sum(new_chng, [])
+                    if preserve_ordering and sum_sorting is not None and len(changes) > 0:
+                        # if not return_excitations:
+                        #     inv = np.argsort(sum_sorting)
+                        changes = [changes[i] for i in inv]
                 if not split_results:
                     if return_excitations:
                         if len(perms) == 0:
@@ -2988,11 +3178,18 @@ class SymmetricGroupGenerator:
                             indices = np.array([], dtype='int8')
                         else:
                             indices = np.concatenate(indices, axis=0)
+                    if return_change_positions:
+                        if len(perms) == 0:
+                            changes = np.array([], dtype='int8')
+                        else:
+                            changes = np.concatenate(changes, axis=0)
             else:
                 if return_excitations:
                     perms = np.concatenate(perms, axis=0)
                 if return_indices:
                     indices = np.concatenate(indices)
+                if return_change_positions:
+                    changes = np.concatenate(changes)
 
             end = time.time()
             if return_excitations:
@@ -3017,12 +3214,8 @@ class SymmetricGroupGenerator:
 
             if not return_excitations:
                 perms = None
-            if return_indices:
-                if return_filter:
-                    return perms, indices, filter
-                else:
-                    return perms, indices
-            elif secondary_inds:
+            ret = (perms,)
+            if secondary_inds:
                 if split_results:
                     full_perms = np.concatenate(perms, axis=0)
                     indices = self.to_indices(full_perms)
@@ -3030,12 +3223,28 @@ class SymmetricGroupGenerator:
                     indices = np.split(indices, splits)
                 else:
                     indices = self.to_indices(perms)
-                if return_filter:
-                    return perms, indices, filter
-                else:
-                    return perms, indices
-            else:
-                return perms
+            if return_indices:
+                ret += (indices,)
+            if return_change_positions:
+                ret += (changes,)
+            if return_filter:
+                ret += (filter,)
+            #     return ret
+            # elif secondary_inds:
+            #     if split_results:
+            #         full_perms = np.concatenate(perms, axis=0)
+            #         indices = self.to_indices(full_perms)
+            #         splits = np.cumsum([len(x) for x in perms])[:-1]
+            #         indices = np.split(indices, splits)
+            #     else:
+            #         indices = self.to_indices(perms)
+            #
+            #     if return_filter:
+            #         return perms, indices, filter
+            #     else:
+            #         return perms, indices
+
+            return ret
 
 class CompleteSymmetricGroupSpace:
     """

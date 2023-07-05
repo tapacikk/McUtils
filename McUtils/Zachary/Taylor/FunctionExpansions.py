@@ -13,7 +13,7 @@ __all__ = [
 #
 #                                           Polynomial
 #
-class Polynomial:
+class TaylorPoly:
     """
     A handler for dealing with multidimensional polynomials
 
@@ -402,8 +402,6 @@ class Polynomial:
                             ...
 
 
-
-
     def shift(self, new_origin):
         """
         Uses binomial expansion to new polynomial centered at the `new_origin`
@@ -480,7 +478,7 @@ class Polynomial:
 #
 class FunctionExpansionException(Exception):
     pass
-class FunctionExpansion(Polynomial):
+class FunctionExpansion(TaylorPoly):
     """
     Specifically for expanding functions
     """

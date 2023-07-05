@@ -39,7 +39,7 @@ class PseudoPickler:
         self.b64encode=b64encode
 
     _primitive_types = (int, float, bool, str,
-                        np.integer, np.floating, np.bool
+                        np.integer, np.floating
                         )
     _list_types = (tuple, list)
     _dict_types = (dict, OrderedDict)

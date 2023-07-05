@@ -18,3 +18,5 @@ from .LazyTensors import *; from .LazyTensors import __all__ as exposed
 __all__ += exposed
 from .Symbolic import *; from .Symbolic import __all__ as exposed
 __all__ += exposed
+from .Polynomials import *; from .Polynomials import __all__ as exposed
+__all__ += exposed

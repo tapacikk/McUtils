@@ -103,7 +103,8 @@ class ThemeManager:
     """
     extra_themes = {
         'mccoy': (
-            ('seaborn-dark-palette'),
+            # ('seaborn-dark-palette'),
+            ('seaborn-v0_8-dark-palette'),
             {
                 'axes.labelsize': 13,
                 'xtick.labelsize':13,

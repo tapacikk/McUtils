@@ -260,6 +260,17 @@ class CombinatoricsTests(TestCase):
         perms = perm_builder.permutations_from_indices(test_inds)
         self.assertEquals(perms.tolist(), all_perms[test_inds].tolist())
 
+    @debugTest
+    def test_UniquePartitionBlocks(self):
+        """
+        Tests the generation of unique permutations of partitions
+        :return:
+        :rtype:
+        """
+
+
+
+
     @validationTest
     def test_IntegerPartitionPermutations(self):
         """

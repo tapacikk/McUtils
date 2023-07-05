@@ -102,7 +102,7 @@ class FFIType(enum.Enum):
     _type_map[NUMPY_Float128] = ("float128", np.float128)
 
     NUMPY_Bool = NUMPY_TYPES + 30
-    _type_map[NUMPY_Bool] = ("bool", np.bool)
+    _type_map[NUMPY_Bool] = ("bool", bool)
 
     @classmethod
     def type_data(cls, val):
