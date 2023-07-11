@@ -163,6 +163,16 @@ class CombinatoricsTests(TestCase):
             msg="{} should have indices {} but got {}".format(test_parts, inds, test_inds)
         )
 
+    @debugTest
+    def test_GenericPartitions(self):
+        raise Exception(
+            UniquePartitions([0, 1, 0, 0, 2, 0, 3]).partitions(
+                [2, 3, 2],
+                split=False,
+                take_unique=True
+            )
+        )
+
     @validationTest
     def test_UniquePartitionPermutations(self):
         """

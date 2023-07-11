@@ -11,6 +11,8 @@ from ..Scaffolding import NullLogger
 __all__ = [
     "IntegerPartitioner",
     "UniquePermutations",
+    "UniqueSubsets",
+    "UniquePartitions",
     "IntegerPartitionPermutations",
     "SymmetricGroupGenerator",
     "CompleteSymmetricGroupSpace",
@@ -441,6 +443,45 @@ class IntegerPartitioner:
             inds = inds[0]
 
         return inds
+
+class UniqueSubsets:
+    """
+    Provides unique subsets for an integer partition
+    """
+    def __init__(self, partition):
+        # self.part = np.flip(np.sort(partition))
+        self.part = partition
+        neg_part = -partition # so we can build ordered partitions
+        sorting = np.argsort(neg_part)
+        sort_part = neg_part[sorting]
+        v, idx, c = np.unique(sort_part, return_index=True, return_counts=True) # could use `nput.unique` to reuse sorting
+        self.idx = np.split(sorting, idx[1:])
+        self.vals = -v
+        self.counts = c
+        self.dim = len(partition)
+        self._vals_dim = len(self.vals)
+        self._num = None
+        self._tree = {}
+        self._otree = {} # cache ordered subsets for efficiency
+
+    def get_subsets(self, targ_len, ordered=False):
+        # TODO: use sparse encodings to speed up
+        if targ_len == 0:
+            return np.zeros((1, self._vals_dim))
+        if targ_len == 1:
+            return np.eye(self._vals_dim)
+        if targ_len not in self._tree:
+            base = self.get_subsets(targ_len-1)[np.newaxis, :, :] + np.eye(self._vals_dim)[:, np.newaxis, :]
+            base = base.reshape(-1, self._vals_dim)
+            valid_sets = np.all(base <= self.counts[np.newaxis], axis=1)
+            self._tree[targ_len] = base[valid_sets,]
+
+        subsets = self._tree[targ_len]
+        if ordered: # construct ordered subsets
+            # for each subset we need to
+            raise ValueError("ah fuck")
+
+        return subsets
 
 class UniquePermutations:
     """
@@ -1577,6 +1618,196 @@ class UniquePermutations:
 
             on_visit(tree_data[cur_dim, 0], permutation_indices, tree_data)
 
+class UniquePartitions:
+    """
+    Takes partitions of a set of ints with ordering
+    """
+    def __init__(self, partition):
+        partition = np.asanyarray(partition)
+        self.part = partition
+        self.perms = UniquePermutations(np.sort(partition)).permutations()
+        neg_part = -partition  # so we can build ordered partitions
+        sorting = np.argsort(neg_part)
+        sort_part = neg_part[sorting]
+        v, idx, c = np.unique(sort_part, return_index=True,
+                              return_counts=True)  # could use `nput.unique` to reuse sorting
+        split_idx = np.split(sorting, idx[1:])
+        final_indices = [x[-1] for x in split_idx]
+        self.followers = np.array([
+            [np.sum((x - f) > 0) for x in split_idx]
+            for f in final_indices
+        ])
+
+    @classmethod
+    def _take_partitions(self, partition, sizes, take_unique=True,
+                         split=True,
+                         return_partitions=True,
+                         return_indices=None, split_indices=None,
+                         return_inverse=False, split_inverse=None
+                         ):
+        if not return_partitions and not return_indices and not return_inverse:
+            raise ValueError("need to return _something_")
+        if not return_partitions and take_unique:
+            raise ValueError("need to calculate partitions to return unique")
+        if return_inverse and return_indices is None:
+            return_indices = True
+        elif return_inverse and not return_indices:
+            raise ValueError("inverse but no indices feels wasteful")
+
+        tree_sizes = []
+        ind_blocks = []
+        n = m = len(partition)
+        for size in sizes: # we prep a bunch of data to feed to numba
+            # tree_sizes.append( # binomial terms at each size
+            #     np.math.factorial(m) / (
+            #             np.math.factorial(size) * np.math.factorial(m - size)
+            #     )
+            # )
+            if size > 0:
+                ind_blocks.append(np.array(
+                    list(itertools.combinations(range(m), size)),
+                    dtype=int
+                ))
+                tree_sizes.append(len(ind_blocks[-1]))
+                m -= size
+
+        total_terms = np.prod(tree_sizes, dtype=int)
+
+        if return_partitions:
+            subs = np.full((total_terms, n), -1, dtype=int)
+        else:
+            subs = None
+
+        if return_indices:
+            inds = np.zeros((total_terms, n), dtype=int)
+        else:
+            inds = None
+
+        N = len(subs) if subs is not None else len(inds)
+        self._populate_partitions(partition, [s for s in sizes if s > 0], tree_sizes, ind_blocks, N, subs, inds)
+
+        # TODO: find a way to handle unique masking inside numba loop
+        if take_unique:
+            uu = np.unique(partition)
+            if len(uu) <= len(partition):
+                _, _, sort_uinds = unique(subs, axis=0, return_index=True)
+                uinds = np.sort(sort_uinds)
+                subs = subs[uinds,]
+                if return_indices:
+                    inds = inds[uinds,]
+            # raise NotImplementedError(...)
+
+        if return_inverse:
+            inv = np.argsort(inds, axis=1)
+        else:
+            inv = None
+
+        if split:
+            splits = np.cumsum(sizes)
+            if return_partitions:
+                subs = np.split(subs, splits[:-1], axis=1)
+            if return_indices and (split_indices or split_indices is None):
+                inds = np.split(inds, splits[:-1], axis=1)
+            if return_inverse and (split_inverse or split_inverse is None):
+                inv = np.split(inv, splits[:-1], axis = 1)
+
+        ret = ()
+        if return_partitions:
+            ret += (subs,)
+        if return_indices:
+            ret += (inds,)
+        if return_inverse:
+            ret += (inv,)
+        return ret
+    @staticmethod
+    @jit(nopython=True, cache=True)
+    def _populate_partitions(partition, sizes, tree_sizes, blocks, N, subs, inds):
+        """
+        :param partition:
+        :param tree_sizes:
+        :param blocks: blocks of indices to sample from the partition
+        :param subs:
+        :return:
+        """
+
+        k = len(sizes)
+        p = len(partition)
+        bs = np.concatenate([[0], np.cumsum(sizes)]) # block starts
+        r = np.arange(p) # for remainder indices
+        for i in range(N): # product of tree/block shapes
+            # these assertions sometimes help numba
+            assert i >= 0
+            assert i < N
+            product_index = np.unravel_index(i, tree_sizes) # would be nicer to have a faster process...
+            mask = np.full(p, True, dtype=bool)
+            # print("????")
+            for j in range(k):
+                # print(">>>", mask)
+                block_idx = blocks[j][product_index[j]]
+                if subs is not None:
+                    subs[i][bs[j]:bs[j+1]] = partition[mask][block_idx]
+                if inds is not None:
+                    inds[i][bs[j]:bs[j + 1]] = r[mask][block_idx]
+                mask[r[mask][block_idx]] = False
+                # print(" > ", mask, block_idx)
+
+    # @classmethod
+    # def get_follower_counts(cls, partition):
+    #     followers = {}
+    #     for x in partition:
+    #         followers[x] = {}
+    #         for y in followers:
+    #             if y != x:
+    #                 followers[y][x] = followers[y].get(x, 0) + 1
+    #     return followers
+
+    def partitions(self, sizes,
+                   take_unique=True, split=True,
+                   return_partitions=True,
+                   return_indices=False, split_indices=None,
+                   return_inverse=False, split_inverse=None):
+        if np.sum(sizes) != len(self.part):
+            raise ValueError("sum of sizes must be length of partition")
+        sizes = np.asanyarray(sizes).astype(int)
+        return self._take_partitions(self.part, sizes,
+                                     take_unique=take_unique, split=split,
+                                     return_partitions=return_partitions,
+                                     return_indices=return_indices, split_indices=split_indices,
+                                     return_inverse=return_inverse, split_inverse=split_inverse)
+
+        # # O(d*N) where d is the length of the partition and
+        # #
+        # if len(sizes) == 1:
+        #     return self.part[np.newaxis]
+        # non_zs = np.where(sizes > 0)[0]
+        # if len(non_zs) == 1: # only one non-zero
+        #     return [
+        #         np.zeros((1, 0)) if s == 0 else self.part[np.newaxis]
+        #         for s in sizes
+        #     ]
+        #
+        # splits = np.cumsum(sizes)
+        # perm_splits = np.split(self.perms, splits[:-1], axis=1)
+        # good_places = np.arange(len(self.perms))
+        # mask = np.full(len(good_places), True, dtype=bool)
+        # # for i in range()
+        # for subperms in perm_splits:
+        #     if subperms.shape[1] > 1: # if len 1 or less can't be misordered...
+        #         for i,partition in enumerate(subperms[good_places]):
+        #             followers = {}
+        #             for x in partition:
+        #                 followers[x] = {}
+        #                 for y in followers:
+        #                     if y != x:
+        #                         followers[y][x] = followers[y].get(x, 0) + 1
+        #
+        #
+        #
+        #
+        # raise Exception([p.shape for p in perm_splits], self.part, sizes)
+
+
+
 class IntegerPartitionPermutations:
     """
     Provides tools for working with permutations of a given integer partition
@@ -2070,9 +2301,10 @@ class SymmetricGroupGenerator:
                                                  preserve_ordering=preserve_ordering,
                                                  check_partition_counts=check_partition_counts) for p, g in zip(partitioners, groups) ]
         if dtype is None:
-        #     for i,p in enumerate(perms_inds):
-        #         if np.any(p < 0):
-        #             raise ValueError("dtype overflow on {}".format(groups[i]))
+            # for i,p in enumerate(perms_inds):
+            #     min_p = np.min(p)
+            #     if min_p < 0:
+            #         raise ValueError("dtype overflow on {}".format(groups[i]))
             dtype = _infer_dtype(np.max([np.max(p) for p in perms_inds]) + np.max(shifts))
         subinds = [ (g.astype(dtype) + s) for g,s in zip(perms_inds, shifts) ]
         indices = np.concatenate(subinds, axis=0)
@@ -2131,6 +2363,9 @@ class SymmetricGroupGenerator:
         uinds, _, inds = unique(insertion_spots, sorting=np.arange(len(insertion_spots)), return_index=True)
         groups = np.split(indices, inds)[1:]
         uinds = uinds - 1
+
+        if min(uinds) < 0:
+            raise ValueError("bad indices: {}".format(np.min(indices), np.max(indices)))
 
         partitioners, shifts = self._get_partition_perms(uinds)
 
@@ -2361,6 +2596,7 @@ class SymmetricGroupGenerator:
 
     @classmethod
     def changed_index_number(cls, idx, radix):
+        if len(idx) == 0: return 0
         return np.ravel_multi_index(np.sort(idx)+1, [radix+1]*len(idx))
     @classmethod
     def _compute_changed_index_numbers(cls, mask):

@@ -2,7 +2,8 @@
 from Peeves.TestUtils import *
 from unittest import TestCase
 from McUtils.Misc import *
-import ast, astunparse, numpy
+import numpy
+# import ast, astunparse, numpy
 
 class MiscTests(TestCase):
 

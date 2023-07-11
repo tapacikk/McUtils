@@ -339,11 +339,19 @@ class SparsePolynomial(AbstractPolynomial):
         self.terms = terms
         self.prefactor = prefactor
         self._shape = None
+
+    @property
+    def scaling(self):
+        return 1 if self.prefactor is None else self.prefactor
+    @scaling.setter
+    def scaling(self, s):
+        self.prefactor = s
+
     def expand(self):
         if self.prefactor == 1:
             return self
         else:
-            return SparsePolynomial({k:self.prefactor*v for k,v in self.terms.items()}, prefactor=1)
+            return type(self)({k:self.prefactor*v for k,v in self.terms.items()}, prefactor=1)
     @classmethod
     def monomial(cls, idx, value=1):
         return cls({idx:value})
@@ -364,9 +372,9 @@ class SparsePolynomial(AbstractPolynomial):
                     new_terms[t] = new_terms.get(t, 0) + v * v2
                     if new_terms[t] == 0:
                         del new_terms[t]
-            return SparsePolynomial(new_terms, prefactor=self.prefactor*other.prefactor)
+            return type(self)(new_terms, prefactor=self.prefactor*other.prefactor)
         else:
-            return SparsePolynomial(self.terms, prefactor=self.prefactor*other)
+            return type(self)(self.terms, prefactor=self.prefactor*other)
             # new_terms = {}
             # for k,v in self.terms.items():
             #     new_terms[k] = self.prefactor*other*v
@@ -441,6 +449,10 @@ class PureMonicPolynomial(SparsePolynomial):
         raise ValueError("{} doesn't have a dense counterpart".format(type(self).__name__))
 
     @classmethod
+    def monomial(cls, idx, value=1):
+        return cls({(idx,): value})
+
+    @classmethod
     def key_hash(cls, monomial_tuple):
         # hashes tuples of indices to give a fast check that the tuples
         # are the same independent of ordering
@@ -456,7 +468,8 @@ class PureMonicPolynomial(SparsePolynomial):
             if other == 1:
                 return self
             elif other == 0:
-                return type(self)({})
+                return 0
+                # return type(self)({})
         if isinstance(other, PureMonicPolynomial):
             new_terms = {}
             term_hashes = {}
@@ -491,9 +504,9 @@ class TensorCoefficientPoly(PureMonicPolynomial):
             s_groups[l] = grp
             grp.append(index_tuple)
         t = tuple(
-            i
-            for k in sorted(s_groups.keys())
-            for i in sorted(s_groups[k])
+            grp
+            for l in sorted(s_groups.keys())
+            for grp in sorted(s_groups[l])
         )
         return t
 
