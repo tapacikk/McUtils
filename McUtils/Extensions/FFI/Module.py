@@ -8,6 +8,11 @@ __all__ = [
     "FFIType"
 ]
 
+try: # guard clause
+    np_float128 = np.float128
+except AttributeError:
+    np_float128 = np.longdouble # bad vibes but we'll see what happens
+
 class FFIType(enum.Enum):
     """
     The set of supported enum types.
@@ -99,7 +104,7 @@ class FFIType(enum.Enum):
     NUMPY_Float64 = NUMPY_TYPES + 22
     _type_map[NUMPY_Float64] = ("float64", np.float64)
     NUMPY_Float128 = NUMPY_TYPES + 23
-    _type_map[NUMPY_Float128] = ("float128", np.float128)
+    _type_map[NUMPY_Float128] = ("float128", np_float128)
 
     NUMPY_Bool = NUMPY_TYPES + 30
     _type_map[NUMPY_Bool] = ("bool", bool)
