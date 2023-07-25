@@ -463,7 +463,32 @@ class PureMonicPolynomial(SparsePolynomial):
     def canonical_key(cls, monomial_tuple):
         raise NotImplementedError("{} is abstract".format(cls.__name__))
 
-    def __mul__(self, other):
+    def direct_multiproduct(self, other, key_value_generator):
+        if not isinstance(other, PureMonicPolynomial):
+            raise TypeError("doesn't make sense")
+
+        new_terms = {}
+        term_hashes = {}
+        for k, v in other.terms.items():
+            for k2, v2 in self.terms.items():
+                for k3, v3 in key_value_generator(k, k2, v, v2):
+                    new_hash = self.key_hash(k3) + self.key_hash(k2)
+                    if new_hash in term_hashes:
+                        t = term_hashes[new_hash]
+                    else:
+                        t = self.canonical_key(k3)  # construct new tuple and canonicalize
+                        term_hashes[new_hash] = t
+                    new_terms[t] = new_terms.get(t, 0) + v3  # this is the case where after mult. two terms merge
+                    if new_terms[t] == 0:
+                        del new_terms[t]
+        if self.prefactor is None:
+            pref = other.prefactor
+        elif other.prefactor is None:
+            pref = self.prefactor
+        else:
+            pref = self.prefactor * other.prefactor
+        return type(self)(new_terms, prefactor=pref, canonicalize=False)
+    def direct_product(self, other, key_func=None, mul=None):
         if isinstance(other, (int, float, np.integer, np.floating)):
             if other == 1:
                 return self
@@ -471,6 +496,10 @@ class PureMonicPolynomial(SparsePolynomial):
                 return 0
                 # return type(self)({})
         if isinstance(other, PureMonicPolynomial):
+            if mul is None:
+                mul = lambda a,b:a*b
+            if key_func is None:
+                key_func = lambda key1,key2:k+k2
             new_terms = {}
             term_hashes = {}
             for k,v in other.terms.items():
@@ -479,14 +508,22 @@ class PureMonicPolynomial(SparsePolynomial):
                     if new_hash in term_hashes:
                         t = term_hashes[new_hash]
                     else:
-                        t = self.canonical_key(k + k2) # construct new tuple and canonicalize
+                        t = self.canonical_key(key_func(k, k2)) # construct new tuple and canonicalize
                         term_hashes[new_hash] = t
-                    new_terms[t] = new_terms.get(t, 0) + v * v2
+                    new_terms[t] = new_terms.get(t, 0) + mul(v, v2) # this is the case where after mult. two terms merge
                     if new_terms[t] == 0:
                         del new_terms[t]
-            return type(self)(new_terms, prefactor=self.prefactor*other.prefactor, canonicalize=False)
+            if self.prefactor is None:
+                pref = other.prefactor
+            elif other.prefactor is None:
+                pref = self.prefactor
+            else:
+                pref = self.prefactor*other.prefactor
+            return type(self)(new_terms, prefactor=pref, canonicalize=False)
         else:
-            return type(self)(self.terms, prefactor=self.prefactor*other, canonicalize=False)
+            return type(self)(self.terms, prefactor=self.prefactor*other if self.prefactor is not None else other, canonicalize=False)
+    def __mul__(self, other):
+        return self.direct_product(other)
 class TensorCoefficientPoly(PureMonicPolynomial):
     """
     Represents a polynomial constructed using tensor elements as monomials
