@@ -23,7 +23,7 @@ class CartesianCoordinateSystem(BaseCoordinateSystem):
     Represents Cartesian coordinates generally
     """
     name = "Cartesian"
-    def __init__(self, dimension=None, converter_options=None, **opts):
+    def __init__(self, dimension=None, converter_options=None, coordinate_shape=None, **opts):
         """
         :param converter_options: options to be passed through to a `CoordinateSystemConverter`
         :type converter_options: None | dict
@@ -34,7 +34,7 @@ class CartesianCoordinateSystem(BaseCoordinateSystem):
         """
         if converter_options is None:
             converter_options = opts
-        super().__init__(self.name, dimension=dimension, converter_options=converter_options)
+        super().__init__(self.name, dimension=dimension, coordinate_shape=coordinate_shape, converter_options=converter_options)
 
 ######################################################################################################
 ##
@@ -47,7 +47,7 @@ class InternalCoordinateSystem(BaseCoordinateSystem):
     """
 
     name = "Internal"
-    def __init__(self, dimension = None, coordinate_shape=None, converter_options=None, **opts):
+    def __init__(self, dimension=None, coordinate_shape=None, converter_options=None, **opts):
         """
         :param converter_options: options to be passed through to a `CoordinateSystemConverter`
         :type converter_options: None | dict

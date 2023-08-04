@@ -1,17 +1,19 @@
 """
 Sets up a general Interpolator class that looks like Mathematica's InterpolatingFunction class
 """
-import typing
 
-import numpy as np, abc, enum
+import numpy as np, abc, enum, math
 import scipy.interpolate as interpolate
 import scipy.spatial as spat
 from .Mesh import Mesh, MeshType
-from ..Numputils import vec_outer
+
+from .NeighborBasedInterpolators import *
 
 __all__ = [
     "Interpolator",
     "Extrapolator",
+    "RBFDInterpolator",
+    "InverseDistanceWeightedInterpolator",
     "ProductGridInterpolator",
     "UnstructuredGridInterpolator"
 ]
@@ -250,146 +252,38 @@ class UnstructuredGridInterpolator(BasicInterpolator):
         """
         raise NotImplementedError("derivatives not implemented for unstructured grids")
 
-class RBFInterpolator:
-    """
-    Provides a flexible RBF interpolator that also allows
-    for matching function derivatives
-    """
-
-
-
-    def __init__(self,
-                 pts, values, *derivatives,
-                 kernel:typing.Union[callable,dict],
-                 auxiliary_basis=None,
-                 extra_degree=-1
-                 ):
-
-        pts = np.asanyarray(pts)
-        if pts.ndim == 1:
-            pts = pts[:, np.newaxis]
-        self.grid, self.grid_shifts, self.grid_scaling = self.renormalize_grid(pts)
-        self.tree = spat.KDTree(self.grid)
-        self.vals, self.val_shift, self.val_scaling = values
-        self.derivs = derivatives
-        if not isinstance(kernel, dict):
-            kernel = {'function':kernel}
-        if 'derivatives' not in kernel:
-            kernel['derivatives'] = None
-        self.kernel = kernel
-        if not isinstance(auxiliary_basis, dict):
-            auxiliary_basis = {'function':auxiliary_basis}
-        if 'derivatives' not in auxiliary_basis:
-            auxiliary_basis['derivatives'] = None
-        self.aux_poly = auxiliary_basis
-        self.extra_degree = extra_degree
-
-    def renormalize_grid(self, pts):
-        dim_slices = np.transpose(pts)
-        mins = [np.min(x) for x in dim_slices]
-        maxs = [np.max(x) for x in dim_slices]
-        scalings = [M-m for M,m in zip(mins, maxs)]
-        rescaled_slices = [(x-m)/s for x,m,s in zip(dim_slices, mins, scalings)]
-        return np.transpose(rescaled_slices), mins, scalings
-    def renormalize_values(self, values):
-        min = np.min(values)
-        scaling = np.max(values) - min
-        return (values-min)/scaling, min, scaling
-    def renomalize_derivs(self, derivs):
-        #TODO: rescale, handle coordinate transforms, and take upper triangles
-        ...
-
-    # @staticmethod
-    # def _poly_eval
-    @staticmethod
-    def _eval_poly(pts, order, var=None, var_deriv=None, deriv_order=0):
-        #  use direct product expansion of terms & corresponding derivs!
-        #       decreasese requested nominal order and allows for better fits
-        #       and potentially more stable extrapolation?
-        ndim = pts.shape[-1]
-
-        # if var is not None:
-        #     pts = var(pts)
-
-        # TODO: add in custom vars with derivs
-        res = [[] for _ in range(deriv_order+1)]
-        for d in range(deriv_order+1):
-            x = pts
-            I = np.broadcast_to(np.eye(ndim)[np.newaxis], (pts.shape[0], ndim, ndim))
-            if d == 0: # add in initial terms
-                res[d].append(x)
-            elif d == 1:
-                res[d].append(I)
-            else:
-                res[d].append(0)
-            for i in range(d-1):  # add in zero tensors
-                res[d].append(0)
-            for i in range(d, order-1): # everything below is handled or zeros
-                # evaluate basic monomial terms
-                x = np.expand_dims(x, 1)  # npts x 1 ... [i times]  x ndim
-                A = np.expand_dims(res[d][-1], -1) # npts x ndim x ... [(d+1)*i times] x 1
-                X_i = A * pts
-                if d > 0:
-                    # we have the expr d_k X^N = d_k X^(N-1) * x + k d_(k-1) X^(N-1) * I
-                    I = np.expand_dims(I, 1) # npts x 1 x ... x ndim x ndim
-                    B = res[d-1][i-1] # npts x ndim x ...[d * i-1 times] x 1 x 1
-                    X_i += d * np.expand_dims(B, -1)
-                res[d].append(X_i)
-        return res
-    @staticmethod
-    def _eval_r_derivs(pts, order):
-        ...
-    @classmethod
-    def _poly(cls, order):
-        def p(pts):
-            return cls._eval_poly(pts, order, ...)
-        return p
-    def evaluate_poly_matrix(self, pts, degree, deriv_order=0, poly_origin=0.5, include_constant_term=True):
-        #TODO: include deriv order and merge all at once
-        fn = self.aux_poly['function']
-        pts = pts - poly_origin
-        blocks = ([np.ones((len(pts), 1))] if include_constant_term else []) + [
-            fn(o)(pts, deriv_order=deriv_order)
-            for o in range(1, degree+1)
-        ]
-        return np.concatenate(blocks, axis=1)
-    def evaluate_rbf_matrix(self, pts, centers, deriv_order=0, zero_tol=1e-8):
-        displacements_matrix = np.reshape(pts[:, np.newaxis, :] - centers[np.newaxis, :, :], (-1, centers.shape[-1]))
-        distance_mat = np.linalg.norm(displacements_matrix, axis=1)
-        rbf_vals = self.kernel['function'](distance_mat)
-        res = [rbf_vals]
-        # Now include derivs
-        der_fun = self.kernel['derivatives']
-        # There _must_ be a removable singularity at zero and no singularities anywhere else
-        zero_pos = np.where(np.abs(distance_mat) < zero_tol)
-        distance_mat[zero_pos] = 1 # to avoid the singularity
-        displacements_matrix[zero_pos] += 1/np.power(displacements_matrix.shape[-1]) # to avoid the singularity
-        coord_transf = self._eval_r_derivs(displacements_matrix, deriv_order)
-        for d in range(1, deriv_order):
-            dvals = der_fun(d)(distance_mat) #type:np.ndarray
-            dvals[..., zero_pos] = der_fun(d)(0)
-            res.append(dvals)
-        # Finally transform coordinates
-        raise NotImplementedError("...")
-    def construct_matrix(self, pts,
-                         deriv_order=0, zero_tol=1e-8,
-                         poly_origin=0.5, include_constant_term=True
-                         ):
-        rbf_mats = self.evaluate_rbf_matrix(pts, self.grid, deriv_order=deriv_order, zero_tol=zero_tol)
-        pol_mats = self.evaluate_poly_matrix(pts, self.grid, poly_origin=poly_origin, include_constant_term=include_constant_term, deriv_order=deriv_order)
-
-    def setup_system(self):
-        M = self.construct_matrix(self.grid)
-
-    def get_neighborhood(self):
-        ...
-    def eval(self, pts, deriv_order=0):
-        ...
-
-
-
-
-
+# class _PolyFitManager:
+#     """
+#     Provides ways to evaluate polynomials
+#     fast and get matrices of terms to fit
+#     """
+#     def __init__(self, order, ndim):
+#         self.order = order
+#         self.ndim = ndim
+#         self._expr = None
+#     @property
+#     def perms(self):
+#         from ..Combinatorics import SymmetricGroupGenerator
+#
+#         if self._perms is None:
+#             # move this off to cached classmethod
+#             # since there are restricted numbers of (order, ndim) pairs
+#             sn = SymmetricGroupGenerator(self.ndim)
+#             self._perms = sn.get_terms(list(range(self.order+1)))
+#         return self._perms
+#     def eval_poly_mat(self, coords):
+#         """
+#
+#         :param coords: shape=(npts, ndim)
+#         :type coords: np.ndarray
+#         :return:
+#         :rtype:
+#         """
+#         return np.power(coords[:, np.newaxis, :], self.perms[np.newaxis])
+#     def eval_poly_mat_deriv(self, which):
+#         which, counts = np.unique(which, return_counts=True)
+#         perm_inds = self.perms[:, which]
+#         shift_perms = perm_inds - counts[np.newaxis, :] # new monom orders
 
 
 class ExtrapolatorType(enum.Enum):

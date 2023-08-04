@@ -2,7 +2,7 @@
 # because of the way multiprocessing works we need this to avoid crashes
 try:
     from Peeves.TestUtils import *
-    from Peeves import BlockProfiler
+    from Peeves import BlockProfiler, Timer
 except:
     pass
 from unittest import TestCase
@@ -13,6 +13,7 @@ try:
 except ModuleNotFoundError:
     from McUtils.McUtils.Zachary.Taylor.ZachLib import *
 from McUtils.Plots import *
+import McUtils.Plots as plt
 from McUtils.Data import *
 import McUtils.Numputils as nput
 from McUtils.Parallelizers import *
@@ -851,13 +852,127 @@ class ZacharyTests(TestCase):
         # raise Exception(gamdQQ_I_new.array.T, gamdQQ_I[0])
         self.assertTrue(np.allclose(gamdQQ_I_new.array.T, gamdQQ_I))
 
-    @debugTest
+    @validationTest
+    def test_ExplicitPoly(self):
+        a = FunctionExpansion.from_indices(
+            {
+                (): 1,
+                (0,): 2
+            },
+            ndim=2
+        )
+        self.assertTrue(np.allclose(
+            a([
+                [[1, 2], [.5, 2]],
+                [[1, 3], [.5, 3]],
+                [[1, 4], [.5, 4]]
+            ]),
+            np.array([
+                [3, 2],
+                [3, 2],
+                [3, 2],
+            ])
+        ))
+
+    @validationTest
     def test_TensorDerivatives(self):
-        a = TensorExpression.CoordinateVectorTerm(name='a', array=np.array([1, 1]))
-        fa = TensorExpression.ScalarFunctionTerm(a,
-                                                 f={'function':np.sin, 'derivatives':lambda o:lambda a:((-1)**o)*(np.sin(a) if o%2==0 else np.cos(a))},
-                                                 name='sin')
-        raise Exception(fa.array)
+        # a = TensorExpression.TermVector([TensorExpression.CoordinateTerm(0, 2), TensorExpression.CoordinateTerm(1, 2)])
+
+        def plus_1(x):
+            return x+1
+        crds = TensorExpression.ScalarFunctionTerm(
+            TensorExpression.CoordinateVector(2, name="coord_vec"),
+            f={'function':plus_1, 'derivatives':lambda inds: (lambda *_:1) if isinstance(inds, int) or len(inds) == 1 else (lambda *_:0)},
+
+        )
+        expr = TensorExpression.OuterPowerTerm(crds, 2)
+
+        e2 = TensorExpression.OuterPowerTerm(
+            TensorExpression.ScalarFunctionTerm(
+                TensorExpression.CoordinateVector([1, 2], name="coord_vec"),
+                f={'function': plus_1,
+                   'derivatives': lambda inds: (lambda *_: 1) if isinstance(inds, int) or len(inds) == 1 else (
+                       lambda *_: 0)},
+
+            ), 2)
+        self.assertTrue(np.allclose(
+            TensorExpression(expr.dQ(), coord_vec=np.array([1, 2])).eval(),
+            e2.dQ().array
+        ))
+
+        nv = TensorExpression.VectorNormTerm(TensorExpression.CoordinateVector(2, name="coord_vec"))
+        self.assertEquals(TensorExpression(nv, coord_vec=np.array([1, 2])).eval(), np.linalg.norm([1, 2]))
+        self.assertTrue(np.allclose(
+            TensorExpression(nv.dQ().dQ(), coord_vec=np.array([1, 2])).eval(),
+            [
+                [0.357771, -0.178885],
+                [-0.178885, 0.0894427]
+            ]
+        ))
+
+        np.random.seed(0)
+        crd = np.random.rand(5)
+        wat = TensorExpression.VectorNormTerm(
+            TensorExpression.CoordinateVector(5, name="coord_vec")
+        )
+        crd_vals = TensorExpression.ArrayStack((3,), np.array([crd, crd, crd]))
+        res = TensorExpression(wat, coord_vec=crd_vals).eval()
+        self.assertEquals(res.shape, (3,))
+        wat_d = wat.dQ()
+        dq_res = TensorExpression(wat_d, coord_vec=crd_vals).eval()
+        self.assertEquals(dq_res.shape, (3, 5))
+        slow_mode = np.array([
+            TensorExpression(wat_d, coord_vec=x).eval()
+            for x in crd_vals.array
+        ])
+        self.assertTrue(np.allclose(dq_res, slow_mode))
+
+        wat_dd = wat.dQ().dQ()
+        dqq_res = TensorExpression(wat_dd, coord_vec=crd_vals).eval()
+        self.assertEquals(dqq_res.shape, (3, 5, 5))
+        slow_mode = np.array([
+            TensorExpression(wat_dd, coord_vec=x).eval()
+            for x in crd_vals.array
+        ])
+        self.assertTrue(np.allclose(dqq_res, slow_mode))
+
+        pts = np.array([[-0.32498609, -0.29857954],
+                        [-0.29112237, -0.48247142],
+                        [-0.19237367, -0.28342343],
+                        [-0.40490118, -0.2155546],
+                        [-0.31110323, -0.10724408]])
+        pts = TensorExpression.ArrayStack((5,), pts)
+
+        term = TensorExpression.OuterPowerTerm(
+            TensorExpression.CoordinateVector(2, name="pts"),
+            2
+        )
+
+        # self.assertEquals(TensorExpression(term, pts=pts).eval().shape, (5, 2, 2))
+        self.assertEquals(TensorExpression(term.dQ(), pts=pts).eval().shape, (5, 2, 2, 2))
+
+        pts = np.array([[-0.32498609, -0.29857954],
+                        [-0.29112237, -0.48247142],
+                        [-0.19237367, -0.28342343],
+                        [-0.40490118, -0.2155546],
+                        [-0.31110323, -0.10724408]])
+        pts = TensorExpression.ArrayStack((5,), pts)
+
+        term = TensorExpression.OuterPowerTerm(
+            TensorExpression.CoordinateVector(2, name="pts"),
+            3
+        )
+
+        # self.assertEquals(TensorExpression(term, pts=pts).eval().shape, (5, 2, 2))
+        self.assertEquals(TensorExpression(term, pts=pts).eval().shape, (5, 2, 2, 2))
+
+
+
+
+        # fa = TensorExpression.ScalarFunctionTerm(a,
+        #                                          f={'function':np.sin, 'derivatives':lambda o:lambda a:((-1)**o)*(np.sin(a) if o%2==0 else np.cos(a))},
+        #                                          name='sin')
+        # raise Exception(fa.array)
 
     #endregion Tensor Derivatives
 
@@ -910,6 +1025,49 @@ class ZacharyTests(TestCase):
         self.assertEquals(exp(point), exp.ref)
         self.assertLess(np.linalg.norm(test - ref), .01)
 
+    @validationTest
+    def test_ExpansionDerivs(self):
+        dtype = np.float32
+
+        def sin_xy(pt):
+            ax = -1 if pt.ndim > 1 else 0
+            return np.prod(np.sin(pt), axis=ax)
+
+        point = np.array([.5], dtype=dtype)
+        disp = .01
+        exp1 = FunctionExpansion.expand_function(sin_xy, point, function_shape=((1,), 0), order=4, stencil=6)
+        poly_coeffs = np.array([exp1.expansion_tensors[i].flatten() for i in range(4)]).flatten()
+        dpoly_coeffs = np.array([exp1.deriv().expansion_tensors[i].flatten() for i in range(3)]).flatten()
+        dpoly2_coeffs = np.array([exp1.deriv().deriv().expansion_tensors[i].flatten() for i in range(2)]).flatten()
+        self.assertTrue(dpoly_coeffs[0] == 2*poly_coeffs[1])
+        self.assertTrue(dpoly2_coeffs[0] == 2 * 3 * poly_coeffs[2])
+        self.assertTrue(dpoly2_coeffs[1] == 3 * 4 * poly_coeffs[3])
+
+        def sin_xy_d(pt):
+            return np.array([
+                np.cos(pt[..., 0]) * np.sin(pt[..., 1]),
+                np.sin(pt[..., 0]) * np.cos(pt[..., 1])
+                ]).T
+
+        exp2D = FunctionExpansion.expand_function(sin_xy, np.array([.5, -.5]),
+                                                  function_shape=((2,), 0),
+                                                  order=7,
+                                                  stencil=11)
+        self.assertLess(
+            np.linalg.norm(
+                exp2D.deriv()([
+                    exp2D.center,
+                    exp2D.center - disp,
+                    exp2D.center + disp,
+                ]) -
+                sin_xy_d(np.array([
+                    exp2D.center,
+                    exp2D.center - disp,
+                    exp2D.center + disp,
+                ]))
+            ),
+            .005)
+
     @debugTest
     def test_MultiExpansion(self):
         dtype = np.float32
@@ -924,15 +1082,19 @@ class ZacharyTests(TestCase):
         exp2 = FunctionExpansion.expand_function(sin_xy, point-disp, function_shape=((2,), 0), order=4, stencil=6)
         exp3 = FunctionExpansion.expand_function(sin_xy, point+disp, function_shape=((2,), 0), order=4, stencil=6)
         exp4 = FunctionExpansion.expand_function(sin_xy, point+2*disp, function_shape=((2,), 0), order=4, stencil=6)
-        multi = FunctionExpansion.multiexpansion(exp1, exp2, exp3, exp4)
+        multi = FunctionExpansion.multipolynomial(exp1, exp2, exp3, exp4)
 
         d1 = exp1.deriv()
-        raise Exception(d1)
 
-        raise Exception( multi([exp1.center, exp2.center, exp3.center, exp4.center]) )
+        exp1([exp1.center, exp2.center, exp3.center, exp4.center])
+        d1([exp1.center, exp2.center, exp3.center, exp4.center])
+
+        mult_test_1 = multi([exp1.center, exp2.center, exp3.center, exp4.center])
 
 
+        mult_test_2 = multi([exp1.center, exp2.center, exp3.center, exp4.center], outer=False)
 
+        self.assertTrue(np.allclose(mult_test_2, np.diag(mult_test_1)))
 
         #
         #
@@ -975,19 +1137,9 @@ class ZacharyTests(TestCase):
 
     #endregion
 
-    #region Interpolation
-    # @inactiveTest
-    # def test_Interpolator1D(self):
-    #
-    #     sin_grid = np.arange(0, 1, .1)
-    #     sin_vals = np.sin(sin_grid)
-    #     reg_interp = RegularGridInterpolator(sin_grid, sin_vals)
-    #     raise NotImplementedError("need to finish test")
-    #
-    #     d2 = reg_interp.derivative(2)
+    # region Interpolation
 
-
-    #region Mesh
+    # region Mesh
 
     @validationTest
     def test_LinSpaceMesh(self):
@@ -1166,7 +1318,6 @@ class ZacharyTests(TestCase):
 
         g.show()
 
-
     @validationTest
     def test_InterpolatorExtrapolator1D(self):
 
@@ -1242,7 +1393,692 @@ class ZacharyTests(TestCase):
             np.max(np.abs(interp_vals - test_vals))
         ))
 
+    @inactiveTest
+    def test_TensorExpressionEfficiency(self):
+        te = TensorExpression.OuterPowerTerm(TensorExpression.ConstantArray([1, 2, 3], name="bloop"), 3)
+        tet2 = TensorExpression.OuterTerm(
+            TensorExpression.OuterPowerTerm(TensorExpression.ConstantArray([1, 2, 3], name="bloop"), 2),
+            TensorExpression.ConstantArray([1, 2, 3], name="bloop").dQ()
+        )
+        c={te.dQ().terms[1]:1, tet2:2}
+        raise Exception(c)
+        TensorExpression.OuterPowerTerm(TensorExpression.ConstantArray([1, 2, 3], name="bloop"), 2)
 
+    @validationTest
+    def test_RBFInterp1D(self):
+        # 1D
+        np.random.seed(0)
+        npts = 50
+        ndim = 1
+        pts = np.random.uniform(size=(npts, ndim))
+        vals = np.product(np.sin(pts), axis=1)
+        dvals_x = np.cos(pts[:, 0])
+        d2vals_x = -np.sin(pts[:, 0])
+
+        interp = RBFDInterpolator(
+            pts,
+            vals,
+            np.array([dvals_x]).T,
+            np.reshape(d2vals_x, (npts, ndim, ndim)),
+            kernel='thin_plate_spline'
+        )
+
+        pts = interp.grid
+        vals = interp(pts[:5], deriv_order=0, neighbors=5)
+        true = np.product(np.sin(pts[:5]), axis=1)
+        self.assertTrue(
+            np.allclose(
+                vals,
+                true
+            ), msg="bad interpolation at interpolation points \n{} \nvs\n{}".format(
+                vals,
+                true
+            )
+        )
+
+        dervs = interp(pts[:2], deriv_order=1, neighbors=5)[1]
+        true = np.array([dvals_x]).T[:2]
+        self.assertTrue(
+            np.allclose(
+                dervs,
+                true
+            ), msg="bad deriv interpolation at interpolation points \n{} \nvs\n {}".format(
+                dervs,
+                true
+            )
+        )
+
+        self.assertLess(
+            np.linalg.norm(
+                interp(pts[:2] + .05, deriv_order=0, neighbors=5) -
+                np.product(np.sin(pts[:2]), axis=1)
+            ),
+            .2)
+
+        # c = (pts[:1] + [.2])
+        # raise Exception(
+        #     interp(c, deriv_order=2),
+        #     [
+        #         np.sin(c[:, 0]),
+        #         [
+        #             np.cos(c[:, 0]),
+        #         ],
+        #         [
+        #             -np.sin(c[:, 0])
+        #         ],
+        #     ]
+        # )
+
+    @validationTest
+    def test_RBFInterpolator(self):
+
+        #
+        np.random.seed(1)
+        npts = 1000
+        ndim = 2
+        pts = np.random.uniform(low=-np.pi/2, high=np.pi/2, size=(npts, ndim))
+        og = pts
+        vals = og_vals = np.product(np.sin(pts), axis=1)
+        dvals_x = np.sin(pts[:, 1])*np.cos(pts[:, 0])
+        dvals_y = np.sin(pts[:, 0])*np.cos(pts[:, 1])
+        dvals = np.array([dvals_x, dvals_y]).T
+        og_d = dvals
+        dvals_xx = -np.sin(pts[:, 0])*np.sin(pts[:, 1])
+        dvals_xy = np.cos(pts[:, 1])*np.cos(pts[:, 0])
+        dvals_yy = -np.sin(pts[:, 1])*np.sin(pts[:, 0])
+        d2vals = np.moveaxis(np.array([[dvals_xx, dvals_xy], [dvals_xy, dvals_yy]]), -1, 0)
+        og_dd = d2vals
+
+        # import McUtils.Plots as plt
+        #
+        # plt.ScatterPlot3D(*pts.T, vals, plot_range=[[-np.pi/2, np.pi/2], [-np.pi/2, np.pi/2], [-1, 1]]).show()
+
+        interp = RBFDInterpolator(
+            pts,
+            vals,
+            dvals,
+            d2vals,
+            # extra_degree=2,
+            kernel='thin_plate_spline',
+            clustering_radius=.01,
+            multicenter_monomials=True,
+
+            # monomial_basis=True
+        )
+
+        pts = interp.grid
+        vals = np.product(np.sin(pts), axis=1)
+        dvals_x = np.sin(pts[:, 1]) * np.cos(pts[:, 0])
+        dvals_y = np.sin(pts[:, 0]) * np.cos(pts[:, 1])
+        dvals = np.array([dvals_x, dvals_y]).T
+        dvals_xx = -np.sin(pts[:, 0]) * np.sin(pts[:, 1])
+        dvals_xy = np.cos(pts[:, 1]) * np.cos(pts[:, 0])
+        dvals_yy = -np.sin(pts[:, 1]) * np.sin(pts[:, 0])
+        d2vals = np.moveaxis(np.array([[dvals_xx, dvals_xy], [dvals_xy, dvals_yy]]), -1, 0)
+
+        # raise Exception("???")
+        # with np.printoptions(linewidth=1e8, threshold=1e8):
+        #     print("???", intl.matrix(pts[:1]))
+
+        test_vals = interp(pts[:2], neighbors=15)
+        real = np.product(np.sin(pts[:2]), axis=1)
+        self.assertTrue(np.allclose(
+            test_vals,
+            real,
+            atol=1e-3,
+            rtol=1e-2
+        ), msg="bad interpolation at interpolation points \n {} \nvs\n {}".format(
+            test_vals, real
+        ))
+
+        h = .001
+        test_pts = pts[:3] + np.array([[0, h]]*3)
+        extrap = interp(test_pts, neighbors=15, zero_tol=-1)
+        true = np.product(np.sin(test_pts), axis=1)
+
+        # if not np.allclose(
+        #         extrap,
+        #         true,
+        #         atol=h
+        #     ):
+        #     plt.ScatterPlot3D(*test_pts.T, true,
+        #                       plot_range=[[-np.pi / 2, np.pi / 2], [-np.pi / 2, np.pi / 2], [-1, 1]]
+        #                       # figure=plt.ScatterPlot3D(*pts.T, vals)
+        #                       ).show()
+        self.assertTrue(
+            np.allclose(
+                extrap,
+                true,
+                atol=h
+            ),
+            msg="bad extrapolation at pts: {} \nerr: {} in \n{} \nvs\n {}".format(
+                test_pts, extrap-true, extrap, true
+            )
+        )
+
+        test_pts = pts[:10]
+        dervs = interp(test_pts, neighbors=15, deriv_order=1, zero_tol=-1)[1]
+        reals = np.array(
+            [
+                dvals_x,
+                dvals_y
+            ]).T[:10]
+        test_vals = vals[:10]
+
+        # if not np.allclose(
+        #     dervs,
+        #     reals,
+        #     atol=.05
+        # ):
+        #     plt.ScatterPlot3D(*test_pts.T, test_vals,
+        #                       plot_range=[[-np.pi / 2, np.pi / 2], [-np.pi / 2, np.pi / 2], [-1, 1]]
+        #                       ).show()
+            # plt.ScatterPlot3D(*pts[:3].T, test_vals).show()
+        self.assertTrue(np.allclose(
+            dervs,
+            reals,
+            atol=.1
+        ), msg="bad deriv interpolation at interpolation points \nerror: {} in\n{} \nvs\n {}".format(dervs-reals, dervs, reals))
+
+        np.random.seed(0)
+        test_vals = np.unique(np.random.randint(0, len(pts)-1, size=200))
+        errors = [[], [], []]
+        print_errors = False
+        # prob_n = 8
+        # c = pts[test_vals[prob_n:prob_n+1]]+.1
+        #
+        # intl = interp.nearest_interpolation(c[0], neighbors=15, solver_data=True, interpolator=True)
+        # idat = intl.data
+
+        # import json, os
+        # with open(os.path.expanduser("~/Desktop/bad_pos_new.json"), 'w+') as dump:
+        #     json.dump({
+        #         'center': c.tolist(),
+        #         'pts': pts.tolist(),
+        #         'vals': vals.tolist(),
+        #         'dvals': dvals.tolist(),
+        #         'd2vals': d2vals.tolist(),
+        #         'matrix': idat.solver_data[0].tolist(),
+        #         'weights': idat.weights[0].tolist(),
+        #         'centers': idat.scaling_data.reverse_renormalization(idat.centers).tolist(),
+        #         'test_mat': intl.matrix(pts[:1] + [0, .01], deriv_order=2).tolist()
+        #     }, dump)
+        # raise Exception("...")
+
+        # print(dat.solver_data[0])
+        # raise Exception(dat.solver_data[0])
+        #
+        # raise Exception(
+        #     interp(c, neighbors=15, reshape_derivatives=False),
+        #     # interp.global_interpolator(c, reshape_derivatives=False),
+        #     np.sin(c[:, 0]) * np.sin(c[:, 1])
+        # )
+        h = .1
+        for ifun in [
+                # interp.global_interpolator,
+                lambda x,**kw:interp(x, neighbors=25, **kw)
+        ]:
+            for n,p in enumerate(pts[test_vals]):
+                c = p[np.newaxis]+h
+                test = ifun(c, reshape_derivatives=False, deriv_order=2)
+                # if np.abs(test[0])[0] > 1000:
+                #     raise Exception(n)
+                real = [
+                        np.sin(c[:, 0]) * np.sin(c[:, 1]),
+                        np.array([
+                            np.sin(c[:, 1]) * np.cos(c[:, 0]),
+                            np.sin(c[:, 0]) * np.cos(c[:, 1])
+                        ]).T,
+                        np.array([
+                            -np.sin(c[:, 0]) * np.sin(c[:, 1]),
+                             np.cos(c[:, 1]) * np.cos(c[:, 0]),
+                            -np.sin(c[:, 1]) * np.sin(c[:, 0])
+                        ]).T
+                    ]
+                if print_errors:
+                    print("-"*20+"  ", n, ": ", c, "  "+"-"*20)
+                for n, (t, r) in enumerate(zip(test, real)):
+                    rel_error = 2*(t-r)/(np.abs(t)+np.abs(r))
+                    if print_errors:
+                        print(t, r, t-r)
+                        print(">", rel_error)
+                    errors[n].append(rel_error) # relative errors
+            maes = [np.average(np.abs(x), axis=None) for x in errors]
+            # print(maes)
+            tols = [h, 3*h, 10*h] # ruined by a single outlier...
+            for n,(t,e) in enumerate(zip(tols, maes)):
+                self.assertLess(e, t, msg="at order {} MRE {} > {}".format(n, e, t))
+
+        # reals = np.moveaxis(np.array([[dvals_xx, dvals_xy], [dvals_xy, dvals_yy]]), -1, 0)[:3]
+        # raise Exception(dervs,
+        #                 vals[:3],
+        #                 dvals[:3],
+        #                 d2vals[:3]
+        #                 )
+        # self.assertTrue(np.allclose(
+        #     dervs,
+        #     reals
+        # ), msg="bad deriv interpolation at interpolation points \n{} \nvs\n {}".format(dervs, reals))
+
+        # print(
+        #     interp(pts[:2] + .0001, deriv_order=0, neighbors=5) -
+        #     np.product(np.sin(pts[:2]), axis=1)
+        # )
+        # raise Exception(interp(pts[:2], deriv_order=1, neighbors=5))
+
+    @validationTest
+    def test_RBFInterpolatorResiliance(self):
+
+        #
+        np.random.seed(1)
+        npts = 1000
+        ndim = 2
+        pts = np.random.uniform(low=-np.pi / 2, high=np.pi / 2, size=(npts, ndim))
+        og = pts
+        vals = og_vals = np.product(np.sin(pts), axis=1)
+        dvals_x = np.sin(pts[:, 1]) * np.cos(pts[:, 0])
+        dvals_y = np.sin(pts[:, 0]) * np.cos(pts[:, 1])
+        dvals = np.array([dvals_x, dvals_y]).T
+        og_d = dvals
+        dvals_xx = -np.sin(pts[:, 0]) * np.sin(pts[:, 1])
+        dvals_xy = np.cos(pts[:, 1]) * np.cos(pts[:, 0])
+        dvals_yy = -np.sin(pts[:, 1]) * np.sin(pts[:, 0])
+        d2vals = np.moveaxis(np.array([[dvals_xx, dvals_xy], [dvals_xy, dvals_yy]]), -1, 0)
+        og_dd = d2vals
+
+        # import McUtils.Plots as plt
+        #
+        # plt.ScatterPlot3D(*pts.T, vals, plot_range=[[-np.pi/2, np.pi/2], [-np.pi/2, np.pi/2], [-1, 1]]).show()
+
+        interp = RBFDInterpolator(
+            pts,
+            vals,
+            dvals,
+            d2vals,
+            # extra_degree=2,
+            kernel='thin_plate_spline',
+            clustering_radius=.01,
+            multicenter_monomials=True,
+
+            # monomial_basis=True
+        )
+
+        test_vals = interp(pts, neighbors=15, zero_tol=-1, resiliance_test_options={})
+
+    @validationTest
+    def test_HigherElementaryDerivs(self):
+        sym = Symbols('x', 'y')
+        fn = sym.morse(sym.x, de=2, a=1) + sym.morse(sym.y, de=2, a=1)
+        fexpr = 2*(1-sym.exp(-1*sym.x))**2 + 2*(1-sym.exp(-1*sym.y))**2
+
+        # raise Exception(sym.x + (3*sym.x**2)/12)
+
+        self.assertTrue(np.allclose(
+            fn.deriv(order=3)([[1, 2], [3, 4]]),
+            fexpr.deriv(order=3)([[1, 2], [3, 4]])
+        ))
+
+    @debugTest
+    def test_RBFTiming(self):
+        # for npts in [50, 100, 200, 300, 400, 500]:
+        #     np.random.seed(1)
+        #     npts = npts
+        #     ndim = 2
+        #     pts = np.random.uniform(size=(npts, ndim))
+        #     vals = np.product(np.sin(pts), axis=1)
+        #     dvals_x = np.sin(pts[:, 1])*np.cos(pts[:, 0])
+        #     dvals_y = np.sin(pts[:, 0])*np.cos(pts[:, 1])
+        #     dvals_xx = -np.sin(pts[:, 0])*np.sin(pts[:, 1])
+        #     dvals_xy = np.cos(pts[:, 1])*np.cos(pts[:, 0])
+        #     dvals_yy = -np.sin(pts[:, 1])*np.sin(pts[:, 0])
+        #
+        #     interp = RBFDInterpolator(
+        #         pts,
+        #         vals,
+        #         np.array([dvals_x, dvals_y]).T,
+        #         np.moveaxis(np.array([[dvals_xx, dvals_xy], [dvals_xy, dvals_yy]]), -1, 0),
+        #         extra_degree=2,
+        #         kernel='gaussian',
+        #         clustering_radius=.05
+        #     )
+        #
+        #     from Peeves.Timer import Timer
+        #     with Timer(tag="{} pts:".format(len(interp.grid))):
+        #         interp(interp.grid + .1, deriv_order=0, neighbors=5)
+
+
+        for npts in [300]:
+            np.random.seed(1)
+            npts = npts
+            ndim = 9
+            pts = np.random.uniform(size=(npts, ndim))
+            vals = np.product(np.sin(pts), axis=1)
+
+            dvals = []
+            for i in range(ndim):
+                vals = 1
+                for k in range(ndim):
+                    if k != i:
+                        vals = vals * np.sin(pts[:, k])
+                    else:
+                        vals = vals * np.cos(pts[:, k])
+                dvals.append(vals)
+            dvals = np.moveaxis(np.array(dvals), -1, 0)
+
+            d2vals = []
+            for i in range(ndim):
+                for j in range(ndim):
+                    vals = 1
+                    for k in range(ndim):
+                        if k != i and k != j:
+                            vals = vals * np.sin(pts[:, k])
+                        elif i == j:
+                            vals = -vals * np.sin(pts[:, k])
+                        else:
+                            vals = vals * np.cos(pts[:, k])
+                    d2vals.append(vals)
+            d2vals = np.moveaxis(np.array(d2vals).reshape((ndim, ndim, -1)), -1, 0)
+
+            interp = RBFDInterpolator(
+                pts,
+                vals,
+                dvals,
+                d2vals,
+                # extra_degree=2,
+                # kernel='gaussian',
+                neighborhood_size=28,
+                clustering_radius=.05
+            )
+
+            from Peeves.Timer import Timer
+            # from Peeves import BlockProfiler
+            with BlockProfiler(name="{} pts:".format(len(interp.grid))):
+                interp(interp.grid[:25] + .2, deriv_order=0, neighbors=5)
+
+    @validationTest
+    def test_RBFForms(self):
+
+        def test_1D(fn, pts):
+
+            base_interp = RBFDInterpolator.create_function_interpolation(
+                pts.reshape((-1, 1)),
+                lambda p,f=fn:f(p).flatten()
+            )
+
+            #
+            g = np.linspace(np.min(pts)-.3, np.max(pts)+.3, 50)
+            cp = plt.CompositePlot(
+                plt.Plot(g, base_interp(g.reshape(-1, 1)), color='red'),
+                plt.Plot(g, fn(g), color='green', linestyle='-'),
+                plt.ScatterPlot(pts, fn(pts))
+            ).show(interactive=False)
+
+            dinterp = RBFDInterpolator.create_function_interpolation(
+                pts,
+                lambda p,f=fn:f(p).reshape(-1),
+                lambda p,f=fn.deriv(1):f(p).reshape(-1, 1),
+                lambda p,f=fn.deriv(2):f(p).reshape(-1, 1, 1)
+            )
+
+            #
+            itp = dinterp
+            g = np.linspace(np.min(itp.grid)-.3, np.max(itp.grid)+.3, 50)
+            cp = plt.CompositePlot(
+                plt.Plot(g, itp(g.reshape(-1, 1)), color='red'),
+                plt.Plot(g, fn(g), color='green', linestyle='dashed'),
+                plt.ScatterPlot(pts, fn(pts))
+            ).show(interactive=False)
+
+
+        sym = Symbols('xyz')
+
+        # np.random.seed(3)
+        # fn = sym.morse(sym.x)
+        # pts = np.random.uniform(low=-.5, high=1.2, size=30)
+
+        # test_1D(sym.morse(sym.x), pts)
+        # test_1D(sym.sin(sym.x), pts)
+        # test_1D(sym.morse(sym.x)*sym.sin(sym.x), pts)
+        #
+        # raise Exception(...)
+
+
+        np.random.seed(3)
+        ndim = 2
+        pts = np.random.uniform(low=-.5, high=1.2, size=(10000, ndim))
+        np.random.seed(3)
+        new = np.random.uniform(low=-.6, high=1.3, size=(500, ndim))
+
+        # fn = sym.morse(sym.x) * sym.morse(sym.y) - sym.morse(sym.x) - sym.morse(sym.y)
+
+        for fn in [
+            sym.morse(sym.x) * sym.morse(sym.y),
+            sym.morse(sym.x) * sym.morse(sym.y) - sym.morse(sym.x) - sym.morse(sym.y)
+
+        ]:
+            dinterp = RBFDInterpolator.create_function_interpolation(
+                pts,
+                fn,
+                lambda p,f=fn.deriv(order=1):f(p).transpose(),
+                lambda p,f=fn.deriv(order=2):f(p).transpose(2, 0, 1),
+                clustering_radius=1e-5
+            )
+            # dinterp2 = RBFDInterpolator.create_function_interpolation(
+            #     pts,
+            #     fn,
+            #     lambda p, f=fn.deriv(order=1): f(p).transpose(),
+            #     lambda p, f=fn.deriv(order=2): f(p).transpose(2, 0, 1),
+            #     multicenter_monomials=False
+            # )
+
+            vals = dinterp(new, deriv_order=2)
+
+            print_errors = True
+            val_diff = vals[0] - fn(new)
+            if print_errors:
+                print("avg diff:", np.average(val_diff))
+                print("median diff:", np.median(val_diff))
+                print("std diff:", np.std(val_diff))
+            self.assertLess(
+                np.abs(np.average(val_diff)),
+                .01,
+                msg='failed for {}'.format(fn)
+            )
+            self.assertLess(
+                np.std(val_diff),
+                .05,
+                msg='failed for {}'.format(fn)
+            )
+
+            grad_diff = vals[1] - fn.deriv(order=1)(new).T
+            if print_errors:
+                print("avg grad diff:", np.average(grad_diff))
+                print("median grad diff:", np.median(grad_diff))
+                print("std grad diff:", np.std(grad_diff))
+
+            # bad_pos = np.where(np.abs(grad_diff) > .5)[0]
+            # good_pos = np.setdiff1d(np.arange(len(dinterp.grid)), bad_pos)
+            #
+            # plt.ListTriPlot3D(*dinterp.grid.T, dinterp.vals).show()
+            #
+            # bad_inds = dinterp.get_neighborhood(new[bad_pos[0]:bad_pos[0]+1], neighbors=15)[0]
+            # plt.ListTriPlot3D(*dinterp.grid[bad_inds].T, dinterp.vals[bad_inds])
+            #
+            # good_inds = dinterp.get_neighborhood(new[good_pos[0]:good_pos[0]+1], neighbors=15)[0]
+            # plt.ListTriPlot3D(*dinterp.grid[good_inds].T, dinterp.vals[good_inds]).show()
+
+            # raise Exception(np.where(np.abs(grad_diff) > .5))
+            self.assertLess(
+                np.abs(np.average(grad_diff)),
+                .05,
+                msg='failed for {}'.format(fn)
+            )
+            self.assertLess(
+                np.std(grad_diff),
+                .2,
+                msg='failed for {}'.format(fn)
+            )
+
+            hess_diff = vals[2] - fn.deriv(order=2)(new).transpose(2, 0, 1)
+            if print_errors:
+                print("avg hess diff:", np.average(hess_diff))
+                print("median hess diff:", np.median(hess_diff))
+                print("std hess diff:", np.std(hess_diff))
+            self.assertLess(
+                np.abs(np.average(hess_diff)),
+                .2,
+                msg='failed for {}'.format(fn)
+            )
+            self.assertLess(
+                np.std(hess_diff),
+                .8,
+                msg='failed for {}'.format(fn)
+            )
+
+
+
+        # plt.TriContourPlot(*new.T, dinterp2(new)-fn(new), colorbar=True).show()
+        # plt.TriContourPlot(*new.T, dinterp(new)-dinterp2(new), colorbar=True).show()
+        # raise Exception(dinterp(new) - morse(new))
+
+    @validationTest
+    def test_Symbolics(self):
+
+        from McUtils.Misc import njit
+
+        sym = Symbols('xyz')
+        x, y, z = sym.vars
+
+        e = sym.cos(x)
+        c = e.compile()
+
+        # pts = np.random.rand(10000)
+        #
+        # with Timer("base"):
+        #     e(pts)
+        # with Timer('comp'):
+        #     c(pts)
+        #
+        #
+        # import astunparse
+        # print(
+        #     astunparse.unparse(e.deriv().get_compile_spec())
+        # )
+        # raise Exception('...')
+
+        d = e.deriv()
+        pts = np.array([1, 2, 3])
+        self.assertTrue(np.allclose(e(pts), np.cos(pts)))
+        self.assertTrue(np.allclose(d(pts), -np.sin(pts)))
+
+
+        m = sym.morse(x)
+        self.assertTrue(np.allclose(m(pts), (1-np.exp(-pts))**2))
+        self.assertTrue(np.allclose(m.deriv()(pts), 2*np.exp(-pts)*(1 - np.exp(-pts))))
+
+        e = sym.cos(x) + sym.cos(y)
+        pts = np.array([[1, 0], [2, 1], [3, 2]])
+        self.assertTrue(
+            np.allclose(
+                e(pts),
+                np.cos(pts[:, 0]) + np.cos(pts[:, 1])
+            )
+        )
+
+        d = e.deriv()
+        self.assertTrue(
+            np.allclose(
+                d(pts),
+                np.array([
+                    -np.sin(pts[:, 0]),
+                    -np.sin(pts[:, 1])
+                ])
+            )
+        )
+
+        import sympy
+        np.random.seed(0)
+        new_pts = np.random.rand(3, 2)
+
+        comp_expr = sym.morse(x)*sym.morse(y)# + sym.morse(x) - sym.cos(y)
+        sx, sy = sympy.symbols(["x", "y"])
+        sympy_expr = (1-sympy.exp(-sx))**2 *(1-sympy.exp(-sy))**2
+        # print(
+        #     comp_expr(new_pts),
+        #     sympy.lambdify([x, y], sympy_expr)(
+        #         new_pts[:, 0],
+        #         new_pts[:, 1]
+        #     )
+        # )
+
+        self.assertTrue(
+            np.allclose(
+                comp_expr(new_pts),
+                sympy.lambdify([sx, sy], sympy_expr)(
+                    new_pts[:, 0],
+                    new_pts[:, 1]
+                )
+            )
+        )
+
+        # print(comp_expr.functions[0].tree_repr())
+
+        comp_dexpr = comp_expr.deriv()
+        self.assertTrue(
+            np.allclose(
+                comp_dexpr(new_pts),
+                np.array([
+                    sympy.lambdify([sx, sy], sympy_expr.diff(sx))(
+                        new_pts[:, 0],
+                        new_pts[:, 1]
+                    ),
+
+                    sympy.lambdify([sx, sy], sympy_expr.diff(sy))(
+                        new_pts[:, 0],
+                        new_pts[:, 1]
+                    )
+                    ])
+            )
+        )
+
+        new_pts = np.random.rand(1000, 2)
+        with Timer(tag="Custom", number=25):
+            for _ in range(25):
+                dexpr_res = comp_dexpr(new_pts)
+        comp_dexpr_compiled = comp_dexpr.compile()
+        # import astunparse
+        # raise Exception(astunparse.unparse(comp_dexpr.get_compile_spec()))
+        # compiled_exprs = [
+        #     comp_dexpr.functions[0].compile(),
+        #     comp_dexpr.functions[1].compile()
+        # ]
+        # raise Exception(compiled_exprs[0](new_pts))
+        comp_dexpr_compiled(new_pts) # to precompile
+        with Timer(tag="Compiled", number=25):
+            for _ in range(25):
+                comp_res = comp_dexpr_compiled(new_pts)
+
+        # raise Exception(comp_res)
+        exprs = [
+            sympy.lambdify([sx, sy], sympy_expr.diff(sx)),
+            sympy.lambdify([sx, sy], sympy_expr.diff(sy))
+        ]
+        with Timer(tag="SymPy", number=25):
+            for _ in range(25):
+                sympy_res = np.array([
+                    e(
+                        new_pts[:, 0],
+                        new_pts[:, 1]
+                    )
+                    for e in exprs
+                ])
+
+        self.assertTrue(
+            np.allclose(dexpr_res, sympy_res)
+        )
+        self.assertTrue(
+            np.allclose(dexpr_res, comp_res)
+        )
 
 
     #endregion

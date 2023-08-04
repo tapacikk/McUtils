@@ -418,6 +418,22 @@ class UnitsDataHandler(DataHandler):
 
         return conv
 
+    # Conveniences
+    Wavenumbers = "Wavenumbers"
+    Hartrees = "Hartrees"
+    Angstroms = "Angstroms"
+    BohrRadius = "BohrRadius"
+    ElectronMass = "ElectronMass"
+    AtomicMassUnits = "AtomicMassUnits"
+    @property
+    def hartrees_to_wavenumbers(self): # soooo common
+        return self.convert("Hartrees", "Wavenumbers")
+    @property
+    def bohr_to_angstroms(self):
+        return self.convert("BohrRadius", "Angstroms")
+    @property
+    def amu_to_me(self):
+        return self.convert("AtomicMassUnits", "ElectronMass")
 
     #endregion
 

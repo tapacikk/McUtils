@@ -14,7 +14,7 @@ __all__ = [
     "FunctionSignature"
 ]
 
-import abc, ctypes, numpy as np, numpy.ctypeslib as npctypes
+import abc, ctypes, numpy as np, numpy.ctypeslib as npctypes, re
 
 # TODO: need to finish up with the actual type inference & make it
 #   so that we can use a `Argument.from_value` constructor
@@ -48,11 +48,18 @@ class ArgumentType(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def dtypes(self):
         raise NotImplementedError()
+    @property
+    @abc.abstractmethod
+    def typechar(self):
+        raise NotImplementedError()
     @abc.abstractmethod
     def isinstance(self, arg):
         raise NotImplementedError()
     @abc.abstractmethod
     def cast(self, arg):
+        raise NotImplementedError()
+    @abc.abstractmethod
+    def c_cast(self, arg):
         raise NotImplementedError()
 class PrimitiveType(ArgumentType):
     """
@@ -62,6 +69,7 @@ class PrimitiveType(ArgumentType):
     to use either the basic `ctypes` FFI or a more efficient, but fragile system based off of extension modules
     """
 
+    typeset = {}
     def __init__(self,
                  name,
                  ctypes_spec,
@@ -99,6 +107,8 @@ class PrimitiveType(ArgumentType):
         self._serializer = serializer
         self._deserializer = deserializer
 
+        self.typeset[self._cpp_spec] = self
+
     @property
     def name(self):
         return self._name
@@ -114,10 +124,16 @@ class PrimitiveType(ArgumentType):
     @property
     def dtypes(self):
         return self._dtypes
+    @property
+    def typechar(self):
+        return self._capi_spec
     def isinstance(self, arg):
         return isinstance(arg, self._types)
     def cast(self, arg):
         return self._types[0](arg)
+    def c_cast(self, arg):
+        return self.ctypes_type(self.cast(arg))
+        # return self._types[0](arg)
     def __repr__(self):
         return "{}({})".format(
             type(self).__name__,
@@ -130,9 +146,10 @@ class ArrayType(ArgumentType):
     To start, we're only adding in proper support for numpy arrays.
     Other flavors might come, but given the use case, it's unlikely.
     """
-    def __init__(self, base_type, shape=None):
+    def __init__(self, base_type, shape=None, ctypes_spec=None):
         self.base = base_type
         self.shape = shape
+        self._ctypes_spec = ctypes_spec
 
     @property
     def ctypes_type(self):
@@ -148,10 +165,15 @@ class ArrayType(ArgumentType):
     @property
     def dtypes(self):
         return self.base.dtypes
+    @property
+    def typechar(self):
+        return self.base.typechar
     def isinstance(self, arg):
         return isinstance(arg, self.types) and arg.dtype in self.base.dtypes
     def cast(self, arg):
-        return np.asarray(arg).astype(self.base.dtypes[0])
+        return np.asanyarray(arg).astype(self.base.dtypes[0])
+    def c_cast(self, arg):
+        return np.ascontiguousarray(self.cast(arg))
     def __repr__(self):
         return "{}({})".format(
             type(self).__name__,
@@ -173,7 +195,7 @@ class PointerType(ArgumentType):
     @property
     def ctypes_type(self):
         if self._ctypes_spec is None:
-            self._ctypes_spec = ctypes.pointer(self.base.ctypes_type)
+            self._ctypes_spec = ctypes.POINTER(self.base.ctypes_type)
         return self._ctypes_spec
 
     @property
@@ -185,10 +207,16 @@ class PointerType(ArgumentType):
     @property
     def dtypes(self):
         return self.base.dtypes
+    @property
+    def typechar(self):
+        return self.base.typechar
     def isinstance(self, arg):
         return self.base.isinstance(arg)
     def cast(self, arg):
         return self.base.cast(arg)
+    def c_cast(self, arg):
+        # we might need to cast arg first...
+        return ctypes.byref(self.base.c_cast(arg))
     def __repr__(self):
         return "{}({})".format(
             type(self).__name__,
@@ -197,6 +225,16 @@ class PointerType(ArgumentType):
 
 # this is the block where we just declare a shit ton of types...
 # Python types that handle the most common case
+VoidType = PrimitiveType(
+    "void",
+    None,
+    "void",
+    "void",
+    (),
+    (),
+    None,#serializer
+    None#deserializer
+)
 RealType = PrimitiveType(
     "Real",
     ctypes.c_double,
@@ -209,7 +247,7 @@ RealType = PrimitiveType(
 )
 IntegerType = PrimitiveType(
     "int",
-    ctypes.c_int,
+    ctypes.c_int64,
     "int",
     "i",
     (int,),
@@ -241,7 +279,7 @@ FloatType = PrimitiveType(
 DoubleType = PrimitiveType(
     "double",
     ctypes.c_double,
-    "float",
+    "double",
     "d",
     (float,),
     (np.dtype('float64'),),
@@ -250,7 +288,7 @@ DoubleType = PrimitiveType(
 )
 IntType = PrimitiveType(
     "int",
-    ctypes.c_int,
+    ctypes.c_int32,
     "int",
     "i",
     (int,),
@@ -260,11 +298,11 @@ IntType = PrimitiveType(
 )
 LongType = PrimitiveType(
     "long",
-    ctypes.c_int,
+    ctypes.c_int64,
     "long",
     "i",
     (int,),
-    (np.dtype('int32'),),
+    (np.dtype('int64'),),
     None,#serializer
     None#deserializer
 )
@@ -277,6 +315,7 @@ class Argument:
     """
 
     arg_types = [
+        VoidType,
         RealType,
         IntType,
         BoolType
@@ -292,8 +331,9 @@ class Argument:
         :type default:
         """
         self.name = name
-        self.dtype = dtype #self.infer_type(dtype)
+        self.dtype = self.infer_type(dtype) #self.infer_type(dtype)
         self.default = default #self.prep_argument(default)
+        self._typesets = {}
 
     @classmethod
     def infer_type(cls, arg):
@@ -305,24 +345,83 @@ class Argument:
         :return:
         :rtype:
         """
+
         if isinstance(arg, ArgumentType):
             return arg
-        for at in cls.arg_types:
-            if at.isinstance(arg):
-                return at
-        # TODO: throw an error for getting down here...
+
+        argtype = None
+        if isinstance(arg, tuple): # shorthand for pointer types
+            argtype = PointerType(cls.infer_type(arg[0]))
+        elif isinstance(arg, (list, np.ndarray)):
+            argtype = ArrayType(cls.infer_type(arg[0]))
+        elif isinstance(arg, str):
+            argtype = cls.infer_type_str(arg)
+        elif isinstance(arg, type):
+            argtype = cls.infer_type_type(arg)
+        else:
+            for at in cls.arg_types:
+                if at.isinstance(arg):
+                    argtype = at
+                    break
+
+        if argtype is None:
+            raise ValueError("can't infer type from {}".format(arg))
+        return argtype
+
+    _typesets = None
+    _typestrs = None
+    @classmethod
+    def _prep_typesets(cls):
+        if cls._typesets is None or cls._typestrs is None:
+            cls._typesets = {}
+            cls._typestrs = {}
+            for at in cls.arg_types:
+                for t in at.types:
+                    if t not in cls._typesets:
+                        cls._typesets[t] = at
+                if at.cpp_type not in cls._typestrs:
+                    cls._typestrs[at.cpp_type] = at
+    @classmethod
+    def infer_type_type(cls, type_key):
+        cls._prep_typesets()
+        return cls._typesets.get(type_key, None)
 
     @classmethod
-    def infer_array_type(cls, argstr):
-        ...
+    def infer_type_str(cls, argstr):
+        cls._prep_typesets()
+        type = None
+        if argstr in cls._typesets:
+            type = cls._typesets[argstr]
+        elif argstr in cls._typestrs:
+            type = cls._typestrs[argstr]
+        else:
+            ptr_pat = "\*({})".format( "|".join(cls._typestrs.keys()))
+            match = re.match(ptr_pat, argstr)
+            if match is not None:
+                typestr = match.group(0)
+                type = ArrayType(cls._typestrs[typestr])
+        return type
 
     @classmethod
     def inferred_type_string(cls, arg):
         """
         returns a type string for the inferred type
         """
-        ...
+        raise NotImplementedError("...")
 
+    def prep_value(self, val):
+        return self.dtype.c_cast(val)
+
+    def is_pointer(self):
+        return isinstance(self.dtype, PointerType)
+    def is_array(self):
+        return isinstance(self.dtype, ArrayType)
+    @property
+    def dtypes(self):
+        return self.dtype.dtypes
+    @property
+    def typechar(self):
+        return self.dtype.typechar
     @property
     def cpp_signature(self):
         return "{} {}".format(
@@ -342,7 +441,7 @@ class FunctionSignature:
     To be used inside `SharedLibraryFunction` and things to manage the core interface.
     """
 
-    def __init__(self, name, *args, return_type=None):
+    def __init__(self, name, *args, defaults=None, return_type=None):
         """
         :param name: the name of the function
         :type name: str
@@ -356,6 +455,18 @@ class FunctionSignature:
             return_type = Argument.infer_type(return_type)
         self._ret_type = return_type
         self._arguments = tuple(self.build_argument(x, i) for i, x in enumerate(args))
+        if defaults is None:
+            defaults = {}
+        self.defaults = defaults
+
+    @classmethod
+    def construct(cls, name, defaults=None, return_type=None, **args):
+        return FunctionSignature(
+            name,
+            *(Argument(k, v) for k, v in args.items()),
+            defaults=defaults,
+            return_type=return_type
+        )
 
     def build_argument(self, argtup, which=None):
         """
@@ -383,10 +494,18 @@ class FunctionSignature:
     @property
     def args(self):
         return self._arguments
-
+    @property
+    def return_argtype(self):
+        return self._ret_type
     @property
     def return_type(self):
-        return self._ret_type
+        res = self._ret_type
+        if res is not None:
+            res = res.ctypes_type
+        return res
+    @property
+    def arg_types(self):
+        return [a.dtype.ctypes_type for a in self.args]
 
     @property
     def cpp_signature(self):
@@ -395,6 +514,40 @@ class FunctionSignature:
             self.name,
             ", ".join(a.cpp_signature for a in self.args)
         )
+
+    def populate_kwargs(self, args, kwargs, defaults=None):
+        kwlist = {}
+        for base, val in zip(self.args, args):
+            kwlist[base.name] = val
+        for k, v in kwargs.items():
+            if k in kwlist:
+                raise ValueError("got multiple values for argument '{}'".format(k))
+            kwlist[k] = v
+
+        if defaults is None:
+            defaults = {}
+
+        for a in self.args:
+            # resolve any possible default values
+            kwlist[a.name] = kwlist.get(
+                a.name,
+                defaults.get(a.name, self.defaults.get(a.name, a.default))
+            )
+
+        return kwlist
+
+    def prep_args(self, args, kwargs, defaults=None):
+        if args is not None: # easy way to say no prep needed...
+            kwargs = self.populate_kwargs(args, kwargs, defaults=defaults)
+
+        final_args = [
+            # coerce to correct type
+            a.prep_value(kwargs[a.name])
+            for a in self.args
+        ]
+
+        return final_args
+
     def __repr__(self):
         return "{}({}({})->{})".format(
             type(self).__name__,

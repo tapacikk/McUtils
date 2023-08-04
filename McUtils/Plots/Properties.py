@@ -25,6 +25,7 @@ class GraphicsPropertyManager:
         self._figure_label = None
         self._plot_label = None
         self._plot_legend = None
+        self._legend_style = None
         self._axes_labels = None
         self._frame = None
         self._frame_style = None
@@ -99,6 +100,14 @@ class GraphicsPropertyManager:
                 else:
                     for a in artists:
                         a.set_label(legend)
+
+    @property
+    def legend_style(self):
+        return self._legend_style
+    @legend_style.setter
+    def legend_style(self, style):
+        self._legend_style = style
+
 
     # # set axes labels
     # @property
@@ -742,14 +751,25 @@ class GraphicsPropertyManager3D(GraphicsPropertyManager):
     def plot_range(self, ranges):
         if self._plot_range is None:
             self._plot_range = (self.axes.get_xlim(), self.axes.get_ylim(), self.axes.get_zlim())
+        elif len(self._plot_range) == 2:
+            self._plot_range = self._plot_range + (self.axes.get_zlim(),)
 
         try:
             x, y, z = ranges
         except ValueError:
-            x, y, z = ranges = (self._plot_range[0], self._plot_range[1], ranges)
-        else:
-            if isinstance(x, int) or isinstance(x, float):
-                x, y, z = ranges = (self._plot_range[0], self._plot_range[1], ranges)
+            try:
+                x, y = ranges
+            except ValueError:
+                raise ValueError("bad plot range spec {}".format(ranges))
+            else:
+                if isinstance(x, (int, float)):
+                    x, y, z = ranges = (self._plot_range[0], self._plot_range[1], ranges)
+                else:
+
+                    z = self._plot_range[2]
+        # else:
+        #     if isinstance(x, int) or isinstance(x, float):
+        #         x, y, z = ranges = (self._plot_range[0], self._plot_range[1], ranges)
 
         self._plot_range = tuple(ranges)
 
@@ -795,16 +815,17 @@ class GraphicsPropertyManager3D(GraphicsPropertyManager):
     def ticks(self, ticks):
         if self._ticks is None:
             self._ticks = (self.axes.get_xticks(), self.axes.get_yticks(), self.axes.get_zticks())
-        try:
-            x, y, z = ticks
-        except ValueError:
-            x, y, z = ticks = (self._ticks[0], self._ticks[1], ticks)
+        if ticks is not None:
+            try:
+                x, y, z = ticks
+            except ValueError:
+                x, y, z = ticks = (self._ticks[0], self._ticks[1], ticks)
 
-        self._ticks = ticks
+            self._ticks = ticks
 
-        self._set_xticks(x)
-        self._set_yticks(y)
-        self._set_zticks(z)
+            self._set_xticks(x)
+            self._set_yticks(y)
+            self._set_zticks(z)
 
     @property
     def ticks_style(self):

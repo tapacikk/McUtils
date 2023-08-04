@@ -81,7 +81,7 @@ class StringParser:
     A convenience class that makes it easy to pull blocks out of strings and whatnot
     """
 
-    def __init__(self, regex):
+    def __init__(self, regex:RegexPattern):
         self.regex = regex
 
     def parse(self,
@@ -500,7 +500,7 @@ class StringParser:
                 # print("axis:", append)
                 # print("total axis:", append + array.append_depth)
                 # print(data)
-                if append is True  or not isinstance(append, int):
+                if append is True or not isinstance(append, int):
                     append = 0
                 array.append(data, axis=append)
                 # print("<:post-append", array)

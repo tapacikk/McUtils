@@ -119,7 +119,22 @@ class GraphicsBase(metaclass=ABCMeta):
         incl = {k: props[k] for k in props.keys() & filter_set}
         return incl, excl
 
-    def _get_def_opt(self, key, val, theme):
+    def get_raw_attr(self, key):
+        exc = None
+        try:
+            v = object.__getattribute__(self, '_' + key)  # we overloaded getattr
+        except AttributeError as e:
+            try:
+                v = object.__getattribute__(self._prop_manager, '_' + key)  # we overloaded getattr
+            except AttributeError as e:
+                exc = e
+            else:
+                exc = None
+        if exc is not None:
+            raise exc # from None
+        return v
+
+    def _get_def_opt(self, key, val, theme, parent=None):
         if val is None:
             try:
                 v = object.__getattribute__(self, '_'+key) # we overloaded getattr
@@ -127,7 +142,13 @@ class GraphicsBase(metaclass=ABCMeta):
                 try:
                     v = object.__getattribute__(self._prop_manager, '_' + key)  # we overloaded getattr
                 except AttributeError:
-                    v = None
+                    if parent is not None:
+                        try:
+                            v = parent.get_raw_attr(key)
+                        except AttributeError:
+                            v = None
+                    else:
+                        v = None
             if v is None and key in self.default_style:
                 v = self.default_style[key]
             if v is None and theme is not None and key in theme:
@@ -155,12 +176,14 @@ class GraphicsBase(metaclass=ABCMeta):
                     self._init_opts[key] = val
 
     layout_keys = {
+        'name',
         'figure',
         'tighten',
         'axes',
         'subplot_kw',
         'parent',
         'image_size',
+        'figsize',
         'padding',
         'aspect_ratio',
         'interactive',
@@ -178,6 +201,7 @@ class GraphicsBase(metaclass=ABCMeta):
     }
     def __init__(self,
                  *args,
+                 name=None,
                  figure=None,
                  tighten=False,
                  axes=None,
@@ -212,6 +236,8 @@ class GraphicsBase(metaclass=ABCMeta):
         :type opts:
         """
 
+        self.name = name
+
         self._init_opts = dict(opts, # for copying
                                tighten=tighten,
                                axes=axes,
@@ -242,20 +268,21 @@ class GraphicsBase(metaclass=ABCMeta):
         self.mpl_backend = mpl_backend
         if isinstance(figure, GraphicsBase):
             parent = figure
-        if parent is not None and (axes is None or parent.axes is axes): # check inset
-            # TODO: generalize this to a set of inherited props...
-            if image_size is None: # gotta copy in some layout stuff..
-                image_size = parent.image_size
-            else:
-                parent.image_size = image_size
-            if aspect_ratio is None:
-                aspect_ratio = parent.aspect_ratio
-            else:
-                parent.aspect_ratio = aspect_ratio
-            if interactive is None:
-                interactive = parent.interactive
-            else:
-                parent.interactive = interactive
+        inherit_layout =parent is not None and (axes is None or parent.axes is axes) # check inset
+        # # TODO: generalize this to a set of inherited props...
+        # if image_size is None: # gotta copy in some layout stuff..
+        #     image_size = parent.image_size
+        # else:
+        #     parent.image_size = image_size
+        # if aspect_ratio is None:
+        #     aspect_ratio = parent.aspect_ratio
+        # else:
+        #     parent.aspect_ratio = aspect_ratio
+        # if interactive is None:
+        #     interactive = parent.interactive
+        # else:
+        #     parent.interactive = interactive
+        if inherit_layout:
             prop_manager = parent._prop_manager
 
         theme = self._get_def_opt('theme', theme, {})
@@ -277,9 +304,10 @@ class GraphicsBase(metaclass=ABCMeta):
         interactive = self._get_def_opt('interactive', interactive, theme)
         self.interactive = interactive
 
-        aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio, theme)
-        image_size = self._get_def_opt('image_size', image_size, theme)
-        padding = self._get_def_opt('padding', padding, theme)
+        theme_parent = parent if inherit_layout else None
+        aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio,  theme, theme_parent)
+        image_size = self._get_def_opt('image_size', image_size, theme, theme_parent)
+        padding = self._get_def_opt('padding', padding, theme, theme_parent)
         if figure is None and image_size is not None and 'figsize' not in subplot_kw:
             try:
                 w, h = image_size
@@ -311,7 +339,6 @@ class GraphicsBase(metaclass=ABCMeta):
             self.add_axes_graphics(self.axes, self)
         else:
             self.add_figure_graphics(self.figure, self)
-
 
         if not self.interactive:
             self.pyplot.mpl_disconnect()
@@ -709,6 +736,7 @@ class GraphicsBase(metaclass=ABCMeta):
         """
 
         self.axes = self.copy_axes()
+        self.figure.close()
         self.figure = self.axes.figure
 
         return self
@@ -819,18 +847,30 @@ class GraphicsBase(metaclass=ABCMeta):
                 or self.resolve_axes_graphics(self.axes) is self
         ): # parent manages cleanup
             if self.inset:
+                # print("removing inset axes: {}".format(self))
                 self.axes.remove()
             else:
+                # print("closing: {}".format(self))
                 if self._mpl_loaded:
                     with self.pyplot as plt:
                         return plt.close(self.figure)
                 self.remove_figure_mapping(self.figure)
+        # else:
+        #     print("close failed: {}".format(self))
 
     def __del__(self):
         try:
             self.close()
         except AttributeError:
             pass
+
+    def __repr__(self):
+        return "{}({}, figure={}<{}>)".format(
+            type(self).__name__,
+            id(self) if self.name is None else self.name,
+            self.figure,
+            id(self.figure)
+        )
 
     def clear(self):
         ax = self.axes  # type: matplotlib.axes.Axes
@@ -1109,6 +1149,14 @@ class Graphics(GraphicsBase):
         self._prop_manager.plot_legend = value
 
     @property
+    def legend_style(self):
+        return self._prop_manager.legend_style
+    @legend_style.setter
+    def legend_style(self, value):
+        self._update_copy_opt('legend_style', value)
+        self._prop_manager.legend_style = value
+
+    @property
     def axes_labels(self):
         return self._prop_manager.axes_labels
     @axes_labels.setter
@@ -1348,6 +1396,10 @@ class Graphics3D(Graphics):
     """Extends the standard matplotlib 3D plotting to use all the Graphics extensions"""
 
     opt_keys = GraphicsBase.opt_keys | {'view_settings'}
+    known_keys = Graphics.opt_keys | {'animate'}
+
+    # layout_keys = axes_keys | figure_keys | GraphicsBase.layout_keys
+    # known_keys = layout_keys
 
     def __init__(self, *args,
                  figure=None,
@@ -1411,13 +1463,13 @@ class Graphics3D(Graphics):
             super().load_mpl()
 
     @staticmethod
-    def _subplot_init(*args, backend = Backends.MPL, mpl_backend=None, graphics=None, **kw):
+    def _subplot_init(*args, backend=Backends.MPL, mpl_backend=None, figure=None, **kw):
         if backend == Backends.VTK:
             from .VTKInterface import VTKWindow
             window = VTKWindow()
             return window, window
         else:
-            with graphics.pyplot as plt:
+            with figure.pyplot as plt:
                 subplot_kw = {"projection": '3d'}
                 if 'subplot_kw' in kw:
                     subplot_kw = dict(subplot_kw, **kw['subplot_kw'])
@@ -1440,8 +1492,8 @@ class Graphics3D(Graphics):
         """
 
         if figure is None:
-            figure, axes = self._subplot_init(*args, backend=self._backend, mpl_backend=self.mpl_backend, **kw)
-        elif isinstance(figure, GraphicsBase):
+            figure, axes = self._subplot_init(*args, backend=self._backend, mpl_backend=self.mpl_backend, figure=self, **kw)
+        elif isinstance(figure, GraphicsBase) or all(hasattr(figure, h) for h in ['layout_keys']):
             if axes is None:
                 axes = figure.axes
             figure = figure.figure
@@ -1450,7 +1502,12 @@ class Graphics3D(Graphics):
             if self._backend == Backends.MPL:
                 axes = figure
             else:
-                axes = figure.add_subplot(1, 1, 1, projection='3d')
+                if not hasattr(figure, 'add_subplot'):
+                    figure = figure.figure
+                if not hasattr(figure, 'axes'):
+                    axes = figure.add_subplot(1, 1, 1, projection='3d')
+                else:
+                    axes = figure.axe
 
         return figure, axes
 
@@ -1555,7 +1612,7 @@ class Graphics3D(Graphics):
     # set plot ranges
     @property
     def ticks(self):
-        return self._ticks
+        return self._prop_manager.ticks
     @ticks.setter
     def ticks(self, value):
         self._prop_manager.ticks = value
@@ -1576,7 +1633,7 @@ class Graphics3D(Graphics):
 
     @property
     def aspect_ratio(self):
-        return self._aspect_ratio
+        return None#self._aspect_ratio
     @aspect_ratio.setter
     def aspect_ratio(self, ar):
         pass

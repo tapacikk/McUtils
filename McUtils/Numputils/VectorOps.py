@@ -325,6 +325,11 @@ def vec_outer(a, b, axes=None):
     a_new = a.transpose(a_transp).reshape(a_contract)
     b_new = b.transpose(b_transp).reshape(b_contract)
 
+    if b_new.ndim < a_new.ndim:
+        ...
+    elif a_new.ndim < b_new.ndim:
+        ...
+
     outer = a_new[..., :, np.newaxis] * b_new[..., np.newaxis, :]
 
     # now we put the shapes right again and revert the transposition

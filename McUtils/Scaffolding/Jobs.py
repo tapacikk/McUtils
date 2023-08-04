@@ -157,6 +157,7 @@ class Job:
             'datetime': datetime.datetime.now().isoformat(),
             'timestamp': self.start
         }
+        self.checkpoint['parameters'] = self.job_parameters
         if self.parallelizer is None:
             self.parallelizer = Parallelizer.get_default()
         self.parallelizer.__enter__()
@@ -168,7 +169,6 @@ class Job:
         self.checkpoint['runtime'] = end - self.start
         self.checkpoint.__exit__(exc_type, exc_val, exc_tb)
         self.parallelizer.__exit__(exc_type, exc_val, exc_tb)
-
 
 class JobManager(PersistenceManager):
     """

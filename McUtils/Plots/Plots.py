@@ -10,7 +10,8 @@ import matplotlib.axes
 __all__ = [
     "Plot", "DataPlot", "ArrayPlot", "TensorPlot",
     "Plot2D", "ListPlot2D",
-    "Plot3D", "ListPlot3D"
+    "Plot3D", "ListPlot3D",
+    "CompositePlot"
 ]
 
 ######################################################################################################
@@ -236,6 +237,7 @@ class Plot(Graphics):
         for k in self.known_styles:
             if k in opts:
                 plot_style[k] = opts[k]
+                del opts[k]
         for k in self.default_plot_style:
             if k not in plot_style:
                 plot_style[k] = self.default_plot_style[k]
@@ -399,8 +401,8 @@ class CompositePlot:
         for p in self.plots[1:]:
             p.change_figure(base)
         return base
-    def show(self):
-        self._ref = self.merge(interactive=True, **self.kwargs)
+    def show(self, interactive=True):
+        self._ref = self.merge(interactive=interactive, **self.kwargs)
         # self._ref.pyplot.mpl_connect()
         self._ref.show()
     def _ipython_display_(self):
@@ -452,7 +454,7 @@ class StickPlot(Plot):
     """A Plot object that plots sticks"""
 
     default_plot_style = {'basefmt': " ", 'use_line_collection':True, 'markerfmt': " "}
-    known_styles = {"linefmt", "markerfmt", "basefmt", "bottom", "label", "use_line_collection", "orientation", "data"}
+    known_styles = {"linefmt", "markerfmt", "basefmt", "bottom", "label", "use_line_collection", "orientation", "data", 'color', 'line_style'}
     method = "stem"
     def plot(self, *params, insert_default_styles=True, **plot_style):
         """
@@ -884,7 +886,7 @@ class Plot2D(Plot):
     """
     A base class for plots of 3D data but plotted on 2D axes
     """
-    known_styles = {"corner_mask", "colors", "alpha", "cmap", "norm", "vmin, vmax", "origin",
+    known_styles = {"corner_mask", "colors", "alpha", "cmap", "norm", "vmin", "vmax", "origin",
                     "extent", "locator", "extend", "xunits, yunits", "antialiased", "nchunk",
                     "linewidths", "linestyles", "hatches", "data"}
     method='contour'
@@ -925,6 +927,9 @@ class Plot2D(Plot):
 @Plot.register
 class ContourPlot(Plot2D):
     method = 'contourf'
+    known_styles = {"triangles", "mask", "levels", "colors",
+                    "alpha", "cmap", "norm", "vmin", "vmax", "origin", "extent", "locator", "extend",
+                    "xunits, yunits", "antialiased", "linewidths", "linestyles"}
 @Plot.register
 class DensityPlot(Plot2D):
     method = 'pcolormesh'
@@ -950,13 +955,13 @@ class TriDensityPlot(Plot2D):
 class TriContourLinesPlot(Plot2D):
     method = 'tricontour'
     known_styles = {"triangles", "mask", "levels", "colors",
-                    "alpha", "cmap", "norm", "vmin, vmax", "origin", "extent", "locator", "extend",
+                    "alpha", "cmap", "norm", "vmin", "vmax", "origin", "extent", "locator", "extend",
                     "xunits, yunits", "antialiased", "linewidths", "linestyles"}
 @Plot.register
 class TriContourPlot(Plot2D):
     method = 'tricontourf'
     known_styles = {"triangles", "mask", "levels", "colors",
-                    "alpha", "cmap", "norm", "vmin, vmax", "origin", "extent", "locator", "extend",
+                    "alpha", "cmap", "norm", "vmin", "vmax", "origin", "extent", "locator", "extend",
                     "xunits, yunits", "antialiased", "hatches"}
 
 class ListPlot2D(Plot2D):
@@ -1157,10 +1162,11 @@ class ListPlot3D(Plot3D):
     """
     Convenience 3D plotting class that handles the interpolation first
     """
+    method = 'contour'
     def __init__(self,
                  *params,
                  plot_style=None,
-                 method='contour',
+                 method=None,
                  colorbar=None,
                  figure=None,
                  axes=None,
@@ -1210,12 +1216,13 @@ class ListPlot3D(Plot3D):
 
         return (x, y, z)
 
+@Plot3D.register
 class ListTriPlot3D(ListPlot3D):
     """
     Creates a triangulated surface plot in 3D
     """
     method = 'plot_trisurf'
-    default_plot_style = {'interpolate':False}
+    default_plot_style = {}
 
 
 # add classes to __all__

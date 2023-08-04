@@ -96,6 +96,10 @@ class Mesh(np.ndarray):
         else:
             return None
     @property
+    def bounding_box(self):
+        gps = self.get_gridpoints(self).T
+        return [(np.min(g), np.max(g)) for g in gps]
+    @property
     def dimension(self):
         """Returns the dimension of the grid (not necessarily ndim)
 
@@ -140,6 +144,8 @@ class Mesh(np.ndarray):
         :return:
         :rtype: int
         """
+        if isinstance(g, Mesh):
+            g = g.view(np.ndarray)
         return np.reshape(g, (cls.get_npoints(g), g.shape[-1]))
 
     @classmethod

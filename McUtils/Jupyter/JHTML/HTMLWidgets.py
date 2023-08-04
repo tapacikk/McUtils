@@ -1,4 +1,4 @@
-
+import os.path, pathlib
 import weakref, io, asyncio, threading, time
 from .HTML import CSS, HTML
 from .WidgetTools import JupyterAPIs, DefaultOutputArea
@@ -702,12 +702,19 @@ class ActiveHTMLWrapper:
             return self._handle_api
     @javascript_handles.setter
     def javascript_handles(self, js):
-        if isinstance(js, ActiveHTMLWrapper):
+        if hasattr(js, 'javascript_handles'):
             self._handle_api = js
             self.elem.jsAPI = js.elem
             self.elem.send_state('jsAPI')
         else:
-            self._handle_api = None
+            if js is not None and 'api' in js:
+                js = js.copy()
+                self._handle_api = js['api']
+                self.elem.jsAPI = js['api'].elem
+                self.elem.send_state('jsAPI')
+                del js['api']
+            else:
+                self._handle_api = None
             self.elem.jsHandlers = js
             self.elem.send_state('jsHandlers')
     @property
@@ -1056,9 +1063,21 @@ class HTMLWidgets:
         return tag_class.from_HTML(html, event_handlers=event_handlers, debug_pane=debug_pane, **props)
 
     class JavascriptAPI(ActiveHTMLWrapper):
-        def __init__(self, safety_wrap=True, _debugPrint=False, **javascript_handles):
+        def __init__(self, safety_wrap=True, _debugPrint=False, disable_caching=True, **javascript_handles):
             if safety_wrap:
-                javascript_handles = {k:self.safety_wrap(v) if k not in {"api", "src"} else v for k,v in javascript_handles.items()}
+                javascript_handles = {
+                    k:self.safety_wrap(v) if k not in {"api", "src"} else v
+                    for k,v in javascript_handles.items()
+                }
+                if 'src' in javascript_handles and os.path.isfile(javascript_handles['src']): # need to relink to Jupyter path
+                    absfile = os.path.abspath(javascript_handles['src'])
+                    javascript_handles['src'] = "/files"+"/".join(pathlib.Path(absfile).parts)
+            if disable_caching and 'src' in javascript_handles:
+                import urllib.parse as parse
+                scheme, netloc, path, params, query, fragment = parse.urlparse(javascript_handles['src'])
+                query+="cachetime="+str(time.time())
+                javascript_handles['src'] = parse.urlunparse((scheme, netloc, path, params, query, fragment))
+            self._api_src=None
             super().__init__(javascript_handles=javascript_handles, _debugPrint=_debugPrint)
         safety_template="try{{\n{body}\n}} catch(error) {{ console.log(error); alert('An error occurred: ' + error.toString() + '; check console for details') }}"
         def safety_wrap(self, v):

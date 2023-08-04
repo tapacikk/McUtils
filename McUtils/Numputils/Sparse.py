@@ -1,4 +1,6 @@
 import numpy as np, scipy.sparse as sp, itertools as ip, functools as fp, os, abc, gc
+import scipy.special
+
 from ..Scaffolding import MaxSizeCache, Logger
 from .SetOps import contained, unique as nput_unique, find
 from .Misc import infer_inds_dtype, downcast_index_array
@@ -410,6 +412,20 @@ class SparseArray(metaclass=abc.ABCMeta):
     def dot(self, other):
         """
         Takes a regular dot product of self and other
+        :param other:
+        :type other:
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        ...
+
+    @abc.abstractmethod
+    def outer(self, other):
+        """
+        Takes a tensor outer product of self and other
+
         :param other:
         :type other:
         :param axes:
@@ -1883,6 +1899,23 @@ class ScipySparseArray(SparseArray):
             return type(self)(a.dot(b))
         else:
             return woof
+
+    def outer(self, other):
+        if isinstance(other, ScipySparseArray):
+            oshp = other.shape
+            other = other.data
+        elif isinstance(other, SparseArray):
+            oshp = other.shape
+            other = other.ascsr()
+        else:
+            oshp = other.shape
+
+        new_data = sp.kron(self.data, other)
+
+        return type(self)(
+            new_data,
+            shape=self.shape + oshp
+        )
 
     def __neg__(self):
         return -1 * self

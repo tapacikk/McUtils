@@ -41,7 +41,7 @@ def infer_inds_dtype(max_size):
     # return minimal_dtype
 
 def infer_int_dtype(max_dim):
-    return np.min_scalar_type(-max_dim)
+    return np.min_scalar_type(-(max_dim+1))
     # max_dim = abs(max_dim)
     # if max_dim < 128:
     #     minimal_dtype = 'int8'
