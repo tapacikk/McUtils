@@ -7,6 +7,7 @@
 Utilities for writing parsers of structured text.
 An entirely standalone package which is used extensively by `GaussianInterface`.
 Three main threads are handled:
+
 1. A `FileStreamer` interface which allows for efficient searching for blocks of text
 in large files with no pattern matching
 2. A `Regex` interface that provides declarative tools for building and manipulating a regular expression
@@ -164,7 +165,7 @@ using a streamer to match chunks and a parser to extract data from the matched c
 </div>
   <div class="row">
    <div class="col" markdown="1">
-[DisappearingTypeClass](Parsers/StructuredType/DisappearingTypeClass.md)   
+[DisappearingType](Parsers/StructuredType/DisappearingType.md)   
 </div>
    <div class="col" markdown="1">
 [StringParser](Parsers/StringParser/StringParser.md)   

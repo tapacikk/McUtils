@@ -23,7 +23,7 @@ name: str
 ```
 <a id="McUtils.Coordinerds.CoordinateSystems.CommonCoordinateSystems.CartesianCoordinateSystem.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, dimension=None, converter_options=None, **opts): 
+__init__(self, dimension=None, converter_options=None, coordinate_shape=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/CartesianCoordinateSystem.py#L26)/

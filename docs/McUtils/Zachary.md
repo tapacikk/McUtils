@@ -99,35 +99,68 @@ Deals with anything tensor, Taylor expansion, or interpolation related
 </div>
   <div class="row">
    <div class="col" markdown="1">
+[RBFDInterpolator](Zachary/NeighborBasedInterpolators/RBFDInterpolator.md)   
+</div>
+   <div class="col" markdown="1">
+[InverseDistanceWeightedInterpolator](Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.md)   
+</div>
+   <div class="col" markdown="1">
 [ProductGridInterpolator](Zachary/Interpolator/ProductGridInterpolator.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [UnstructuredGridInterpolator](Zachary/Interpolator/UnstructuredGridInterpolator.md)   
 </div>
    <div class="col" markdown="1">
 [Tensor](Zachary/LazyTensors/Tensor.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [TensorOp](Zachary/LazyTensors/TensorOp.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [LazyOperatorTensor](Zachary/LazyTensors/LazyOperatorTensor.md)   
 </div>
    <div class="col" markdown="1">
 [SparseTensor](Zachary/LazyTensors/SparseTensor.md)   
 </div>
+   <div class="col" markdown="1">
+[TensorDerivativeConverter](Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.md)   
+</div>
 </div>
   <div class="row">
    <div class="col" markdown="1">
-[TensorDerivativeConverter](Zachary/TensorDerivativeConverter/TensorDerivativeConverter.md)   
+[TensorExpansionTerms](Zachary/Symbolic/TensorExpressions/TensorExpansionTerms.md)   
 </div>
    <div class="col" markdown="1">
-[TensorExpansionTerms](Zachary/TensorDerivativeConverter/TensorExpansionTerms.md)   
+[TensorExpression](Zachary/Symbolic/TensorExpressions/TensorExpression.md)   
 </div>
    <div class="col" markdown="1">
-[TensorExpression](Zachary/TensorDerivativeConverter/TensorExpression.md)   
+[Symbols](Zachary/Symbolic/ElementaryFunctions/Symbols.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[SymPyFunction](Zachary/Symbolic/ElementaryFunctions/SymPyFunction.md)   
+</div>
+   <div class="col" markdown="1">
+[AbstractPolynomial](Zachary/Polynomials/AbstractPolynomial.md)   
+</div>
+   <div class="col" markdown="1">
+[DensePolynomial](Zachary/Polynomials/DensePolynomial.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[SparsePolynomial](Zachary/Polynomials/SparsePolynomial.md)   
+</div>
+   <div class="col" markdown="1">
+[PureMonicPolynomial](Zachary/Polynomials/PureMonicPolynomial.md)   
+</div>
+   <div class="col" markdown="1">
+[TensorCoefficientPoly](Zachary/Polynomials/TensorCoefficientPoly.md)   
 </div>
 </div>
   <div class="row">
@@ -235,19 +268,19 @@ mesh = np.meshgrid(np.linspace(.4, .6, 100, dtype='float128'), np.linspace(.4, .
 grid = np.array(mesh).T
 gg2 = GraphicsGrid(nrows=2, ncols=3, subimage_size=350)
 # plot error in linear expansion
-styles=dict(ticks_style=(False, False), plot_style={'vmin':np.min(sin_xy(grid)), 'vmax':np.max(sin_xy(grid))})
+styles = dict(ticks_style=(False, False), plot_style={'vmin': np.min(sin_xy(grid)), 'vmax': np.max(sin_xy(grid))})
 gg2[0, 0] = ContourPlot(*mesh, sin_xy(grid), figure=gg2[0, 0], **styles)
 gg2[0, 1] = ContourPlot(*mesh, exp1(grid), figure=gg2[0, 1], **styles)
 # when we plot the error, we shift it so that it's centered around the average function value to show the scale
 # of the error
-gg2[0, 2] = ContourPlot(*mesh, 
-                        np.average([np.min(sin_xy(grid)), np.max(sin_xy(grid))]) + sin_xy(grid)-exp1(grid), 
+gg2[0, 2] = ContourPlot(*mesh,
+                        np.marginalize_out([np.min(sin_xy(grid)), np.max(sin_xy(grid))]) + sin_xy(grid) - exp1(grid),
                         figure=gg2[0, 2], **styles)
 # plot error in quadratic expansion
 gg2[1, 0] = ContourPlot(*mesh, sin_xy(grid), figure=gg2[1, 0], **styles)
 gg2[1, 1] = ContourPlot(*mesh, exp2(grid), figure=gg2[1, 1], **styles)
-gg2[1, 2] = ContourPlot(*mesh, 
-                        np.average([np.min(sin_xy(grid)), np.max(sin_xy(grid))]) + sin_xy(grid)-exp2(grid), 
+gg2[1, 2] = ContourPlot(*mesh,
+                        np.marginalize_out([np.min(sin_xy(grid)), np.max(sin_xy(grid))]) + sin_xy(grid) - exp2(grid),
                         figure=gg2[1, 2], **styles)
 ```
 <div class="card-body out-block" markdown="1">

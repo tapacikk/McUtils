@@ -1,8 +1,8 @@
 ## <a id="McUtils.Jupyter.Apps.Interfaces.Spinner">Spinner</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces.py#L431)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces.py#L431?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces.py#L603)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces.py#L603?message=Update%20Docs)]
 </div>
 
 
@@ -18,22 +18,23 @@
 ## <a class="collapse-link" data-toggle="collapse" href="#methods" markdown="1"> Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
  </div>
  <div class="collapsible-section collapsible-section-body collapse show" id="methods" markdown="1">
- 
+ ```python
+wrappers: dict
+theme: dict
+```
 <a id="McUtils.Jupyter.Apps.Interfaces.Spinner.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, variant='border', body=None, cls=None, **attrs): 
+__init__(self, body=None, role='status', **attrs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces/Spinner.py#L432)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces/Spinner.py#L432?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces/Spinner.py#L606)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces/Spinner.py#L606?message=Update%20Docs)]
 </div>
-<div class="spinner-border text-primary" role="status">
-<span class="visually-hidden">Loading...</span>
-</div>
-:param variant:
-:type variant:
-:param attrs:
-:type attrs:
+
+  - `variant`: `Any`
+    > 
+  - `attrs`: `Any`
+    >
  </div>
 </div>
 
@@ -87,7 +88,7 @@ __init__(self, variant='border', body=None, cls=None, **attrs):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/Apps/Interfaces/Spinner.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/Apps/Interfaces/Spinner.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces.py#L431?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces.py#L603?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

@@ -8,6 +8,7 @@ A module for making use of the results of calculations run by the Gaussian elect
 We'd like to be able to also support the NWChem and Psi4 packages, but haven't had the time, yet, to write it out.
 
 Two main avenues of support are provided:
+
 1. importing Gaussian results
 2. setting up Gaussian jobs
 

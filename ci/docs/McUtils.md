@@ -63,7 +63,7 @@ been written over the years.
 [Misc](McUtils/Misc.md)   
 </div>
    <div class="col" markdown="1">
-   
+[Docs](McUtils/Docs.md)   
 </div>
    <div class="col" markdown="1">
    
@@ -123,8 +123,9 @@ grid_2D = np.meshgrid(grid, grid)
 x = grid_2D[1]
 y = grid_2D[0]
 
-main = GraphicsGrid(ncols=3, nrows=1, theme='Solarize_Light2', figure_label='my beuatufil triptych',
-                            padding=((35, 60), (35, 40)), subimage_size=300)
+main = GraphicsGrid(ncols=3, nrows=1, 
+                    theme='Solarize_Light2', figure_label='my beuatufil triptych',
+                    padding=((35, 60), (35, 40)), subimage_size=300)
 main[0, 0] = ContourPlot(x, y, np.sin(y), plot_label='$sin(x)$',
                          axes_labels=[None, "cats (cc)"],
                          figure=main[0, 0]
@@ -139,7 +140,7 @@ main.colorbar = {"graphics": main[0, 1].graphics}
 
 <div class="card-body out-block" markdown="1">
 
-![plot](/McUtils/img/McUtils_GraphicsGrid_1.png)
+![plot](/McUtils/img/McUtils_GraphicsGrid_1.png){: width=100%}
 </div>
 </div>
 

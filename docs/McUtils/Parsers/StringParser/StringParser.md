@@ -23,7 +23,7 @@ MatchIterator: MatchIterator
 ```
 <a id="McUtils.Parsers.StringParser.StringParser.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, regex): 
+__init__(self, regex: McUtils.Parsers.RegexPatterns.RegexPattern): 
 ```
 <div class="docs-source-link" markdown="1">
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Parsers/StringParser/StringParser.py#L84)/

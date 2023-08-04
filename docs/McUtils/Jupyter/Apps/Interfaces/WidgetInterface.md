@@ -1,11 +1,13 @@
 ## <a id="McUtils.Jupyter.Apps.Interfaces.WidgetInterface">WidgetInterface</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces.py#L60)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces.py#L60?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces.py#L80)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces.py#L80?message=Update%20Docs)]
 </div>
 
-
+Provides the absolute minimum necessary for hooking
+an interface that creates an `ipywidget` into the
+Jupyter display runtime
 
 
 
@@ -24,8 +26,8 @@
 to_widget(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L61)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L61?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L86)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L86?message=Update%20Docs)]
 </div>
 
 
@@ -34,8 +36,8 @@ to_widget(self):
 initialize(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L65)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L65?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L90)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L90?message=Update%20Docs)]
 </div>
 
 
@@ -44,8 +46,18 @@ initialize(self):
 display(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L70)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L70?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L95)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L95?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Jupyter.Apps.Interfaces.WidgetInterface.get_mime_bundle" class="docs-object-method">&nbsp;</a> 
+```python
+get_mime_bundle(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L97)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces/WidgetInterface.py#L97?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -100,7 +112,7 @@ display(self):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/Apps/Interfaces/WidgetInterface.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/Apps/Interfaces/WidgetInterface.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces.py#L60?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Interfaces.py#L80?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

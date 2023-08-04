@@ -1,8 +1,8 @@
 ## <a id="McUtils.Jupyter.Apps.Variables.InterfaceVars">InterfaceVars</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables.py#L81)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables.py#L81?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables.py#L82)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables.py#L82?message=Update%20Docs)]
 </div>
 
 
@@ -21,11 +21,11 @@
  
 <a id="McUtils.Jupyter.Apps.Variables.InterfaceVars.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, *vars): 
+__init__(self, *vars, callbacks=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L83)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L83?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L84)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L84?message=Update%20Docs)]
 </div>
 
 
@@ -34,8 +34,8 @@ __init__(self, *vars):
 active_vars(): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L87)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L87?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L89)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L89?message=Update%20Docs)]
 </div>
 
 
@@ -45,8 +45,8 @@ active_vars():
 dict(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L93)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L93?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L95)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L95?message=Update%20Docs)]
 </div>
 
 
@@ -56,8 +56,8 @@ dict(self):
 items(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L96)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L96?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L98)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L98?message=Update%20Docs)]
 </div>
 
 
@@ -66,8 +66,8 @@ items(self):
 __iter__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L99)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L99?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L101)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L101?message=Update%20Docs)]
 </div>
 
 
@@ -76,8 +76,8 @@ __iter__(self):
 add(self, var): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L101)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L101?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L103)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L103?message=Update%20Docs)]
 </div>
 
 
@@ -86,8 +86,8 @@ add(self, var):
 __enter__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L105)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L105?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L109)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L109?message=Update%20Docs)]
 </div>
 
 
@@ -96,8 +96,18 @@ __enter__(self):
 __exit__(self, exc_type, exc_val, exc_tb): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L108)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L108?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L112)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L112?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Jupyter.Apps.Variables.InterfaceVars.__repr__" class="docs-object-method">&nbsp;</a> 
+```python
+__repr__(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/InterfaceVars.py#L114)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/InterfaceVars.py#L114?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -152,7 +162,7 @@ __exit__(self, exc_type, exc_val, exc_tb):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/Apps/Variables/InterfaceVars.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/Apps/Variables/InterfaceVars.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables.py#L81?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables.py#L82?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

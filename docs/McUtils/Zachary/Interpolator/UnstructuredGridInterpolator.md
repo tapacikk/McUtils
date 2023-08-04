@@ -1,8 +1,8 @@
 ## <a id="McUtils.Zachary.Interpolator.UnstructuredGridInterpolator">UnstructuredGridInterpolator</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L174)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L174?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L176)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L176?message=Update%20Docs)]
 </div>
 
 Defines an interpolator appropriate for totally unstructured grids by
@@ -27,8 +27,8 @@ default_neighbors: int
 __init__(self, grid, values, order=None, neighbors=None, extrapolate=True, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L181)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L181?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L183)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L183?message=Update%20Docs)]
 </div>
 
   - `grid`: `np.ndarray`
@@ -50,8 +50,8 @@ __init__(self, grid, values, order=None, neighbors=None, extrapolate=True, **opt
 __call__(self, points): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L234)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L234?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L236)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L236?message=Update%20Docs)]
 </div>
 
 
@@ -60,8 +60,8 @@ __call__(self, points):
 derivative(self, order): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L243)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L243?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L245)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/UnstructuredGridInterpolator.py#L245?message=Update%20Docs)]
 </div>
 Constructs the derivatives of the interpolator at the given order
   - `order`: `Any`
@@ -121,7 +121,7 @@ Constructs the derivatives of the interpolator at the given order
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/Interpolator/UnstructuredGridInterpolator.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/Interpolator/UnstructuredGridInterpolator.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L174?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L176?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

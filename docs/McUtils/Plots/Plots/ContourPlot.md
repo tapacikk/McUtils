@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.ContourPlot">ContourPlot</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L926)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L926?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L928)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L928?message=Update%20Docs)]
 </div>
 
 
@@ -20,6 +20,7 @@
  <div class="collapsible-section collapsible-section-body collapse show" id="methods" markdown="1">
  ```python
 method: str
+known_styles: set
 ```
 
  </div>
@@ -75,7 +76,7 @@ method: str
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/ContourPlot.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/ContourPlot.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L926?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L928?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

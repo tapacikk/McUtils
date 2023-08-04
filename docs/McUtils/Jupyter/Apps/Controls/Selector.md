@@ -1,8 +1,8 @@
 ## <a id="McUtils.Jupyter.Apps.Controls.Selector">Selector</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L212)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L212?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L233)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L233?message=Update%20Docs)]
 </div>
 
 
@@ -26,8 +26,8 @@ base_cls: list
 base(*elements, **styles): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/JHTML/JHTML.py#L264)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/JHTML/JHTML.py#L264?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/JHTML/JHTML.py#L272)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/JHTML/JHTML.py#L272?message=Update%20Docs)]
 </div>
 
 
@@ -36,8 +36,8 @@ base(*elements, **styles):
 __init__(self, var, options=None, value=None, multiple=False, **attrs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L215)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L215?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L236)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L236?message=Update%20Docs)]
 </div>
 
 
@@ -47,8 +47,8 @@ __init__(self, var, options=None, value=None, multiple=False, **attrs):
 multiple(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L222)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L222?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L243)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L243?message=Update%20Docs)]
 </div>
 
 
@@ -57,8 +57,8 @@ multiple(self):
 get_value(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L232)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L232?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L253)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L253?message=Update%20Docs)]
 </div>
 
 
@@ -67,8 +67,8 @@ get_value(self):
 set_value(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L243)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L243?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L264)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L264?message=Update%20Docs)]
 </div>
 
 
@@ -77,8 +77,8 @@ set_value(self):
 canonicalize_options(options): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L252)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L252?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L273)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L273?message=Update%20Docs)]
 </div>
 
 
@@ -87,8 +87,8 @@ canonicalize_options(options):
 to_jhtml(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L277)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L277?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/Selector.py#L298)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/Selector.py#L298?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -143,7 +143,7 @@ to_jhtml(self):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/Apps/Controls/Selector.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/Apps/Controls/Selector.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L212?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L233?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

@@ -1,8 +1,8 @@
 ## <a id="McUtils.Extensions.ArgumentSignature.PointerType">PointerType</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature.py#L160)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature.py#L160?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature.py#L183)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature.py#L183?message=Update%20Docs)]
 </div>
 
 Extends the basic `ArgumentType` spec to handle pointer types
@@ -24,8 +24,8 @@ Extends the basic `ArgumentType` spec to handle pointer types
 __init__(self, base_type): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L164)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L164?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L187)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L187?message=Update%20Docs)]
 </div>
 
   - `base_type`: `ArgumentType`
@@ -38,8 +38,8 @@ __init__(self, base_type):
 ctypes_type(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L172)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L172?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L195)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L195?message=Update%20Docs)]
 </div>
 
 
@@ -49,8 +49,8 @@ ctypes_type(self):
 cpp_type(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L178)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L178?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L201)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L201?message=Update%20Docs)]
 </div>
 
 
@@ -60,8 +60,8 @@ cpp_type(self):
 types(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L181)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L181?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L204)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L204?message=Update%20Docs)]
 </div>
 
 
@@ -71,8 +71,19 @@ types(self):
 dtypes(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L184)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L184?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L207)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L207?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Extensions.ArgumentSignature.PointerType.typechar" class="docs-object-method">&nbsp;</a> 
+```python
+@property
+typechar(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L210)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L210?message=Update%20Docs)]
 </div>
 
 
@@ -81,8 +92,8 @@ dtypes(self):
 isinstance(self, arg): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L187)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L187?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L213)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L213?message=Update%20Docs)]
 </div>
 
 
@@ -91,8 +102,18 @@ isinstance(self, arg):
 cast(self, arg): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L189)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L189?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L215)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L215?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Extensions.ArgumentSignature.PointerType.c_cast" class="docs-object-method">&nbsp;</a> 
+```python
+c_cast(self, arg): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L217)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L217?message=Update%20Docs)]
 </div>
 
 
@@ -101,8 +122,8 @@ cast(self, arg):
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L191)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L191?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ArgumentSignature/PointerType.py#L220)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature/PointerType.py#L220?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -157,7 +178,7 @@ __repr__(self):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Extensions/ArgumentSignature/PointerType.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Extensions/ArgumentSignature/PointerType.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature.py#L160?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ArgumentSignature.py#L183?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

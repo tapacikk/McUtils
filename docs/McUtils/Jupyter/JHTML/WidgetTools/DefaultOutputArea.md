@@ -1,8 +1,8 @@
 ## <a id="McUtils.Jupyter.JHTML.WidgetTools.DefaultOutputArea">DefaultOutputArea</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools.py#L64)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools.py#L64?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools.py#L86)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools.py#L86?message=Update%20Docs)]
 </div>
 
 
@@ -24,8 +24,8 @@
 __init__(self, obj=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L66)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L66?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L88)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L88?message=Update%20Docs)]
 </div>
 
 
@@ -34,8 +34,8 @@ __init__(self, obj=None):
 get_default(): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L68)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L68?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L90)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L90?message=Update%20Docs)]
 </div>
 
 
@@ -44,8 +44,8 @@ get_default():
 __enter__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L74)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L74?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L96)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L96?message=Update%20Docs)]
 </div>
 
 
@@ -54,8 +54,8 @@ __enter__(self):
 __exit__(self, exc_type, exc_val, exc_tb): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L78)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L78?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L100)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L100?message=Update%20Docs)]
 </div>
 
 
@@ -64,8 +64,8 @@ __exit__(self, exc_type, exc_val, exc_tb):
 __call__(self, *args, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L80)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L80?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L102)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools/DefaultOutputArea.py#L102?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -120,7 +120,7 @@ __call__(self, *args, **kwargs):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/JHTML/WidgetTools/DefaultOutputArea.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/JHTML/WidgetTools/DefaultOutputArea.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools.py#L64?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/WidgetTools.py#L86?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

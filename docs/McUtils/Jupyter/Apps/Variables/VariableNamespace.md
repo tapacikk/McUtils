@@ -1,8 +1,8 @@
 ## <a id="McUtils.Jupyter.Apps.Variables.VariableNamespace">VariableNamespace</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables.py#L110)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables.py#L110?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables.py#L130)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables.py#L130?message=Update%20Docs)]
 </div>
 
 
@@ -24,8 +24,8 @@
 __init__(self, name=None, dedupe=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L112)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L112?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L132)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L132?message=Update%20Docs)]
 </div>
 
 
@@ -34,8 +34,8 @@ __init__(self, name=None, dedupe=True):
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L125)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L125?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L145)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L145?message=Update%20Docs)]
 </div>
 
 
@@ -44,8 +44,8 @@ __repr__(self):
 create(name): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L131)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L131?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L151)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L151?message=Update%20Docs)]
 </div>
 
 
@@ -54,8 +54,8 @@ create(name):
 __contains__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L140)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L140?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L160)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L160?message=Update%20Docs)]
 </div>
 
 
@@ -64,8 +64,8 @@ __contains__(self, item):
 __getitem__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L142)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L142?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L162)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L162?message=Update%20Docs)]
 </div>
 
 
@@ -74,8 +74,8 @@ __getitem__(self, item):
 __setitem__(self, key, value): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L144)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L144?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L164)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L164?message=Update%20Docs)]
 </div>
 
 
@@ -84,8 +84,8 @@ __setitem__(self, key, value):
 __enter__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L146)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L146?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L166)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L166?message=Update%20Docs)]
 </div>
 
 
@@ -94,8 +94,8 @@ __enter__(self):
 __exit__(self, exc_type, exc_val, exc_tb): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L149)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L149?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Variables/VariableNamespace.py#L169)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables/VariableNamespace.py#L169?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -150,7 +150,7 @@ __exit__(self, exc_type, exc_val, exc_tb):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/Apps/Variables/VariableNamespace.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/Apps/Variables/VariableNamespace.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables.py#L110?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Variables.py#L130?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

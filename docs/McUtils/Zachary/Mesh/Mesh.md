@@ -83,14 +83,25 @@ subgrids(self):
 </div>
 
 
+<a id="McUtils.Zachary.Mesh.Mesh.bounding_box" class="docs-object-method">&nbsp;</a> 
+```python
+@property
+bounding_box(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L98)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L98?message=Update%20Docs)]
+</div>
+
+
 <a id="McUtils.Zachary.Mesh.Mesh.dimension" class="docs-object-method">&nbsp;</a> 
 ```python
 @property
 dimension(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L98)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L98?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L102)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L102?message=Update%20Docs)]
 </div>
 Returns the dimension of the grid (not necessarily ndim)
   - `:returns`: `int`
@@ -103,8 +114,8 @@ Returns the dimension of the grid (not necessarily ndim)
 npoints(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L106)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L106?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L110)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L110?message=Update%20Docs)]
 </div>
 Returns the number of gridpoints in the mesh
   - `:returns`: `int`
@@ -117,8 +128,8 @@ Returns the number of gridpoints in the mesh
 gridpoints(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L115)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L115?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L119)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L119?message=Update%20Docs)]
 </div>
 Returns the flattened set of gridpoints for a structured tensor grid and otherwise just returns the gridpoints
   - `:returns`: `_`
@@ -130,8 +141,8 @@ Returns the flattened set of gridpoints for a structured tensor grid and otherwi
 get_npoints(g): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L124)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L124?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L128)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L128?message=Update%20Docs)]
 </div>
 Returns the number of gridpoints in the grid
   - `g`: `np.ndarray`
@@ -145,8 +156,8 @@ Returns the number of gridpoints in the grid
 get_gridpoints(g): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L134)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L134?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L138)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L138?message=Update%20Docs)]
 </div>
 Returns the gridpoints in the grid
   - `g`: `np.ndarray`
@@ -160,8 +171,8 @@ Returns the gridpoints in the grid
 get_mesh_subgrids(grid, tol=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L145)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L145?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L151)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L151?message=Update%20Docs)]
 </div>
 Returns the subgrids for a mesh
   - `grid`: `Any`
@@ -177,8 +188,8 @@ Returns the subgrids for a mesh
 get_mesh_spacings(grid, tol=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L173)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L173?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L179)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L179?message=Update%20Docs)]
 </div>
 
 
@@ -187,8 +198,8 @@ get_mesh_spacings(grid, tol=None):
 get_mesh_type(grid, check_product_grid=True, check_regular_grid=True, tol=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L204)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L204?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L210)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L210?message=Update%20Docs)]
 </div>
 Determines what kind of grid we're working with
   - `grid`: `np.ndarray`
@@ -210,8 +221,8 @@ e
 RegularMesh(*mesh_specs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L300)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L300?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L306)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L306?message=Update%20Docs)]
 </div>
 Builds a grid from multiple linspace arguments,
 basically insuring it's structured (if non-Empty)

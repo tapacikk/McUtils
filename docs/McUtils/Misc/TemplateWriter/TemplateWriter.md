@@ -6,7 +6,8 @@
 </div>
 
 A general class that can take a directory layout and apply template parameters to it
-Very unsophisticated but workable
+Very unsophisticated but workable. For a more sophisticated take that walks through
+object trees, see `TemplateEngine`.
 
 
 
@@ -27,8 +28,8 @@ ignored_files: list
 __init__(self, template_dir, replacements=None, file_filter=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/TemplateWriter/TemplateWriter.py#L16)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/TemplateWriter/TemplateWriter.py#L16?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/TemplateWriter/TemplateWriter.py#L17)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/TemplateWriter/TemplateWriter.py#L17?message=Update%20Docs)]
 </div>
 
 
@@ -38,8 +39,8 @@ __init__(self, template_dir, replacements=None, file_filter=None, **opts):
 replacements(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/TemplateWriter/TemplateWriter.py#L27)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/TemplateWriter/TemplateWriter.py#L27?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/TemplateWriter/TemplateWriter.py#L28)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/TemplateWriter/TemplateWriter.py#L28?message=Update%20Docs)]
 </div>
 
 
@@ -48,8 +49,8 @@ replacements(self):
 apply_replacements(self, string): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/TemplateWriter/TemplateWriter.py#L33)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/TemplateWriter/TemplateWriter.py#L33?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/TemplateWriter/TemplateWriter.py#L34)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/TemplateWriter/TemplateWriter.py#L34?message=Update%20Docs)]
 </div>
 Applies the defined replacements to the
   - `string`: `Any`
@@ -63,8 +64,8 @@ Applies the defined replacements to the
 write_file(self, template_file, out_dir, apply_template=True, template_dir=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/TemplateWriter/TemplateWriter.py#L45)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/TemplateWriter/TemplateWriter.py#L45?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/TemplateWriter/TemplateWriter.py#L46)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/TemplateWriter/TemplateWriter.py#L46?message=Update%20Docs)]
 </div>
 writes a single _file_ to _dir_ and fills the template from the parameters passed when intializing the class
   - `template_file`: `str`
@@ -82,8 +83,8 @@ writes a single _file_ to _dir_ and fills the template from the parameters passe
 iterate_write(self, out_dir, apply_template=True, src_dir=None, template_dir=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/TemplateWriter/TemplateWriter.py#L80)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/TemplateWriter/TemplateWriter.py#L80?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/TemplateWriter/TemplateWriter.py#L81)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/TemplateWriter/TemplateWriter.py#L81?message=Update%20Docs)]
 </div>
 Iterates through the files in the template_dir and writes them out to dir
   - `:returns`: `_`

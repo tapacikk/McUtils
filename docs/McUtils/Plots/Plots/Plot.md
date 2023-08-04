@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.Plot">Plot</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L170)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L170?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L171)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L171?message=Update%20Docs)]
 </div>
 
 The base plotting class to interface into matplotlib or (someday 3D) VTK.
@@ -38,8 +38,8 @@ plot_classes: dict
 __init__(self, *params, method=None, figure=None, axes=None, subplot_kw=None, plot_style=None, theme=None, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L200)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L200?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L201)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L201?message=Update%20Docs)]
 </div>
 
   - `params`: `Any`
@@ -65,8 +65,8 @@ __init__(self, *params, method=None, figure=None, axes=None, subplot_kw=None, pl
 filter_options(opts, allowed=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L263)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L263?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L265)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L265?message=Update%20Docs)]
 </div>
 
 
@@ -75,8 +75,8 @@ filter_options(opts, allowed=None):
 plot(self, *params, insert_default_styles=True, **plot_style): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L289)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L289?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L291)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L291?message=Update%20Docs)]
 </div>
 Plots a set of data & stores the result
   - `:returns`: `_`
@@ -121,8 +121,8 @@ e
 artists(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L302)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L302?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L304)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L304?message=Update%20Docs)]
 </div>
 
 
@@ -131,8 +131,8 @@ artists(self):
 clear(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L322)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L322?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L324)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L324?message=Update%20Docs)]
 </div>
 Removes the plotted data
 
@@ -142,8 +142,8 @@ Removes the plotted data
 restyle(self, **plot_style): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L329)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L329?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L331)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L331?message=Update%20Docs)]
 </div>
 Replots the data with updated plot styling
   - `plot_style`: `Any`
@@ -156,8 +156,8 @@ Replots the data with updated plot styling
 data(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L338)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L338?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L340)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L340?message=Update%20Docs)]
 </div>
 The data that we plotted
 
@@ -168,8 +168,8 @@ The data that we plotted
 plot_style(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L346)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L346?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L348)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L348?message=Update%20Docs)]
 </div>
 The styling options applied to the plot
 
@@ -179,8 +179,8 @@ The styling options applied to the plot
 add_colorbar(self, graphics=None, norm=None, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L357)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L357?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L359)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L359?message=Update%20Docs)]
 </div>
 Adds a colorbar to the plot
 
@@ -190,8 +190,8 @@ Adds a colorbar to the plot
 set_graphics_properties(self, *which, **kw): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L366)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L366?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L368)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L368?message=Update%20Docs)]
 </div>
 
 
@@ -200,8 +200,8 @@ set_graphics_properties(self, *which, **kw):
 merge(main, other, *rest, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L376)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L376?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L378)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L378?message=Update%20Docs)]
 </div>
 
 
@@ -210,8 +210,8 @@ merge(main, other, *rest, **kwargs):
 resolve_method(mpl_name): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L381)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L381?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L383)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L383?message=Update%20Docs)]
 </div>
 
 
@@ -220,8 +220,8 @@ resolve_method(mpl_name):
 register(plot_class): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L387)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L387?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/Plot.py#L389)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/Plot.py#L389?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -392,7 +392,7 @@ Plot(lambda x: np.sin(4*x), [0, 2*np.pi, np.pi/10])
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/Plot.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/Plot.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L170?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L171?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

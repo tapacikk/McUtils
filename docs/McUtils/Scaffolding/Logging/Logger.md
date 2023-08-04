@@ -98,8 +98,8 @@ behavior that if no logger is found a `NullLogger` is returned.
 preformat_keys(key_functions): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L206)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L206?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L219)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L219?message=Update%20Docs)]
 </div>
 Generates a closure that will take the supplied
 keys/function pairs and update them appropriately
@@ -114,8 +114,8 @@ keys/function pairs and update them appropriately
 format_message(self, message, *params, preformatter=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L227)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L227?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L240)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L240?message=Update%20Docs)]
 </div>
 
 
@@ -124,8 +124,8 @@ format_message(self, message, *params, preformatter=None, **kwargs):
 format_metainfo(self, metainfo): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L248)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L248?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L261)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L261?message=Update%20Docs)]
 </div>
 
 
@@ -134,8 +134,8 @@ format_metainfo(self, metainfo):
 split_lines(obj): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L255)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L255?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L268)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L268?message=Update%20Docs)]
 </div>
 
 
@@ -144,8 +144,8 @@ split_lines(obj):
 prep_array(obj): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L258)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L258?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L271)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L271?message=Update%20Docs)]
 </div>
 
 
@@ -154,8 +154,8 @@ prep_array(obj):
 prep_dict(obj): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L263)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L263?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L276)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L276?message=Update%20Docs)]
 </div>
 
 
@@ -164,8 +164,8 @@ prep_dict(obj):
 log_print(self, message, *messrest, message_prepper=None, padding=None, newline=None, log_level=None, metainfo=None, print_function=None, print_options=None, sep=None, end=None, file=None, flush=None, preformatter=None, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L267)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L267?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L280)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L280?message=Update%20Docs)]
 </div>
 
   - `message`: `str | Iterable[str]`
@@ -185,8 +185,8 @@ log_print(self, message, *messrest, message_prepper=None, padding=None, newline=
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L365)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L365?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Logging/Logger.py#L378)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Logging/Logger.py#L378?message=Update%20Docs)]
 </div>
  </div>
 </div>

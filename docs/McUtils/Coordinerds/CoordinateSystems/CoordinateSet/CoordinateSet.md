@@ -151,7 +151,7 @@ jacobian(self, system, order=1, coordinates=None, converter_options=None, all_nu
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CoordinateSet/CoordinateSet.py#L137)/
 [edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CoordinateSet/CoordinateSet.py#L137?message=Update%20Docs)]
 </div>
-Delegates to the jacobian function of the current coordinate system
+Delegates to the jacobian function of the current coordinate system.
   - `system`: `Any`
     > 
   - `order`: `Any`

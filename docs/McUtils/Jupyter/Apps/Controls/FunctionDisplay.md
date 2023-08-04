@@ -1,8 +1,8 @@
 ## <a id="McUtils.Jupyter.Apps.Controls.FunctionDisplay">FunctionDisplay</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L308)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L308?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls.py#L324)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L324?message=Update%20Docs)]
 </div>
 
 
@@ -21,11 +21,21 @@
  
 <a id="McUtils.Jupyter.Apps.Controls.FunctionDisplay.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
-__init__(self, fn, vars, pane=None, autoclear=True, **attrs): 
+__init__(self, fn, vars, pane=None, autoclear=True, debounce=None, **attrs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L309)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L309?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L325)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L325?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Jupyter.Apps.Controls.FunctionDisplay.link_vars" class="docs-object-method">&nbsp;</a> 
+```python
+link_vars(self, *var): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L335)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L335?message=Update%20Docs)]
 </div>
 
 
@@ -34,8 +44,8 @@ __init__(self, fn, vars, pane=None, autoclear=True, **attrs):
 to_widget(self, parent=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L316)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L316?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L341)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L341?message=Update%20Docs)]
 </div>
 
 
@@ -44,18 +54,18 @@ to_widget(self, parent=None):
 observe(self, fn, names=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L325)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L325?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L347)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L347?message=Update%20Docs)]
 </div>
 
 
 <a id="McUtils.Jupyter.Apps.Controls.FunctionDisplay.update" class="docs-object-method">&nbsp;</a> 
 ```python
-update(self, e): 
+update(self, event): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L329)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L329?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L356)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L356?message=Update%20Docs)]
 </div>
 
 
@@ -64,8 +74,8 @@ update(self, e):
 to_jhtml(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L336)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L336?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/Apps/Controls/FunctionDisplay.py#L376)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls/FunctionDisplay.py#L376?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -120,7 +130,7 @@ to_jhtml(self):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Jupyter/Apps/Controls/FunctionDisplay.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Jupyter/Apps/Controls/FunctionDisplay.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L308?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/Apps/Controls.py#L324?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

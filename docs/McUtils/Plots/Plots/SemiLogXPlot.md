@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.SemiLogXPlot">SemiLogXPlot</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L514)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L514?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L516)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L516?message=Update%20Docs)]
 </div>
 
 
@@ -75,7 +75,7 @@ method: str
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Plots/Plots/SemiLogXPlot.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Plots/Plots/SemiLogXPlot.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L514?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L516?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

@@ -39,8 +39,8 @@ __init__(self, graphics, figure, axes, managed=False):
 figure_label(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L44)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L44?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L45)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L45?message=Update%20Docs)]
 </div>
 
 
@@ -50,8 +50,8 @@ figure_label(self):
 plot_label(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L58)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L58?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L59)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L59?message=Update%20Docs)]
 </div>
 
 
@@ -61,8 +61,19 @@ plot_label(self):
 plot_legend(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L75)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L75?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L76)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L76?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Plots.Properties.GraphicsPropertyManager.legend_style" class="docs-object-method">&nbsp;</a> 
+```python
+@property
+legend_style(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L104)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L104?message=Update%20Docs)]
 </div>
 
 
@@ -72,8 +83,8 @@ plot_legend(self):
 axes_labels(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L112)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L112?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L121)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L121?message=Update%20Docs)]
 </div>
 
 
@@ -83,8 +94,8 @@ axes_labels(self):
 plot_range(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L145)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L145?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L154)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L154?message=Update%20Docs)]
 </div>
 
 
@@ -94,8 +105,8 @@ plot_range(self):
 ticks(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L182)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L182?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L191)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L191?message=Update%20Docs)]
 </div>
 
 
@@ -105,8 +116,8 @@ ticks(self):
 ticks_style(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L247)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L247?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L256)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L256?message=Update%20Docs)]
 </div>
 
 
@@ -116,8 +127,8 @@ ticks_style(self):
 frame_style(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L279)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L279?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L288)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L288?message=Update%20Docs)]
 </div>
 
 
@@ -126,8 +137,8 @@ frame_style(self):
 clean_tick_label_styles(k): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L320)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L320?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L329)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L329?message=Update%20Docs)]
 </div>
 
 
@@ -137,8 +148,8 @@ clean_tick_label_styles(k):
 ticks_label_style(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L329)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L329?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L338)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L338?message=Update%20Docs)]
 </div>
 
 
@@ -148,8 +159,8 @@ ticks_label_style(self):
 aspect_ratio(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L353)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L353?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L362)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L362?message=Update%20Docs)]
 </div>
 
 
@@ -159,8 +170,8 @@ aspect_ratio(self):
 image_size(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L377)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L377?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L386)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L386?message=Update%20Docs)]
 </div>
 
 
@@ -170,8 +181,8 @@ image_size(self):
 axes_bbox(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L427)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L427?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L436)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L436?message=Update%20Docs)]
 </div>
 
 
@@ -181,8 +192,8 @@ axes_bbox(self):
 background(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L446)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L446?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L455)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L455?message=Update%20Docs)]
 </div>
 
 
@@ -192,8 +203,8 @@ background(self):
 frame(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L463)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L463?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L472)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L472?message=Update%20Docs)]
 </div>
 
 
@@ -203,8 +214,8 @@ frame(self):
 scale(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L484)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L484?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L493)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L493?message=Update%20Docs)]
 </div>
 
 
@@ -214,8 +225,8 @@ scale(self):
 padding(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L513)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L513?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L522)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L522?message=Update%20Docs)]
 </div>
 
 
@@ -225,8 +236,8 @@ padding(self):
 padding_left(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L598)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L598?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L607)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L607?message=Update%20Docs)]
 </div>
 
 
@@ -236,8 +247,8 @@ padding_left(self):
 padding_right(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L606)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L606?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L615)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L615?message=Update%20Docs)]
 </div>
 
 
@@ -247,8 +258,8 @@ padding_right(self):
 padding_top(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L614)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L614?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L623)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L623?message=Update%20Docs)]
 </div>
 
 
@@ -258,8 +269,8 @@ padding_top(self):
 padding_bottom(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L622)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L622?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L631)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L631?message=Update%20Docs)]
 </div>
 
 
@@ -269,8 +280,8 @@ padding_bottom(self):
 spacings(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L631)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L631?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L640)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L640?message=Update%20Docs)]
 </div>
 
 
@@ -280,8 +291,8 @@ spacings(self):
 colorbar(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L669)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L669?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Properties/GraphicsPropertyManager.py#L678)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Properties/GraphicsPropertyManager.py#L678?message=Update%20Docs)]
 </div>
  </div>
 </div>

@@ -22,6 +22,12 @@ Usually used through the `UnitsData` object.
  ```python
 prefix_map: OrderedDict
 postfix_map: OrderedDict
+Wavenumbers: str
+Hartrees: str
+Angstroms: str
+BohrRadius: str
+ElectronMass: str
+AtomicMassUnits: str
 ```
 <a id="McUtils.Data.ConstantsData.UnitsDataHandler.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
@@ -85,6 +91,39 @@ Converts base unit into target using the scraped NIST data
     > 
   - `:returns`: `_`
     >
+
+
+<a id="McUtils.Data.ConstantsData.UnitsDataHandler.hartrees_to_wavenumbers" class="docs-object-method">&nbsp;</a> 
+```python
+@property
+hartrees_to_wavenumbers(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/ConstantsData/UnitsDataHandler.py#L428)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/ConstantsData/UnitsDataHandler.py#L428?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Data.ConstantsData.UnitsDataHandler.bohr_to_angstroms" class="docs-object-method">&nbsp;</a> 
+```python
+@property
+bohr_to_angstroms(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/ConstantsData/UnitsDataHandler.py#L431)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/ConstantsData/UnitsDataHandler.py#L431?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Data.ConstantsData.UnitsDataHandler.amu_to_me" class="docs-object-method">&nbsp;</a> 
+```python
+@property
+amu_to_me(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Data/ConstantsData/UnitsDataHandler.py#L434)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Data/ConstantsData/UnitsDataHandler.py#L434?message=Update%20Docs)]
+</div>
  </div>
 </div>
 

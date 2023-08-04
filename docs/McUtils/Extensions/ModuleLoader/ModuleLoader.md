@@ -41,8 +41,8 @@ __init__(self, rootdir='', rootpkg=None, retag=False):
 load(self, file, pkg=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ModuleLoader/ModuleLoader.py#L123)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ModuleLoader/ModuleLoader.py#L123?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Extensions/ModuleLoader/ModuleLoader.py#L124)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Extensions/ModuleLoader/ModuleLoader.py#L124?message=Update%20Docs)]
 </div>
  </div>
 </div>

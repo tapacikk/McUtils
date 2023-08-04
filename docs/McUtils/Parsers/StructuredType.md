@@ -16,7 +16,7 @@
 [StructuredTypeArray](StructuredType/StructuredTypeArray.md)   
 </div>
    <div class="col" markdown="1">
-[DisappearingTypeClass](StructuredType/DisappearingTypeClass.md)   
+[DisappearingType](StructuredType/DisappearingType.md)   
 </div>
 </div>
   <div class="row">

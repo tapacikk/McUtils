@@ -1,8 +1,8 @@
 ## <a id="McUtils.Zachary.Interpolator.ProductGridInterpolator">ProductGridInterpolator</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L55)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L55?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator.py#L57)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L57?message=Update%20Docs)]
 </div>
 
 A set of interpolators that support interpolation
@@ -25,8 +25,8 @@ on a regular (tensor product) grid
 __init__(self, grids, vals, caller=None, order=None, extrapolate=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/ProductGridInterpolator.py#L61)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/ProductGridInterpolator.py#L61?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/ProductGridInterpolator.py#L63)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/ProductGridInterpolator.py#L63?message=Update%20Docs)]
 </div>
 
   - `grids`: `Any`
@@ -44,8 +44,8 @@ __init__(self, grids, vals, caller=None, order=None, extrapolate=True):
 construct_ndspline(grids, vals, order, extrapolate=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/ProductGridInterpolator.py#L95)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/ProductGridInterpolator.py#L95?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/ProductGridInterpolator.py#L97)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/ProductGridInterpolator.py#L97?message=Update%20Docs)]
 </div>
 Builds a tensor product ndspline by constructing a product of 1D splines
   - `grids`: `Iterable[np.ndarray]`
@@ -63,8 +63,8 @@ Builds a tensor product ndspline by constructing a product of 1D splines
 __call__(self, *args, **kwargs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/ProductGridInterpolator.py#L137)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/ProductGridInterpolator.py#L137?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/ProductGridInterpolator.py#L139)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/ProductGridInterpolator.py#L139?message=Update%20Docs)]
 </div>
 
   - `args`: `Any`
@@ -80,8 +80,8 @@ __call__(self, *args, **kwargs):
 derivative(self, order): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/ProductGridInterpolator.py#L148)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/ProductGridInterpolator.py#L148?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Interpolator/ProductGridInterpolator.py#L150)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator/ProductGridInterpolator.py#L150?message=Update%20Docs)]
 </div>
 
   - `order`: `Any`
@@ -141,7 +141,7 @@ derivative(self, order):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Zachary/Interpolator/ProductGridInterpolator.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Zachary/Interpolator/ProductGridInterpolator.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L55?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Interpolator.py#L57?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    
