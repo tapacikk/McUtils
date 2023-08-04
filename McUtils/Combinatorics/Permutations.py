@@ -3087,18 +3087,21 @@ class SymmetricGroupGenerator:
             if split_results:
                 new_perms = [x[x>=0].reshape(-1, 1) for x in new_perms]
                 new_inds = [x.flatten() for x in new_perms]
+                new_changes = [np.zeros(len(x)) for x in new_perms]
             else:
                 new_perms = np.concatenate(new_perms)
                 new_perms = new_perms[new_perms>=0]
                 new_inds = new_perms.flatten()
+                new_changes = np.zeros(len(new_perms))
 
+            res = (new_perms,)
             if return_indices:
-                if return_filter:
-                    return new_perms, new_inds, filter_perms
-                else:
-                    return new_perms, new_inds
-            else:
-                return new_perms
+                res = res + (new_inds,)
+            if return_filter:
+                res = res + (filter_perms,)
+            if return_change_positions:
+                res = res + (new_changes,) # can only change along axis 0
+            return res
 
         # fill counts arrays so we don't need to recalculate this a bunch
         if sums is None:
