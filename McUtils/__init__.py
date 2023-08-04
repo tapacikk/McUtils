@@ -12,6 +12,7 @@ import McUtils.Data
 import McUtils.Parsers
 import McUtils.GaussianInterface
 import McUtils.Misc
+import McUtils.Docs
 import McUtils.Jupyter
 import McUtils.Plots
 import McUtils.Zachary
