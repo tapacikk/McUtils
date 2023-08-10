@@ -344,10 +344,10 @@ def test_XMatrix(self):
 [Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/GaussianInterface/GaussianImporter/GaussianLogReader.md)   
 </div>
    <div class="col" markdown="1">
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/GaussianInterface/GaussianImporter.py#L23?message=Update%20Docs)   

@@ -94,10 +94,10 @@ __exit__(self, exc_type, exc_val, exc_tb):
 [Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Misc/NumbaTools/_noop_context.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Misc/NumbaTools/_noop_context.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Misc/NumbaTools/_noop_context.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Misc/NumbaTools/_noop_context.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Misc/NumbaTools/_noop_context.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Misc/NumbaTools/_noop_context.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Misc/NumbaTools/_noop_context.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Misc/NumbaTools/_noop_context.md)   
 </div>
    <div class="col" markdown="1">
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/NumbaTools.py#L74?message=Update%20Docs)   

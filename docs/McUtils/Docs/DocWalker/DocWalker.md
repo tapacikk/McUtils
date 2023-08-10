@@ -102,9 +102,9 @@ visit_root(self, o, tests_directory=None, examples_directory=None, **kwargs):
 
 <div class="collapsible-section">
  <div class="collapsible-section collapsible-section-header" markdown="1">
-## <a class="collapse-link" data-toggle="collapse" href="#Details-e00f26" markdown="1"> Details</a> <a class="float-right" data-toggle="collapse" href="#Details-e00f26"><i class="fa fa-chevron-down"></i></a>
+## <a class="collapse-link" data-toggle="collapse" href="#Details-5b31a0" markdown="1"> Details</a> <a class="float-right" data-toggle="collapse" href="#Details-5b31a0"><i class="fa fa-chevron-down"></i></a>
  </div>
- <div class="collapsible-section collapsible-section-body collapse show" id="Details-e00f26" markdown="1">
+ <div class="collapsible-section collapsible-section-body collapse show" id="Details-5b31a0" markdown="1">
  A `DocWalker` object is a light subclass of a `TemplateWalker`, but specialized for documentation & with specialized handlers
  </div>
 </div>
@@ -152,10 +152,10 @@ visit_root(self, o, tests_directory=None, examples_directory=None, **kwargs):
 [Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/examples/McUtils/Docs/DocWalker/DocWalker.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/examples/McUtils/Docs/DocWalker/DocWalker.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Docs/DocWalker/DocWalker.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Docs/DocWalker/DocWalker.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/gh-pages/ci/docs/McUtils/Docs/DocWalker/DocWalker.md)/[New](https://github.com/McCoyGroup/McUtils/new/gh-pages/?filename=ci/docs/templates/McUtils/Docs/DocWalker/DocWalker.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Docs/DocWalker/DocWalker.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Docs/DocWalker/DocWalker.md)   
 </div>
    <div class="col" markdown="1">
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/Docs/DocWalker.py#L961?message=Update%20Docs)   
