@@ -1,5 +1,5 @@
 from xml.etree import ElementTree
-import weakref
+import weakref, numpy as np
 
 __all__ = [
     "HTML",
@@ -390,12 +390,21 @@ class HTML:
         else:
             return k.replace("_", "-")
     @classmethod
-    def manage_attrs(cls, attrs):
+    def sanitize_value(cls, val):
+        if isinstance(val, np.integer):
+            val = int(val)
+        elif isinstance(val, np.floating):
+            val = float(val)
+        return val
+    @classmethod
+    def manage_attrs(cls, attrs, sanitize=True):
         for k, v in cls.keyword_replacements.items():
             if k in attrs:
                 attrs[v] = attrs[k]
                 del attrs[k]
         attrs = {k.replace("_", "-"):v for k,v in attrs.items()}
+        if sanitize:
+            attrs = {k:cls.sanitize_value(v) for k,v in attrs.items()}
         return attrs
     @classmethod
     def extract_styles(cls, attrs):
@@ -447,10 +456,11 @@ class HTML:
             return self._attr_view
         @attrs.setter
         def attrs(self, attrs):
+            old_attrs = self.attrs
             self._attrs = HTML.manage_attrs(attrs)
             self._attr_view = None
             self._invalidate_cache()
-            self.on_update(self, 'attributes', attrs)
+            self.on_update(self, 'attributes', attrs, old_attrs)
         @property
         def elems(self):
             if self._elem_view is None:
@@ -458,18 +468,41 @@ class HTML:
             return self._elem_view
         @elems.setter
         def elems(self, elems):
+            self.set_elems(elems)
+        def set_elems(self, elems):
+            old_elems = self.elems
             self._elems = elems
             self._elem_view = None
             self._invalidate_cache()
-            self.on_update(self)
-            self.on_update(self, 'elements', elems)
+            # self.on_update(self)
+            self.on_update(self, 'elements', elems, old_elems)
         def activate(self):
             return self.activator(self)
+
+        class StyleWrapper: # proxy for style
+            def __init__(self, style_dict, obj):
+                self.base_dict = style_dict
+                self.base_obj = obj
+            def __repr__(self):
+                return "{}({})".format(type(self).__name__, self.base_dict)
+            def __getitem__(self, item):
+                return self.base_dict[item]
+            def __setitem__(self, key, value):
+                self.base_dict = dict(self.base_dict, **{key:value})
+                self.base_obj.style = self.base_dict
+            def __iter__(self):
+                return iter(self.base_dict)
+            def items(self):
+                return self.base_dict.items()
+            def keys(self):
+                return self.base_dict.keys()
+            def values(self):
+                return self.base_dict.values()
 
         @property
         def style(self):
             if 'style' in self._attrs:
-                return frozendict(self._attrs['style'])
+                return self.StyleWrapper(self._attrs['style'], self)
         @style.setter
         def style(self, styles):
             self['style'] = styles
@@ -480,8 +513,6 @@ class HTML:
                 return HTML.manage_class(self._attrs['class'])
             else:
                 return []
-        def style(self, styles):
-            self['style'] = styles
 
         def _invalidate_cache(self):
             if self._tree_cache is not None:
@@ -498,34 +529,39 @@ class HTML:
         def __setitem__(self, item, value):
             if isinstance(item, str):
                 item = item.replace("_", "-")
-                self._attrs[item] = value
+                old_value = self._attrs.get(item, None)
+                self._attrs[item] = HTML.sanitize_value(value)
                 self._attr_view = None
             else:
+                old_value = self._elems[item]
                 self._elems[item] = value
                 self._elem_view = None
             self._invalidate_cache()
-            self.on_update(self, item, value)
+            self.on_update(self, item, value, old_value)
         def insert(self, where, child):
             if where is None:
                 where = len(self._elems)
             self._elems.insert(where, child)
             self._invalidate_cache()
-            self.on_update(self, where, child)
+            self.on_update(self, where, child, None)
         def append(self, child):
             self.insert(None, child)
         def __delitem__(self, item):
             if isinstance(item, str):
                 item = item.replace("_", "-")
+                old_value = self._attrs.get(item, None)
                 try:
                     del self._attrs[item]
                 except KeyError:
                     pass
-                self._attr_view = None
+                else:
+                    self._attr_view = None
             else:
+                old_value = self._elems[item]
                 del self._elems[item]
                 self._elem_view = None
             self._invalidate_cache()
-            self.on_update(self, item, None)
+            self.on_update(self, item, None, old_value)
 
         atomic_types = (int, bool, float)
         @classmethod

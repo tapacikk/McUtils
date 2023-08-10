@@ -103,8 +103,7 @@ class ThemeManager:
     """
     extra_themes = {
         'mccoy': (
-            # ('seaborn-dark-palette'),
-            ('seaborn-v0_8-dark-palette'),
+            (['seaborn-dark-palette', 'seaborn-v0_8-dark-palette'],),
             {
                 'axes.labelsize': 13,
                 'xtick.labelsize':13,
@@ -151,8 +150,8 @@ class ThemeManager:
         if self.backend == Backends.MPL:
             import matplotlib.pyplot as plt
             theme = self.resolve_theme(None, *self.main_theme_names, **self.extra_styles)
-            self.validate_theme(*theme)
-            name_list = list(theme[0])
+            name_list = self.validate_theme(*theme)
+            # name_list = list(theme[0])
             opts = {k:v for k,v in theme[1].items() if self._test_rcparam(k)}
 
             self.context_manager = plt.style.context(name_list+[opts])
@@ -201,13 +200,19 @@ class ThemeManager:
                     bases = [bases]
                 theme_stack = deque()
                 style_stack = deque()
-                for theme in bases:
-                    if theme in self.extra_themes:
-                        t, s = self.resolve_theme(theme_name)
-                        theme_stack.appendleft(t)
-                        style_stack.append(s)
-                    else:
-                        theme_stack.appendleft([theme])
+                for theme_list in bases:
+                    if isinstance(theme_list, str):
+                        theme_list = [theme_list]
+                    remainder_themes = []
+                    for theme in theme_list:
+                        if theme in self.extra_themes:
+                            t, s = self.resolve_theme(theme_name)
+                            theme_stack.appendleft(t)
+                            style_stack.append(s)
+                        else:
+                            remainder_themes.append(theme)
+                    if len(remainder_themes) > 0:
+                        theme_stack.appendleft([remainder_themes])
                 themes = tuple(x for y in theme_stack for x in y)
                 styles = {}
                 for s in style_stack:
@@ -220,26 +225,51 @@ class ThemeManager:
         else:
             themes = ()
             styles = {}
-        for b in base_themes:
-            if b in self.extra_themes:
-                t, s = self.resolve_theme(b)
-                themes = tuple(t) + themes
-                styles.update(s)
-            else:
-                themes = (b,) + themes
+
+        for name_list in base_themes:
+            if isinstance(name_list, str):
+                name_list = [name_list]
+            remainder_themes = []
+            for b in name_list:
+                if b in self.extra_themes:
+                    t, s = self.resolve_theme(b)
+                    themes = tuple(t) + themes
+                    styles.update(s)
+                else:
+                    remainder_themes.append(b)
+            if len(remainder_themes) > 0:
+                themes = (remainder_themes,) + themes
+
         styles.update(extra_styles)
 
         return [themes, styles]
     def validate_theme(self, theme_names, theme_styless):
         valid_names = set(self.backend_themes)
+        resolved_names = []
         for k in theme_names:
-            if k not in valid_names:
-                raise ValueError("{}.{}: theme '{}' isn't in supported set ({})".format(
-                    type(self).__name__,
-                    'validate_theme',
-                    k,
-                    valid_names
-                ))
+            if isinstance(k, str):
+                if k not in valid_names:
+                    raise ValueError("{}.{}: theme '{}' isn't in supported set ({})".format(
+                        type(self).__name__,
+                        'validate_theme',
+                        k,
+                        valid_names
+                    ))
+                else:
+                    resolved_names.append(k)
+            else:
+                for altname in k:
+                    if altname in valid_names:
+                        resolved_names.append(altname)
+                        break
+                else:
+                    raise ValueError("{}.{}: no theme in '{}' isn't in supported set ({})".format(
+                        type(self).__name__,
+                        'validate_theme',
+                        k,
+                        valid_names
+                    ))
+        return resolved_names
 
     @property
     def backend_themes(self):
