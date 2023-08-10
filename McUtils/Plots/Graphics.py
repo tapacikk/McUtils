@@ -187,6 +187,7 @@ class GraphicsBase(metaclass=ABCMeta):
         'padding',
         'aspect_ratio',
         'interactive',
+        'reshowable',
         'mpl_backend',
         'theme',
         'prop_manager',
@@ -211,6 +212,7 @@ class GraphicsBase(metaclass=ABCMeta):
                  padding=None,
                  aspect_ratio=None,
                  interactive=None,
+                 reshowable=None,
                  mpl_backend=None,
                  theme=None,
                  prop_manager=GraphicsPropertyManager,
@@ -246,6 +248,7 @@ class GraphicsBase(metaclass=ABCMeta):
                                padding=padding,
                                aspect_ratio=aspect_ratio,
                                interactive=interactive,
+                               reshowable=reshowable,
                                mpl_backend=mpl_backend,
                                theme=theme,
                                prop_manager=prop_manager,
@@ -303,6 +306,9 @@ class GraphicsBase(metaclass=ABCMeta):
 
         interactive = self._get_def_opt('interactive', interactive, theme)
         self.interactive = interactive
+
+        reshowable = self._get_def_opt('reshowable', reshowable, theme)
+        self.reshowable = reshowable
 
         theme_parent = parent if inherit_layout else None
         aspect_ratio = self._get_def_opt('aspect_ratio', aspect_ratio,  theme, theme_parent)
@@ -815,7 +821,7 @@ class GraphicsBase(metaclass=ABCMeta):
             self.figure.tight_layout()
         self._shown = True
         return self
-    def show(self, reshow=False):
+    def show(self, reshow=None):
         from .VTKInterface import VTKWindow
 
         if isinstance(self.figure, VTKWindow):
@@ -835,9 +841,12 @@ class GraphicsBase(metaclass=ABCMeta):
                         if ni:
                             self.pyplot.mpl_disconnect()
             else:
-                # self._shown = False
-                self.copy().show()
-                # raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
+                if self.reshowable:
+                    self.show(reshow=True)
+                else:
+                    # self._shown = False
+                    self.copy().show()
+                    # raise GraphicsException("{}.show can only be called once per object".format(type(self).__name__))
 
     def close(self, force=False):
         if (
@@ -879,8 +888,14 @@ class GraphicsBase(metaclass=ABCMeta):
             a.remove()
         self.remove_figure_mapping(self.figure)
 
+    _display_locks = set()
     def _ipython_display_(self):
-        self.show()
+        if self not in self._display_locks:  # don't want to call this over and over...
+            self._display_locks.add(self)
+            try:
+                self.show()
+            finally:
+                self._display_locks.remove(self)
     def _repr_html_(self):
         # hacky, but hopefully enough to make it work?
         return self.figure._repr_html_()
@@ -1048,6 +1063,7 @@ class Graphics(GraphicsBase):
         image_size=(370, 345),
         padding=((60, 10), (35, 10)),
         interactive=False,
+        reshowable=False,
         aspect_ratio='auto'
     )
 

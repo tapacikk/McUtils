@@ -103,5 +103,7 @@ class DefaultOutputArea:
         return self.get_default()
 
 class frozendict(dict):
+    def __hash__(self):
+        return hash(tuple(self.values())) + hash(tuple(self.keys()))
     def __setitem__(self, key, value):
         raise TypeError("`frozendict` is immutable")

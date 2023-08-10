@@ -92,8 +92,15 @@ class WidgetInterface(metaclass=abc.ABCMeta):
     def _ipython_display_(self):
         JupyterAPIs.get_display_api().display(self.to_widget())
         self.initialize()
+
+    _display_locks = set()
     def display(self):
-        self._ipython_display_()
+        if self not in self._display_locks: # don't want to call this over and over...
+            self._display_locks.add(self)
+            try:
+                self._ipython_display_()
+            finally:
+                self._display_locks.remove(self)
     def get_mime_bundle(self):
         return self.to_widget().get_mime_bundle()
     @mixedmethod
@@ -107,6 +114,7 @@ class Component(WidgetInterface):
     to allow for the easy construction of interesting interfaces
     """
     def __init__(self, dynamic=True, debug_pane=None, **attrs):
+        super().__init__()
         self._parents = weakref.WeakSet()
         self._widget_cache = None
         attrs['dynamic'] = dynamic
@@ -219,7 +227,7 @@ class Component(WidgetInterface):
         return self._widget_cache.remove_class(*cls)
 
     @abc.abstractmethod
-    def to_jhtml(self):
+    def to_jhtml(self, parent=None):
         ...
     def to_widget(self, parent=None):
         if parent is not None:
