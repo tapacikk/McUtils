@@ -28,7 +28,7 @@ def _apply_f(f, grid):
 
     return vals
 
-def _semi_adaptive_sample_func(f, xmin, xmax, npts=150, max_refines=10, der_cut=10^5):
+def _semi_adaptive_sample_func(f, xmin, xmax, npts=150, max_refines=10, der_cut=10**5):
 
     refines = 0
     der_good = False
@@ -52,7 +52,7 @@ def _semi_adaptive_sample_func(f, xmin, xmax, npts=150, max_refines=10, der_cut=
 
     return grid, vals, npts, refines
 
-def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts=15, max_refines=10, der_cut=10 ^ 5):
+def _semi_adaptive_sample_func2(f, xmin, xmax, ymin, ymax, npts=15, max_refines=10, der_cut=10**5):
     from ..Zachary import finite_difference
 
     refines = 0
@@ -181,7 +181,8 @@ class Plot(Graphics):
         "linewidth", "linestyle", "color", "marker", "markersize",
         "markeredgewidth", "markeredgecolor", "markerfacecolor", "markerfacecoloralt",
         "fillstyle", "antialiased", "dash_capstyle", "solid_capstyle",
-        "dash_joinstyle", "solid_joinstyle", "pickradius", "drawstyle", "markevery"
+        "dash_joinstyle", "solid_joinstyle", "pickradius", "drawstyle", "markevery",
+        'gid'
     }
     patch_parms = {
         "agg_filter", "alpha", "animated", "antialiased", "capstyle",

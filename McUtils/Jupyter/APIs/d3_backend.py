@@ -53,7 +53,9 @@ class RendererD3(RendererBase):
             basename = ""
         self.basename = basename
 
-        self._elems = []
+        self._tree = []
+        self._elems = None
+        self._toplevel = []
         self._defs = {'clips':{}, 'hatches':{}, 'glyphs':[], 'markers':[], 'paths':[]}
         self._groupd = {}
         self._image_counter = itertools.count()
@@ -79,6 +81,25 @@ class RendererD3(RendererBase):
         #     attrib={'xmlns:xlink': "http://www.w3.org/1999/xlink"})
         # self._write_metadata(metadata)
         # self._write_default_style()
+
+    def open_group(self, s, gid=None):
+        # print(" "*len(self._tree), ">>", s)
+        self._elems = []
+        self._tree.append([s, gid, self._elems])
+    def close_group(self, s):
+        tag, gid, elems = self._tree.pop()
+        # print(" "*len(self._tree), "<<", s)
+        el = D3.Group(
+            *elems,
+            cls=tag.replace('.', '-'),
+            id=gid
+        )
+        if len(self._tree) == 0:
+            self._elems = None
+            self._toplevel.append(el)
+        else:
+            self._elems = self._tree[-1][-1]
+            self._elems.append(el)
 
     def write_defs(self):
         self._write_clips()
@@ -174,7 +195,7 @@ class RendererD3(RendererBase):
         offset, seq = gc.get_dashes()
         if seq is not None:
             attrib['stroke-dasharray'] = ','.join(val for val in seq)
-            attrib['stroke-dashoffset'] = float(offset)
+            attrib['stroke-dashoffset'] = self._short_float_fmt(offset)
 
         linewidth = gc.get_linewidth()
         if linewidth:
@@ -561,7 +582,7 @@ class RendererD3(RendererBase):
                 if fn in fm.font_family_aliases:
                     # get all of the font names and fix spelling of sans-serif
                     # (we accept 3 ways CSS only supports 1)
-                    for name in fm.FontManager._expand_aliases(fn):
+                    for name in mpl.rcParams['font.' + fn]:
                         yield _normalize_sans(name)
                 # whether a generic name or a family name, it must appear at
                 # least once
@@ -605,8 +626,8 @@ class RendererD3(RendererBase):
                                  'center': 'middle'}
                 style['text-anchor'] = ha_mpl_to_svg[mtext.get_ha()]
 
-                attrib['x'] = float(ax)
-                attrib['y'] = float(ay)
+                attrib['x'] = self._short_float_fmt(ax)
+                attrib['y'] = self._short_float_fmt(ay)
                 attrib['style'] = style
                 attrib['transform'] = self._generate_transform([
                     ("rotate", (-angle, ax, ay))])
@@ -616,7 +637,7 @@ class RendererD3(RendererBase):
                     ('translate', (x, y)),
                     ('rotate', (-angle,))])
 
-            elem = D3.Text(s, **attrib)
+            return D3.Text(s, **attrib)
 
         else:
             # writer.comment(s)
@@ -694,10 +715,11 @@ class RendererD3(RendererBase):
                 **group_attrs
             )
 
+    text_as_path = False
     def draw_text(self, gc, x, y, s, prop, angle, ismath=False, mtext=None):
         # docstring inherited
 
-        if mpl.rcParams['svg.fonttype'] == 'path':
+        if self.text_as_path:#mpl.rcParams['svg.fonttype'] == 'path':
             text_elem = self._draw_text_as_path(gc, x, y, s, prop, angle, ismath, mtext)
         else:
             text_elem = self._draw_text_as_text(gc, x, y, s, prop, angle, ismath, mtext)
@@ -725,6 +747,19 @@ class RendererD3(RendererBase):
         # docstring inherited
         return self._text2path.get_text_width_height_descent(s, prop, ismath)
 
+    def get_toplevel(self):
+        big_defs = []
+        for def_list in self._defs.values():
+            if isinstance(def_list, dict):
+                big_defs.extend(def_list.values())
+            else:
+                big_defs.extend(def_list)
+        elems = []
+        if len(big_defs) > 0:
+            elems.append(D3.Definitions(*big_defs))
+        elems.extend(self._toplevel)
+
+        return elems
     def insert_d3(self, root:'D3.Frame'):
         """
         width='%spt' % str_width,
@@ -736,16 +771,7 @@ class RendererD3(RendererBase):
         :param root:
         :return:
         """
-        big_defs = []
-        for def_list in self._defs.values():
-            if isinstance(def_list, dict):
-                big_defs.extend(def_list.values())
-            else:
-                big_defs.extend(def_list)
-        elems = []
-        if len(big_defs) > 0:
-            elems.append(D3.Definitions(*big_defs))
-        elems.extend(self._elems)
+        elems = self.get_toplevel()
         root.svg.attrs = dict(
             width='{}pt'.format(self.width),
             height='{}pt'.format(self.height),
@@ -782,10 +808,11 @@ class FigureManagerD3(FigureManagerBase):
     #     ...
 
     def show(self):
-        # self.frame.append(self.canvas.root)
-        self.canvas.draw()
-        self.frame.invalidate_cache()
-        self.frame.display()
+        if not hasattr(self.canvas.figure, '_called_show') or self.canvas.figure._called_show:
+            # self.frame.append(self.canvas.root)
+            self.canvas.draw()
+            self.frame.invalidate_cache()
+            self.frame.display()
 
     # def destroy(self, *args):
     #     # no action needed, managed via Jupyter widgets
@@ -846,32 +873,25 @@ class FigureCanvasD3(FigureCanvasBase):
         wi, hi = self.figure.get_size_inches()
         dpi = self.figure.dpi
         renderer = RendererD3(wi*dpi, hi*dpi, image_dpi=self.figure.dpi)
+        # print(self.figure.get_children()[1].get_children())
         self.figure.draw(renderer)
         # if clear:
         #     self.root.clear()
         renderer.insert_d3(self.manager.frame)
 
-    # You should provide a print_xxx function for every file format
-    # you can write.
-
-    # If the file type is not in the base set of filetypes,
-    # you should add it to the class-scope filetypes dictionary as follows:
-    # filetypes = {**FigureCanvasBase.filetypes, 'foo': 'My magic Foo format'}
-
-    # def print_foo(self, filename, **kwargs):
-    #     """
-    #     Write out format foo.
-    #
-    #     This method is normally called via `.Figure.savefig` and
-    #     `.FigureCanvasBase.print_figure`, which take care of setting the figure
-    #     facecolor, edgecolor, and dpi to the desired output values, and will
-    #     restore them to the original values.  Therefore, `print_foo` does not
-    #     need to handle these settings.
-    #     """
-    #     self.draw()
-    #
-    # def get_default_filetype(self):
-    #     return 'foo'
+    @classmethod
+    def render_objects(cls, figure, obj):
+        wi, hi = figure.get_size_inches()
+        dpi = figure.dpi
+        renderer = RendererD3(wi * dpi, hi * dpi, image_dpi=figure.dpi)
+        # print(self.figure.get_children()[1].get_children())
+        if hasattr(obj, 'draw'):
+            obj = [obj]
+        for o in obj:
+            o.draw(renderer)
+        # if clear:
+        #     self.root.clear()
+        return renderer.get_toplevel()
 
 
 ########################################################################

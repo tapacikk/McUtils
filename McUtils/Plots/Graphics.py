@@ -341,6 +341,7 @@ class GraphicsBase(metaclass=ABCMeta):
         self.subplot_kw = subplot_kw
         with self.theme_manager.from_spec(self.theme):
             self.figure, self.axes = self._init_suplots(figure, axes, *args, **subplot_kw)
+        self.figure._called_show = False # for avoiding excess show calls with a custom backend
         if self.inset:
             self.add_axes_graphics(self.axes, self)
         else:
@@ -835,8 +836,10 @@ class GraphicsBase(metaclass=ABCMeta):
                         with self.pyplot as plt:
                             if ni:
                                 self.pyplot.mpl_connect()
+                            self.figure._called_show = True
                             plt.show()
                     finally:
+                        self.figure._called_show = False
                         self.interactive = not ni
                         if ni:
                             self.pyplot.mpl_disconnect()
