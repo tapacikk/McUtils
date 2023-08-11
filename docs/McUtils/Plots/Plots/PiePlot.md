@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.PiePlot">PiePlot</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L544)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L544?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L545)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L545?message=Update%20Docs)]
 </div>
 
 
@@ -76,7 +76,7 @@ known_styles: set
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Plots/Plots/PiePlot.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Plots/Plots/PiePlot.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L544?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L545?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

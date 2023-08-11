@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.CrossSpectralDensityPlot">CrossSpectralDensityPlot</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L738)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L738?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L739)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L739?message=Update%20Docs)]
 </div>
 
 
@@ -76,7 +76,7 @@ known_styles: set
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Plots/Plots/CrossSpectralDensityPlot.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Plots/Plots/CrossSpectralDensityPlot.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L738?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L739?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.DensityPlot">DensityPlot</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L934)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L934?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L935)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L935?message=Update%20Docs)]
 </div>
 
 
@@ -76,7 +76,7 @@ known_styles: set
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Plots/Plots/DensityPlot.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Plots/Plots/DensityPlot.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L934?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L935?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

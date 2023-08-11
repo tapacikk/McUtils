@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.ListPlot2D">ListPlot2D</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L967)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L967?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L968)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L968?message=Update%20Docs)]
 </div>
 
 Convenience class that handles the interpolation first
@@ -24,8 +24,8 @@ Convenience class that handles the interpolation first
 __init__(self, *params, plot_style=None, method='contour', colorbar=None, figure=None, axes=None, subplot_kw=None, interpolate=True, **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/ListPlot2D.py#L971)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/ListPlot2D.py#L971?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots/ListPlot2D.py#L972)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots/ListPlot2D.py#L972?message=Update%20Docs)]
 </div>
 
   - `params`: `Any`
@@ -99,7 +99,7 @@ __init__(self, *params, plot_style=None, method='contour', colorbar=None, figure
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Plots/Plots/ListPlot2D.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Plots/Plots/ListPlot2D.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L967?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L968?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

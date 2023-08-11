@@ -35,8 +35,8 @@ Compound: Compound
 manage_class(cls): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML/HTML.py#L359)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML/HTML.py#L359?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML/HTML.py#L360)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML/HTML.py#L360?message=Update%20Docs)]
 </div>
 
 
@@ -45,8 +45,8 @@ manage_class(cls):
 manage_style(styles): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML/HTML.py#L373)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML/HTML.py#L373?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML/HTML.py#L374)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML/HTML.py#L374?message=Update%20Docs)]
 </div>
 
 
@@ -55,8 +55,8 @@ manage_style(styles):
 extract_styles(attrs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML/HTML.py#L409)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML/HTML.py#L409?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML/HTML.py#L410)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML/HTML.py#L410?message=Update%20Docs)]
 </div>
 
 
@@ -65,8 +65,8 @@ extract_styles(attrs):
 manage_attrs(attrs, sanitize=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML/HTML.py#L399)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML/HTML.py#L399?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTML/HTML.py#L400)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTML/HTML.py#L400?message=Update%20Docs)]
 </div>
 
 

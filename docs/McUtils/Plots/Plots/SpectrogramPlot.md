@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.SpectrogramPlot">SpectrogramPlot</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L720)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L720?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L721)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L721?message=Update%20Docs)]
 </div>
 
 
@@ -76,7 +76,7 @@ known_styles: set
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Plots/Plots/SpectrogramPlot.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Plots/Plots/SpectrogramPlot.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L720?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L721?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

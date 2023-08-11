@@ -18,7 +18,9 @@ A modification of the base matplotlib SVG renderer to plug into the D3 library w
 ## <a class="collapse-link" data-toggle="collapse" href="#methods" markdown="1"> Methods and Properties</a> <a class="float-right" data-toggle="collapse" href="#methods"><i class="fa fa-chevron-down"></i></a>
  </div>
  <div class="collapsible-section collapsible-section-body collapse show" id="methods" markdown="1">
- 
+ ```python
+text_as_path: bool
+```
 <a id="McUtils.Jupyter.APIs.d3_backend.RendererD3.__init__" class="docs-object-method">&nbsp;</a> 
 ```python
 __init__(self, width, height, basename=None, image_dpi=72, *, metadata=None): 
@@ -29,13 +31,33 @@ __init__(self, width, height, basename=None, image_dpi=72, *, metadata=None):
 </div>
 
 
+<a id="McUtils.Jupyter.APIs.d3_backend.RendererD3.open_group" class="docs-object-method">&nbsp;</a> 
+```python
+open_group(self, s, gid=None): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L85)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L85?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Jupyter.APIs.d3_backend.RendererD3.close_group" class="docs-object-method">&nbsp;</a> 
+```python
+close_group(self, s): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L89)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L89?message=Update%20Docs)]
+</div>
+
+
 <a id="McUtils.Jupyter.APIs.d3_backend.RendererD3.write_defs" class="docs-object-method">&nbsp;</a> 
 ```python
 write_defs(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L83)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L83?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L104)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L104?message=Update%20Docs)]
 </div>
 
 
@@ -44,8 +66,8 @@ write_defs(self):
 option_image_nocomposite(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L235)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L235?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L256)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L256?message=Update%20Docs)]
 </div>
 
 
@@ -54,8 +76,8 @@ option_image_nocomposite(self):
 draw_path(self, gc, path, transform, rgbFace=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L248)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L248?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L269)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L269?message=Update%20Docs)]
 </div>
 
 
@@ -64,8 +86,8 @@ draw_path(self, gc, path, transform, rgbFace=None):
 draw_markers(self, gc, marker_path, marker_trans, path, trans, rgbFace=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L269)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L269?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L290)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L290?message=Update%20Docs)]
 </div>
 
 
@@ -74,8 +96,8 @@ draw_markers(self, gc, marker_path, marker_trans, path, trans, rgbFace=None):
 draw_path_collection(self, gc, master_transform, paths, all_transforms, offsets, offset_trans, facecolors, edgecolors, linewidths, linestyles, antialiaseds, urls, offset_position): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L301)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L301?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L322)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L322?message=Update%20Docs)]
 </div>
 
 
@@ -84,8 +106,8 @@ draw_path_collection(self, gc, master_transform, paths, all_transforms, offsets,
 option_scale_image(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L355)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L355?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L376)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L376?message=Update%20Docs)]
 </div>
 
 
@@ -94,8 +116,8 @@ option_scale_image(self):
 get_image_magnification(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L359)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L359?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L380)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L380?message=Update%20Docs)]
 </div>
 
 
@@ -104,8 +126,8 @@ get_image_magnification(self):
 draw_image(self, gc, x, y, im, transform=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L362)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L362?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L383)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L383?message=Update%20Docs)]
 </div>
 
 
@@ -114,8 +136,8 @@ draw_image(self, gc, x, y, im, transform=None):
 draw_text(self, gc, x, y, s, prop, angle, ismath=False, mtext=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L697)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L697?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L719)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L719?message=Update%20Docs)]
 </div>
 
 
@@ -124,8 +146,8 @@ draw_text(self, gc, x, y, s, prop, angle, ismath=False, mtext=None):
 flipy(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L716)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L716?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L738)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L738?message=Update%20Docs)]
 </div>
 
 
@@ -134,8 +156,8 @@ flipy(self):
 get_canvas_width_height(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L720)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L720?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L742)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L742?message=Update%20Docs)]
 </div>
 
 
@@ -144,8 +166,18 @@ get_canvas_width_height(self):
 get_text_width_height_descent(self, s, prop, ismath): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L724)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L724?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L746)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L746?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Jupyter.APIs.d3_backend.RendererD3.get_toplevel" class="docs-object-method">&nbsp;</a> 
+```python
+get_toplevel(self): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L750)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L750?message=Update%20Docs)]
 </div>
 
 
@@ -154,8 +186,8 @@ get_text_width_height_descent(self, s, prop, ismath):
 insert_d3(self, root: 'D3.Frame'): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L728)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L728?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/RendererD3.py#L763)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/RendererD3.py#L763?message=Update%20Docs)]
 </div>
 width='%spt' % str_width,
 height='%spt' % str_height,

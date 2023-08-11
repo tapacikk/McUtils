@@ -1,8 +1,8 @@
 ## <a id="McUtils.Jupyter.JHTML.HTMLWidgets.HTMLWidgets">HTMLWidgets</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets.py#L1030)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L1030?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets.py#L1036)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L1036?message=Update%20Docs)]
 </div>
 
 
@@ -155,8 +155,8 @@ OutputArea: OutputArea
 load(overwrite=False): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1031)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1031?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1037)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1037?message=Update%20Docs)]
 </div>
 
 
@@ -165,8 +165,8 @@ load(overwrite=False):
 get_class_map(): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1047)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1047?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1053)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1053?message=Update%20Docs)]
 </div>
 
 
@@ -175,8 +175,8 @@ get_class_map():
 from_HTML(html: McUtils.Jupyter.JHTML.HTML.HTML.XMLElement, event_handlers=None, debug_pane=None, **props): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1055)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1055?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1061)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.py#L1061?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -231,7 +231,7 @@ from_HTML(html: McUtils.Jupyter.JHTML.HTML.HTML.XMLElement, event_handlers=None,
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Jupyter/JHTML/HTMLWidgets/HTMLWidgets.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L1030?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/JHTML/HTMLWidgets.py#L1036?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

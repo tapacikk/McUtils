@@ -1,8 +1,8 @@
 ## <a id="McUtils.Jupyter.APIs.d3_backend.FigureCanvasD3">FigureCanvasD3</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend.py#L810)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend.py#L810?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend.py#L837)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend.py#L837?message=Update%20Docs)]
 </div>
 
 The canvas the figure renders into.  Calls the draw and print fig
@@ -38,8 +38,8 @@ manager_class: FigureManagerD3
 __init__(self, figure=None, manager=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureCanvasD3.py#L832)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureCanvasD3.py#L832?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureCanvasD3.py#L859)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureCanvasD3.py#L859?message=Update%20Docs)]
 </div>
 
 
@@ -48,8 +48,8 @@ __init__(self, figure=None, manager=None):
 draw(self, clear=False): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureCanvasD3.py#L837)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureCanvasD3.py#L837?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureCanvasD3.py#L864)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureCanvasD3.py#L864?message=Update%20Docs)]
 </div>
 Draw the figure using the renderer.
 
@@ -57,6 +57,16 @@ It is important that this method actually walk the artist tree
 even if not output is produced because this will trigger
 deferred work (like computing limits auto-limits and tick
 values) that users may want access to before saving to disk.
+
+
+<a id="McUtils.Jupyter.APIs.d3_backend.FigureCanvasD3.render_objects" class="docs-object-method">&nbsp;</a> 
+```python
+render_objects(figure, obj): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureCanvasD3.py#L882)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureCanvasD3.py#L882?message=Update%20Docs)]
+</div>
  </div>
 </div>
 
@@ -110,7 +120,7 @@ values) that users may want access to before saving to disk.
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Jupyter/APIs/d3_backend/FigureCanvasD3.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Jupyter/APIs/d3_backend/FigureCanvasD3.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend.py#L810?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend.py#L837?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

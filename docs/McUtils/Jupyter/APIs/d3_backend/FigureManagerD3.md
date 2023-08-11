@@ -1,8 +1,8 @@
 ## <a id="McUtils.Jupyter.APIs.d3_backend.FigureManagerD3">FigureManagerD3</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend.py#L761)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend.py#L761?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend.py#L787)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend.py#L787?message=Update%20Docs)]
 </div>
 
 Manages a set of D3 canvases by providing a
@@ -24,8 +24,8 @@ Manages a set of D3 canvases by providing a
 __init__(self, canvas: 'FigureCanvasD3', num): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L766)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L766?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L792)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L792?message=Update%20Docs)]
 </div>
 
 
@@ -34,8 +34,8 @@ __init__(self, canvas: 'FigureCanvasD3', num):
 show(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L784)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L784?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L810)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L810?message=Update%20Docs)]
 </div>
 
 
@@ -44,8 +44,8 @@ show(self):
 full_screen_toggle(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L794)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L794?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L821)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L821?message=Update%20Docs)]
 </div>
 
 
@@ -54,8 +54,8 @@ full_screen_toggle(self):
 get_window_title(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L796)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L796?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L823)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L823?message=Update%20Docs)]
 </div>
 
 
@@ -64,8 +64,8 @@ get_window_title(self):
 set_window_title(self, title): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L801)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L801?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L828)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L828?message=Update%20Docs)]
 </div>
 
 
@@ -74,8 +74,8 @@ set_window_title(self, title):
 resize(self, width, height): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L806)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L806?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L833)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend/FigureManagerD3.py#L833?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -130,7 +130,7 @@ resize(self, width, height):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Jupyter/APIs/d3_backend/FigureManagerD3.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Jupyter/APIs/d3_backend/FigureManagerD3.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend.py#L761?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Jupyter/APIs/d3_backend.py#L787?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

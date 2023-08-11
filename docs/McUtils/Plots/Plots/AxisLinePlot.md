@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.AxisLinePlot">AxisLinePlot</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L609)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L609?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L610)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L610?message=Update%20Docs)]
 </div>
 
 
@@ -76,7 +76,7 @@ known_styles: set
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Plots/Plots/AxisLinePlot.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Plots/Plots/AxisLinePlot.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L609?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L610?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    
