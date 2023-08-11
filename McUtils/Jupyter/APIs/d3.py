@@ -342,7 +342,8 @@ class D3:
                     else:
                         self._attrs['id'] = parent_id + "-" + short_uuid(3)
                 for e in self.elems:
-                    e.set_frame(frame, parent_id=self.id)
+                    if not isinstance(e, (str, int, float, bool)):
+                        e.set_frame(frame, parent_id=self.id)
         @property
         def id(self):
             return self._attrs.get('id', None)
@@ -354,7 +355,8 @@ class D3:
                 else:
                     self['id'] = new_id # do call an update
             for k in self.elems:
-                k.set_id(self.id, overwrite=overwrite)
+                if not isinstance(k, (str, int, float, bool)):
+                    k.set_id(self.id, overwrite=overwrite)
 
         def initialize(self, parent_id=None):
             tag, attrs = self.to_d3()
@@ -366,7 +368,8 @@ class D3:
             self.initialize_children()
         def initialize_children(self):
             for k in self.elems:
-                k.initialize(parent_id=self.id)
+                if not isinstance(k, (str, int, float, bool)):
+                    k.initialize(parent_id=self.id)
 
         def to_d3(self):
             style = self.style
@@ -384,18 +387,22 @@ class D3:
         def set_elems(self, elems):
             super().set_elems([self._wrap_d3(e) for e in elems])
         @staticmethod
-        def _on_update(element:'D3.D3Element', key, value, old_value):
+        def _on_update(element:'D3.D3Element', key, value, old_value, caller, subkey=None):
+            if element.frame is not None:
+                element.frame.invalidate_cache()
             if key == 'attributes':
                 element.reset_attributes(value, old_value)
             elif key == 'elements':
                 element.reset_children(value, old_value)
-            elif isinstance(key, str):
-                element.set_attribute(key, value, old_value)
-            elif isinstance(key, int):
-                if old_value is None:
-                    element.insert_child(key, value)
+            elif key == 'attribute':
+                element.set_attribute(subkey, value, old_value)
+            elif key == 'element':
+                if value is None:
+                    element.remove_child(subkey)
+                elif old_value is None:
+                    element.insert_child(subkey, value)
                 else:
-                    element.replace_child(key, old_value, value)
+                    element.replace_child(subkey, old_value, value)
             else:
                 raise NotImplementedError("haven't implemented change {}".format(key))
         def reset_attributes(self, new_attrs, old_attrs):
@@ -458,6 +465,8 @@ class D3:
                     e = D3.D3Element(e.tag, *e.elems, id=id, frame=self.frame, on_update=e.on_update, **{k:v for k in e.attrs.items() if k!='id'})
                 else:
                     e = cls(*e.elems, id=id, frame=self.frame, on_update=e.on_update, **{k:v for k in e.attrs.items() if k!='id'})
+            elif isinstance(e, (str, int, float)):
+                pass
             else:
                 raise NotImplementedError("don't know how to handle {}".format(e))
             return e
@@ -572,3 +581,26 @@ class D3:
     TextSpan = Tspan
     class Use(TagElement): tag="use"
     class View(TagElement): tag="view"
+
+    class Plots:
+        """
+        Helper namespace for wrapping matplotlib plots
+        """
+
+        @classmethod
+        def use_as_backend(cls):
+            import matplotlib
+            return matplotlib.use('module://' + cls.__module__ + '_backend')
+        @classmethod
+        def get_plot_object(cls, figure):
+            if hasattr(figure, 'figure'):
+                figure = figure.figure
+            return figure.canvas.manager.frame.svg
+
+        @classmethod
+        def render_mpl(cls, figure, mpl_objs):
+            from .d3_backend import FigureCanvasD3
+            return FigureCanvasD3.render_objects(figure, mpl_objs)
+
+        # class Wrapper:
+        #     def __init__(self, figure):

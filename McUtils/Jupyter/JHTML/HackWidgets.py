@@ -93,7 +93,7 @@ class JHTMLShadowDOMElement:
             else:
                 # print(self.widg.children[key])
                 self.widg.children[key].value = value.tostring()
-                self.widg.children[key].dom._invalidate_cache()
+                self.widg.children[key].dom.invalidate_cache()
                 # print(self.widg.children[key])
         else:
             self.widg.value = el.tostring()
@@ -105,7 +105,7 @@ class JHTMLShadowDOMElement:
             raise NotImplementedError("ugh")
         else:
             subwidg.value = el.tostring()
-        self._invalidate_cache()
+        self.invalidate_cache()
 
     def get_parent(self, n):
         for i in range(n):
@@ -422,7 +422,7 @@ class JupyterHTMLWrapper:
         if self._widget_cache is not None:
             self._widget_cache = None
             for p in tuple(self._parents):
-                p._invalidate_cache()
+                p.invalidate_cache()
                 self._parents.remove(p)
     def to_widget(self, parent=None):
         if parent is not None:

@@ -1,3 +1,4 @@
+import itertools
 from xml.etree import ElementTree
 import weakref, numpy as np
 
@@ -421,7 +422,14 @@ class HTML:
 
         def __init__(self, tag, *elems, on_update=None, style=None, activator=None, **attrs):
             self.tag = tag
-            self._elems = list(elems[0] if len(elems) == 1 and isinstance(elems[0], (list, tuple)) else elems)
+            self._elems = [
+                HTML.sanitize_value(v)
+                for v in (
+                    elems[0]
+                        if len(elems) == 1 and isinstance(elems[0], (list, tuple)) else
+                    elems
+                )
+            ]
             self._elem_view = None
             attrs = HTML.manage_attrs(attrs)
             extra_styles, attrs = HTML.extract_styles(attrs)
@@ -439,8 +447,97 @@ class HTML:
             self._attr_view = None
             self._parents = weakref.WeakSet()
             self._tree_cache = None
-            self.on_update = on_update if on_update is not None else lambda *s:None
+            self._on_update_callbacks = self._canonicalize_callback_dict(on_update)
             self.activator = activator
+        class _update_callbacks:
+            """
+            Simple set of callbacks both weakly keyed and default
+            """
+            def __init__(self, base_callbacks, weak_callbacks):
+                self.base_callbacks = base_callbacks
+                self.weak_callbacks = weak_callbacks
+            @classmethod
+            def from_raw(cls, data):
+                if data is None:
+                    base = {}
+                    weak = None
+                elif isinstance(data, dict):
+                    if all(k is None or isinstance(k, str) for k in data):
+                        base = data
+                        weak = None
+                    else:
+                        base = data.get(None, {})
+                        if len(data) > 1:
+                            weak = weakref.WeakKeyDictionary(
+                                {
+                                    k: {None: x if isinstance(x, list) else [x]} if not isinstance(x, dict) else x
+                                    for k, x in data.items()
+                                    if k is not None
+                                }
+                            )
+                        else:
+                            weak = None
+                elif isinstance(data, weakref.WeakKeyDictionary):
+                    base = {}
+                    weak = data
+                else:
+                    base = {None: [data]}
+                    weak = None
+                return cls(base, weak)
+            def items(self):
+                if self.weak_callbacks is not None:
+                    for k,v in self.weak_callbacks.items():
+                        yield k,v
+                yield None,self.base_callbacks
+            def __contains__(self, item):
+                if item is None:
+                    return True
+                elif self.weak_callbacks is None:
+                    return False
+                else:
+                    return item in self.weak_callbacks
+            def __setitem__(self, key, value):
+                if key is None:
+                    self.base_callbacks = value
+                else:
+                    if self.weak_callbacks is None: self.weak_callbacks = weakref.WeakKeyDictionary()
+                    self.weak_callbacks[key] = value
+            def get(self, item, default):
+                if item is None:
+                    return self.base_callbacks
+                else:
+                    if self.weak_callbacks is None:
+                        return default
+                    else:
+                        return self.weak_callbacks.get(item, default)
+            def __getitem__(self, item):
+                if item is None:
+                    return self.base_callbacks
+                else:
+                    if self.weak_callbacks is None:
+                        raise KeyError("key {} not found".format(item))
+                    else:
+                        return self.weak_callbacks[item]
+        def _canonicalize_callback_dict(self, on_update):
+            if not isinstance(on_update, self._update_callbacks):
+                on_update = self._update_callbacks.from_raw(on_update)
+            return on_update
+        def on_update(self, key, new_value, old_value, subkey=None):
+            for registrant, callback_dict in self._on_update_callbacks.items():
+                for f in callback_dict.get(key, []) + callback_dict.get(None, []):
+                    sentinel = f(self, key, new_value, old_value, registrant, subkey)
+                    # TODO: handle breaks from the sentinel
+        def update_callbacks(self, key=None, registrant=None):
+            return self._on_update_callbacks.get(registrant, {}).get(key, [])
+        def add_update_callback(self, callback, key=None, registrant=None):
+            if registrant not in self._on_update_callbacks: self._on_update_callbacks[registrant] = {}
+            if key not in self._on_update_callbacks[registrant]: self._on_update_callbacks[registrant][key] = []
+            self._on_update_callbacks[registrant][key].append(callback)
+        def remove_update_callback(self, callback, key=None, registrant=None):
+            if registrant not in self._on_update_callbacks: self._on_update_callbacks[registrant] = {}
+            if key not in self._on_update_callbacks[registrant]: self._on_update_callbacks[registrant][key] = []
+            self._on_update_callbacks[registrant][key].remove(callback)
+
         def __call__(self, *elems, **kwargs):
             return type(self)(
                 self.tag,
@@ -459,12 +556,12 @@ class HTML:
             old_attrs = self.attrs
             self._attrs = HTML.manage_attrs(attrs)
             self._attr_view = None
-            self._invalidate_cache()
-            self.on_update(self, 'attributes', attrs, old_attrs)
+            self.invalidate_cache()
+            self.on_update('attributes', attrs, old_attrs)
         @property
         def elems(self):
             if self._elem_view is None:
-                self._elem_view = tuple(self._elems)
+                self._elem_view = tuple(str(x) if isinstance(x, (int, float, bool)) else x for x in self._elems)
             return self._elem_view
         @elems.setter
         def elems(self, elems):
@@ -473,9 +570,9 @@ class HTML:
             old_elems = self.elems
             self._elems = elems
             self._elem_view = None
-            self._invalidate_cache()
+            self.invalidate_cache()
             # self.on_update(self)
-            self.on_update(self, 'elements', elems, old_elems)
+            self.on_update('elements', elems, old_elems)
         def activate(self):
             return self.activator(self)
 
@@ -514,11 +611,11 @@ class HTML:
             else:
                 return []
 
-        def _invalidate_cache(self):
+        def invalidate_cache(self):
             if self._tree_cache is not None:
                 self._tree_cache = None
                 for p in tuple(self._parents):
-                    p._invalidate_cache()
+                    p.invalidate_cache()
                     self._parents.remove(p)
         def __getitem__(self, item):
             if isinstance(item, str):
@@ -536,14 +633,15 @@ class HTML:
                 old_value = self._elems[item]
                 self._elems[item] = value
                 self._elem_view = None
-            self._invalidate_cache()
-            self.on_update(self, item, value, old_value)
+            self.invalidate_cache()
+            self.on_update('attribute', value, old_value, subkey=item)
         def insert(self, where, child):
             if where is None:
                 where = len(self._elems)
             self._elems.insert(where, child)
-            self._invalidate_cache()
-            self.on_update(self, where, child, None)
+            self._elem_view = None
+            self.invalidate_cache()
+            self.on_update('element', child, None, subkey=where)
         def append(self, child):
             self.insert(None, child)
         def __delitem__(self, item):
@@ -560,8 +658,8 @@ class HTML:
                 old_value = self._elems[item]
                 del self._elems[item]
                 self._elem_view = None
-            self._invalidate_cache()
-            self.on_update(self, item, None, old_value)
+            self.invalidate_cache()
+            self.on_update('attribute' if isinstance(item, str) else 'element', None, old_value, subkey=item)
 
         atomic_types = (int, bool, float)
         @classmethod
@@ -788,6 +886,40 @@ class HTML:
                         yield b
                 else:
                     yield b
+        def _build_single_selector(self, root='.//', node_type='*', parents=None, **attrs):
+            return "{root}{node_type}{atts}{parents}".format(
+                root=root,
+                node_type=node_type,
+                atts='[' +
+                     ' and '.join(
+                         "@{k}='{v}'".format(k='class' if k == 'cls' else k, v=v)
+                         for k,v in attrs.items()
+                     ) + ']' if len(attrs) > 0 else '',
+                parents="" if parents is None else ('.' + '.' * parents)
+            )
+
+        def _build_xpath_selector(self,  root='.//', node_type='*', parents=None, **attrs):
+            attrs.update({
+                'root':root,
+                'node_type':node_type,
+                'parents':parents
+            })
+            direct_prod_attrs = [
+                [v]
+                    if v is None else
+                [str(vv) for vv in v]
+                    if not isinstance(v, (str, int, float, bool)) else
+                [str(v)]
+                for v in attrs.values()
+            ]
+            selectors = [
+                self._build_single_selector(
+                    **dict(zip(attrs.keys(), p))
+                )
+                for p in itertools.product(*direct_prod_attrs)
+            ]
+            return " | ".join(selectors)
+
         def find_by_id(self, id, mode='first', parent=None, find_element=True):
             fn = {
                 'first':self.find,
@@ -796,6 +928,34 @@ class HTML:
             }[mode]
             sel = ".//*[@id='{id}']{parents}".format(id=id, parents="" if parent is None else ('.'+'.'*parent))
             return fn(sel, find_element=find_element)
+        def find_by_attributes(self,
+                               *,
+                               root='.//', node_type='*', parents=None,
+                               mode='first',
+                               find_element=True,
+                               **attrs
+        ):
+            fn = {
+                'first': self.find,
+                'all': self.findall,
+                'iter': self.iterfind
+            }[mode]
+            sel = self._build_xpath_selector(root=root, node_type=node_type, parents=parents, **attrs)
+            return fn(sel, find_element=find_element)
+        def build_selector(self, *dicts, **attrs):
+            if len(dicts) == 0:
+                return self._build_xpath_selector(**attrs)
+            elif len(attrs) == 0:
+                cur = self._build_xpath_selector(**dicts[0])
+                for d in dicts[1:]:
+                    if 'root' in d:
+                        raise ValueError("root is inherited from previous selector")
+                    d = dict(d, root=cur+'/')
+                    cur = self._build_xpath_selector(**d)
+                return cur
+            else:
+                raise ValueError("unsure what to do when given both dicts and kwargs?")
+
 
         def copy(self):
             import copy

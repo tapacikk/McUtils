@@ -136,6 +136,9 @@ class ActiveHTMLWrapper:
             if isinstance(val, str):
                 attrs['innerHTML'] = val
             elif isinstance(val, HTML.XMLElement):
+                val.add_update_callback(
+                    lambda w,*_,s=self:setattr(s, 'html', w) if hasattr(s, 'elem') else None
+                )
                 attrs['innerHTML'] = val.tostring()
             else:
                 attrs['children'] = [self.canonicalize_widget(val)]
@@ -144,6 +147,9 @@ class ActiveHTMLWrapper:
             if isinstance(val, str):
                 attrs['innerHTML'] = val
             elif isinstance(val, HTML.XMLElement):
+                val.add_update_callback(
+                    lambda w,*_,s=self:setattr(s, 'html', w) if hasattr(s, 'elem') else None
+                )
                 attrs['innerHTML'] = val.tostring()
             else:
                 attrs['children'] = [self.canonicalize_widget(val)]
