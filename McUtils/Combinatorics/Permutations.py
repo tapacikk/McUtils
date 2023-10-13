@@ -521,8 +521,15 @@ class UniquePermutations:
             self._num = self.count_permutations(self.counts)
         return self._num
 
-    @staticmethod
-    def count_permutations(counts):
+    _binoms = None
+    @classmethod
+    def get_binoms(cls, n):
+        from .Sequences import Binomial
+        if cls._binoms is None or cls._binoms.shape[0] < n:
+            cls._binoms = Binomial(n)
+        return cls._binoms
+    @classmethod
+    def count_permutations(cls, counts):
         """
         Counts the number of unique permutations of the given "counts"
         which correspond to the number of nodes in the unique permutation tree
@@ -531,12 +538,25 @@ class UniquePermutations:
         :return:
         :rtype:
         """
-        import math
+        # import math
+        #
+        # subfac = 1
+        # for x in counts:
+        #     subfac *= math.factorial(x)
+        # # subfac = np.prod([math.factorial(x) for x in counts])
+        # ndim_fac = math.factorial(np.sum(counts))
 
-        subfac = np.prod([math.factorial(x) for x in counts])
-        ndim_fac = math.factorial(np.sum(counts))
+        # if len(counts) == 1: raise Exception(ndim_fac // subfac, counts)
+        if len(counts) == 1:
+            return 1
 
-        return ndim_fac // subfac
+        # need a stable algorithm for counting unique perms...
+        cumsums = np.cumsum(counts, dtype=int)[1:]
+        binoms = cls.get_binoms(cumsums[-1]+1)
+
+        multinomial = np.prod(binoms[cumsums, counts[1:]], dtype=int)
+
+        return multinomial
 
     def permutations(self, initial_permutation=None, return_indices=False, num_perms=None, position_blocks=None):
         """
@@ -1008,7 +1028,6 @@ class UniquePermutations:
                     # cur_dim, state, num_diff = backtrack(sn, cur_dim, state)
                     if num_diff == 0:
                         continue
-                # print(":", state)
 
                 # we loop through the elements in the permutation and
                 # add up number of elements in the subtree that would precede
@@ -1036,7 +1055,6 @@ class UniquePermutations:
 
                 inds[idx] = tree_data[cur_dim, 0]
 
-                # print([_, cur_dim, tree_data[cur_dim, 0]])
         return inds#, sn
 
     @classmethod
@@ -1740,16 +1758,13 @@ class UniquePartitions:
             assert i < N
             product_index = np.unravel_index(i, tree_sizes) # would be nicer to have a faster process...
             mask = np.full(p, True, dtype=bool)
-            # print("????")
             for j in range(k):
-                # print(">>>", mask)
                 block_idx = blocks[j][product_index[j]]
                 if subs is not None:
                     subs[i][bs[j]:bs[j+1]] = partition[mask][block_idx]
                 if inds is not None:
                     inds[i][bs[j]:bs[j + 1]] = r[mask][block_idx]
                 mask[r[mask][block_idx]] = False
-                # print(" > ", mask, block_idx)
 
     # @classmethod
     # def get_follower_counts(cls, partition):
@@ -1836,7 +1851,7 @@ class IntegerPartitionPermutations:
         for i, x in enumerate(self.partitions):
             self._class_counts[i] = UniquePermutations.get_permutation_class_counts(x)
         self.partition_counts = np.array([UniquePermutations.count_permutations(x[1]) for x in self._class_counts])
-        self._cumtotals = np.cumsum(np.concatenate([[0], self.partition_counts[:-1]]), axis=0)
+        self._cumtotals = np.cumsum(np.concatenate([[0], self.partition_counts[:-1]]), axis=0, dtype=int)
         self._num_terms = np.sum(self.partition_counts)
 
     @property
