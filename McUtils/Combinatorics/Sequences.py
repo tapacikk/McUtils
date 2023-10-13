@@ -36,13 +36,13 @@ def Binomial(n):
     :return:
     :rtype:
     """
-    binomials = np.eye(n)
+    binomials = np.eye(n, dtype='uint64')
     binomials[:, 0] = 1
     for i in range(2, n):
         if i%2 == 0:
-            k = i/2 + 1
+            k = i//2 + 1
         else:
-            k = (i+1)/2
+            k = (i+1)//2
         for j in range(int(k)):
             binomials[i, j] = binomials[i, i-j] = binomials[i-1, j-1] + binomials[i-1, j]
     return binomials
