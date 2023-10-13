@@ -1,8 +1,8 @@
 ## <a id="McUtils.Misc.Symbolics.Abstract">Abstract</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/Symbolics.py#L788)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/Symbolics.py#L788?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/Symbolics.py#L899)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/Symbolics.py#L899?message=Update%20Docs)]
 </div>
 
 Provides a namespace for the different abstract classes
@@ -29,11 +29,11 @@ Dict: AbstractDict
 ```
 <a id="McUtils.Misc.Symbolics.Abstract.vars" class="docs-object-method">&nbsp;</a> 
 ```python
-vars(*spec): 
+vars(*spec, symbol_type=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/Symbolics/Abstract.py#L793)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/Symbolics/Abstract.py#L793?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Misc/Symbolics/Abstract.py#L904)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/Symbolics/Abstract.py#L904?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -88,7 +88,7 @@ vars(*spec):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Misc/Symbolics/Abstract.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Misc/Symbolics/Abstract.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/Symbolics.py#L788?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Misc/Symbolics.py#L899?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

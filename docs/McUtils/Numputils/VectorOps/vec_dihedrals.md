@@ -1,18 +1,18 @@
-# <a id="McUtils.Numputils.VectorOps.vec_handle_zero_norms">vec_handle_zero_norms</a>
+# <a id="McUtils.Numputils.VectorOps.vec_dihedrals">vec_dihedrals</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/VectorOps.py#L111)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/VectorOps.py#L111?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/VectorOps.py#L552)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/VectorOps.py#L552?message=Update%20Docs)]
 </div>
 
 ```python
-vec_handle_zero_norms(vecs, norms, zero_thresh=None): 
+vec_dihedrals(b1, b2, b3, crosses=None, norms=None, return_crosses=False): 
 ```
-Tries to handle zero-threshold application to vectors
-  - `vecs`: `Any`
+Provides the dihedral angle between pts4 and the plane of the other three vectors
+  - `pts1`: `np.ndarray`
     > 
-  - `norms`: `Any`
+  - `pts2`: `np.ndarray`
     > 
-  - `zero_thesh`: `Any`
+  - `pts3`: `np.ndarray`
     > 
   - `:returns`: `_`
     > 
@@ -60,13 +60,13 @@ Tries to handle zero-threshold application to vectors
 [Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Numputils/VectorOps/vec_handle_zero_norms.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Numputils/VectorOps/vec_handle_zero_norms.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Numputils/VectorOps/vec_dihedrals.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Numputils/VectorOps/vec_dihedrals.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/VectorOps/vec_handle_zero_norms.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/VectorOps/vec_handle_zero_norms.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/VectorOps/vec_dihedrals.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/VectorOps/vec_dihedrals.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/VectorOps.py#L111?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/VectorOps.py#L552?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

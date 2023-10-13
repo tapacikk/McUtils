@@ -211,7 +211,7 @@ Defines a set of miscellaneous helper utilities that are commonly used across pr
 [Abstract](Misc/Symbolics/Abstract.md)   
 </div>
    <div class="col" markdown="1">
-   
+[TeX](Misc/TeXWriter/TeX.md)   
 </div>
    <div class="col" markdown="1">
    
