@@ -1187,7 +1187,7 @@ class RBFDInterpolator(NeighborBasedInterpolator):
             if inds is not None:
                 if not isinstance(a, (int, float, np.integer, np.floating)):
                     a = a[inds]
-            return s * a**n * np.exp(-a*r)
+            return s * a**n * np.exp(-a*r) #TODO: I think this is wrong...?
 
         return deriv
 

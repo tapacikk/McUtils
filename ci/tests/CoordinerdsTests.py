@@ -1,6 +1,7 @@
 
 from Peeves.TestUtils import *
 from Peeves.Timer import Timer
+from Peeves import BlockProfiler
 from unittest import TestCase
 from McUtils.Coordinerds import *
 from McUtils.Plots import *
@@ -287,6 +288,7 @@ class ConverterTest(TestCase):
         nijacob = icrds.jacobian(CartesianCoordinates3D, all_numerical=True, stencil=3).reshape((n-1)*3, n*3)
         jacob = coord_set.jacobian(internals, stencil=3).reshape(n * 3, (n - 1) * 3)
         njacob = coord_set.jacobian(internals, all_numerical=True).reshape(n*3, (n-1)*3)
+
         # with Timer("Block Z2C"):
         #     wat = icrds.convert(CartesianCoordinates3D)
         # with Timer("Block Z2C Analytic"):
@@ -303,14 +305,17 @@ class ConverterTest(TestCase):
         # ordcrd = coord_set[np.array(ordr, int)[:, 0]]
         # raise Exception(ordcrd-wat)
 
-        # g = GraphicsGrid(ncols=3, nrows=1, image_size=(900, 600))
-        # ArrayPlot(jacob, figure=g[0, 0])
-        # ArrayPlot(njacob, figure=g[0, 1])
-        # ArrayPlot(np.round(njacob-jacob, 4), figure=g[0, 2])
-        # g.padding=.05
-        # g.padding_top=.5
-        # # g.padding_bottom=0
-        # g.show()
+        vmax = np.max(np.abs(jacob))
+
+        g = GraphicsGrid(ncols=2, nrows=2, image_size=(600, 600))
+        ArrayPlot(jacob, figure=g[0, 0], vmin=-vmax, vmax=vmax)
+        ArrayPlot(njacob, figure=g[0, 1], vmin=-vmax, vmax=vmax)
+        ArrayPlot(np.round(njacob-jacob, 4), figure=g[1, 0], vmin=-vmax, vmax=vmax)
+        ArrayPlot(np.round(njacob+jacob, 4), figure=g[1, 1], vmin=-vmax, vmax=vmax)
+        g.padding=.05
+        g.padding_top=.5
+        # g.padding_bottom=0
+        g.show()
 
         # g = GraphicsGrid(ncols=3, nrows=2, image_size=(900, 600))
         # ArrayPlot(jacob,          figure=g[0, 0])
@@ -326,12 +331,20 @@ class ConverterTest(TestCase):
         self.assertEquals(jacob.shape, (n*3, (n-1)*3)) # we always lose one atom
         self.assertAlmostEqual(np.sum((ijacob@jacob)), 3*n-6, 3)
 
-    @validationTest
+    @debugTest
     def test_CartesianToZMatrixMultiJacobian(self):
-        coord_set = CoordinateSet(DataGenerator.multicoords(10, 10))
-        jacob = coord_set.jacobian(ZMatrixCoordinates, stencil = 5)
+        nstruct=20
+        ndim=10
+        coord_set = CoordinateSet(DataGenerator.multicoords(nstruct, ndim))
+        all_numerical=True
+        with BlockProfiler('jacobian_shit'):#, mode='deterministic'):
+            jacob = coord_set.jacobian(ZMatrixCoordinates, stencil=5, all_numerical=all_numerical)
         # ArrayPlot(jacob[0], colorbar=True).show()
-        self.assertEquals(jacob.shape, (10, 10, 3, 10 - 1, 3 )) # we always lose one atom
+        if not all_numerical:
+            self.assertEquals(jacob.shape, (nstruct, ndim, 3, 10 - 1, 3 )) # we always lose one atom
+        else:
+            self.assertEquals(jacob.shape, (3*ndim, nstruct, 10 - 1, 3 )) # we always lose one atom
+
 
     @validationTest
     def test_CH5ZMatJacobian(self):
@@ -539,15 +552,15 @@ class ConverterTest(TestCase):
 
     #region CoordinateSystemTests
 
-    @debugTest
+    @validationTest
     def test_ZMatrixStep(self):
         self.assertEquals(ZMatrixCoordinates.displacement(.1), .1)
 
-    @debugTest
+    @validationTest
     def test_CartStep(self):
         self.assertEquals(CartesianCoordinates3D.displacement(.1), .1)
 
-    @debugTest
+    @validationTest
     def test_CartExpanded(self):
         expansion = (np.array(
             [
@@ -564,7 +577,7 @@ class ConverterTest(TestCase):
         self.assertEquals(disp, .1)
         # self.assertEquals(disp.shape, (3,))
 
-    @debugTest
+    @validationTest
     def test_SphericalCoords(self):
 
         coord_set = CoordinateSet(DataGenerator.multicoords(1, 10))
@@ -577,7 +590,7 @@ class ConverterTest(TestCase):
 
         # self.assertAlmostEquals(np.sum(coord_set.jacobian(new)[:, 0].reshape(30, 30) + np.eye(30, 30)), 0.)
 
-    @debugTest
+    @validationTest
     def test_CustomConversion(self):
 
         def invert(coords, **opts):
@@ -593,7 +606,7 @@ class ConverterTest(TestCase):
 
         self.assertAlmostEquals(np.sum(coord_set.jacobian(new)[:, 0].reshape(30, 30) + np.eye(30, 30)), 0.)
 
-    @debugTest
+    @validationTest
     def test_ChainCustomConversion(self):
         def invert(coords, **opts):
             return -coords, opts

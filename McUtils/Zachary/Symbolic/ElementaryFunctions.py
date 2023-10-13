@@ -594,7 +594,7 @@ class ElementaryComposition(ElementaryVaradic):
             lambda a, b:
             fmt_string.format(a, b)
             if "{}" not in a else
-            a.replace("{}", "{0}").format(b if all(op not in b for op in ['+',"-","*"]) else "({})".format(b)),
+            a.replace("{}", "{0}").format(b if all(op not in b for op in ['+', "-", "*"]) else "({})".format(b)),
             reprs
         )
 

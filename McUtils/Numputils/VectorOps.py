@@ -21,6 +21,7 @@ __all__ = [
     "pts_norms",
     "pts_angles",
     "pts_normals",
+    "vec_dihedrals",
     "pts_dihedrals",
     "mat_vec_muls",
     "one_pad_vecs",
@@ -231,7 +232,11 @@ def vec_sins(vectors1, vectors2, zero_thresh=None, axis=-1):
 #
 #       vec_angles
 #
-def vec_angles(vectors1, vectors2, up_vectors=None, zero_thresh=None, axis=-1):
+def vec_angles(vectors1, vectors2, norms=None, up_vectors=None, zero_thresh=None, axis=-1,
+               return_norms=False,
+               return_crosses=True,
+               check_zeros=True
+               ):
     """
     Gets the angles and normals between two vectors
 
@@ -244,22 +249,28 @@ def vec_angles(vectors1, vectors2, up_vectors=None, zero_thresh=None, axis=-1):
     :return: angles and normals between two vectors
     :rtype: (np.ndarray, np.ndarray)
     """
-    dots    = vec_dots(vectors1, vectors2, axis=axis)
+    dots = vec_dots(vectors1, vectors2, axis=axis)
     crosses = vec_crosses(vectors1, vectors2, axis=axis)
-    norms1  = vec_norms(vectors1, axis=axis)
-    norms2  = vec_norms(vectors2, axis=axis)
+    if norms is not None:
+        norms1, norms2 = norms
+    else:
+        norms1 = vec_norms(vectors1, axis=axis)
+        norms2 = vec_norms(vectors2, axis=axis)
+        norms = (norms1, norms2)
+
     norm_prod = norms1*norms2
-    if isinstance(norm_prod, np.ndarray):
-        zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
-        bad_norm_prods = np.where(np.abs(norm_prod) <= zero_thresh)
-        norm_prod[bad_norm_prods] = 1.
+    if check_zeros:
+        if isinstance(norm_prod, np.ndarray):
+            zero_thresh = Options.norm_zero_threshold if zero_thresh is None else zero_thresh
+            bad_norm_prods = np.where(np.abs(norm_prod) <= zero_thresh)
+            norm_prod[bad_norm_prods] = 1.
     cos_comps = dots/norm_prod
     cross_norms = vec_norms(crosses, axis=axis)
     sin_comps = cross_norms/norm_prod
 
     angles = np.arctan2(sin_comps, cos_comps)
 
-    if isinstance(norm_prod, np.ndarray):
+    if check_zeros and isinstance(norm_prod, np.ndarray):
         angles[bad_norm_prods] = 0.
 
     # return signed angles
@@ -269,7 +280,16 @@ def vec_angles(vectors1, vectors2, up_vectors=None, zero_thresh=None, axis=-1):
         orientations = np.sign(vec_dots(up_vectors, crosses))
         angles = orientations * angles
 
-    return (angles, crosses)
+    if return_crosses or return_norms:
+        ret = (angles,)
+        if return_crosses:
+            ret = ret + (crosses,)
+        if return_norms:
+            ret = ret + (norms,)
+    else:
+        ret = angles
+
+    return ret
 
 ################################################
 #
@@ -527,9 +547,13 @@ def pts_normals(pts1, pts2, pts3, normalize=True):
 
 ################################################
 #
-#       pts_dihedrals
+#       vec_dihedrals
 #
-def pts_dihedrals(pts1, pts2, pts3, pts4):
+def vec_dihedrals(b1, b2, b3,
+                  crosses=None,
+                  norms=None,
+                  return_crosses=False
+                  ):
     """
     Provides the dihedral angle between pts4 and the plane of the other three vectors
 
@@ -549,18 +573,83 @@ def pts_dihedrals(pts1, pts2, pts3, pts4):
     # return vec_angles(normals, off_plane_vecs)[0]
 
     # compute signed angle between the normals to the b1xb2 plane and b2xb3 plane
-    b1 = pts2-pts1 # 4->1
-    b2 = pts3-pts2 # 1->2
-    b3 = pts4-pts3 # 2->3
+    # b1 = pts2-pts1 # 4->1
+    # b2 = pts3-pts2 # 1->2
+    # b3 = pts4-pts3 # 2->3
 
-    n1 = vec_crosses(b1, b2, normalize=True)
-    n2 = vec_crosses(b2, b3, normalize=True)
-    m1 = vec_crosses(n1, vec_normalize(b2))
+    if crosses is not None:
+        crosses, cross_norms = crosses
+        n1, n2 = crosses
+        n1 = n1 / cross_norms[0][..., np.newaxis]
+        n2 = n2 / cross_norms[1][..., np.newaxis]
+    else:
+        n1 = vec_crosses(b1, b2)#, normalize=True)
+        n2 = vec_crosses(b2, b3)#, normalize=True)
+        norm1 = vec_norms(n1)
+        norm2 = vec_norms(n2)
+        n1 = n1 / norm1[..., np.newaxis]
+        n2 = n2 / norm2[..., np.newaxis]
+        crosses = [(n1, n2), (norm1, norm2)]
+
+    if norms is not None:
+        nb1, nb2, nb3 = norms
+        u2 = b2 / nb2[..., np.newaxis]
+    else:
+        u2 = vec_normalize(b2)
+
+    m1 = vec_crosses(n1, u2)
     d1 = vec_dots(n1, n2)
     d2 = vec_dots(m1, n2)
 
     # arctan(d2/d1) + sign stuff from relative signs of d2 and d1
-    return -np.arctan2(d2, d1)
+    ret = -np.arctan2(d2, d1)
+    if return_crosses:
+        ret = (ret, crosses)
+    return ret
+
+
+################################################
+#
+#       pts_dihedrals
+#
+def pts_dihedrals(pts1, pts2, pts3, pts4,
+                  crosses=None,
+                  norms=None,
+                  return_crosses=False
+                  ):
+    """
+    Provides the dihedral angle between pts4 and the plane of the other three vectors
+
+    :param pts1:
+    :type pts1: np.ndarray
+    :param pts2:
+    :type pts2: np.ndarray
+    :param pts3:
+    :type pts3: np.ndarray
+    :return:
+    :rtype:
+    """
+
+    # b1 = pts2-pts1 # 4->1
+    # b2 = pts3-pts2 # 1->2
+    # b3 = pts4-pts3 # 2->3
+
+    # # should I normalize these...?
+    # normals = pts_normals(pts2, pts3, pts4, normalize=False)
+    # off_plane_vecs = pts1 - pts4
+    # return vec_angles(normals, off_plane_vecs)[0]
+
+    # compute signed angle between the normals to the b1xb2 plane and b2xb3 plane
+    b1 = pts2-pts1 # 4->1
+    b2 = pts3-pts2 # 1->2
+    b3 = pts4-pts3 # 2->3
+
+    return vec_dihedrals(
+        b1, b2, b3,
+        crosses=crosses,
+        norms=norms,
+        return_crosses=return_crosses
+    )
 
 ################################################
 #

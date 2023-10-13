@@ -3,7 +3,7 @@ Provides scaffolding for creating serializers that dump data to a reloadable for
 Light-weight and unsophisticated, but that's what makes this useful..
 """
 
-import abc, numpy as np, json, io, pickle, importlib, base64, types
+import abc, numpy as np, json, io, pickle, importlib, base64, types, warnings
 from collections import OrderedDict
 
 __all__= [
@@ -478,10 +478,10 @@ class NDarrayMarshaller:
 
                 if try_numpy:
                     #TODO: need to reset this later
-                    np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
+                    warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)
                     try:
                         arr = np.asanyarray(data)
-                    except np.VisibleDeprecationWarning:
+                    except (ValueError, np.VisibleDeprecationWarning):
                         arr = np.empty(shape=(len(data),), dtype=object)
                         for i, v in enumerate(data):
                             arr[i] = v

@@ -1,3 +1,5 @@
+import numpy as np
+
 from ..JHTML import JHTML, HTML, HTMLWidgets
 from ..Apps import WrapperComponent
 import uuid
@@ -591,6 +593,8 @@ class D3:
         def use_as_backend(cls):
             import matplotlib
             return matplotlib.use('module://' + cls.__module__ + '_backend')
+
+        #TODO: encapsulate all of this in some sort of wrapper object
         @classmethod
         def get_plot_object(cls, figure):
             if hasattr(figure, 'figure'):
@@ -601,6 +605,48 @@ class D3:
         def render_mpl(cls, figure, mpl_objs):
             from .d3_backend import FigureCanvasD3
             return FigureCanvasD3.render_objects(figure, mpl_objs)
+
+        @classmethod
+        def get_mpl_plot_bounds(cls, figure):
+            import McUtils.Parsers as parse
+
+            svg = cls.get_plot_object(figure)
+            # w, h = [float(x) for x in parse.Number.findall(svg.attrs['width'] + ' ' + svg.attrs['height'])]
+            # [vmx, vmy, vMX, vMY] = [float(x) for x in parse.Number.findall(svg.attrs['viewBox'])]
+
+            patch = svg.find(
+                svg.build_selector(
+                    dict(node_type='g', cls='axes'),
+                    dict(node_type='g', cls='patch')
+                )
+            ).elems[0]
+
+            mx, my, _, _, Mx, My, _, _ = [float(x) for x in parse.Number.findall(patch.attrs['d'])]
+            return figure.plot_range, [[mx, my], [Mx, My]]
+
+        @classmethod
+        def to_plot_coords(cls, figure, data_points):
+            ((dmx, dMx), (dmy, dMy)), ((mx, my), (Mx, My)) = cls.get_mpl_plot_bounds(figure)
+            drx = dMx - dmx
+            dry = dMy - dmy
+            rx = Mx - mx
+            ry = My - my
+            data_points = np.asanyarray(data_points)
+            smol = data_points.ndim == 1
+            if smol:
+                data_points = data_points[np.newaxis]
+            scaled_x = (data_points[:, 0] - dmx) * rx / drx
+            scaled_y = (data_points[:, 1] - dmy) * ry / dry
+
+            data = np.array([scaled_x + mx, scaled_y + my]).T
+            if smol:
+                data = data[0]
+            return data
+
+
+
+
+
 
         # class Wrapper:
         #     def __init__(self, figure):
