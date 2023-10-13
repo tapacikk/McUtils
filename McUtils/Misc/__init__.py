@@ -21,3 +21,5 @@ from .Decorators import *; from .Decorators import __all__ as exposed
 __all__ += exposed
 from .Symbolics import *; from .Symbolics import __all__ as exposed
 __all__ += exposed
+from .TeXWriter import *; from .TeXWriter import __all__ as exposed
+__all__ += exposed

@@ -2600,7 +2600,6 @@ class SymmetricGroupGenerator:
         return np.ravel_multi_index(np.sort(idx)+1, [radix+1]*len(idx))
     @classmethod
     def _compute_changed_index_numbers(cls, mask):
-        # we loop for this because I'm not totally sure how to do better here...
         if not mask.any():
             return np.zeros(len(mask))
         radix = len(mask[0])

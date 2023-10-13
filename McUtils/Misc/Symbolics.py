@@ -264,6 +264,15 @@ class ASTUtils:
     @classmethod
     def ast_mod(cls, left, right):
         return cls.ast_binop(ast.Mod(), left, right)
+    @classmethod
+    def ast_bitxor(cls, left, right):
+        return cls.ast_binop(ast.BitXor(), left, right)
+    @classmethod
+    def ast_bitand(cls, left, right):
+        return cls.ast_binop(ast.BitAnd(), left, right)
+    @classmethod
+    def ast_bitor(cls, left, right):
+        return cls.ast_binop(ast.BitOr(), left, right)
 
     @classmethod
     def ast_comp(cls, op, left, right, *extra):
@@ -374,6 +383,7 @@ class ASTUtils:
         return val
 
 class AbstractExpr(metaclass=abc.ABCMeta):
+    __tag__ = None
     __slots__ = []
     def __hash__(self):
         return hash((type(self), tuple(getattr(self, k) for k in self.__slots__)))
@@ -392,6 +402,23 @@ class AbstractExpr(metaclass=abc.ABCMeta):
             namespace
         )
 
+    def transmogrify(self, converter_dispatch:dict):
+        def convert(expr):
+            if not isinstance(expr, AbstractExpr):
+                conversion_func = converter_dispatch.get(None, None)
+                if conversion_func is None:
+                    raise ValueError("missing conversion for object {}".format(expr))
+                return conversion_func(expr, convert)
+
+            conversion_func = converter_dispatch.get(expr.__tag__, None)
+            if conversion_func is None:
+                conversion_func = converter_dispatch.get('Expr', None)
+                if conversion_func is None:
+                    raise ValueError("missing conversion for tag {}".format(expr.__tag__))
+            return conversion_func(expr, convert)
+        return convert(self)
+
+
     def __call__(self, *args, **kwargs):
         return AbstractCall(self, *args, **kwargs)
 
@@ -406,32 +433,32 @@ class AbstractExpr(metaclass=abc.ABCMeta):
 
     def __add__(self, other):
         return AbstractAdd(self, other)
+    def __radd__(self, other):
+        return AbstractAdd(other, self)
     def __sub__(self, other):
         return AbstractSub(self, other)
     def __mul__(self, other):
         return AbstractMult(self, other)
+    def __rmul__(self, other):
+        return AbstractMult(other, self)
     def __pow__(self, other):
         return AbstractPow(self, other)
     def __truediv__(self, other):
         return AbstractDiv(self, other)
     def __floordiv__(self, other):
         return AbstractFloorDiv(self, other)
-
-    def __eq__(self, other):
-        return AbstractEq(self, other)
-    def __lt__(self, other):
-        return AbstractLt(self, other)
-    def __le__(self, other):
-        return AbstractLtE(self, other)
-    def __gt__(self, other):
-        return AbstractGt(self, other)
-    def __ge__(self, other):
-        return AbstractGtE(self, other)
-
-    def __and__(self, other, *extra):
-        return AbstractAnd(self, other, *extra)
-    def __or__(self, other, *extra):
-        return AbstractOr(self, other, *extra)
+    def __xor__(self, other):
+        return AbstractBitXOr(self, other)
+    def __rxor__(self, other):
+        return AbstractBitXOr(other, self)
+    def __or__(self, other):
+        return AbstractBitOr(self, other)
+    def __ror__(self, other):
+        return AbstractBitOr(other, self)
+    def __and__(self, other):
+        return AbstractBitAnd(self, other)
+    def __rand__(self, other):
+        return AbstractBitAnd(other, self)
 
     def __contains__(self, item):
         return AbstractIn(self, item)
@@ -457,27 +484,55 @@ class AbstractExpr(metaclass=abc.ABCMeta):
     def __getattr__(self, item):
         return AbstractAttribute(self, item)
 
-    def is_(self, other):
+    def Equals(self, right):
+        return AbstractEq(self, right)
+    Eq = Equals
+    def LessThan(self, right):
+        return AbstractLt(self, right)
+    Lt = LessThan
+    def LessEquals(self, right):
+        return AbstractLtE(self, right)
+    LtE = LessEquals
+    def GreaterThan(self, right):
+        return AbstractGt(self, right)
+    Gt = GreaterThan
+    def GreaterEquals(self, right):
+        return AbstractGtE(self, right)
+    GtE = GreaterEquals
+    def And(self, right):
+        return AbstractAnd(self, right)
+    def Or(self, right):
+        return AbstractOr(self, right)
+
+    def Is(self, other):
         return AbstractIs(self, other)
-    def isnt(self, other):
+    def IsNot(self, other):
         return AbstractIsNot(self, other)
+    Isnt = IsNot
 
     def generator(self, expr, var, filter=None):
         return AbstractGenerator(expr, var, self, filter=filter)
+    Gen = generator
     def list_comp(self, expr, var, filter=None):
         return AbstractListComp(expr, var, self, filter=filter)
+    LC = list_comp
     def set_comp(self, expr, var, filter=None):
         return AbstractSetComp(expr, var, self, filter=filter)
+    SC = set_comp
     def dict_comp(self, key_expr, value_expr, var, filter=None):
         return AbstractDictComp(key_expr, value_expr, var, self, filter=filter)
+    DC = dict_comp
 
-    def if_true(self, test):
-        return AbstractIfExp(test, self, None)
+    def if_test(self, test, else_expr=None):
+        return AbstractIfExp(test, self, else_expr)
+    def if_self(self, expr, else_expr=None):
+        return AbstractIfExp(self, expr, else_expr)
 
     def __repr__(self):
         return "{}()".format(type(self).__name__)
 
 class AbstractName(AbstractExpr):
+    __tag__ = "Name"
     __slots__ = ['name']
     def __init__(self, name):
         self.name = name
@@ -487,6 +542,7 @@ class AbstractName(AbstractExpr):
         return "{}({})".format(type(self).__name__, self.name)
 
 class AbstractConstant(AbstractExpr):
+    __tag__ = 'Const'
     __slots__ = ['value']
     def __init__(self, value):
         self.value = value
@@ -496,6 +552,7 @@ class AbstractConstant(AbstractExpr):
         return "{}({})".format(type(self).__name__, self.value)
 
 class AbstractCall(AbstractExpr):
+    __tag__ = 'Call'
     __slots__ = ['fn', 'args', 'kwargs']
     def __init__(self, fn, *args, **kwargs):
         self.fn = fn
@@ -510,6 +567,7 @@ class AbstractCall(AbstractExpr):
         return "{}({}, {}, {})".format(type(self).__name__, self.fn, self.args, self.kwargs)
 
 class AbstractAttribute(AbstractExpr):
+    __tag__ = 'Attr'
     __slots__ = ['obj', 'attr']
     def __init__(self, obj, attr):
         self.obj = obj
@@ -525,44 +583,68 @@ class AbstractBinOp(AbstractExpr):
         self.left = left
         self.right = right
 class AbstractAdd(AbstractBinOp):
+    __tag__ = 'Add'
     def to_ast(self) ->'ast.BinOp':
         return ASTUtils.ast_add(self.left, self.right)
 class AbstractSub(AbstractBinOp):
+    __tag__ = 'Sub'
     def to_ast(self) ->'ast.BinOp':
         return ASTUtils.ast_sub(self.left, self.right)
 class AbstractMult(AbstractBinOp):
+    __tag__ = 'Mul'
     def to_ast(self) ->'ast.BinOp':
         return ASTUtils.ast_mult(self.left, self.right)
 class AbstractDiv(AbstractBinOp):
+    __tag__ = 'Div'
     def to_ast(self) ->'ast.BinOp':
         return ASTUtils.ast_div(self.left, self.right)
 class AbstractMatMult(AbstractBinOp):
+    __tag__ = 'MatMul'
     def to_ast(self) ->'ast.BinOp':
         return ASTUtils.ast_matmult(self.left, self.right)
 class AbstractFloorDiv(AbstractBinOp):
+    __tag__ = 'FloorDiv'
     def to_ast(self) ->'ast.BinOp':
         return ASTUtils.ast_floordiv(self.left, self.right)
 class AbstractPow(AbstractBinOp):
+    __tag__ = 'Pow'
     def to_ast(self) ->'ast.BinOp':
         return ASTUtils.ast_pow(self.left, self.right)
 class AbstractMod(AbstractBinOp):
+    __tag__ = 'Mod'
     def to_ast(self) ->'ast.BinOp':
         return ASTUtils.ast_mod(self.left, self.right)
+class AbstractBitXOr(AbstractBinOp):
+    __tag__ = 'BitXOr'
+    def to_ast(self) ->'ast.BinOp':
+        return ASTUtils.ast_bitxor(self.left, self.right)
+class AbstractBitOr(AbstractBinOp):
+    __tag__ = 'BitOr'
+    def to_ast(self) ->'ast.BinOp':
+        return ASTUtils.ast_bitor(self.left, self.right)
+class AbstractBitAnd(AbstractBinOp):
+    __tag__ = 'BitAnd'
+    def to_ast(self) ->'ast.BinOp':
+        return ASTUtils.ast_bitand(self.left, self.right)
 
 class AbstractUnOp(AbstractExpr):
     __slots__ = ['operand']
     def __init__(self, operand):
         self.operand = operand
 class AbstractNot(AbstractUnOp):
+    __tag__ = 'Not'
     def to_ast(self) ->'ast.UnaryOp':
         return ASTUtils.ast_not(self.operand)
 class AbstractInv(AbstractUnOp):
+    __tag__ = 'Inv'
     def to_ast(self) ->'ast.UnaryOp':
         return ASTUtils.ast_inv(self.operand)
 class AbstractPos(AbstractUnOp):
+    __tag__ = 'Pos'
     def to_ast(self) ->'ast.UnaryOp':
         return ASTUtils.ast_pos(self.operand)
 class AbstractNeg(AbstractUnOp):
+    __tag__ = 'Neg'
     def to_ast(self) ->'ast.UnaryOp':
         return ASTUtils.ast_neg(self.operand)
 
@@ -573,37 +655,48 @@ class AbstractComp(AbstractExpr):
         self.right = right
         self.extra = extra
 class AbstractEq(AbstractComp):
+    __tag__ = 'Equals'
     def to_ast(self) ->'ast.Compare':
         return ASTUtils.ast_eq(self.left, self.right, *self.extra)
 class AbstractNotEq(AbstractComp):
+    __tag__ = 'NotEquals'
     def to_ast(self) ->'ast.Compare':
         return ASTUtils.ast_ne(self.left, self.right, *self.extra)
 class AbstractLt(AbstractComp):
+    __tag__ = 'Less'
     def to_ast(self) ->'ast.Compare':
         return ASTUtils.ast_lt(self.left, self.right, *self.extra)
 class AbstractGt(AbstractComp):
+    __tag__ = 'Greater'
     def to_ast(self) ->'ast.Compare':
         return ASTUtils.ast_gt(self.left, self.right, *self.extra)
 class AbstractLtE(AbstractComp):
+    __tag__ = 'LessEquals'
     def to_ast(self) ->'ast.Compare':
         return ASTUtils.ast_lte(self.left, self.right, *self.extra)
 class AbstractGtE(AbstractComp):
+    __tag__ = 'GreaterEquals'
     def to_ast(self) ->'ast.Compare':
         return ASTUtils.ast_gte(self.left, self.right, *self.extra)
 class AbstractIn(AbstractComp):
+    __tag__ = 'In'
     def to_ast(self) ->'ast.Compare':
         return ASTUtils.ast_in(self.left, self.right, *self.extra)
 class AbstractNotIn(AbstractComp):
+    __tag__ = 'NotIn'
     def to_ast(self) ->'ast.Compare':
         return ASTUtils.ast_ni(self.left, self.right, *self.extra)
 class AbstractIs(AbstractComp):
+    __tag__ = 'Is'
     def to_ast(self) ->'ast.Compare':
         return ASTUtils.ast_is(self.left, self.right, *self.extra)
 class AbstractIsNot(AbstractComp):
+    __tag__ = 'IsNot'
     def to_ast(self) ->'ast.Compare':
         return ASTUtils.ast_isnt(self.left, self.right, *self.extra)
 
 class AbstractSubscript(AbstractExpr):
+    __tag__ = 'Subscript'
     __slots__ = ['obj', 'index']
     def __init__(self, obj, index):
         self.obj, self.index = obj, index
@@ -617,11 +710,14 @@ class AbstractBoolOp(AbstractExpr):
         self.right = right
         self.extra = extra
 class AbstractAnd(AbstractComp):
+    __tag__ = 'And'
     def to_ast(self) ->'ast.BoolOp':
         return ASTUtils.ast_and(self.left, self.right, *self.extra)
 class AbstractOr(AbstractComp):
+    __tag__ = 'Or'
     def to_ast(self) ->'ast.BoolOp':
         return ASTUtils.ast_or(self.left, self.right, *self.extra)
+
 
 class AbstractImportModule(AbstractCall):
     def __init__(self, mod):
@@ -642,12 +738,14 @@ class AbstractIter(AbstractCall):
     def __init__(self, val):
         super().__init__('iter', val)
 class AbstractStar(AbstractExpr):
+    __tag__ = 'Star'
     __slots__ = ['iterable']
     def __init__(self, iterable):
         self.iterable = iterable
     def to_ast(self) ->'ast.Starred':
         return ASTUtils.ast_star(self.iterable)
 class AbstractStarOrIter(AbstractExpr):
+    __tag__ = 'StarOrIter'
     __slots__ = ['val']
     def __init__(self, val):
         self.val = val
@@ -659,6 +757,7 @@ class AbstractStarOrIter(AbstractExpr):
         raise ValueError("type of `AbstractStarOrIter` is indeterminate")
 
 class AbstractUnwrapKeys(str):
+    __tag__ = 'UnwrapKeys'
     __slots__ = ['val']
     def __new__(cls, content):
         return str.__new__(cls, "____init_keys" + str(content))
@@ -672,6 +771,7 @@ class AbstractUnwrapKeys(str):
     def to_ast(self) -> 'ast.AST':
         raise ValueError("type of `AbstractUnwrapKeys` is indeterminate")
 class AbstractStarStar(AbstractExpr):
+    __tag__ = 'StarStar'
     __slots__ = ['var']
     def __init__(self, var):
         self.var = var
@@ -679,24 +779,28 @@ class AbstractStarStar(AbstractExpr):
         raise ValueError("type of `AbstractStarStar` has not ast equivalent")
 
 class AbstractList(AbstractExpr):
+    __tag__ = 'List'
     __slots__ = ['args']
     def __init__(self, *args):
         self.args = args
     def to_ast(self) ->'ast.List':
         return ASTUtils.ast_list(*self.args)
 class AbstractTuple(AbstractExpr):
+    __tag__ = 'Tuple'
     __slots__ = ['args']
     def __init__(self, *args):
         self.args = args
     def to_ast(self) ->'ast.Tuple':
         return ASTUtils.ast_tuple(*self.args)
 class AbstractSet(AbstractExpr):
+    __tag__ = 'Set'
     __slots__ = ['args']
     def __init__(self, *args):
         self.args = args
     def to_ast(self) ->'ast.Set':
         return ASTUtils.ast_set(*self.args)
 class AbstractDict(AbstractExpr):
+    __tag__ = 'Dict'
     __slots__ = ['kwargs']
     def __init__(self, **kwargs):
         self.kwargs = kwargs
@@ -704,24 +808,28 @@ class AbstractDict(AbstractExpr):
         return ASTUtils.ast_dict(**self.kwargs)
 
 class AbstractListComp(AbstractExpr):
+    __tag__ = 'ListComp'
     __slots__ = ['expr', 'var', 'iterable', 'filter']
     def __init__(self, expr, var, iterable, filter=None):
         self.expr, self.var, self.iterable, self.filter = expr, var, iterable, filter
     def to_ast(self) ->'ast.ListComp':
         return ASTUtils.ast_list_comprehension(self.expr, self.var, self.iterable, filter=self.filter)
 class AbstractGenerator(AbstractExpr):
+    __tag__ = 'Generator'
     __slots__ = ['expr', 'var', 'iterable', 'filter']
     def __init__(self, expr, var, iterable, filter=None):
         self.expr, self.var, self.iterable, self.filter = expr, var, iterable, filter
     def to_ast(self) ->'ast.GeneratorExp':
         return ASTUtils.ast_generator(self.expr, self.var, self.iterable, filter=self.filter)
 class AbstractSetComp(AbstractExpr):
+    __tag__ = 'SetComp'
     __slots__ = ['expr', 'var', 'iterable', 'filter']
     def __init__(self, expr, var, iterable, filter=None):
         self.expr, self.var, self.iterable, self.filter = expr, var, iterable, filter
     def to_ast(self) ->'ast.SetComp':
         return ASTUtils.ast_set_comprehension(self.expr, self.var, self.iterable, filter=self.filter)
 class AbstractDictComp(AbstractExpr):
+    __tag__ = 'DictComp'
     __slots__ = ['key_expr', 'value_expr', 'var', 'iterable', 'filter']
     def __init__(self, key_expr, value_expr, var, iterable, filter=None):
         self.key_expr, self.value_exp, self.var, self.iterable, self.filter = key_expr, value_expr, var, iterable, filter
@@ -729,6 +837,7 @@ class AbstractDictComp(AbstractExpr):
         return ASTUtils.ast_dict_comprehension(self.key_expr, self.value_exp, self.var, self.iterable, filter=self.filter)
 
 class AbstractArgSpec(AbstractExpr):
+    __tag__ = 'ArgSpec'
     __slots__ = ['args', 'kwargs']
     def __init__(self, *args, **kwargs):
         self.args = args
@@ -743,6 +852,7 @@ class AbstractArgSpec(AbstractExpr):
         )
 
 class AbstractLambda(AbstractExpr):
+    __tag__ = 'Lambda'
     __slots__ = ['spec', 'body']
     def __init__(self, *args, **kwargs):
         if len(args) == 1 and isinstance(args[0], AbstractArgSpec):
@@ -771,6 +881,7 @@ class AbstractLambda(AbstractExpr):
         )
 
 class AbstractIfExp(AbstractExpr):
+    __tag__ = 'If'
     __slots__ = ['test', 'body', 'else_branch']
     def __init__(self, test, body, orelse=None):
         self.test, self.body, self.else_branch = test, body, orelse
@@ -791,12 +902,14 @@ class Abstract:
     """
 
     @classmethod
-    def vars(cls, *spec):
+    def vars(cls, *spec, symbol_type=None):
+        if symbol_type is None:
+            symbol_type = AbstractName
         if not isinstance(spec[0], str):
             spec = spec[0]
         if len(spec) == 1:
             spec = spec[0].split()
-        return [AbstractName(x) for x in spec]
+        return [symbol_type(x) for x in spec]
 
     Expr = AbstractExpr
     Name = AbstractName
