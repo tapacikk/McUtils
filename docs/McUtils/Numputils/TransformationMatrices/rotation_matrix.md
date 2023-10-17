@@ -1,7 +1,7 @@
 # <a id="McUtils.Numputils.TransformationMatrices.rotation_matrix">rotation_matrix</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/TransformationMatrices.py#L132)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L132?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/TransformationMatrices.py#L134)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L134?message=Update%20Docs)]
 </div>
 
 ```python
@@ -64,7 +64,7 @@ rotation_matrix(axis, theta):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/TransformationMatrices/rotation_matrix.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/TransformationMatrices/rotation_matrix.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L132?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L134?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

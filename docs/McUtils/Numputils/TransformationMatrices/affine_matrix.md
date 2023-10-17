@@ -1,7 +1,7 @@
 # <a id="McUtils.Numputils.TransformationMatrices.affine_matrix">affine_matrix</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/TransformationMatrices.py#L216)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L216?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/TransformationMatrices.py#L267)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L267?message=Update%20Docs)]
 </div>
 
 ```python
@@ -64,7 +64,7 @@ Creates an affine transformation matrix from a 3x3 transformation matrix or set 
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/TransformationMatrices/affine_matrix.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/TransformationMatrices/affine_matrix.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L216?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L267?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

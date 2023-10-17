@@ -5,7 +5,7 @@
 </div>
 
 ```python
-vec_normalize(vecs, axis=-1, zero_thresh=None): 
+vec_normalize(vecs, norms=None, axis=-1, zero_thresh=None): 
 ```
 
   - `vecs`: `np.ndarray`

@@ -1,7 +1,7 @@
 # <a id="McUtils.Numputils.TransformationMatrices.translation_matrix">translation_matrix</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/TransformationMatrices.py#L183)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L183?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/TransformationMatrices.py#L234)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L234?message=Update%20Docs)]
 </div>
 
 ```python
@@ -59,7 +59,7 @@ translation_matrix(shift):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/TransformationMatrices/translation_matrix.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/TransformationMatrices/translation_matrix.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L183?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TransformationMatrices.py#L234?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    
