@@ -127,7 +127,7 @@ def vec_handle_zero_norms(vecs, norms, zero_thresh=None):
     vecs = vecs * (1 - zeros.astype(int))
     return vecs, zeros
 
-def vec_normalize(vecs, axis=-1, zero_thresh=None):
+def vec_normalize(vecs, norms=None, axis=-1, zero_thresh=None):
     """
 
     :param vecs:
@@ -140,7 +140,8 @@ def vec_normalize(vecs, axis=-1, zero_thresh=None):
     if axis != -1:
         raise NotImplementedError("Normalization along not-the-last axis not there yet...")
 
-    norms = vec_norms(vecs, axis=axis)
+    if norms is None:
+        norms = vec_norms(vecs, axis=axis)
     vecs, zeros = vec_handle_zero_norms(vecs, norms, zero_thresh=zero_thresh)
     norms = norms[..., np.newaxis]
     norms[zeros] = Options.zero_placeholder # since we already zeroed out the vector
@@ -580,20 +581,20 @@ def vec_dihedrals(b1, b2, b3,
     if crosses is not None:
         crosses, cross_norms = crosses
         n1, n2 = crosses
-        n1 = n1 / cross_norms[0][..., np.newaxis]
-        n2 = n2 / cross_norms[1][..., np.newaxis]
+        n1 = vec_normalize(n1, cross_norms[0])
+        n2 = vec_normalize(n2, cross_norms[1])
     else:
         n1 = vec_crosses(b1, b2)#, normalize=True)
         n2 = vec_crosses(b2, b3)#, normalize=True)
         norm1 = vec_norms(n1)
         norm2 = vec_norms(n2)
-        n1 = n1 / norm1[..., np.newaxis]
-        n2 = n2 / norm2[..., np.newaxis]
+        n1 = vec_normalize(n1, norm1)
+        n2 = vec_normalize(n2, norm2)
         crosses = [(n1, n2), (norm1, norm2)]
 
     if norms is not None:
         nb1, nb2, nb3 = norms
-        u2 = b2 / nb2[..., np.newaxis]
+        u2 = vec_normalize(b2, nb2)
     else:
         u2 = vec_normalize(b2)
 

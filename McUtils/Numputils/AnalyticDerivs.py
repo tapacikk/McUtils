@@ -398,11 +398,12 @@ def vec_norm_derivs(a, order=1, zero_thresh=None):
         derivs.append(d1)
 
     if order >= 2:
+        n = a.shape[-1]
         extra_shape = a.ndim - 1
         if extra_shape > 0:
-            i3 = np.broadcast_to(np.eye(3), (1,)*extra_shape + (3, 3))
+            i3 = np.broadcast_to(np.eye(n), (1,)*extra_shape + (n, n))
         else:
-            i3 = np.eye(3)
+            i3 = np.eye(n)
         v = vec_outer(d1, d1)
         # na shold have most of the extra_shape needed
         d2 = (i3 - v) / na[..., np.newaxis]
