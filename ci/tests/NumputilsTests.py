@@ -4,7 +4,7 @@ from Peeves import BlockProfiler
 from McUtils.Numputils import *
 from McUtils.Zachary import FiniteDifferenceDerivative
 from unittest import TestCase
-import numpy as np, functools as ft
+import numpy as np, scipy, functools as ft
 
 class NumputilsTests(TestCase):
 
@@ -18,8 +18,50 @@ class NumputilsTests(TestCase):
     ])
 
     @validationTest
+    def test_skewRotationMatrix(self):
+        for _ in range(10):
+            ut = np.random.rand(3)
+            U1 = rotation_matrix_skew(ut)
+            U2 = scipy.linalg.expm(skew_symmetric_matrix(ut))
+            self.assertTrue(np.allclose(U1, U2))
+
+        ut = np.random.rand(3)
+        reference_rotation = rotation_matrix_skew(ut)
+        ref_struct = np.array([
+            [0, 0, 0],
+            [0, 1, 1],
+            [1, 0, 1],
+            [1, 1, 1]
+        ])
+        rot_struct = ref_struct @ reference_rotation
+
+        def mat_fun(upper_triangle):
+            test_rot = rotation_matrix_skew(upper_triangle)
+            test_struct = rot_struct@test_rot
+            return np.linalg.norm(ref_struct - test_struct)
+
+        x = np.random.rand(3)
+        for _ in range(10):
+            opt = scipy.optimize.minimize(mat_fun, x, method='Nelder-Mead', tol=1e-8)
+            x = opt.x
+        print(opt)
+
+        print('-'*20)
+        print('Upper Triangle:', ut)
+        print(reference_rotation.T)
+        print('-'*20)
+        test_rot = rotation_matrix_skew(opt.x)
+        print('Upper Triangle:', opt.x)
+        print(test_rot)
+        print('-'*20)
+        print(ref_struct)
+        print(rot_struct@test_rot)
+
+        self.assertLess(opt.fun, 1e-6)
+
+    @validationTest
     def test_ProblemPtsAllDerivs(self):
-        import McUtils.Numputils.Options as NumOpts
+        from McUtils.Numputils import Options as NumOpts
 
         NumOpts.zero_placeholder = np.inf
 
@@ -505,7 +547,7 @@ class NumputilsTests(TestCase):
         self.assertEquals(td.shape, (4, 3, 4, 3))
         self.assertEquals(array.tensordot(array, axes=[[1, 2], [1, 2]]).shape, (4, 4))
 
-    @debugTest
+    @validationTest
     def test_Sparse(self):
 
         shape = (1000, 100, 50)
@@ -849,7 +891,7 @@ class NumputilsTests(TestCase):
             )
         )
 
-    @debugTest
+    @validationTest
     def test_SparseConstructor(self):
 
         shape = (1000, 100, 50)

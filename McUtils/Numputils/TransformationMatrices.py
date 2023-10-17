@@ -1,9 +1,11 @@
 
 from .VectorOps import vec_normalize, vec_angles
-import math, numpy as np
+import math, numpy as np, scipy as sp
 
 __all__ = [
     "rotation_matrix",
+    "skew_symmetric_matrix",
+    "rotation_matrix_skew",
     "translation_matrix",
     "affine_matrix"
 ]
@@ -174,6 +176,55 @@ def rotation_matrix(axis, theta):
     if extra_shape is not None:
         mats = mats.reshape(extra_shape + (3, 3))
     return mats
+
+def skew_symmetric_matrix(upper_tri):
+    upper_tri = np.asanyarray(upper_tri)
+    l = len(upper_tri)
+    n = int((1 + np.sqrt(1 + 8*l)) // 2)
+    m = np.zeros((n, n))
+    rows, cols = np.triu_indices_from(m, 1)
+    m[rows, cols] =  upper_tri
+    m[cols, rows] = -upper_tri
+    return m
+
+def youla_skew_decomp(A):
+    n = len(A)
+    s, T = sp.linalg.schur(A)
+
+    l = np.diag(s, 1)
+    if n % 2 == 0:
+        start = 0
+        end = n
+    else:  # manage padding for odd dimension
+        if abs(l[0]) < 1e-15:
+            start = 1
+            end = n
+        else:
+            start = 0
+            end = n - 1
+        l = l[start:end-1]
+    cos = np.cos(l)
+    sin = np.sin(l)
+
+    # build 2x2 block mat
+    U = np.eye(n)
+    o = np.arange(start, end, 2)  # even inds
+    e = np.arange(start + 1, end, 2)  # odd inds
+
+    # print(start, end, l)
+
+    U[o, o] = cos
+    U[e, e] = cos
+    U[o, e] = sin
+    U[e, o] = -sin
+
+    return U, T
+
+def rotation_matrix_skew(upper_tri):
+    A = skew_symmetric_matrix(upper_tri)
+    # build Youla matrix
+    U, T = youla_skew_decomp(A)
+    return T@U@T.T
 
 #######################################################################################################################
 #
