@@ -6,7 +6,7 @@ for _ in range(4):
 sys.path.insert(0, root_dir)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--recompile', dest='recompile', action='store_const', const=True, default=False)
+parser.add_argument('--recompile', dest='recompile', type=str, default='')
 parser.add_argument('--debug', dest='debug', action='store_const', const=True, default=False)
 parser.add_argument('--fast', dest='cmode', action='store_const', const="fast", default="quality")
 parser.add_argument('--timerep', dest='time_report', action='store_const', const=True, default=False)
@@ -56,7 +56,7 @@ DynamicFFILibrary.configure_loader(
     include_dirs=['/usr/local/opt/llvm/include'],
     runtime_dirs=['/usr/local/opt/llvm/lib', '/usr/local/opt/llvm/lib/c++'],
     extra_link_args=['-mmacosx-version-min=12.0'],
-    # recompile=opts.recompile
+    recompile=opts.recompile in {'dynamic', 'both'}
 )
 DynamicFFIFunctionLoader.load()
 # #
@@ -210,14 +210,14 @@ mbpol_ffi = DynamicFFILibrary(
 
 # might need export CC=/usr/local/opt/llvm/bin/clang
 lib_dir = os.path.join(test_dir, 'LegacyMBPol')
-with Timer(tag="Compilation", print_times=(opts.recompile and opts.time_report)):
+with Timer(tag="Compilation", print_times=((opts.recompile in {'ffi', 'both'}) and opts.time_report)):
     mbpol = FFIModule.from_lib(lib_dir,
                                threaded=True,
                                extra_compile_args=(['-ftime-report'] if opts.time_report else []) + (['-O0'] if opts.cmode == 'fast' else []),
                                include_dirs=['/usr/local/opt/llvm/include'],
                                runtime_dirs=['/usr/local/opt/llvm/lib', '/usr/local/opt/llvm/lib/c++'],
                                extra_link_args=['-mmacosx-version-min=12.0'],
-                               recompile=opts.recompile
+                               recompile=opts.recompile in {'ffi', 'both'}
                                )
 
 waters = np.array(
@@ -278,7 +278,7 @@ if opts.test_unvectorized:
 
     print("Relative timing: ", t2.latest/t1.latest)
 
-with Timer(tag="vectorized", number=test_its) as t3:
+with Timer(tag="FFI vectorized", number=test_its) as t3:
     for _ in range(test_its):
         res = mbpol.get_pot_grad_vec(nwaters=1, coords=waters
                                      # , debug='excessive' if opts.debug else False
@@ -288,7 +288,7 @@ check_eng_grad(res)
 if opts.test_unvectorized:
     print("Relative timing: ", t3.latest/t1.latest)
 
-with Timer(tag="threaded", number=test_its) as t4:
+with Timer(tag="FFI threaded", number=test_its) as t4:
     for _ in range(test_its):
         res = mbpol.get_pot_grad(nwaters=1, coords=waters, threading_var='coords',
                                  threading_mode=opts.threading
@@ -297,6 +297,17 @@ with Timer(tag="threaded", number=test_its) as t4:
 check_eng_grad(res)
 
 print("Relative timing: ", t4.latest / t3.latest)
+
+"""
+/usr/local/opt/llvm/bin/clang -Wno-unused-result -Wsign-compare -Wunreachable-code -fno-common -dynamic -DNDEBUG -g -fwrapv -O3 -Wall -arch x86_64 -g 
+-I/usr/local/opt/llvm/include -I/Users/Mark/Documents/UW/Research/Development/McUtils/McUtils/Extensions/FFI/libs -I/Users/Mark/Documents/UW/Research/Development/venv/lib/python3.9/site-packages/numpy/core/include -I/Users/Mark/Documents/UW/Research/Development/venv/include -I/Library/Frameworks/Python.framework/Versions/3.9/include/python3.9 
+-c LegacyMBPol.cpp -o build/temp.macosx-10.9-x86_64-cpython-39/LegacyMBPol.o -fopenmp -std=c++17 -O0
+"""
+"""
+/usr/local/opt/llvm/bin/clang -Wno-unused-result -Wsign-compare -Wunreachable-code -fno-common -dynamic -DNDEBUG -g -fwrapv -O3 -Wall -arch x86_64 -g 
+-I/usr/local/opt/llvm/include -I/Users/Mark/Documents/UW/Research/Development/McUtils/McUtils/Extensions/FFI/libs -I/Users/Mark/Documents/UW/Research/Development/venv/lib/python3.9/site-packages/numpy/core/include -I/Users/Mark/Documents/UW/Research/Development/venv/include -I/Library/Frameworks/Python.framework/Versions/3.9/include/python3.9 
+-c DynamicFFILibrary.cpp -o build/temp.macosx-10.9-x86_64-cpython-39/DynamicFFILibrary.o -fopenmp -std=c++17 -O0
+"""
 
 with Timer(tag="libffi vectorized", number=test_its) as t6:
     for _ in range(test_its):

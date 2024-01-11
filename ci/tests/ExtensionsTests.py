@@ -162,10 +162,12 @@ class ExtensionsTests(TestCase):
         self.assertGreater(mbpol.get_pot_grad(nwaters=1, coords=water)['energy'], .001)
 
 
-    @validationTest
+    @debugTest
     def test_FFI_threaded(self): # More detailed testing in test_mbpol.py
         lib_dir = TestManager.test_data('LegacyMBPol')
-        mbpol = FFIModule.from_lib(lib_dir, extra_link_args=['-mmacosx-version-min=12.0']
+        mbpol = FFIModule.from_lib(lib_dir,
+                                   extra_link_args=['-mmacosx-version-min=12.0']
+                                   # , threaded=True
                                    # , recompile=True
                                    )
 
@@ -186,16 +188,16 @@ class ExtensionsTests(TestCase):
                                   [0.9861302114, -0.0745730984, 0.0000054324],
                                   [-0.1597470923, 0.8967180895, -0.0000164932]
                               ]
-                          ] * 3
+                          ] * 2500
                           )
 
-        with Timer():
+        with Timer(tag="Threaded"):
             res = mbpol.get_pot(nwaters=1, coords=waters, threading_var='coords')
             print(np.mean(res))
         # print("="*100)
         # print(waters[0])
         # print(mbpol.get_pot(nwaters=1, coords=waters[0]))
-        with Timer():
+        with Timer(tag="Unthreaded"):
             res = np.array([mbpol.get_pot(nwaters=1, coords=w) for w in waters])
             print(np.mean(res))
 

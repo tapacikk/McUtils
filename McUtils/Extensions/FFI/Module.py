@@ -403,7 +403,7 @@ class FFIMethod(FFISpec):
         return self.mod.call_method_threaded(self.name, fack, threading_var, mode=threading_mode, debug=debug)
     def __call__(self, *args, threading_var=None, threading_mode="serial", debug=False, **kwargs):
         fack = self.collect_args(*args, **kwargs)
-        if threading_var is None:
+        if threading_var is None and (threading_mode is None or threading_mode=='serial'):
             return self.mod.call_method(self.name, fack, debug=debug)
         else:
             return self.mod.call_method_threaded(self.name, fack, threading_var, mode=threading_mode, debug=debug)

@@ -7,6 +7,8 @@ __all__ = [
     "InternalCoordinateSystem",
     "CartesianCoordinateSystem3D",
     "CartesianCoordinates3D",
+    "CartesianCoordinates1D",
+    "CartesianCoordinates2D",
     "SphericalCoordinateSystem",
     "SphericalCoordinates",
     "ZMatrixCoordinateSystem",
@@ -67,6 +69,51 @@ class InternalCoordinateSystem(BaseCoordinateSystem):
 ##                                   CartesianCoordinates3D Class
 ##
 ######################################################################################################
+class CartesianCoordinateSystem1D(CartesianCoordinateSystem):
+    """
+    Represents Cartesian coordinates in 1D
+    """
+    name = "Cartesian1D"
+    def __init__(self, converter_options=None, dimension=(None, 1), **opts):
+        """
+        :param converter_options: options to be passed through to a `CoordinateSystemConverter`
+        :type converter_options: None | dict
+        :param dimension: the dimension of the coordinate system
+        :type dimension: Iterable[None | int]
+        :param opts: other options, if `converter_options` is None, these are used as the `converter_options`
+        :type opts:
+        """
+        if converter_options is None:
+            converter_options = opts
+        super().__init__(dimension=dimension, converter_options=converter_options)
+CartesianCoordinates1D = CartesianCoordinateSystem1D()
+CartesianCoordinates1D.__name__ = "CartesianCoordinates1D"
+CartesianCoordinates1D.__doc__ = """
+    A concrete instance of `CartesianCoordinateSystem3D`
+    """
+class CartesianCoordinateSystem2D(CartesianCoordinateSystem):
+    """
+    Represents Cartesian coordinates in 2D
+    """
+    name = "Cartesian2D"
+    def __init__(self, converter_options=None, dimension=(None, 2), **opts):
+        """
+        :param converter_options: options to be passed through to a `CoordinateSystemConverter`
+        :type converter_options: None | dict
+        :param dimension: the dimension of the coordinate system
+        :type dimension: Iterable[None | int]
+        :param opts: other options, if `converter_options` is None, these are used as the `converter_options`
+        :type opts:
+        """
+        if converter_options is None:
+            converter_options = opts
+        super().__init__(dimension=dimension, converter_options=converter_options)
+CartesianCoordinates2D = CartesianCoordinateSystem2D()
+CartesianCoordinates2D.__name__ = "CartesianCoordinates2D"
+CartesianCoordinates2D.__doc__ = """
+    A concrete instance of `CartesianCoordinateSystem3D`
+    """
+
 class CartesianCoordinateSystem3D(CartesianCoordinateSystem):
     """
     Represents Cartesian coordinates in 3D

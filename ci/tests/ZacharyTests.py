@@ -1068,7 +1068,7 @@ class ZacharyTests(TestCase):
             ),
             .005)
 
-    @debugTest
+    @validationTest
     def test_MultiExpansion(self):
         dtype = np.float32
 
@@ -1134,6 +1134,102 @@ class ZacharyTests(TestCase):
         #
         # self.assertEquals(exp(point), exp.ref)
         # self.assertLess(np.linalg.norm(test - ref), .01)
+
+    @debugTest
+    def test_Polys(self):
+        d = SparsePolynomial({
+            #1 + 2x + 3y^2 - xy
+            ():1,
+            (0,):2,
+            (1, 1):3,
+            (0, 1):-1
+        }).as_dense()
+
+        self.assertTrue(
+            np.allclose(d.coeffs, np.array([[1, 0, 3], [2, -1, 0]]))
+        )
+        self.assertTrue(
+            np.allclose(d.shift([1, 1]).coeffs, np.array([[5, 5, 3], [1, -1, 0]]))
+        )
+
+        d2 = SparsePolynomial({
+            #2 + y - 3x^2
+            ():2,
+            (1,):1,
+            (0, 0):-3
+        }).as_dense()
+
+        d3 = SparsePolynomial({
+            # x - y
+            (0,): 1,
+            (1,): -1
+        }).as_dense()
+
+        multi = DensePolynomial(
+            [
+                np.pad(d.coeffs, [[0, 1], [0, 0]]),
+                np.pad(d2.coeffs, [[0, 0], [0, 1]])
+            ],
+            stack_dim=1
+        )
+
+        # print(multi.coeffs)
+        # print(multi.deriv(1).coeffs)
+        # print(d.coefficient_tensors)
+        # print(d2.coefficient_tensors)
+        for n,(c1, c2, cm) in enumerate(zip(
+                d.coefficient_tensors,
+                d2.coefficient_tensors,
+                multi.coefficient_tensors
+        )):
+            self.assertTrue(
+                np.allclose(np.array([c1, c2]), cm)
+            )
+
+        # print(multi.coefficient_tensors)
+        multi_2 = DensePolynomial.from_tensors(multi.coefficient_tensors)
+        self.assertTrue(np.allclose(multi.coeffs, multi_2.coeffs))
+
+        for n, (c1, c2, cm) in enumerate(zip(
+                d.shift([1, 1]).coefficient_tensors,
+                d2.shift([2, 2]).coefficient_tensors,
+                multi.shift([[1, 1], [2, 2]]).coefficient_tensors
+        )):
+            self.assertTrue(
+                np.allclose(np.array([c1, c2]), cm)
+            )
+
+        for n, (c1, c2, cm) in enumerate(zip(
+                d.deriv(1).coefficient_tensors,
+                d2.deriv(1).coefficient_tensors,
+                multi.deriv(1).coefficient_tensors
+        )):
+            self.assertTrue(
+                np.allclose(np.array([c1, c2]), cm)
+            )
+
+        dg = d.grad()
+        for n, (c1, c2, cm) in enumerate(zip(
+                d.deriv(0).coefficient_tensors,
+                d.deriv(1).coefficient_tensors,
+                dg.coefficient_tensors
+        )):
+            self.assertTrue(
+                np.allclose(np.array([c1, c2]), cm)
+            )
+
+        pad_d3 = DensePolynomial(np.broadcast_to(d3.coeffs[np.newaxis], (2,) + d3.shape), stack_dim=1)
+        # raise Exception((multi*pad_d3).coeffs.shape, (d*d3).coeffs.shape)
+        for n, (c1, c2, cm) in enumerate(zip(
+                (d*d3).coefficient_tensors,
+                (d2*d3).coefficient_tensors,
+                (multi*pad_d3).coefficient_tensors
+        )):
+            self.assertTrue(
+                np.allclose(np.array([c1, c2]), cm)
+            )
+
+
 
     #endregion
 
@@ -1718,7 +1814,7 @@ class ZacharyTests(TestCase):
             fexpr.deriv(order=3)([[1, 2], [3, 4]])
         ))
 
-    @debugTest
+    @validationTest
     def test_RBFTiming(self):
         # for npts in [50, 100, 200, 300, 400, 500]:
         #     np.random.seed(1)
