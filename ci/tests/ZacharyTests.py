@@ -1135,7 +1135,7 @@ class ZacharyTests(TestCase):
         # self.assertEquals(exp(point), exp.ref)
         # self.assertLess(np.linalg.norm(test - ref), .01)
 
-    @debugTest
+    @validationTest
     def test_Polys(self):
         d = SparsePolynomial({
             #1 + 2x + 3y^2 - xy
@@ -1228,6 +1228,141 @@ class ZacharyTests(TestCase):
             self.assertTrue(
                 np.allclose(np.array([c1, c2]), cm)
             )
+
+    @validationTest
+    def test_SparseArrayPoly(self):
+
+        from McUtils.Numputils import SparseArray
+
+        shape = (10, 3, 2, 1)
+
+        n_els = 3
+        np.random.seed(1)
+        inds = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals = np.random.rand(len(inds))
+        inds = inds.T
+
+        # `from_data` for backend flexibility
+        array = SparseArray.from_data(
+            (
+                vals,
+                inds
+            ),
+            shape=shape
+        )
+
+        poly = DensePolynomial(array, stack_dim=1)
+        doly = DensePolynomial(array.asarray(), stack_dim=1)
+        self.assertTrue(
+            np.allclose(
+                (poly + poly).coeffs.asarray(),
+                (doly + doly).coeffs
+            )
+        )
+
+        shape = (10, 4, 3, 7)
+
+        n_els = 4
+        np.random.seed(1)
+        inds = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals = np.random.rand(len(inds))
+        inds = inds.T
+
+        # `from_data` for backend flexibility
+        ar2 = SparseArray.from_data(
+            (
+                vals,
+                inds
+            ),
+            shape=shape
+        )
+
+        goly = DensePolynomial(ar2, stack_dim=1)
+        dggy = DensePolynomial(ar2.asarray(), stack_dim=1)
+        # print((poly + goly).coeffs.asarray())
+        # print((doly + dggy).coeffs)
+
+        self.assertTrue(
+            np.allclose(
+                (poly + goly).coeffs.asarray(),
+                (doly + dggy).coeffs
+            )
+        )
+
+        # goly.grad()
+        # print(poly.grad().shape)
+        # print(poly.grad().coeffs.asarray())
+        # print(doly.grad().coeffs)
+
+        self.assertTrue(
+            np.allclose(
+                poly.grad().coeffs.asarray(),
+                doly.grad().coeffs
+            )
+        )
+        self.assertTrue(
+            np.allclose(
+                (poly + goly).grad().coeffs.asarray(),
+                (doly + dggy).grad().coeffs
+            )
+        )
+
+    @classmethod
+    def constructSparseArray(cls, shape, n_els):
+        from McUtils.Numputils import SparseArray
+
+        np.random.seed(1)
+        inds = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals = np.random.rand(len(inds))
+        inds = inds.T
+
+        # `from_data` for backend flexibility
+        return SparseArray.from_data(
+            (
+                vals,
+                inds
+            ),
+            shape=shape
+        )
+
+    @debugTest
+    def test_SparseConvolve(self):
+        from McUtils.Numputils import SparseArray
+
+        a1 = self.constructSparseArray((3, 2), 3)
+        a2 = self.constructSparseArray((2, 5), 2)
+
+        p3 = DensePolynomial(a1.asarray()) * DensePolynomial(a2.asarray())
+        p4 = DensePolynomial(a1) * DensePolynomial(a2)
+        self.assertTrue(
+            np.allclose(p3.coeffs, p4.coeffs.asarray())
+        )
+
+        a1 = self.constructSparseArray((5, 3, 5), 4)
+        a2 = self.constructSparseArray((5, 8, 3), 7)
+
+        p3 = DensePolynomial(a1.asarray(), stack_dim=1) * DensePolynomial(a2.asarray(), stack_dim=1)
+
+        p4 = DensePolynomial(a1, stack_dim=1) * DensePolynomial(a2, stack_dim=1)
+        self.assertTrue(
+            np.allclose(p3.coeffs, p4.coeffs.asarray())
+        )
+
+        a1 = self.constructSparseArray((5, 3, 5, 2), 2)
+        a2 = self.constructSparseArray((5, 2, 3), 7)
+
+        p3 = DensePolynomial(a1.asarray(), stack_dim=1) + DensePolynomial(a2.asarray(), stack_dim=1)
+        p4 = DensePolynomial(a1, stack_dim=1) + DensePolynomial(a2, stack_dim=1)
+        self.assertTrue(
+            np.allclose(p3.coeffs, p4.coeffs.asarray())
+        )
+
+        p3 = DensePolynomial(a1.asarray(), stack_dim=1) * DensePolynomial(a2.asarray(), stack_dim=1)
+        p4 = DensePolynomial(a1, stack_dim=1) * DensePolynomial(a2, stack_dim=1)
+        self.assertTrue(
+            np.allclose(p3.coeffs, p4.coeffs.asarray())
+        )
+
 
 
 

@@ -1,6 +1,7 @@
 import abc, numpy as np, scipy.signal
 import itertools as it
 from ..Combinatorics import UniquePermutations
+from ..Numputils import SparseArray, group_by
 
 __all__ = [
     "AbstractPolynomial",
@@ -63,7 +64,7 @@ class DensePolynomial(AbstractPolynomial):
                  ):
         self._scaling = prefactor
         self._shift = shift
-        self._poly_coeffs = np.asanyarray(coeffs)
+        self._poly_coeffs = np.asanyarray(coeffs) if not isinstance(coeffs, SparseArray) else coeffs
         self._coeff_tensors = None
         self._uc_tensors = None
         self.stack_dim = stack_dim
@@ -87,7 +88,7 @@ class DensePolynomial(AbstractPolynomial):
         self._scaling = s
 
     @property
-    def coeffs(self):
+    def coeffs(self) -> 'np.ndarray|SparseArray':
         if self._shift is not None:
             self._poly_coeffs = self._compute_shifted_coeffs(self._poly_coeffs, self._shift, stack_dim=self.stack_dim)
             self._shift = None
@@ -109,21 +110,137 @@ class DensePolynomial(AbstractPolynomial):
             if s1 == 0:
                 return c1, c2, 0
             sd = s1
-            final_shape = (np.zeros(c1.shape[:s1]) + np.zeros(c2.shape[:s2])).shape # make numpy broadcast for me
-            c1 = np.broadcast_to(c1, final_shape + c1.shape[s1:])
-            c2 = np.broadcast_to(c2, final_shape + c2.shape[s2:])
+            final_shape = np.broadcast_shapes(c1.shape[:s1], c2.shape[:s2])
+            if isinstance(c1, np.ndarray):
+                c1 = np.broadcast_to(c1, final_shape + c1.shape[s1:])
+            else:
+                c1 = c1.broadcast_to(final_shape + c1.shape[s1:])
+            if isinstance(c2, np.ndarray):
+                c2 = np.broadcast_to(c2, final_shape + c2.shape[s2:])
+            else:
+                c2 = c2.broadcast_to(final_shape + c2.shape[s2:])
         elif s1 == 0:
             sd = s2
-            c1 = np.broadcast_to(np.expand_dims(c1, list(range(s2))))
+            if isinstance(c1, np.ndarray):
+                c1 = np.broadcast_to(np.expand_dims(c1, list(range(s2))), c2.shape[:s2] + c1.shape)
+            else:
+                c1 = c1.expand_and_broadcast(
+                    list(range(s2)),
+                    c2.shape[:s2] + c1.shape
+                )
         elif s2 == 0:
             sd = s1
-            c2 = np.broadcast_to(np.expand_dims(c2, list(range(s1))))
+            if isinstance(c2, np.ndarray):
+                c2 = np.broadcast_to(np.expand_dims(c2, list(range(s1))), c1.shape[:s1] + c2.shape)
+            else:
+                c2 = c2.expand_and_broadcast(
+                    list(range(s1)),
+                    c1.shape[:s1] + c2.shape
+                )
         else:
             raise ValueError("can't broadcast shapes {} and {}".format(
                 c1.shape[:s1],
                 c2.shape[:s2]
             ))
+
+        sh1 = c1.shape
+        sh2 = c2.shape
+        padding = len(sh2) - len(sh1)
+        if padding > 0:
+            if isinstance(c1, np.ndarray):
+                c1 = np.expand_dims(c1, [-x for x in range(1, padding+1)])
+            else:
+                c1 = c1.expand_dims([-x for x in range(1, padding+1)])
+        elif padding < 0:
+            padding = -padding
+            if isinstance(c2, np.ndarray):
+                c2 = np.expand_dims(c2, [-x for x in range(1, padding+1)])
+            else:
+                c2 = c2.expand_dims([-x for x in range(1, padding+1)])
+
         return c1, c2, sd
+
+    @classmethod
+    def _sparse_convolve_vals_inds(cls,
+                                   vals1, vals2,
+                                   inds1, inds2,
+                                   ):
+        # print(inds1)
+        # print(inds2)
+        vals = (vals1[:, np.newaxis] * vals2[np.newaxis, :]).flatten()
+        inds = np.array([
+            (i1[:, np.newaxis] + i2[np.newaxis, :]).flatten()
+            for i1, i2 in zip(inds1, inds2)
+        ])
+        # print(inds)
+        # print(vals)
+        (inds, valsets) = group_by(vals, inds.T)[0]
+        vals = np.array([np.sum(v) for v in valsets])
+        return inds.T, vals
+    @classmethod
+    def _sparse_convolve_single(cls, coeffs_1, coeffs_2):
+        v1, i1 = coeffs_1.block_data
+        v2, i2 = coeffs_2.block_data
+        inds, vals = cls._sparse_convolve_vals_inds(
+            v1, v2,
+            i1, i2
+        )
+        shp = tuple(c1 + c2 - 1 for c1,c2 in zip(coeffs_1.shape, coeffs_2.shape))
+        return SparseArray.from_data(
+            (vals, tuple(inds)),
+            shape=shp
+        )
+
+    @classmethod
+    def _sparse_convolve_stacks(cls, coeffs_1, coeffs_2, stack_dim):
+        v1, i1 = coeffs_1.block_data
+        v2, i2 = coeffs_2.block_data
+
+        stacks_1, inds_1 = group_by(
+            np.arange(len(v1)),
+            np.array(i1[:stack_dim]).T
+        )[0]
+        stacks_2, inds_2 = group_by(
+            np.arange(len(v2)),
+            np.array(i2[:stack_dim]).T
+        )[0]
+
+        ind_blocks = [
+
+        ]
+        val_blocks = [
+
+        ]
+        prev_match = 0
+        for s1, pos1 in zip(stacks_1, inds_1):
+            for j in range(prev_match, len(stacks_2)):
+                if np.all(s1 == stacks_2[j]):
+                    prev_match = j
+                    pos2 = inds_2[j]
+                    if len(pos1) > 0 and len(pos2) > 0:
+                        subinds, subvals = cls._sparse_convolve_vals_inds(
+                            v1[pos1], v2[pos2],
+                            [x[pos1] for x in i1[stack_dim:]], [y[pos2] for y in i2[stack_dim:]]
+                        )
+                        # now we need to stick copy s1 onto every val to get the stacking right
+                        header = tuple(np.full(len(subvals), s) for s in s1)
+                        ind_blocks.append(header + tuple(subinds))
+                        val_blocks.append(subvals)
+                    break
+
+        vals = np.concatenate(val_blocks)
+        inds = tuple(
+            np.concatenate([ib[j] for ib in ind_blocks])
+            for j in range(len(i1))
+        )
+
+        shp = coeffs_1.shape[:stack_dim] + tuple(c1 + c2 - 1
+                    for c1, c2 in zip(coeffs_1.shape[stack_dim:], coeffs_2.shape[stack_dim:])
+                    )
+        return SparseArray.from_data(
+            (vals, inds),
+            shape=shp
+        )
     def __mul__(self, other)->'DensePolynomial':
         if isinstance(other, (int, float, np.integer, np.floating)):
             if other == 1:
@@ -137,16 +254,22 @@ class DensePolynomial(AbstractPolynomial):
                 self.stack_dim, other.stack_dim
             )
             if sd > 0:
-                new_coeffs = np.array([
-                    scipy.signal.convolve(s, o)
-                    for s,o in zip(
-                        scs.reshape((-1,) + scs.shape[sd:]),
-                        ocs.reshape((-1,) + ocs.shape[sd:]),
-                    )
-                ])
-                new_coeffs = new_coeffs.reshape(scs.shape[:sd] + new_coeffs.shape[1:])
+                if isinstance(scs, np.ndarray):
+                    new_coeffs = np.array([
+                        scipy.signal.convolve(s, o)
+                        for s,o in zip(
+                            scs.reshape((-1,) + scs.shape[sd:]),
+                            ocs.reshape((-1,) + ocs.shape[sd:]),
+                        )
+                    ])
+                    new_coeffs = new_coeffs.reshape(scs.shape[:sd] + new_coeffs.shape[1:])
+                else:
+                    new_coeffs = self._sparse_convolve_stacks(scs, ocs, sd)
             else:
-                new_coeffs = scipy.signal.convolve(scs, ocs)
+                if isinstance(scs, np.ndarray):
+                    new_coeffs = scipy.signal.convolve(scs, ocs)
+                else:
+                    new_coeffs = self._sparse_convolve_single(scs, ocs)
             return DensePolynomial(
                 new_coeffs,
                 shift=None,
@@ -160,39 +283,86 @@ class DensePolynomial(AbstractPolynomial):
                 prefactor=self.scaling * other
             )
 
+    def _force_consistent_addition_shapes(self, other):
+        if self.shape[:self.stack_dim] != other.shape[:other.stack_dim]:
+            fcs = self.coeffs #type: np.ndarray | SparseArray
+            ocs = other.coeffs #type: np.ndarray | SparseArray
+            bcast_shape = (np.zeros(self.shape[:self.stack_dim]) * np.zeros(other.shape[:other.stack_dim])).shape
+            if isinstance(fcs, np.ndarray):
+                fcs = np.broadcast_to(fcs, bcast_shape + self.shape[self.stack_dim:])
+            else:
+                fcs = fcs.broadcast_to(bcast_shape + self.shape[self.stack_dim:])
+            if isinstance(ocs, np.ndarray):
+                ocs = np.broadcast_to(ocs, bcast_shape + other.shape[other.stack_dim:])
+            else:
+                ocs = ocs.broadcast_to(bcast_shape + other.shape[other.stack_dim:])
+        else:
+            fcs = self.coeffs
+            ocs = other.coeffs
+        return fcs, ocs
+    @staticmethod
+    def _enforce_ndarray_padding(fcs:np.ndarray, consistent_shape, pad_fcs, fc_padding):
+        if fc_padding > 0:
+            fcs = np.expand_dims(fcs, [-x for x in range(1, fc_padding + 1)])
+        fcs = np.pad(fcs,
+                     [[0, c - s] for c, s in zip(consistent_shape, pad_fcs)]
+                     )
+        return fcs
+    @staticmethod
+    def _enforce_sparse_padding(fcs:SparseArray, consistent_shape, pad_fcs, fc_padding):
+        padding = [c - s for c, s in zip(consistent_shape, pad_fcs)]
+        if fc_padding > 0:
+            if np.sum(padding) == 0:
+                fcs = fcs.expand_dims([-x for x in range(1, fc_padding + 1)])
+            else:
+                fcs = fcs.expand_and_pad(
+                    [-x for x in range(1, fc_padding + 1)],
+                    padding
+                )
+        elif np.sum(padding) > 0:
+            fcs = fcs.pad_right(padding)
+        return fcs
+    @classmethod
+    def _enforce_addition_padding(cls, fcs, consistent_shape, pad_fcs, fc_padding):
+        if isinstance(fcs, np.ndarray):
+            return cls._enforce_ndarray_padding(fcs, consistent_shape, pad_fcs, fc_padding)
+        else:
+            return cls._enforce_sparse_padding(fcs, consistent_shape, pad_fcs, fc_padding)
     def __add__(self, other)->'DensePolynomial':
         if isinstance(other, DensePolynomial):
             stack_dim = max([self.stack_dim, other.stack_dim])
 
-            if self.shape[:self.stack_dim] != other.shape[other.stack_dim]:
-                bcast_shape = (np.zeros(self.shape[:self.stack_dim]) * np.zeros(other.shape[:other.stack_dim])).shape
-                fcs = np.broadcast_to(self.coeffs, bcast_shape + self.shape[self.stack_dim:])
-                ocs = np.broadcast_to(other.coeffs, bcast_shape + other.shape[other.stack_dim:])
-            else:
-                fcs = self.coeffs
-                ocs = other.coeffs
-
+            fcs, ocs = self._force_consistent_addition_shapes(other)
             if self.shape[self.stack_dim:] != other.shape[other.stack_dim:]:  # need to cast to consistent shape
+                fc_padding = len(ocs.shape) - len(fcs.shape)
+                oc_padding = -fc_padding
+                pad_fcs = fcs.shape + tuple(1 for _ in range(fc_padding))
+                pad_ocs = ocs.shape + tuple(1 for _ in range(oc_padding))
                 consistent_shape = [
                     max(s1, s2)
                     for s1, s2 in zip(
-                        fcs.shape,
-                        ocs.shape
+                        pad_fcs,
+                        pad_ocs
                     )
                 ]
-                fcs = np.pad(fcs,
-                             [[0, c-s] for c,s in zip(consistent_shape, fcs.shape)]
-                             )
-                ocs = np.pad(other.coeffs,
-                             [[0, c-s] for c,s in zip(consistent_shape, ocs.shape)]
-                             )
 
+                fcs = self._enforce_addition_padding(fcs, consistent_shape, pad_fcs, fc_padding)
+                ocs = self._enforce_addition_padding(ocs, consistent_shape, pad_ocs, oc_padding)
+
+            try:
+                fcs + ocs * (other.scaling / self.scaling)
+            except:
+                raise ValueError(fcs.shape, ocs.shape, (ocs*(other.scaling/self.scaling)).shape)
             return DensePolynomial(
-                fcs*self.scaling + ocs*other.scaling,
+                fcs + ocs*(other.scaling/self.scaling),
                 shift=None,
-                stack_dim=stack_dim
+                stack_dim=stack_dim,
+                prefactor=self.scaling
             )
         else:
+            if isinstance(other, (int, float, np.integer, np.floating)) and other == 0:
+                return self
+
             if self.scaling != 1:
                 other = other / self.scaling
             new = self._poly_coeffs.copy().flatten()
@@ -218,7 +388,6 @@ class DensePolynomial(AbstractPolynomial):
     def _compute_shifted_coeffs(cls, poly_coeffs, shift, stack_dim=0):
         #TODO: make this consistent with non-zero stack_dim
 
-
         # if fourier_coeffs is None:
         #     raise ValueError("need fourier coeffs for shifted coeff calc")
         if isinstance(shift, (int, float, np.integer, np.floating)):
@@ -231,7 +400,7 @@ class DensePolynomial(AbstractPolynomial):
 
         # handle broadcasting of shift
         if stack_dim > 0 and shift.ndim == 1 and shift.shape[0] == poly_dim:
-            shift = np.expand_dims(shift, [0]*stack_dim)
+            shift = np.expand_dims(shift, list(range(0, stack_dim)))#[0]*stack_dim)
         shift = np.broadcast_to(shift, stack_shape + (poly_dim,))
 
         # factorial outer product
@@ -247,7 +416,6 @@ class DensePolynomial(AbstractPolynomial):
                 poly_coeffs.shape
             )
 
-        # shift outer product
         if stack_dim > 0:
             shift = np.moveaxis(shift, -1, 0)
             shift_terms = np.power(
@@ -259,7 +427,6 @@ class DensePolynomial(AbstractPolynomial):
                     np.power(f[..., np.newaxis], np.expand_dims(np.arange(s), list(range(0, stack_dim)))),
                     stack_shape + (1,)*(shift_terms.ndim - stack_dim) + (s,)
                 )
-                # print("-->", shift_terms.shape)
         else:
             shift_terms = np.power(shift[0], np.arange(poly_shape[0]))
             for f, s in zip(shift[1:], poly_shape[1:]):
@@ -267,8 +434,6 @@ class DensePolynomial(AbstractPolynomial):
                     np.power(f, np.arange(s)),
                     (1,) * shift_terms.ndim + (s,)
                 )
-
-        # print("-->", shift_terms)
 
         # build shifted polynomial coefficients
         rev_fac = factorial_terms
@@ -279,29 +444,76 @@ class DensePolynomial(AbstractPolynomial):
         poly_terms = poly_coeffs * factorial_terms
         shift_terms = shift_terms / rev_fac
 
-        # print(poly_coeffs.shape, factorial_terms.shape, shift_terms.shape)
-        if stack_dim > 0:
-            new = np.array([
-                scipy.signal.convolve(p, s)
-                for p,s in zip(
-                    poly_terms.reshape((-1,)+poly_shape),
-                    shift_terms.reshape((-1,)+poly_shape)
-                )
-            ])
-            new = new.reshape(stack_shape + new.shape[1:])
-        else:
-            new = scipy.signal.convolve(
-                poly_terms,
-                shift_terms
+        if not isinstance(poly_terms, np.ndarray):
+            poly_terms = poly_terms #type: SparseArray
+            raise Exception(
+                len(poly_terms.block_vals) / np.prod(poly_terms.shape)
             )
+            poly_terms = poly_terms.asarray()
 
-        # stack_slice = (slice(None),)*stack_dim
-        for i,s in enumerate(poly_shape):
-            new = np.take(new, np.arange(-s, 0), axis=stack_dim+i)
-        new = new / factorial_terms
+        if isinstance(poly_coeffs, np.ndarray):
+            if stack_dim > 0:
+                new = np.array([
+                    scipy.signal.convolve(p, s)
+                    for p,s in zip(
+                        poly_terms.reshape((-1,)+poly_shape),
+                        shift_terms.reshape((-1,)+poly_shape)
+                    )
+                ])
+                new = new.reshape(stack_shape + new.shape[1:])
+            else:
+                new = scipy.signal.convolve(
+                    poly_terms,
+                    shift_terms
+                )
+
+            # stack_slice = (slice(None),)*stack_dim
+            for i,s in enumerate(poly_shape):
+                new = np.take(new, np.arange(-s, 0), axis=stack_dim+i)
+            new = new / factorial_terms
+        else:
+            raise NotImplementedError(...)
+
 
         return new
 
+    @classmethod
+    def fill_tensors(self, tensors, idx, value, stack_dim, pcache, permute, rescale):
+        # we compute the order of the index, compute the number of
+        # permutations of the index, and then set all of the permutations
+        # equal to the value divided by the number of perms
+        order = sum(idx[stack_dim:])
+        if order == 0:
+            if stack_dim > 0:  # this corresponds to an element of only one of the polynomials
+                tensors[0][idx[:stack_dim]] = value
+            else:
+                tensors[0] = value
+        else:
+            new_idx = sum(
+                ([i] * n for i, n in enumerate(idx[stack_dim:])),
+                []
+            )  # we figure out which coords are affected and by how much
+            if permute:
+                idx_key = tuple(new_idx)
+                if idx_key not in pcache:
+                    final_perms = UniquePermutations(new_idx).permutations()
+                    pcache[idx_key] = final_perms
+                else:
+                    final_perms = pcache[idx_key]
+            else:
+                final_perms = np.array([new_idx])
+            # print(final_perms)
+            if rescale:
+                subvalue = value / len(final_perms)
+            else:
+                subvalue = value
+            fp_inds = tuple(final_perms.T)
+            if stack_dim > 0:  # this corresponds to an element of only one of the polynomials
+                extra_idx = idx[:stack_dim]
+                nels = len(fp_inds[0])
+                bcast_idx = tuple(np.full(nels, i, dtype=int) for i in extra_idx)
+                fp_inds = bcast_idx + fp_inds
+            tensors[order][fp_inds] = subvalue
     @classmethod
     def extract_tensors(cls, coeffs, stack_dim=None, permute=True, rescale=True):
         if stack_dim is None:
@@ -310,51 +522,34 @@ class DensePolynomial(AbstractPolynomial):
         else:
             stack_shape = coeffs.shape[:stack_dim]
 
-        nz_pos = np.where(coeffs != 0)
+        if isinstance(coeffs, np.ndarray):
+            nz_pos = np.where(coeffs != 0)
+        else:
+            nz_pos = coeffs.block_data[1]
+
         if len(nz_pos) == 0 or len(nz_pos[0]) == 0:
             return [0]
         max_order = np.max(np.sum(nz_pos[stack_dim:], axis=0, dtype=int))
-        # raise Exception(max_order)
-        # max_order = sum(c-1 for c in coeffs.shape)
         num_dims = len(coeffs.shape) - stack_dim
         tensors = [
-            np.zeros(stack_shape + (num_dims,)*i)
-            for i in range(1, max_order+1)
+            np.zeros(stack_shape + (num_dims,) * i)
+            for i in range(1, max_order + 1)
         ]
+
         ref = [0] if stack_dim == 0 else [np.zeros(stack_shape)]
-        tensors = ref + tensors # include ref
-        for idx in zip(*nz_pos): # TODO: speed this up...
-            # we compute the order of the index, compute the number of
-            # permutations of the index, and then set all of the permutations
-            # equal to the value divided by the number of perms
-            order = sum(idx[stack_dim:])
-            value = coeffs[idx]
-            if order == 0:
-                if stack_dim > 0: # this corresponds to an element of only one of the polynomials
-                    tensors[0][idx[:stack_dim]] = value
-                else:
-                    tensors[0] = value
-            else:
-                new_idx = sum(
-                    ([i]*n for i,n in enumerate(idx[stack_dim:])),
-                    []
-                ) # we figure out which coords are affected and by how much
-                if permute:
-                    final_perms = UniquePermutations(new_idx).permutations()
-                else:
-                    final_perms = np.array([new_idx])
-                # print(final_perms)
-                if rescale:
-                    subvalue = value / len(final_perms)
-                else:
-                    subvalue = value
-                fp_inds = tuple(final_perms.T)
-                if stack_dim > 0: # this corresponds to an element of only one of the polynomials
-                    extra_idx = idx[:stack_dim]
-                    nels = len(fp_inds[0])
-                    bcast_idx = tuple(np.full(nels, i, dtype=int) for i in extra_idx)
-                    fp_inds = bcast_idx + fp_inds
-                tensors[order][fp_inds] = subvalue
+        tensors = ref + tensors  # include ref
+        pcache = {}
+
+        if isinstance(coeffs, np.ndarray):
+            for idx in zip(*nz_pos): # TODO: speed this up...
+                value = coeffs[idx]
+                cls.fill_tensors(tensors, idx, value, stack_dim, pcache, permute, rescale)
+        else:
+            vals = coeffs.block_vals
+            for vidx in zip(vals, *nz_pos):
+                value, idx = vidx[0], vidx[1:]
+                cls.fill_tensors(tensors, idx, value, stack_dim, pcache, permute, rescale)
+
         return tensors
     @classmethod
     def condense_tensors(cls, tensors, rescale=True):
@@ -461,11 +656,7 @@ class DensePolynomial(AbstractPolynomial):
         )
 
     @classmethod
-    def _apply_grad(cls, coeffs, stack_dim):
-        shape = coeffs.shape
-        n = coeffs.ndim - stack_dim
-        c = shape[stack_dim:]
-
+    def _apply_dense_grad(cls, coeffs, stack_dim ,shape, n, c):
         new_shape = shape[:stack_dim] + (n,) + c
         new_coeffs = np.zeros(new_shape)
         for i in range(n):
@@ -475,7 +666,7 @@ class DensePolynomial(AbstractPolynomial):
                 continue
             # construct slice spec for inserting into new coeffs
             insert_spec = (
-                    # [i, :, ..., :, :-1, :, ..., :]
+                # [i, :, ..., :, :-1, :, ..., :]
                     (slice(None),) * stack_dim
                     + (i,)
                     + (slice(None),) * i
@@ -483,6 +674,81 @@ class DensePolynomial(AbstractPolynomial):
                     + (slice(None),) * (n - (i + 1))
             )
             new_coeffs[insert_spec] = sub_coeffs
+
+        return new_coeffs
+
+    @classmethod
+    def _take_sparse_position_derivs(cls, stack_dim, axis, nzvals, nzinds):
+        axis = axis + stack_dim
+        ax_inds = nzinds[axis]
+        if np.sum(ax_inds) == 0: return 0 # quick fall through
+        good_pos = np.where(ax_inds > 0)
+        nzvals = nzvals[good_pos]
+        ax_inds = ax_inds[good_pos]
+        new_ax = ax_inds - 1
+        nzvals = nzvals * ax_inds
+        nzinds = tuple(
+            nzinds[i][good_pos]
+                if i != axis else
+            new_ax
+            for i in range(len(nzinds))
+        )
+        return nzvals, nzinds
+    @classmethod
+    def _apply_sparse_grad(cls, coeffs:SparseArray, stack_dim, shape, n, c):
+        block_vals, block_inds = coeffs.block_data
+        new_stuff = [
+            cls._take_sparse_position_derivs(stack_dim, i, block_vals, block_inds)
+            for i in range(n)
+        ]
+        if all(isinstance(x, int) and x==0 for x in new_stuff):
+            return SparseArray.empty(shape[:stack_dim] + (n,))
+
+        final_vals = np.concatenate([
+            vals_inds[0] for vals_inds in new_stuff
+            if not (isinstance(vals_inds, int) and vals_inds == 0)
+        ])
+        stack_inds = tuple(
+            np.concatenate([
+                vals_inds[1][i] for vals_inds in new_stuff
+                if not (isinstance(vals_inds, int) and vals_inds == 0)
+            ])
+            for i in range(stack_dim)
+        )
+        new_inds = np.concatenate([
+            np.full(len(vals_inds[0]), i, dtype='uint8')
+            for i,vals_inds in enumerate(new_stuff)
+            if not (isinstance(vals_inds, int) and vals_inds == 0)
+        ])
+        rem_inds = tuple(
+            np.concatenate([
+                vals_inds[1][i] for vals_inds in new_stuff
+                if not (isinstance(vals_inds, int) and vals_inds == 0)
+            ])
+            for i in range(stack_dim, len(shape))
+        )
+        final_inds = stack_inds + (new_inds,) + rem_inds
+
+        new_shape = shape[:stack_dim] + (n,) + c
+        return SparseArray.from_data(
+            (
+                final_vals,
+                final_inds
+            ),
+            shape=new_shape
+        )
+
+    @classmethod
+    def _apply_grad(cls, coeffs, stack_dim):
+        shape = coeffs.shape
+        n = coeffs.ndim - stack_dim
+        c = shape[stack_dim:]
+
+        if isinstance(coeffs, SparseArray):
+            new_coeffs = cls._apply_sparse_grad(coeffs, stack_dim, shape, n, c)
+        else:
+            new_coeffs = cls._apply_dense_grad(coeffs, stack_dim, shape, n, c)
+
         return new_coeffs
 
     def grad(self):
@@ -492,7 +758,6 @@ class DensePolynomial(AbstractPolynomial):
             prefactor=self._scaling,
             stack_dim=self.stack_dim+1
         )
-
 
     def clip(self, threshold=1e-15):
         clipped_inds = np.where(np.abs(self.coeffs * self.scaling) > threshold)
@@ -505,6 +770,14 @@ class DensePolynomial(AbstractPolynomial):
             coeffs,
             prefactor=self._scaling,
             stack_dim=self.scaling
+        )
+
+    def make_sparse_backed(self, threshold=1e-15):
+        base = SparseArray.from_data(self.clip(threshold).coeffs)
+        return type(self)(
+            base,
+            prefactor=self._scaling,
+            stack_dim=self.stack_dim
         )
     
 class SparsePolynomial(AbstractPolynomial):
