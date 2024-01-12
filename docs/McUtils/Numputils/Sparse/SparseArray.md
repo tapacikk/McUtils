@@ -292,13 +292,88 @@ Returns a resized version of the tensor
     >
 
 
+<a id="McUtils.Numputils.Sparse.SparseArray.pad_right" class="docs-object-method">&nbsp;</a> 
+```python
+pad_right(self, newshape): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L256)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L256?message=Update%20Docs)]
+</div>
+Returns a right-padded version of the tensor
+  - `axes`: `Any`
+    > 
+  - `:returns`: `_`
+    >
+
+
+<a id="McUtils.Numputils.Sparse.SparseArray.broadcast_to" class="docs-object-method">&nbsp;</a> 
+```python
+broadcast_to(self, shape) -> 'SparseArray': 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L266)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L266?message=Update%20Docs)]
+</div>
+Returns a broadcasted version of the tensor
+  - `axes`: `Any`
+    > 
+  - `:returns`: `_`
+    >
+
+
+<a id="McUtils.Numputils.Sparse.SparseArray.expand_and_broadcast_to" class="docs-object-method">&nbsp;</a> 
+```python
+expand_and_broadcast_to(self, expansion, new_shape) -> 'SparseArray': 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L276)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L276?message=Update%20Docs)]
+</div>
+Expands, then broadcasts (memory efficient)
+  - `axes`: `Any`
+    > 
+  - `:returns`: `_`
+    >
+
+
+<a id="McUtils.Numputils.Sparse.SparseArray.expand_and_pad" class="docs-object-method">&nbsp;</a> 
+```python
+expand_and_pad(self, expansion, padding) -> 'SparseArray': 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L287)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L287?message=Update%20Docs)]
+</div>
+Expands, then pads (memory efficient)
+  - `axes`: `Any`
+    > 
+  - `:returns`: `_`
+    >
+
+
+<a id="McUtils.Numputils.Sparse.SparseArray.get_expanded_shape" class="docs-object-method">&nbsp;</a> 
+```python
+get_expanded_shape(shape, axis): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L299)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L299?message=Update%20Docs)]
+</div>
+adapted from np.expand_dims
+  - `axis`: `Any`
+    > 
+  - `:returns`: `_`
+    >
+
+
 <a id="McUtils.Numputils.Sparse.SparseArray.expand_dims" class="docs-object-method">&nbsp;</a> 
 ```python
 expand_dims(self, axis): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L257)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L257?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L320)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L320?message=Update%20Docs)]
 </div>
 adapted from np.expand_dims
   - `axis`: `Any`
@@ -312,8 +387,8 @@ adapted from np.expand_dims
 moveaxis(self, start, end): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L278)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L278?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L332)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L332?message=Update%20Docs)]
 </div>
 Adapted from np.moveaxis
   - `start`: `Any`
@@ -329,28 +404,11 @@ Adapted from np.moveaxis
 concatenate(self, *others, axis=0): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L307)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L307?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L361)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L361?message=Update%20Docs)]
 </div>
 Concatenates multiple SparseArrays along the specified axis
   - `:returns`: `SparseArray`
-    >
-
-
-<a id="McUtils.Numputils.Sparse.SparseArray.broadcast_to" class="docs-object-method">&nbsp;</a> 
-```python
-broadcast_to(self, shape): 
-```
-<div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L316)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L316?message=Update%20Docs)]
-</div>
-Broadcasts self to the given shape.
-Incredibly inefficient implementation but useful in smaller cases.
-Might need to optimize later.
-  - `shape`: `Any`
-    > 
-  - `:returns`: `_`
     >
 
 
@@ -359,8 +417,8 @@ Might need to optimize later.
 __truediv__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L346)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L346?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L400)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L400?message=Update%20Docs)]
 </div>
 
 
@@ -369,8 +427,8 @@ __truediv__(self, other):
 __rtruediv__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L348)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L348?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L402)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L402?message=Update%20Docs)]
 </div>
 
 
@@ -379,8 +437,8 @@ __rtruediv__(self, other):
 __rmul__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L350)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L350?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L404)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L404?message=Update%20Docs)]
 </div>
 
 
@@ -389,8 +447,8 @@ __rmul__(self, other):
 __mul__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L352)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L352?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L406)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L406?message=Update%20Docs)]
 </div>
 
 
@@ -399,8 +457,8 @@ __mul__(self, other):
 true_multiply(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L386)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L386?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L440)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L440?message=Update%20Docs)]
 </div>
 Multiplies self and other
   - `other`: `Any`
@@ -414,8 +472,8 @@ Multiplies self and other
 multiply(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L396)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L396?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L450)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L450?message=Update%20Docs)]
 </div>
 Multiplies self and other but allows for broadcasting
   - `other`: `SparseArray | np.ndarray | int | float`
@@ -429,8 +487,8 @@ Multiplies self and other but allows for broadcasting
 dot(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L411)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L411?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L465)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L465?message=Update%20Docs)]
 </div>
 Takes a regular dot product of self and other
   - `other`: `Any`
@@ -446,8 +504,8 @@ Takes a regular dot product of self and other
 outer(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L424)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L424?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L478)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L478?message=Update%20Docs)]
 </div>
 Takes a tensor outer product of self and other
   - `other`: `Any`
@@ -463,8 +521,8 @@ Takes a tensor outer product of self and other
 tensordot(self, other, axes=2): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L438)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L438?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L492)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L492?message=Update%20Docs)]
 </div>
 Takes the dot product of self and other along the specified axes
   - `other`: `Any`
@@ -480,8 +538,8 @@ Takes the dot product of self and other along the specified axes
 cache_options(enabled=True, clear=False): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L578)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L578?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L632)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L632?message=Update%20Docs)]
 </div>
 
 
@@ -490,8 +548,8 @@ cache_options(enabled=True, clear=False):
 get_caching_status(): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L581)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L581?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L635)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L635?message=Update%20Docs)]
 </div>
 A method to be overloaded.
 Subclasses may want to cache things for performance, so we
@@ -505,8 +563,8 @@ provide a way for them to specify if caching is on or not
 enable_caches(): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L590)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L590?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L644)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L644?message=Update%20Docs)]
 </div>
 A method to be overloaded.
 Subclasses may want to cache things for performance, so we
@@ -520,8 +578,8 @@ provide a way for them to turn this on
 disable_caches(): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L599)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L599?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L653)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L653?message=Update%20Docs)]
 </div>
 A method to be overloaded.
 Subclasses may want to cache things for performance, so we
@@ -535,8 +593,8 @@ provide a way for them to turn this off
 clear_cache(): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L608)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L608?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/SparseArray.py#L662)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/SparseArray.py#L662?message=Update%20Docs)]
 </div>
 A method to be overloaded.
 Subclasses may want to cache things for performance, so we

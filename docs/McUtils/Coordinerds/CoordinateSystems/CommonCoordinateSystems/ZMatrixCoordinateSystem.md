@@ -1,8 +1,8 @@
 ## <a id="McUtils.Coordinerds.CoordinateSystems.CommonCoordinateSystems.ZMatrixCoordinateSystem">ZMatrixCoordinateSystem</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L98)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L98?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L145)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L145?message=Update%20Docs)]
 </div>
 
 Represents ZMatrix coordinates generally
@@ -26,8 +26,8 @@ name: str
 __init__(self, converter_options=None, dimension=(None, None), coordinate_shape=(None, 3), **opts): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L103)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L103?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L150)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L150?message=Update%20Docs)]
 </div>
 
   - `converter_options`: `None | dict`
@@ -45,8 +45,8 @@ __init__(self, converter_options=None, dimension=(None, None), coordinate_shape=
 jacobian_prep_coordinates(coord, displacements, values, dihedral_cutoff=6): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L122)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L122?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L169)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L169?message=Update%20Docs)]
 </div>
 
 
@@ -55,8 +55,8 @@ jacobian_prep_coordinates(coord, displacements, values, dihedral_cutoff=6):
 canonicalize_order_list(ncoords, order_list): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L159)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L159?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L206)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L206?message=Update%20Docs)]
 </div>
 Normalizes the way the ZMatrix coordinates are built out
   - `ncoords`: `Any`
@@ -72,8 +72,8 @@ Normalizes the way the ZMatrix coordinates are built out
 tile_order_list(ol, ncoords): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L245)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L245?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L292)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.py#L292?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -128,7 +128,7 @@ tile_order_list(ol, ncoords):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Coordinerds/CoordinateSystems/CommonCoordinateSystems/ZMatrixCoordinateSystem.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L98?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Coordinerds/CoordinateSystems/CommonCoordinateSystems.py#L145?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    
