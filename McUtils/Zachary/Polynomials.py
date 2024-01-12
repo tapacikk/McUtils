@@ -445,13 +445,13 @@ class DensePolynomial(AbstractPolynomial):
         shift_terms = shift_terms / rev_fac
 
         if not isinstance(poly_terms, np.ndarray):
-            poly_terms = poly_terms #type: SparseArray
-            raise Exception(
-                len(poly_terms.block_vals) / np.prod(poly_terms.shape)
-            )
+            # poly_terms = poly_terms #type: SparseArray
+            # raise Exception(
+            #     len(poly_terms.block_vals) / np.prod(poly_terms.shape)
+            # )
             poly_terms = poly_terms.asarray()
 
-        if isinstance(poly_coeffs, np.ndarray):
+        if isinstance(poly_terms, np.ndarray):
             if stack_dim > 0:
                 new = np.array([
                     scipy.signal.convolve(p, s)
@@ -515,7 +515,7 @@ class DensePolynomial(AbstractPolynomial):
                 fp_inds = bcast_idx + fp_inds
             tensors[order][fp_inds] = subvalue
     @classmethod
-    def extract_tensors(cls, coeffs, stack_dim=None, permute=True, rescale=True):
+    def extract_tensors(cls, coeffs, stack_dim=None, permute=True, rescale=True, cutoff=1e-15):
         if stack_dim is None:
             stack_dim = 0
             stack_shape = ()
@@ -523,7 +523,7 @@ class DensePolynomial(AbstractPolynomial):
             stack_shape = coeffs.shape[:stack_dim]
 
         if isinstance(coeffs, np.ndarray):
-            nz_pos = np.where(coeffs != 0)
+            nz_pos = np.where(np.abs(coeffs) > cutoff)
         else:
             nz_pos = coeffs.block_data[1]
 
@@ -552,7 +552,7 @@ class DensePolynomial(AbstractPolynomial):
 
         return tensors
     @classmethod
-    def condense_tensors(cls, tensors, rescale=True):
+    def condense_tensors(cls, tensors, rescale=True, allow_sparse=True):
         # we'll be a bit slower here in constructing so we can make sure
         # we get the smallest tensor
 
@@ -595,9 +595,25 @@ class DensePolynomial(AbstractPolynomial):
                         shape[n] = max(i + 1, shape[n])
 
         # raise Exception(shape)
-        condensed_tensor = np.zeros(list(stack_shape) + shape)
-        for idx,val in tensor_elems.items():
-            condensed_tensor[idx] = val
+        shp = stack_shape + tuple(shape)
+        if allow_sparse:
+            nv = len(tensor_elems)
+            density = nv / np.prod(shp)
+            allow_sparse = density < .5
+        if allow_sparse:
+            inds = tuple(np.array(list(tensor_elems.keys())).T)
+            vals = np.array(list(tensor_elems.values()))
+            condensed_tensor = SparseArray.from_data(
+                (
+                    vals,
+                    inds
+                ),
+                shape=shp
+            )
+        else:
+            condensed_tensor = np.zeros(shp)
+            for idx,val in tensor_elems.items():
+                condensed_tensor[idx] = val
         return condensed_tensor, stack_dim
 
     @property
