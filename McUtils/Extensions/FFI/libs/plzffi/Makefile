@@ -5,7 +5,7 @@ OBJ=$(addprefix ./, FFIModule.o FFIParameters.o)
 
 EXE=libplzffi.so
 
-FLAGS= -O2 -fpic -std=c++17
+FLAGS= -O3 -fpic -std=c++17
 
 all:
 	$(CXX) $(FLAGS) -I".." -I$(PYTHON_INCLUDES) -I$(NUMPY_INCLUDES) -c FFIModule.cpp -o FFIModule.o

@@ -253,8 +253,51 @@ class SparseArray(metaclass=abc.ABCMeta):
         :rtype:
         """
         raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'resize'))
+    @abc.abstractmethod
+    def pad_right(self, newshape):
+        """
+        Returns a right-padded version of the tensor
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'pad_right'))
+    @abc.abstractmethod
+    def broadcast_to(self, shape) -> 'SparseArray':
+        """
+        Returns a broadcasted version of the tensor
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'broadcast_to'))
+    @abc.abstractmethod
+    def expand_and_broadcast_to(self, expansion, new_shape) -> 'SparseArray':
 
-    def expand_dims(self, axis):
+        """
+        Expands, then broadcasts (memory efficient)
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'expand_and_broadcast_to'))
+    @abc.abstractmethod
+    def expand_and_pad(self, expansion, padding) -> 'SparseArray':
+
+        """
+        Expands, then pads (memory efficient)
+        :param axes:
+        :type axes:
+        :return:
+        :rtype:
+        """
+        raise NotImplementedError("{}.{} is an abstract method".format(type(self).__name__, 'expand_and_pad'))
+
+    @classmethod
+    def get_expanded_shape(cls, shape, axis):
         """
         adapted from np.expand_dims
 
@@ -267,12 +310,23 @@ class SparseArray(metaclass=abc.ABCMeta):
         if isinstance(axis, (int, np.integer)):
             axis = [axis]
 
-        out_ndim = len(axis) + self.ndim
+        out_ndim = len(axis) + len(shape)
         axis = [out_ndim + a if a < 0 else a for a in axis]
 
-        shape_it = iter(self.shape)
-        shape = [1 if ax in axis else next(shape_it) for ax in range(out_ndim)]
+        shape_it = iter(shape)
+        new_shape = tuple(1 if ax in axis else next(shape_it) for ax in range(out_ndim))
 
+        return new_shape
+    def expand_dims(self, axis):
+        """
+        adapted from np.expand_dims
+
+        :param axis:
+        :type axis:
+        :return:
+        :rtype:
+        """
+        shape = self.get_expanded_shape(self.shape, axis)
         return self.reshape(shape)
 
     def moveaxis(self, start, end):
@@ -313,35 +367,35 @@ class SparseArray(metaclass=abc.ABCMeta):
         """
         ...
 
-    def broadcast_to(self, shape):
-        """
-        Broadcasts self to the given shape.
-        Incredibly inefficient implementation but useful in smaller cases.
-        Might need to optimize later.
-
-        :param shape:
-        :type shape:
-        :return:
-        :rtype:
-        """
-
-        # precheck b.c. concatenate is expensive
-        compat = all(a%b == 0 for a,b in zip(shape, self.shape))
-        if not compat:
-            raise ValueError("{} with shape {} can't be broadcast to shape {}".format(
-                type(self).__name__,
-                self.shape,
-                shape
-            ))
-
-        new = self
-        for i, (shs, sho) in enumerate(zip(self.shape, shape)):
-            if shs != sho:
-                reps = sho // shs
-                for _ in range(reps):
-                    new = new.concatenate(self, axis=i)
-
-        return new
+    # def broadcast_to(self, shape):
+    #     """
+    #     Broadcasts self to the given shape.
+    #     Incredibly inefficient implementation but useful in smaller cases.
+    #     Might need to optimize later.
+    #
+    #     :param shape:
+    #     :type shape:
+    #     :return:
+    #     :rtype:
+    #     """
+    #
+    #     # precheck b.c. concatenate is expensive
+    #     compat = all(a%b == 0 for a,b in zip(shape, self.shape))
+    #     if not compat:
+    #         raise ValueError("{} with shape {} can't be broadcast to shape {}".format(
+    #             type(self).__name__,
+    #             self.shape,
+    #             shape
+    #         ))
+    #
+    #     new = self
+    #     for i, (shs, sho) in enumerate(zip(self.shape, shape)):
+    #         if shs != sho:
+    #             reps = sho // shs
+    #             for _ in range(reps):
+    #                 new = new.concatenate(self, axis=i)
+    #
+    #     return new
 
     def __truediv__(self, other):
         return self.true_multiply(1 / other)
@@ -1350,6 +1404,9 @@ class ScipySparseArray(SparseArray):
         row_inds, col_inds, data = self.find()
 
         flat = self._ravel_indices((row_inds, col_inds), d.shape)
+        sort = np.argsort(flat)
+        flat = flat[sort]
+        data = data[sort]
         unflat = self._unravel_indices(flat, self.shape)
         self._block_inds = (flat, unflat)
         self._block_vals = data
@@ -1577,6 +1634,46 @@ class ScipySparseArray(SparseArray):
     #
     #     return new
 
+    def reshape_internal(self, shp):
+        # TODO: find a way to do with a resize instead of making a new
+        #       array
+
+        if np.prod(shp) < np.prod(self.shape):
+            raise ValueError("can't reshape {} into {}...".format(self.shape, shp))
+
+        # cur_size = np.prod(self.shape)
+        # new_size = np.prod(shp)
+
+        self._shape = tuple(shp)
+        # if new_size > cur_size:
+        #     new_matshape = self.data.shape
+        #     bi = self._block_inds
+        #     if bi is not None:
+        #         if isinstance(bi, np.ndarray) and bi.ndim == 1:
+        #             flat = bi
+        #         else:
+        #             flat, unflat = bi
+        #         # unflat = self._unravel_indices(flat, self.data.shape)
+        #         # new_flat = self._ravel_indices(unflat, new_matshape)
+        #         # if unflat is not None:
+        #         #     flat = self._ravel_indices(unflat, shp)
+        #         #     self._block_inds = (flat, unflat)
+        #         # else:
+        #         self._block_vals = None
+        #         self._block_inds = None
+        #         self._block_data_sorted = False
+        #     # self.data.resize(new_matshape)
+        # else:
+        bi = self._block_inds
+        if bi is not None:
+            if isinstance(bi, np.ndarray) and bi.ndim == 1:
+                self._block_inds = bi
+            else:
+                flat, unflat = bi
+                self._block_inds = flat
+            # if len(shp) == 2:
+            #     self.data = self.data.reshape(shp) # turns out this can break shit...
+
     def reshape(self, shp):
         """
         Had to make this op not in-place because otherwise got scary errors...
@@ -1589,18 +1686,13 @@ class ScipySparseArray(SparseArray):
         if np.prod(shp) != np.prod(self.shape):
             raise ValueError("Can't reshape {} into {}".format(self.shape, shp))
         new = self.copy() # I'm not sure I want a whole copy here...?
-        new._shape = tuple(shp)
-
-        bi = new._block_inds
-        if bi is not None:
-            if isinstance(bi, np.ndarray) and bi.ndim == 1:
-                new._block_inds = bi
-            else:
-                flat, unflat = bi
-                new._block_inds = flat
-        if len(shp) == 2:
-            new.data = new.data.reshape(shp)
+        new.reshape_internal(shp)
         return new
+    def pad_right(self, amounts):
+        shp = self.shape
+        if len(amounts) != len(shp): raise ValueError("can't pad {} onto shape {}".format(amounts, shp))
+        new_shape = [s+a for a,s in zip(amounts, shp)] #+ amounts[len(shp):]
+        return type(self)(self.block_data, shape=new_shape)
     def squeeze(self):
         self.reshape([x for x in self.shape if x != 1])
         return self
@@ -1792,8 +1884,37 @@ class ScipySparseArray(SparseArray):
         else:
             return self.concatenate_coo(*(o for o in others if o.non_zero_count > 0), axis=axis)
 
+    # def broadcast_to(self, shp):
+    #     """
+    #     Had to make this op not in-place because otherwise got scary errors...
+    #     :param shp:
+    #     :type shp:
+    #     :return:
+    #     :rtype:
+    #     """
+    #
+    #     curshp = self.shape
+    #     if (
+    #             len(shp) != len(curshp)
+    #             or not all(os == ns or os == 1 for os, ns in zip(self.shape, shp))
+    #     ):
+    #         raise ValueError("can't broadcast {} to {}".format(self.shape, shp))
+    #     block_vals, block_inds = self.block_data # why not cache it on self if I'm gonna need it...
+    #     for i,(os, ns) in enumerate(zip(self.shape, shp, block_inds)):
+    #         if ns != os: # we know from above os == 1
+    #             ndupes = ns
+    #             cursize = len(block_vals)
+    #             block_vals = np.concatenate([block_vals] * ndupes)
+    #             block_inds = tuple(
+    #                 np.concatenate([bis] * ndupes)
+    #                     if j != i else
+    #                 np.broadcast_to(np.arange(ndupes)[:, np.newaxis], (ndupes, cursize)).flatten()
+    #                 for j,bis in zip(block_inds)
+    #             )
+    #     return type(self)((block_vals, block_inds), shape=shp)
 
-    def broadcast_to(self, shape):
+    @classmethod
+    def broadcast_values(cls, new_shape, old_shape, vals, inds):
         """
         Implements broadcast_to using COO-style operations
         to be a little bit more efficient
@@ -1804,43 +1925,89 @@ class ScipySparseArray(SparseArray):
         :rtype:
         """
 
-        if shape == self.shape:
-            return self
-
         # precheck b.c. concatenate is expensive
-        compat = all(a % b == 0 for a, b in zip(shape, self.shape))
+        # TODO: this has changed to be fully compatible with standard broadcast_to --> is that an issue?
+        compat = all(a == b or b == 1 for a, b in zip(new_shape, old_shape))
         if not compat:
             raise ValueError("{} with shape {} can't be broadcast to shape {}".format(
-                type(self).__name__,
-                self.shape,
-                shape
+                cls.__name__,
+                old_shape,
+                new_shape
             ))
 
-        full_vals = None
-        full_inds = None
-        tot_shape = self.shape
+        full_vals = vals
+        full_inds = inds
+        tot_shape = old_shape
 
-        for i, (shs, sho) in enumerate(zip(self.shape, shape)):
+        for i, (shs, sho) in enumerate(zip(old_shape, new_shape)):
             if shs != sho:
-                if full_vals is None:
-                    full_vals = self.block_vals
-                if full_inds is None:
-                    full_inds = self.block_inds[1]
                 reps = sho // shs
 
                 all_vals = [full_vals] * reps
                 all_inds = [full_inds] * reps
                 all_shapes = [tot_shape] * reps
 
-                full_vals, full_inds, tot_shape = self._concat_coo(all_inds, all_vals, all_shapes, i)
+                full_vals, full_inds, tot_shape = cls._concat_coo(all_inds, all_vals, all_shapes, i)
 
-        return type(self)(
+        return cls(
             (
                 full_vals,
                 full_inds
             ),
             shape=tot_shape
         )
+    def broadcast_to(self, shape):
+        """
+        Broadcasts to shape
+        :param shape:
+        :return:
+        """
+
+        if shape == self.shape:
+            return self
+
+        return self.broadcast_values(
+            shape,
+            self.shape,
+            self.block_vals,
+            self.block_inds[1]
+        )
+
+    def expand_and_broadcast_to(self, expansion, new_shape):
+        shape = self.get_expanded_shape(self.shape, expansion)
+        cur_vals = self.block_vals
+        flat_inds = self.block_inds[0]
+        cur_inds = self._unravel_indices(flat_inds, shape) # we know the shape still works b.c. it's just adding 1s
+        return self.broadcast_values(
+            new_shape,
+            shape,
+            cur_vals,
+            cur_inds
+        )
+
+    def expand_and_pad(self, expansion, padding):
+        shape = self.get_expanded_shape(self.shape, expansion)
+        if len(padding) != len(shape): raise ValueError("can't pad {} onto shape {}".format(padding, shape))
+        new_shape = [s + a for a, s in zip(padding, shape)]
+
+        cur_vals = self.block_vals
+        flat_inds = self.block_inds[0]
+        cur_inds = self._unravel_indices(flat_inds, shape)  # we know the shape still works b.c. it's just adding 1s
+            # return type(self)(self.block_data, shape=new_shape)
+
+        return type(self)(
+            (
+                cur_vals,
+                cur_inds
+            ),
+            shape=new_shape
+        )
+        # return self.broadcast_values(
+        #     new_shape,
+        #     shape,
+        #     cur_vals,
+        #     cur_inds
+        # )
 
     @property
     def T(self):

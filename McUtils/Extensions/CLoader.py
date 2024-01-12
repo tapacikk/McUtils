@@ -409,11 +409,12 @@ class CLoader:
                 target_dir = self.lib_dir
             target = os.path.join(target_dir, target)
 
-            try:
-                os.remove(target)
-            except:
-                pass
-            os.rename(built, target)
+            if built != target:
+                try:
+                    os.remove(target)
+                except:
+                    pass
+                os.rename(built, target)
 
             if self.cleanup_build:
                 build_dir = os.path.join(self.src_dir, "build")

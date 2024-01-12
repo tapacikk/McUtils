@@ -623,6 +623,8 @@ namespace plzffi {
        template <typename T>
        auto call_method(const std::string& method_name, FFIParameters& params) {
            auto caller = get_method<T>(method_name);
+           if (debug::debug_print(DebugLevel::Excessive))
+                py_printf("  > calling method...\n");
            if constexpr (std::is_same_v<T, void>) {
                caller.call(params);
            } else {
@@ -635,6 +637,7 @@ namespace plzffi {
                throw std::runtime_error("can't thread over void argument");
            } else {
                auto meth = get_method<T>(method_name);
+//               py_printf("  > building threader to call method...\n");
                auto wat = FFIThreader<T, C>(meth, mode);
                if constexpr (std::is_same_v<T, void>) {
                     wat.call(params, threaded_var);

@@ -1232,3 +1232,70 @@ class NumputilsTests(TestCase):
                 new2.asarray()
             )
         )
+
+    @debugTest
+    def test_SparseBroadcast(self):
+
+        shape = (10, 100, 50)
+
+        n_els = 8
+        np.random.seed(1)
+        inds = np.unique(np.array([np.random.choice(x, n_els) for x in shape]).T, axis=0)
+        vals = np.random.rand(len(inds))
+        inds = inds.T
+
+        # `from_data` for backend flexibility
+        array = SparseArray.from_data(
+            (
+                vals,
+                inds
+            ),
+            shape=shape
+        )
+
+        darr = array.asarray()
+
+        exp_a = array.expand_dims([1, 2])
+        self.assertTrue(
+            np.allclose(
+                exp_a.asarray(),
+                np.expand_dims(darr, [1, 2])
+            )
+        )
+
+        parr = array.pad_right((0, 3, 0))
+        self.assertTrue(
+            np.allclose(
+                parr.block_data[0],
+                array.block_data[0]
+            )
+        )
+        self.assertTrue(
+            np.allclose(parr.block_data[1], array.block_data[1]),
+            msg='inds broken'
+        )
+        self.assertTrue(
+            np.allclose(parr.asarray(), np.pad(darr, [[0, 0], [0, 3], [0, 0]])),
+            msg='padding broken'
+        )
+
+        exp_a = array.expand_and_pad([1, 2], [0, 4, 4, 0, 0])
+        self.assertTrue(
+            np.allclose(
+                exp_a.asarray(),
+                np.pad(
+                    np.expand_dims(darr, [1, 2]),
+                    [[0, 0], [0, 4], [0, 4], [0, 0], [0, 0]]
+                )
+            )
+        )
+
+        for j in range(3):
+
+                dense = np.broadcast_to(np.expand_dims(darr, j), shape[:j] + (100,) + shape[j:])
+                sparse = array.reshape(shape[:j] + (1,) + shape[j:]).broadcast_to(shape[:j] + (100,) + shape[j:])
+
+                self.assertTrue(np.allclose(dense, sparse.asarray()))
+
+
+

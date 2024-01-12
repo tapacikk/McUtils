@@ -3100,21 +3100,35 @@ class SymmetricGroupGenerator:
             new_perms = perms[:, :, np.newaxis] + rules_1d[np.newaxis, :, :]
             if split_results:
                 new_perms = [x[x>=0].reshape(-1, 1) for x in new_perms]
+                if filter_perms is not None:
+                    exc, ind = filter_perms
+                    ind = np.sort(ind)
+                    def filter_x(x):
+                        good_perms = find(ind, x.flatten(), missing_val=-1)[0] > -1
+                        return x[good_perms,]
+                    new_perms = [filter_x(x) for x in new_perms]
                 new_inds = [x.flatten() for x in new_perms]
                 new_changes = [np.zeros(len(x)) for x in new_perms]
             else:
                 new_perms = np.concatenate(new_perms)
                 new_perms = new_perms[new_perms>=0]
                 new_inds = new_perms.flatten()
+                if filter_perms is not None:
+                    exc, ind = filter_perms
+                    ind = np.sort(ind)
+                    bad_perm_pos = find(ind, new_inds, missing_val=-1)[0]
+                    good_perms = bad_perm_pos > -1
+                    new_perms = new_perms[good_perms,]
+                    new_inds = new_inds[good_perms,]
                 new_changes = np.zeros(len(new_perms))
 
             res = (new_perms,)
             if return_indices:
                 res = res + (new_inds,)
-            if return_filter:
-                res = res + (filter_perms,)
             if return_change_positions:
                 res = res + (new_changes,) # can only change along axis 0
+            if return_filter:
+                res = res + (filter_perms,)
             return res
 
         # fill counts arrays so we don't need to recalculate this a bunch
