@@ -241,9 +241,10 @@ class Mesh(np.ndarray):
             else:
                 return MeshType.Structured # all grids are structured in 1D
         elif ndim == 2 and shape[-1] != 1: # this means we got gridpoints
+            if tol is None:
+                tol = grid.dtype.itemsize // 2
             subgrids = cls.get_mesh_subgrids(grid)  # check if can be read as a structured grid
             if grid.shape[0] == np.prod([len(x) for x in subgrids]):
-
                 # check if it really is a product grid
                 if check_product_grid:
                     true_mesh = np.moveaxis(np.array(np.meshgrid(*subgrids, indexing='ij')), 0, ndim-1)
@@ -253,9 +254,7 @@ class Mesh(np.ndarray):
                     product_grid = True
 
                 if product_grid and check_regular_grid:
-                    if tol is None:
-                        tol = grid.dtype.itemsize // 2
-                    spacings = np.unique([np.round(np.diff(x), tol) for x in subgrids])
+                    spacings = [np.unique(np.round(np.diff(x), tol)) for x in subgrids]
                     regular_grid = all(len(x) == 1 for x in spacings)
                 else:
                     regular_grid = product_grid

@@ -417,6 +417,8 @@ class HDF5Checkpointer(Checkpointer):
                     raise
         elif 'b' not in chk.mode:
             raise IOError("{} isn't opened in binary mode (HDF5 needs that)".format(chk))
+        else:
+            return chk
 
     def close_checkpoint_file(self, stream):
         """

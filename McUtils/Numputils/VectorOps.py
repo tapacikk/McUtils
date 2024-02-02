@@ -12,6 +12,7 @@ __all__ = [
     "vec_normalize",
     "vec_norms",
     "vec_tensordot",
+    "vec_tensordiag",
     "vec_tdot",
     "vec_crosses",
     "vec_angles",
@@ -294,9 +295,9 @@ def vec_angles(vectors1, vectors2, norms=None, up_vectors=None, zero_thresh=None
 
 ################################################
 #
-#       vec_normals
+#       vec_outer
 #
-def vec_outer(a, b, axes=None):
+def _vec_outer(a, b, axes=None):
     """
     Provides the outer product of a and b in a vectorized way.
     Currently not entirely convinced I'm doing it right :|
@@ -362,6 +363,109 @@ def vec_outer(a, b, axes=None):
     final_transp = np.argsort(a_leftover + a_ax + b_ax)
 
     return res.transpose(final_transp)
+
+def bump_axes(a_ax, b_ax):
+    new_b = []
+    for _ in b_ax:  # pad b to get block form (a first, then b)
+        while _ in a_ax or _ in new_b:
+            _ = _ + 1
+        new_b.append(_)
+    return new_b
+def riffle_axes(a_ax, b_ax):
+    new_b = []
+    new_a = []
+    a_ax = list(a_ax)
+    b_ax = list(b_ax)
+    nmax = max(len(b_ax), len(a_ax))
+    for n in range(nmax):
+        if n < len(b_ax):
+            bx = b_ax[n]
+            if bx in a_ax:  # hit a collision, need to bump bx, then force a_ax to check for collisions next
+                bx = bx + 1
+                b_ax[n] = bx
+                for m in range(n + 1, len(b_ax)):
+                    if b_ax[m] == b_ax[m - 1]:
+                        b_ax[m] += 1
+                try:
+                    bx_ax_pos = a_ax.index(bx)
+                except:
+                    pass
+                else:
+                    a_ax[bx_ax_pos] += 1
+                    for m in range(bx_ax_pos + 1, len(a_ax)):
+                        if a_ax[m] == a_ax[m - 1]:
+                            a_ax[m] += 1
+            new_b.append(bx)
+        if n < len(a_ax):
+            new_a.append(a_ax[n])
+    return new_a, new_b
+def vec_outer(a, b, axes=None, order=2):
+    """
+    Provides the outer product of a and b in a vectorized way.
+    We have to prioritize what goes where, and `order` determines
+    if the axes of `a` come first or `b` come first
+
+    :param a:
+    :type a:
+    :param b:
+    :type b:
+    :param axis:
+    :type axis:
+    :return:
+    :rtype:
+    """
+    if axes is None:
+        if a.ndim > 1:
+            axes = [-1, -1]
+        else:
+            axes = [0, 0]
+
+    a_ax, b_ax = axes
+    if isinstance(a_ax, int): a_ax = [a_ax]
+    if isinstance(b_ax, int): b_ax = [b_ax]
+    a_ax = [a.ndim + x if x < 0 else x for x in a_ax]
+    b_ax = [b.ndim + x if x < 0 else x for x in b_ax]
+
+    a_ax = np.sort(a_ax)
+    b_ax = np.sort(b_ax)
+    if order == 0: # we resolve axis conflicts, where two axes are mapping to the same spot
+        b_ax = bump_axes(a_ax, b_ax)
+    elif order == 1: # pad a to get block form (b first, then a)
+        a_ax = bump_axes(b_ax, a_ax)
+    elif order == 2: # pad to get interleaving (a first, then b)
+        a_ax, b_ax = riffle_axes(a_ax, b_ax)
+    elif order == 3: # pad to get interleaving (a first, then b)
+        a_ax, b_ax = riffle_axes(b_ax, a_ax)
+
+    # we expand A and B appropriately now
+    a = np.expand_dims(a, b_ax)
+    b = np.expand_dims(b, a_ax)
+
+    # and just multipy and let numpy broadcasting do the rest
+    return a * b
+
+################################################
+#
+#       vec_outer
+#
+def diag_indices(block_shape, n, k=2):
+    ranges = [np.arange(s, dtype=int) for s in block_shape]
+    indexing_shape = []
+    m = len(block_shape)
+    for i,r in enumerate(ranges):
+        r = np.expand_dims(r, list(range(i)))
+        r = np.expand_dims(r, [-x for x in range(1, m-i+1)])
+        indexing_shape.append(r)
+    di = np.expand_dims(np.arange(n, dtype=int), list(range(len(block_shape))))
+    return tuple(indexing_shape) + (di,) * k
+def vec_tensordiag(obj, axis=-1, extra_dims=1):
+    base_shape = obj.shape[:axis]
+    shp = obj.shape[axis:]
+    extra_shp = (shp[0],) * extra_dims
+    tensor = np.zeros(base_shape + extra_shp + shp, dtype=obj.dtype)
+    inds = diag_indices(base_shape, shp[0], k=(extra_dims + 1))
+    tensor[inds] = obj
+    return tensor
 
 #################################################################################
 #

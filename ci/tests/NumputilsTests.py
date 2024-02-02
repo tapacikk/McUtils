@@ -1233,7 +1233,7 @@ class NumputilsTests(TestCase):
             )
         )
 
-    @debugTest
+    @validationTest
     def test_SparseBroadcast(self):
 
         shape = (10, 100, 50)
@@ -1297,5 +1297,93 @@ class NumputilsTests(TestCase):
 
                 self.assertTrue(np.allclose(dense, sparse.asarray()))
 
+    @validationTest
+    def test_VecOuter(self):
+
+        a = np.random.rand(5, 10, 2, 3)
+        b = np.random.rand(5, 10, 4, 2, 3)
+
+        self.assertTrue(
+            np.allclose(
+                vec_outer(a, b, axes=[[], [2]]),
+                a[:, :, np.newaxis, :, :] * b
+            )
+        )
 
 
+        a = np.random.rand(5, 10, 9, 7)
+        b = np.random.rand(5, 10, 4, 2, 3)
+
+
+        # self.assertTrue(
+        #     np.allclose(
+        #         new_vec_outer(a, b, axes=[[2, 3], [2, 3, 4]]),
+        #         vec_outer(a, b, axes=[[2, 3], [2, 3, 4]])
+        #     )
+        # )
+
+    @validationTest
+    def test_VecDiag(self):
+
+        ugh = np.random.rand(3, 7, 5)
+        diag_vec = vec_tensordiag(ugh, extra_dims=2, axis=-1)
+        self.assertEquals(diag_vec.shape, (3, 7, 5, 5, 5))
+        self.assertEquals(
+            diag_vec[0, 2, 1, 1, 1],
+            ugh[0, 2, 1]
+        )
+        diag_mats = vec_tensordiag(ugh, extra_dims=2, axis=1)
+        self.assertEquals(diag_mats.shape, (3, 7, 7, 7, 5))
+        self.assertTrue(np.allclose(
+            diag_mats[0, 1, 1, 1],
+            ugh[0, 1]
+        ))
+
+    @inactiveTest
+    def test_MatrixProductDeriv(self):
+
+        # x_grid = np.linspace(-np.pi, np.pi)
+        # y_grid = np.linspace(-np.pi, np.pi)
+        x = np.pi / 6
+        y = np.pi / 3
+        import sympy
+        x, y = sympy.symbols('x y')
+
+        sx = sympy.sin(x); cx = sympy.cos(x)
+        sy = sympy.sin(y); cy = sympy.cos(y)
+
+        A = sympy.Array([
+            [sx * sy, sx * cy],
+            [cx * sy, cx * cy],
+        ])
+
+        B = sympy.Array([x**3, y**3])
+
+        AB = sympy.tensorproduct(A * B)
+        raise Exception(AB)
+
+
+        A_mat = np.array([
+            [ np.cos(x) * np.cos(y), np.cos(y) * np.sin(np.pi / 3)],
+            [-np.cos(x) * np.sin(y), np.sin(x) * np.sin(np.pi / 3)],
+        ])
+        sinx_cosx_expansion = ...
+        a = np.random.rand(5, 10, 2, 3)
+        b = np.random.rand(5, 10, 4, 2, 3)
+
+        self.assertTrue(
+            np.allclose(
+                new_vec_outer(a, b, axes=[[], [2]]),
+                a[:, :, np.newaxis, :, :] * b
+            )
+        )
+
+        a = np.random.rand(5, 10, 9, 7)
+        b = np.random.rand(5, 10, 4, 2, 3)
+
+        self.assertTrue(
+            np.allclose(
+                new_vec_outer(a, b, axes=[[2, 3], [2, 3, 4]]),
+                vec_outer(a, b, axes=[[2, 3], [2, 3, 4]])
+            )
+        )

@@ -55,7 +55,7 @@ class GaussianLogReader(FileStreamReader):
     default_keys = GaussianLogDefaults
     default_ordering = GaussianLogOrdering
 
-    def parse(self, keys = None, num = None, reset = False):
+    def parse(self, keys=None, num=None, reset=False):
         """The main function we'll actually use. Parses bits out of a .log file.
 
         :param keys: the keys we'd like to read from the log file
@@ -270,7 +270,7 @@ class GaussianFChkReader(FileStreamReader):
         if byte_count is not None:
             self.seek(self.tell() + byte_count)
 
-    def parse(self, keys = None, default='raise'):
+    def parse(self, keys=None, default='raise'):
         if keys is None:
             keys_to_go = None
         else:
@@ -313,7 +313,7 @@ class GaussianFChkReader(FileStreamReader):
                                 self.seek(fp + 1)
 
                 if next_block is None:
-                    if isinstance(default, str) and default=='raise':
+                    if isinstance(default, str) and default == 'raise':
                         raise GaussianFChkReaderException("{}.{}: couldn't find keys {}".format(
                             type(self).__name__,
                             "parse",

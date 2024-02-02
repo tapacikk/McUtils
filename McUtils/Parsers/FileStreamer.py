@@ -324,7 +324,7 @@ class SearchStreamReader:
 
         return pos
 
-    def get_tagged_block(self, tag_start, tag_end, block_size = 500):
+    def get_tagged_block(self, tag_start, tag_end, block_size=500):
         """
         Pulls the string between tag_start and tag_end
 
@@ -466,12 +466,12 @@ class ByteStreamReader(SearchStreamReader):
 
 class FileStreamerTag:
     def __init__(self,
-                 tag_alternatives = None,
-                 follow_ups = None,
-                 offset = None,
-                 direction = "forward",
-                 skip_tag = True,
-                 seek = True
+                 tag_alternatives=None,
+                 follow_ups=None,
+                 offset=None,
+                 direction="forward",
+                 skip_tag=True,
+                 seek=True
                  ):
         if tag_alternatives is None:
             raise FileStreamReaderException("{} needs to be supplied with some set of tag_alternatives to look for".format(

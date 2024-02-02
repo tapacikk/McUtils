@@ -20,3 +20,5 @@ from .SetOps import *; from .SetOps import __all__ as _all
 __all__ += _all
 from .Misc import *; from .Misc import __all__ as _all
 __all__ += _all
+from .TensorDerivatives import *; from .TensorDerivatives import __all__ as _all
+__all__ += _all

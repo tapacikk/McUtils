@@ -686,17 +686,24 @@ GaussianLogComponents["Footer"] = {
 
 # endregion
 
+tag_start = """FrcOut:"""
+tag_end = """MW cartesian velocity:"""
 
-tag_start = "force vector number 2"
-tag_end = FileStreamerTag(
-    """Final forces over variables""",
-    follow_ups=("Leave Link",)
-)
+CartesianBlockTags = ["Cartesian coordinates: (bohr)", "MW cartesian"]
+def parse_aimd_coords(blocks):
+    big_block = "\n".join(blocks)
+    comps = np.char.replace(DNumberPattern.findall(big_block), "D", "E").astype(float)
+    return comps.reshape((len(blocks), -1, 3)) # easy as that since XYZ?
 
+ValueBlockTags = ["FrcOut",
+                  FileStreamerTag(
+                      """Final forces over variables""",
+                      follow_ups=("Leave Link",)
+                  )]
 def convert_D_number(a, **kw):
     import numpy as np
-    res = np.array([float(s.replace("D", "E")) for s in a])
-    return res
+    converted = np.char.replace(a, 'D', 'E')
+    return converted.astype(float)
 DNumberPattern = RegexPattern((Number, "D", Integer), dtype=float)
 EnergyBlockPattern = StringParser(
         RegexPattern(
@@ -705,7 +712,7 @@ EnergyBlockPattern = StringParser(
             )
         )
 )
-ForceBlockTags = ["I=    1", "After rot"]
+ForceBlockTags = ["force vector number 2", "After rot"]
 def parse_grad(block):
     comps = np.array([x.replace("D", "E") for x in DNumberPattern.findall(block)])
     return comps.astype(float) #.reshape((-1, 3)) # easy as that since XYZ? -> even easier...
@@ -735,12 +742,30 @@ def parse_weird_mat(pars): # identical to X-matrix parser...
     return X
 HessianBlockTags = ["Force constants in Cartesian coordinates:", "Final forces"]
 
+def convert_D_number_block(a, **kw):
+    import numpy as np
+    convertable = np.char.replace(a.view('U15').reshape(a.shape[0], -1), 'D', 'E')
+    return convertable.astype(float)
+DNumberPattern = RegexPattern((Number, "D", Integer), dtype=float)
+DipoleBlockPattern = StringParser(
+        RegexPattern(
+            (
+                "Dipole", Whitespace, "=",
+                    Named(Repeating(DNumberPattern, min=3, max=3), 'D', handler=convert_D_number_block),
+            )
+        )
+)
 
-def parser(blocks):
-    big_block = "\n".join(blocks[:-1]) # there's an extra copy
+def parse_aimd_values_blocks(blocks):
+    big_block = "\n".join(blocks)
 
     energies = EnergyBlockPattern.parse_all(big_block)['E'].array
+    # if energies[-1] == energies[-2]:
+    #     if blocks[-1] == blocks[-2]:
+    #         big_block = "\n".join(blocks[:-1]) # there's an extra copy
+    #     energies = energies[:-1]
 
+    # dips = DipoleBlockPattern.parse_all(big_block)['D'].array
     with StringStreamReader(big_block) as subparser:
         grad = np.array(subparser.parse_key_block(
             ForceBlockTags[0],
@@ -756,34 +781,48 @@ def parser(blocks):
             mode='List'
         ))
 
-    return namedtuple("AIMDEnergies", ['energies', 'gradients', 'hessians'])(energies=energies, gradients=grad, hessians=hesses)
+    return namedtuple("AIMDValues", ['energies', 'gradients', 'hessians'])(
+        energies=energies, gradients=grad, hessians=hesses#, dipoles=dips
+    )
 
-mode = "List"
-GaussianLogComponents["AIMDEnergies"] = {
-    "tag_start": tag_start,
-    "tag_end"  : tag_end,
-    "parser"   : parser,
-    "mode"     : mode
-}
-
-
-tag_start = FileStreamerTag(
-    ("Summary information for step",),
-    follow_ups=("""Cartesian coordinates:""",)
-)
-tag_end =  """MW cartesian"""
 def parser(blocks):
-    big_block = "\n".join(blocks)
-    comps = np.array([x.replace("D", "E") for x in DNumberPattern.findall(big_block)])
-    return comps.astype(float).reshape((len(blocks), -1, 3)) # easy as that since XYZ?
+    big_block = "FrcOut:\n".join([""] + [b.split('FrcOut:')[-1] for b in blocks]) # we can get two energy prints to one coords
+
+    with StringStreamReader(big_block) as subparser:
+        coords = subparser.parse_key_block(
+            CartesianBlockTags[0],
+            CartesianBlockTags[1],
+            parser=parse_aimd_coords,
+            mode='List'
+        )
+
+        vals = subparser.parse_key_block(
+            ValueBlockTags[0],
+            ValueBlockTags[1],
+            parser=parse_aimd_values_blocks,
+            mode='List'
+        )
+
+    return namedtuple("AIMDTrajectory", ['coords', 'vals'])(
+        coords=coords,
+        vals=vals
+    )
 
 mode = "List"
-GaussianLogComponents["AIMDCoordinates"] = {
+GaussianLogComponents["AIMDTrajectory"] = {
     "tag_start": tag_start,
     "tag_end"  : tag_end,
     "parser"   : parser,
     "mode"     : mode
 }
+
+# mode = "List"
+# GaussianLogComponents["AIMDCoordinates"] = {
+#     "tag_start": tag_start,
+#     "tag_end"  : tag_end,
+#     "parser"   : parser,
+#     "mode"     : mode
+# }
 
 ########################################################################################################################
 #

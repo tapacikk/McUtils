@@ -43,10 +43,10 @@ setup(
     # include_package_data=True
 
     install_requires=[
-        "numpy>=1.8,<=1.21",
+        "numpy>=1.8", # shouldn't need to restrict the python version anymore
         "scipy>=1.7.0",
         "h5py>=2.10.0",
-        "numba>=0.53.1",
+        "numba>=0.57.1",
         "matplotlib>=3.3.4",
         # "jupyterlab>=3.3.2",
         # "ipywidgets>=7.6.3",

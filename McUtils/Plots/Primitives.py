@@ -40,7 +40,7 @@ class Disk(GraphicsPrimitive):
     def get_bbox(self):
         return [(self.pos[0]-self.rad, self.pos[1]-self.rad), (self.pos[0]+self.rad, self.pos[1]+self.rad)]
 
-    def plot(self, axes, *args, graphics=None, zdir = None, **kwargs):
+    def plot(self, axes, *args, graphics=None, zdir=None, **kwargs):
         if isinstance(axes.figure, VTKWindow):
             self.prim = VTKDisk(self.pos, self.rad, **self.opts)
             s = self.prim
@@ -49,7 +49,7 @@ class Disk(GraphicsPrimitive):
             if hasattr(axes, 'axes'):
                 axes = axes.axes
             pt = np.array([self.pos]).T
-            kw = dict(edgecolors = [ [.95]*3 +[.5] ])
+            kw = dict(edgecolors=[ [0.]*3 +[.3] ])
             kw = dict(kw, **self.opts)
             kw = dict(kw, s=[(10*self.rad)**2], **kwargs)
             s = axes.scatter(*pt, **kw)

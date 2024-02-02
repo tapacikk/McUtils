@@ -46,9 +46,9 @@ class StructuredType:
         if isinstance(self.dtype, type):
             if self.dtype is str:
                 missing = "[NaN]"
-            elif self.dtype is int or self.dtype is np.int:
+            elif issubclass(self.dtype, (int, np.integer)):
                 missing = int(-121e12) # -(Na e N)
-            elif self.dtype is float or self.dtype is np.floating:
+            elif issubclass(self.dtype, (float, np.floating)):
                 missing = np.nan
         # I guess we're gonna assume no other cases will realistically need padding/defaults?
         return missing
