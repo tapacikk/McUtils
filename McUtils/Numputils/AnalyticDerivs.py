@@ -15,7 +15,10 @@ __all__ = [
     'dihed_deriv',
     'vec_norm_derivs',
     'vec_sin_cos_derivs',
-    'vec_angle_derivs'
+    'vec_angle_derivs',
+    'dist_vec',
+    'angle_vec',
+    'dihed_vec'
 ]
 
 # felt too lazy to look up some elegant formula
@@ -471,9 +474,6 @@ def vec_sin_cos_derivs(a, b, order=1,
             else:
                 n[bad_ns] = vec_normalize(up_vectors[bad_ns])
                 n_n[bad_ns] = 1
-
-            print("???", n)
-            print("--->", b)
 
         bxn_ = vec_crosses(b, n)
         bxn, n_bxn = vec_apply_zero_threshold(bxn_, zero_thresh=zero_thresh)
@@ -1022,119 +1022,62 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_s
 
     return derivs
 
-# debug implementations
-# def dist_deriv(coords, i, j, order=1):
-#     """
-#     Gives the derivative of the distance between i and j with respect to coords i and coords j
-#     :param coords:
-#     :type coords: np.ndarray
-#     :param i: index of one of the atoms
-#     :type i: int | Iterable[int]
-#     :param j: index of the other atom
-#     :type j: int | Iterable[int]
-#     :return: derivatives of the distance with respect to atoms i, j, and k
-#     :rtype: np.ndarray
-#     """
-#     v = vec_normalize(coords[j]-coords[i])
-#
-#     return None, np.array([-v, v])
 
-# def angle_deriv(coords, i, j, k, order=1):
-#     """
-#     Gives the derivative of the angle between i, j, and k with respect to the Cartesians
-#     :param coords:
-#     :type coords: np.ndarray
-#     :param i: index of the central atom
-#     :type i: int | Iterable[int]
-#     :param j: index of one of the outside atoms
-#     :type j: int | Iterable[int]
-#     :param k: index of the other outside atom
-#     :type k: int | Iterable[int]
-#     :return: derivatives of the angle with respect to atoms i, j, and k
-#     :rtype: np.ndarray
-#     """
-#
-#     dot = vec_dots
-#     tdo = vec_tdot
-#     a = coords[j] - coords[i]
-#     b = coords[k] - coords[i]
-#     e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
-#     axb = vec_crosses(a, b)
-#     adb = vec_dots(a, b)
-#     naxb = vec_norms(axb); na = vec_norms(a); nb = vec_norms(b)
-#     axbu = axb/naxb[..., np.newaxis]
-#     c = (adb/(na*nb))[..., np.newaxis]; s = (naxb/(na*nb))[..., np.newaxis]
-#     na = na[..., np.newaxis]; nb = nb[..., np.newaxis]
-#     au = a / na; bu = b / nb
-#     dsa = c/na*(-tdo(tdo(e3, bu), axbu) - au*s)
-#     dca = s/na*(bu - au*c)
-#     dsb = c/nb*( tdo(tdo(e3, au), axbu) - bu*s)
-#     dcb = s/nb*(au - bu*c)
-#
-#     da = dsa-dca
-#     db = dsb-dcb
-#     return None, np.array([-(da+db), da, db])
-#
-# def dihed_deriv(coords, i, j, k, l, order=1):
-#     """
-#     Gives the derivative of the dihedral between i, j, k, and l with respect to the Cartesians
-#     Currently gives what are sometimes called the `psi` angles.
-#     Will be extended to also support more traditional `phi` angles
-#     :param coords:
-#     :type coords: np.ndarray
-#     :param i:
-#     :type i: int | Iterable[int]
-#     :param j:
-#     :type j: int | Iterable[int]
-#     :param k:
-#     :type k: int | Iterable[int]
-#     :param l:
-#     :type l: int | Iterable[int]
-#     :return: derivatives of the dihedral with respect to atoms i, j, k, and l
-#     :rtype: np.ndarray
-#     """
-#     # needs to be vectorized, still
-#
-#     a = coords[j] - coords[i]
-#     b = coords[k] - coords[j]
-#     c = coords[l] - coords[k]
-#
-#     i3 = np.broadcast_to(np.eye(3), (len(a), 3, 3))
-#     e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
-#
-#     tdo = vec_tdot
-#
-#     # build all the necessary components for the derivatives
-#     axb = vec_crosses(a, b); bxc = vec_crosses(b, c)
-#     na = vec_norms(a); nb = vec_norms(b); nc = vec_norms(c)
-#     naxb = vec_norms(axb); nbxc = vec_norms(bxc)
-#     naxb = naxb[..., np.newaxis]
-#     nbxc = nbxc[..., np.newaxis]
-#     nb = nb[..., np.newaxis]
-#     n1 = axb / naxb
-#     n2 = bxc / nbxc
-#     bu = b / nb
-#     i3n1 = i3 - vec_outer(n1, n1); i3n2 = i3 - vec_outer(n2, n2)
-#     dn1a = -np.matmul(vec_tdot(e3, b), i3n1) / naxb[..., np.newaxis]
-#     dn1b = np.matmul(vec_tdot(e3, a), i3n1) / naxb[..., np.newaxis]
-#     dn2b = -np.matmul(vec_tdot(e3, c), i3n2) / nbxc[..., np.newaxis]
-#     dn2c = np.matmul(vec_tdot(e3, b), i3n2) / nbxc[..., np.newaxis]
-#     dbu = 1/nb[..., np.newaxis]*(i3 - vec_outer(bu, bu))
-#     n1xb = vec_crosses(bu, n1)
-#     n1dn2 = vec_dots(n1, n2)
-#     nxbdn2 = vec_dots(n1xb, n2)
-#
-#     # compute the actual derivs w/r/t the vectors
-#     n1dn2 = n1dn2[..., np.newaxis]
-#     nxbdn2 = nxbdn2[..., np.newaxis]
-#     dta_1 = tdo(tdo(dn1a, e3), bu)
-#     dta_2 = tdo(dta_1, n2)*n1dn2
-#     dta = dta_2 - tdo(dn1a, n2)*nxbdn2
-#     dtb = (
-#             ( tdo(tdo(tdo(dn1b, e3), bu)-tdo(tdo(dbu, e3), n1), n2)
-#               + tdo(dn2b, n1xb) ) * n1dn2
-#             - (tdo(dn1b, n2) + tdo(dn2b, n1)) * nxbdn2
-#     )
-#     dtc = tdo(dn2c, n1xb) * n1dn2 - tdo(dn2c, n1) * nxbdn2
-#
-#     return None, np.array([-dta, dta-dtb, dtb-dtc, dtc])
+def dist_vec(coords, i, j):
+    """
+    Returns the full vectors that define the linearized version of a bond displacement
+
+    :param coords:
+    :param i:
+    :param j:
+    :return:
+    """
+    bond_tf = dist_deriv(coords, i, j)[1]
+    bond_vectors = np.zeros(coords.shape)
+    bond_vectors[..., i, :] = bond_tf[0]
+    bond_vectors[..., j, :] = bond_tf[1]
+
+    return bond_vectors.reshape(
+        coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
+    )
+
+def angle_vec(coords, i, j, k):
+    """
+    Returns the full vectors that define the linearized version of an angle displacement
+
+    :param coords:
+    :param i:
+    :param j:
+    :return:
+    """
+
+    ang_tf = angle_deriv(coords, i, j, k)[1]
+    ang_vectors = np.zeros(coords.shape)
+    ang_vectors[..., i, :] = ang_tf[0]
+    ang_vectors[..., j, :] = ang_tf[1]
+    ang_vectors[..., k, :] = ang_tf[2]
+
+    return ang_vectors.reshape(
+        coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
+    )
+
+def dihed_vec(coords, i, j, k, l):
+    """
+    Returns the full vectors that define the linearized version of a dihedral displacement
+
+    :param coords:
+    :param i:
+    :param j:
+    :return:
+    """
+
+    dihed_tf = dihed_deriv(coords, i, j, k, l)[1]
+    dihed_vectors = np.zeros(coords.shape)
+    dihed_vectors[..., i, :] = dihed_tf[0]
+    dihed_vectors[..., j, :] = dihed_tf[1]
+    dihed_vectors[..., k, :] = dihed_tf[2]
+    dihed_vectors[..., l, :] = dihed_tf[2]
+
+    return dihed_vectors.reshape(
+        coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
+    )
