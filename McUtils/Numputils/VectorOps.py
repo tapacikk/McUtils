@@ -600,7 +600,7 @@ def vec_tdot(tensa, tensb, axes=[[-1], [1]]):
 #       pts_norms
 #
 def pts_norms(pts1, pts2):
-    """Provides the vector normal to the plane of the three points
+    """Provides the distance between the points
 
     :param pts1:
     :type pts1: np.ndarray

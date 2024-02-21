@@ -411,7 +411,9 @@ def vec_norm_derivs(a, order=1, zero_thresh=None):
 
     return derivs
 
-def vec_sin_cos_derivs(a, b, order=1, check_derivatives=False, zero_thresh=None):
+def vec_sin_cos_derivs(a, b, order=1,
+                       up_vectors=None,
+                       check_derivatives=False, zero_thresh=None):
     """
     Derivative of `sin(a, b)` and `cos(a, b)` with respect to both vector components
 
@@ -439,7 +441,7 @@ def vec_sin_cos_derivs(a, b, order=1, check_derivatives=False, zero_thresh=None)
     b, n_b = vec_apply_zero_threshold(b, zero_thresh=zero_thresh)
 
     n = vec_crosses(a, b)
-    n, n_n = vec_apply_zero_threshold(n, zero_thresh=zero_thresh)
+    n, n_n, bad_ns = vec_apply_zero_threshold(n, zero_thresh=zero_thresh, return_zeros=True)
 
     adb = vec_dots(a, b)[..., np.newaxis]
 
@@ -453,158 +455,178 @@ def vec_sin_cos_derivs(a, b, order=1, check_derivatives=False, zero_thresh=None)
     sin_derivs.append(s)
     cos_derivs.append(c)
 
-    bxn_ = vec_crosses(b, n)
-    bxn, n_bxn = vec_apply_zero_threshold(bxn_, zero_thresh=zero_thresh)
-
-    nxa_ = vec_crosses(n, a)
-    nxa, n_nxa = vec_apply_zero_threshold(nxa_, zero_thresh=zero_thresh)
-
-    if order <= 1:
-        _, na_da = vec_norm_derivs(a, order=1)
-        _, nb_db = vec_norm_derivs(b, order=1)
-    else:
-        _, na_da, na_daa = vec_norm_derivs(a, order=2)
-        _, nb_db, nb_dbb = vec_norm_derivs(b, order=2)
-        _, nn_dn, nn_dnn = vec_norm_derivs(n, order=2)
-
-    if order >= 1:
-        s_da = (bxn / (n_b * n_n) - s * na_da) / n_a
-        s_db = (nxa / (n_n * n_a) - s * nb_db) / n_b
-
-        # now we build our derivs, but we also need to transpose so that the OG shape comes first
-        d1 = np.array([s_da, s_db])
-        d1_reshape = tuple(range(1, extra_dims+1)) + (0, extra_dims+1)
-        meh = d1.transpose(d1_reshape)
-
-        sin_derivs.append(meh)
-
-        # print(
-        #     nb_db.shape,
-        #     na_da.shape,
-        #     c.shape,
-        #     n_a.shape
-        # )
-
-        c_da = (nb_db - c * na_da) / n_a
-        c_db = (na_da - c * nb_db) / n_b
-
-        d1 = np.array([c_da, c_db])
-        meh = d1.transpose(d1_reshape)
-
-        cos_derivs.append(meh)
-
-    if order >= 2:
-
-        extra_dims = a.ndim - 1
-        extra_shape = a.shape[:-1]
-        if check_derivatives:
-            if extra_dims > 0:
-                bad_norms = n_n.flatten() <= zero_thresh
-                if bad_norms.any():
-                    raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
-                        a[bad_norms],
-                        b[bad_norms]
-                    ))
+    if order > 0:
+        if bad_ns.any():  # ill-defined sin components need an "up" vector and then point perpendicular to this
+            if up_vectors is None:
+                if n.ndim > 1:
+                    up_vectors = np.broadcast_to(
+                        np.array([0, 0, 1])[np.newaxis],
+                        a.shape[:-1] + (3,)
+                    )
+                else:
+                    up_vectors = np.array([0, 0, 1])
+            if n.ndim == 1:
+                n = vec_normalize(up_vectors)
+                n_n = 1
             else:
-                if n_n <= zero_thresh:
-                    raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
-                        a, b
-                    ))
+                n[bad_ns] = vec_normalize(up_vectors[bad_ns])
+                n_n[bad_ns] = 1
 
-        if extra_dims > 0:
-            e3 = np.broadcast_to(levi_cevita3,  extra_shape + (3, 3, 3))
-            td = np.tensordot
-            outer = vec_outer
-            vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=extra_dims, **kw)
+            print("???", n)
+            print("--->", b)
+
+        bxn_ = vec_crosses(b, n)
+        bxn, n_bxn = vec_apply_zero_threshold(bxn_, zero_thresh=zero_thresh)
+
+        nxa_ = vec_crosses(n, a)
+        nxa, n_nxa = vec_apply_zero_threshold(nxa_, zero_thresh=zero_thresh)
+
+        if order <= 1:
+            _, na_da = vec_norm_derivs(a, order=1)
+            _, nb_db = vec_norm_derivs(b, order=1)
         else:
-            e3 = levi_cevita3
-            td = np.tensordot
-            vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=0, **kw)
-            outer = np.outer
-            a = a.squeeze()
-            b = b.squeeze()
-            nb_db = nb_db.squeeze(); na_da = na_da.squeeze(); nn_dn = nn_dn.squeeze()
-            na_daa = na_daa.squeeze(); nb_dbb = nb_dbb.squeeze(); nn_dnn = nn_dnn.squeeze()
+            _, na_da, na_daa = vec_norm_derivs(a, order=2)
+            _, nb_db, nb_dbb = vec_norm_derivs(b, order=2)
+            _, nn_dn, nn_dnn = vec_norm_derivs(n, order=2)
 
-        # print(na_da, s_da, s, na_daa, bxdna)
+        if order >= 1:
+            s_da = (bxn / (n_b * n_n) - s * na_da) / n_a
+            s_db = (nxa / (n_n * n_a) - s * nb_db) / n_b
 
-        # compute terms we'll need for various cross-products
-        e3b = vec_td(e3, b, axes=[-1, -1])
-        e3a = vec_td(e3, a, axes=[-1, -1])
-        # e3n = vec_td(e3, n, axes=[-1, -1])
+            # now we build our derivs, but we also need to transpose so that the OG shape comes first
+            d1 = np.array([s_da, s_db])
+            d1_reshape = tuple(range(1, extra_dims+1)) + (0, extra_dims+1)
+            meh = d1.transpose(d1_reshape)
 
-        e3nbdb = vec_td(e3, nb_db, axes=[-1, -1])
-        e3nada = vec_td(e3, na_da, axes=[-1, -1])
-        e3nndn = vec_td(e3, nn_dn, axes=[-1, -1])
+            sin_derivs.append(meh)
 
-        n_da = -vec_td(e3b,  nn_dnn, axes=[-1, -2])
-        bxdna = vec_td(n_da, e3nbdb, axes=[-1, -2])
+            # print(
+            #     nb_db.shape,
+            #     na_da.shape,
+            #     c.shape,
+            #     n_a.shape
+            # )
 
-        s_daa = - (
-            outer(na_da, s_da) + outer(s_da, na_da)
-            + s[..., np.newaxis] * na_daa
-            - bxdna
-        ) / n_a[..., np.newaxis]
+            c_da = (nb_db - c * na_da) / n_a
+            c_db = (na_da - c * nb_db) / n_b
 
-        ndaXnada = -vec_td(n_da, e3nada, axes=[-1, -2])
-        nndnXnadaa = vec_td(na_daa, e3nndn, axes=[-1, -2])
+            d1 = np.array([c_da, c_db])
+            meh = d1.transpose(d1_reshape)
 
-        s_dab = (
-                     ndaXnada + nndnXnadaa - outer(s_da, nb_db)
-        ) / n_b[..., np.newaxis]
+            cos_derivs.append(meh)
 
-        n_db = vec_td(e3a, nn_dnn, axes=[-1, -2])
+        if order >= 2:
 
-        nbdbXnda = vec_td(n_db, e3nbdb, axes=[-1, -2])
-        nbdbbXnndn = -vec_td(nb_dbb, e3nndn, axes=[-1, -2])
+            extra_dims = a.ndim - 1
+            extra_shape = a.shape[:-1]
+            if check_derivatives:
+                if extra_dims > 0:
+                    bad_norms = n_n.flatten() <= zero_thresh
+                    if bad_norms.any():
+                        raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
+                            a[bad_norms],
+                            b[bad_norms]
+                        ))
+                else:
+                    if n_n <= zero_thresh:
+                        raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
+                            a, b
+                        ))
 
-        s_dba = (
-                nbdbXnda + nbdbbXnndn - outer(s_db, na_da)
-        ) / n_a[..., np.newaxis]
+            if extra_dims > 0:
+                e3 = np.broadcast_to(levi_cevita3,  extra_shape + (3, 3, 3))
+                td = np.tensordot
+                outer = vec_outer
+                vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=extra_dims, **kw)
+            else:
+                e3 = levi_cevita3
+                td = np.tensordot
+                vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=0, **kw)
+                outer = np.outer
+                a = a.squeeze()
+                b = b.squeeze()
+                nb_db = nb_db.squeeze(); na_da = na_da.squeeze(); nn_dn = nn_dn.squeeze()
+                na_daa = na_daa.squeeze(); nb_dbb = nb_dbb.squeeze(); nn_dnn = nn_dnn.squeeze()
 
-        dnbxa = - vec_td(n_db, e3nada, axes=[-1, -2])
+            # print(na_da, s_da, s, na_daa, bxdna)
 
-        s_dbb = - (
-            outer(nb_db, s_db) + outer(s_db, nb_db) + s[..., np.newaxis] * nb_dbb - dnbxa
-        ) / n_b[..., np.newaxis]
+            # compute terms we'll need for various cross-products
+            e3b = vec_td(e3, b, axes=[-1, -1])
+            e3a = vec_td(e3, a, axes=[-1, -1])
+            # e3n = vec_td(e3, n, axes=[-1, -1])
 
-        s2 = np.array([
-            [s_daa, s_dab],
-            [s_dba, s_dbb]
-        ])
+            e3nbdb = vec_td(e3, nb_db, axes=[-1, -1])
+            e3nada = vec_td(e3, na_da, axes=[-1, -1])
+            e3nndn = vec_td(e3, nn_dn, axes=[-1, -1])
 
-        d2_reshape = tuple(range(2, extra_dims+2)) + (0, 1, extra_dims+2, extra_dims+3)
-        # raise Exception(s2.shape, d2_reshape)
-        s2 = s2.transpose(d2_reshape)
+            n_da = -vec_td(e3b,  nn_dnn, axes=[-1, -2])
+            bxdna = vec_td(n_da, e3nbdb, axes=[-1, -2])
 
-        sin_derivs.append(s2)
+            s_daa = - (
+                outer(na_da, s_da) + outer(s_da, na_da)
+                + s[..., np.newaxis] * na_daa
+                - bxdna
+            ) / n_a[..., np.newaxis]
 
-        c_daa = - (
-            outer(na_da, c_da) + outer(c_da, na_da) + c[..., np.newaxis] * na_daa
-        ) / n_a[..., np.newaxis]
+            ndaXnada = -vec_td(n_da, e3nada, axes=[-1, -2])
+            nndnXnadaa = vec_td(na_daa, e3nndn, axes=[-1, -2])
 
-        c_dab = ( na_daa - outer(c_da, nb_db) ) / n_b[..., np.newaxis]
+            s_dab = (
+                         ndaXnada + nndnXnadaa - outer(s_da, nb_db)
+            ) / n_b[..., np.newaxis]
 
-        c_dba = ( nb_dbb - outer(c_db, na_da) ) / n_a[..., np.newaxis]
+            n_db = vec_td(e3a, nn_dnn, axes=[-1, -2])
 
-        c_dbb = - (
-            outer(nb_db, c_db) + outer(c_db, nb_db) + c[..., np.newaxis] * nb_dbb
-        ) / n_b[..., np.newaxis]
+            nbdbXnda = vec_td(n_db, e3nbdb, axes=[-1, -2])
+            nbdbbXnndn = -vec_td(nb_dbb, e3nndn, axes=[-1, -2])
 
-        c2 = np.array([
-            [c_daa, c_dab],
-            [c_dba, c_dbb]
-        ])
+            s_dba = (
+                    nbdbXnda + nbdbbXnndn - outer(s_db, na_da)
+            ) / n_a[..., np.newaxis]
 
-        c2 = c2.transpose(d2_reshape)
+            dnbxa = - vec_td(n_db, e3nada, axes=[-1, -2])
 
-        # raise Exception(c2.shape)
+            s_dbb = - (
+                outer(nb_db, s_db) + outer(s_db, nb_db) + s[..., np.newaxis] * nb_dbb - dnbxa
+            ) / n_b[..., np.newaxis]
 
-        cos_derivs.append(c2)
+            s2 = np.array([
+                [s_daa, s_dab],
+                [s_dba, s_dbb]
+            ])
+
+            d2_reshape = tuple(range(2, extra_dims+2)) + (0, 1, extra_dims+2, extra_dims+3)
+            # raise Exception(s2.shape, d2_reshape)
+            s2 = s2.transpose(d2_reshape)
+
+            sin_derivs.append(s2)
+
+            c_daa = - (
+                outer(na_da, c_da) + outer(c_da, na_da) + c[..., np.newaxis] * na_daa
+            ) / n_a[..., np.newaxis]
+
+            c_dab = ( na_daa - outer(c_da, nb_db) ) / n_b[..., np.newaxis]
+
+            c_dba = ( nb_dbb - outer(c_db, na_da) ) / n_a[..., np.newaxis]
+
+            c_dbb = - (
+                outer(nb_db, c_db) + outer(c_db, nb_db) + c[..., np.newaxis] * nb_dbb
+            ) / n_b[..., np.newaxis]
+
+            c2 = np.array([
+                [c_daa, c_dab],
+                [c_dba, c_dbb]
+            ])
+
+            c2 = c2.transpose(d2_reshape)
+
+            # raise Exception(c2.shape)
+
+            cos_derivs.append(c2)
 
     return sin_derivs, cos_derivs
 
-def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
+def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None, return_comps=False):
     """
     Returns the derivatives of the angle between `a` and `b` with respect to their components
 
@@ -625,7 +647,9 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
 
     derivs = []
 
-    sin_derivs, cos_derivs = vec_sin_cos_derivs(a, b, order=order, zero_thresh=zero_thresh)
+    sin_derivs, cos_derivs = vec_sin_cos_derivs(a, b,
+                                                up_vectors=up_vectors,
+                                                order=order, zero_thresh=zero_thresh)
 
     s = sin_derivs[0]
     c = cos_derivs[0]
@@ -672,8 +696,8 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
         ca, nca = vec_apply_zero_threshold(ca, zero_thresh=zero_thresh)
         cb, ncb = vec_apply_zero_threshold(cb, zero_thresh=zero_thresh)
 
-        ca = ca / nca
-        cb = cb / ncb
+        # ca = ca #/ nca
+        # cb = cb #/ ncb
 
         q_da = -ca/na
         q_db = -cb/nb
@@ -724,7 +748,10 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
             d2.transpose(d2_reshape)
         )
 
-    return derivs
+    if return_comps:
+        return derivs, (sin_derivs, cos_derivs)
+    else:
+        return derivs
 
 def dist_deriv(coords, i, j, order=1, zero_thresh=None):
     """
@@ -743,7 +770,7 @@ def dist_deriv(coords, i, j, order=1, zero_thresh=None):
     if order > 2:
         raise NotImplementedError("derivatives currently only up to order {}".format(2))
 
-    a = coords[j] - coords[i]
+    a = coords[..., j, :] - coords[..., i, :]
     d = vec_norm_derivs(a, order=order, zero_thresh=zero_thresh)
 
     derivs = []
@@ -854,12 +881,14 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_s
 
     cnb = vec_crosses(n1, n2)
 
-    # cnb, n_cnb, bad_friends = vec_apply_zero_threshold(cnb, zero_thresh=zero_thresh, return_zeros=True)
+    cnb, n_cnb, bad_friends = vec_apply_zero_threshold(cnb, zero_thresh=zero_thresh, return_zeros=True)
     orient = vec_dots(b, cnb)
     # orient[np.abs(orient) < 1.0] = 0.
     sign = np.sign(orient)
 
-    d = vec_angle_derivs(n1, n2, order=order, zero_thresh=zero_thresh)
+    d, (sin_derivs, cos_derivs) = vec_angle_derivs(n1, n2, order=order,
+                                                   up_vectors=b,
+                                                   zero_thresh=zero_thresh, return_comps=True)
 
     derivs = []
 
@@ -867,6 +896,20 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_s
 
     if order >= 1:
         dn1 = d[1][..., 0, :]; dn2 = d[1][..., 1, :]
+        if dn1.ndim == 1 and bad_friends[0]:
+            dn1 = sin_derivs[1][0]
+            dn2 = sin_derivs[1][1]
+            sign = np.array(1)
+        else:
+            dn1[bad_friends] = sin_derivs[1][bad_friends, 0, :] # TODO: clean up shapes I guess...
+            dn2[bad_friends] = sin_derivs[1][bad_friends, 1, :]
+            sign[bad_friends] = 1
+
+        # raise Exception(
+        #     dn1,
+        #     b,
+        #     vec_crosses(b, dn1)
+        # )
 
         di = vec_crosses(b, dn1)
         dj = vec_crosses(c, dn2) - vec_crosses(a+b, dn1)
