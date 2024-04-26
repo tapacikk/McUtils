@@ -112,7 +112,7 @@ class NumputilsTests(TestCase):
         #     ]
         # )
 
-    @validationTest
+    @debugTest
     def test_PtsDihedralsDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -166,6 +166,41 @@ class NumputilsTests(TestCase):
         ))
 
         # raise Exception(fd2.flatten(), deriv_2.flatten())
+
+        coords = np.array([
+            [ 1,  0, 0],
+            [ 1, -1, 0],
+            [-1,  1, 0],
+            [-1,  0, 0],
+        ])
+
+        angs, derivs = dihed_deriv(coords, 0, 1, 2, 3, order=1)
+        ang = angs[0]
+        deriv = derivs
+        # deriv_2 = derivs_2[:, :, 0, :, :]
+        ang2 = pts_dihedrals(coords[0], coords[1], coords[2], coords[3])
+
+        self.assertTrue(np.allclose(np.abs(ang2), ang))
+
+        raise Exception(deriv)
+
+        fd = FiniteDifferenceDerivative(
+            lambda pt: pts_dihedrals(pt[..., 0, :], pt[..., 1, :], pt[..., 2, :], pt[..., 3, :]),
+            function_shape=((None, 4, 3), 0),
+            mesh_spacing=1.0e-5
+        )
+        # dihedDeriv_fd = FiniteDifferenceDerivative(
+        #     lambda pts: dihed_deriv(pts, 0, 1, 2, 3, order=1)[1].squeeze().transpose((1, 0, 2)),
+        #     function_shape=((None, 4, 3), (None, 4, 3)),
+        #     mesh_spacing=1.0e-5
+        # )
+
+        fd1 = fd(coords[(0, 1, 2, 3),]).derivative_tensor([1])[0]
+        # fd2_22 = dihedDeriv_fd(coords[(4, 5, 6, 7),]).derivative_tensor(1)
+
+        self.assertTrue(np.allclose(deriv.flatten(), fd1.flatten()), msg="{} and {} aren't close".format(
+            deriv.flatten(), fd1.flatten()
+        ))
 
     @validationTest
     def test_PtsAngleDeriv(self):

@@ -16,9 +16,12 @@ __all__ = [
     'vec_norm_derivs',
     'vec_sin_cos_derivs',
     'vec_angle_derivs',
+    'rock_deriv',
+    'rock_vec',
     'dist_vec',
     'angle_vec',
-    'dihed_vec'
+    'dihed_vec',
+    'oop_vec'
 ]
 
 # felt too lazy to look up some elegant formula
@@ -655,6 +658,12 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None, return_co
     c = cos_derivs[0]
 
     q = np.arctan2(s, c)
+    # # force wrapping if near to pi
+    # if isinstance(q, np.ndarray):
+    #     sel = np.abs(q) > np.pi - 1e-10
+    #     q[sel] = np.abs(q[sel])
+    # elif np.abs(q) > np.pi - 1e-10:
+    #     q = np.abs(q)
 
     if up_vectors is not None:
         n = vec_crosses(a, b)
@@ -667,6 +676,11 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None, return_co
         sign = np.sign(up)
     else:
         sign = np.ones(a.shape[:-1])
+
+    if isinstance(sign, np.ndarray):
+        sign[sign == 0] = 1.
+    elif sign == 0:
+        sign = np.array(1)
 
     derivs.append(sign*q)
 
@@ -696,8 +710,8 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None, return_co
         ca, nca = vec_apply_zero_threshold(ca, zero_thresh=zero_thresh)
         cb, ncb = vec_apply_zero_threshold(cb, zero_thresh=zero_thresh)
 
-        # ca = ca #/ nca
-        # cb = cb #/ ncb
+        ca = ca / nca
+        cb = cb / ncb
 
         q_da = -ca/na
         q_db = -cb/nb
@@ -837,6 +851,52 @@ def angle_deriv(coords, i, j, k, order=1, zero_thresh=None):
 
     return derivs
 
+
+def rock_deriv(coords, i, j, k, order=1, zero_thresh=None):
+    """
+    Gives the derivative of the rocking motion (symmetric bend basically)
+
+    :param coords:
+    :type coords: np.ndarray
+    :param i: index of the central atom
+    :type i: int | Iterable[int]
+    :param j: index of one of the outside atoms
+    :type j: int | Iterable[int]
+    :param k: index of the other outside atom
+    :type k: int | Iterable[int]
+    :return: derivatives of the angle with respect to atoms i, j, and k
+    :rtype: np.ndarray
+    """
+
+    if order > 2:
+        raise NotImplementedError("derivatives currently only up to order {}".format(2))
+
+    a = coords[..., j, :] - coords[..., i, :]
+    b = coords[..., k, :] - coords[..., i, :]
+    d = vec_angle_derivs(a, b, order=order, zero_thresh=zero_thresh)
+
+    derivs = []
+
+    derivs.append(d[0])
+
+    if order >= 1:
+        da = d[1][..., 0, :]; db = d[1][..., 1, :]
+        derivs.append(np.array([-(da - db), da, -db]))
+
+    if order >= 2:
+        daa = d[2][..., 0, 0, :, :]; dab = d[2][..., 0, 1, :, :]
+        dba = d[2][..., 1, 0, :, :]; dbb = d[2][..., 1, 1, :, :]
+        # ii ij ik
+        # ji jj jk
+        # ki kj kk
+        derivs.append(np.array([
+            [daa + dba + dab + dbb, -(daa + dab), -(dba + dbb)],
+            [         -(daa + dba),          daa,   dba       ],
+            [         -(dab + dbb),          dab,   dbb       ]
+        ]))
+
+    return derivs
+
 def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_size=1.0e-4):
     """
     Gives the derivative of the dihedral between i, j, k, and l with respect to the Cartesians
@@ -864,7 +924,6 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_s
     b = coords[..., k, :] - coords[..., j, :]
     c = coords[..., l, :] - coords[..., k, :]
 
-
     n1 = vec_crosses(a, b)
     n2 = vec_crosses(b, c)
 
@@ -882,12 +941,13 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_s
     cnb = vec_crosses(n1, n2)
 
     cnb, n_cnb, bad_friends = vec_apply_zero_threshold(cnb, zero_thresh=zero_thresh, return_zeros=True)
+    bad_friends = bad_friends.reshape(cnb.shape[:-1])
     orient = vec_dots(b, cnb)
     # orient[np.abs(orient) < 1.0] = 0.
     sign = np.sign(orient)
 
     d, (sin_derivs, cos_derivs) = vec_angle_derivs(n1, n2, order=order,
-                                                   up_vectors=b,
+                                                   up_vectors=vec_normalize(b),
                                                    zero_thresh=zero_thresh, return_comps=True)
 
     derivs = []
@@ -896,10 +956,11 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_s
 
     if order >= 1:
         dn1 = d[1][..., 0, :]; dn2 = d[1][..., 1, :]
-        if dn1.ndim == 1 and bad_friends[0]:
-            dn1 = sin_derivs[1][0]
-            dn2 = sin_derivs[1][1]
-            sign = np.array(1)
+        if dn1.ndim == 1:
+            if bad_friends:
+                dn1 = sin_derivs[1][0]
+                dn2 = sin_derivs[1][1]
+                sign = np.array(1)
         else:
             dn1[bad_friends] = sin_derivs[1][bad_friends, 0, :] # TODO: clean up shapes I guess...
             dn2[bad_friends] = sin_derivs[1][bad_friends, 1, :]
@@ -1061,6 +1122,26 @@ def angle_vec(coords, i, j, k):
         coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
     )
 
+def rock_vec(coords, i, j, k):
+    """
+    Returns the full vectors that define the linearized version of an angle displacement
+
+    :param coords:
+    :param i:
+    :param j:
+    :return:
+    """
+
+    ang_tf = rock_deriv(coords, i, j, k)[1]
+    ang_vectors = np.zeros(coords.shape)
+    ang_vectors[..., i, :] = ang_tf[0]
+    ang_vectors[..., j, :] = ang_tf[1]
+    ang_vectors[..., k, :] = ang_tf[2]
+
+    return ang_vectors.reshape(
+        coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
+    )
+
 def dihed_vec(coords, i, j, k, l):
     """
     Returns the full vectors that define the linearized version of a dihedral displacement
@@ -1076,7 +1157,28 @@ def dihed_vec(coords, i, j, k, l):
     dihed_vectors[..., i, :] = dihed_tf[0]
     dihed_vectors[..., j, :] = dihed_tf[1]
     dihed_vectors[..., k, :] = dihed_tf[2]
-    dihed_vectors[..., l, :] = dihed_tf[2]
+    dihed_vectors[..., l, :] = dihed_tf[3]
+
+    return dihed_vectors.reshape(
+        coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
+    )
+
+
+def oop_vec(coords, i, j, k):
+    """
+    Returns the full vectors that define the linearized version of an oop displacement
+
+    :param coords:
+    :param i:
+    :param j:
+    :return:
+    """
+
+    dihed_tf = dihed_deriv(coords, i, j, k, i)[1]
+    dihed_vectors = np.zeros(coords.shape)
+    dihed_vectors[..., i, :] = dihed_tf[0]
+    dihed_vectors[..., j, :] = dihed_tf[1]
+    dihed_vectors[..., k, :] = dihed_tf[2]
 
     return dihed_vectors.reshape(
         coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)

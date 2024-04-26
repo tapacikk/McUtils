@@ -1229,6 +1229,25 @@ class ZacharyTests(TestCase):
                 np.allclose(np.array([c1, c2]), cm)
             )
 
+    @debugTest
+    def test_SparseShifts(self):
+        d = SparsePolynomial({
+            # 1 + 2x + 3y^2 - xy
+            (): 1,
+            (0,): 2,
+            (1, 1): 3,
+            (0, 1): -1
+        },
+            ndim=2
+        )
+
+        shift_poly = d.shift([0, 1]).as_dense()
+
+        print(d.as_dense().coeffs)
+        print(shift_poly.coeffs)
+        print(d.as_dense().shift([0, 1]).coeffs)
+
+
     @validationTest
     def test_SparseArrayPoly(self):
 
@@ -1325,7 +1344,7 @@ class ZacharyTests(TestCase):
             shape=shape
         )
 
-    @debugTest
+    @validationTest
     def test_SparseConvolve(self):
         from McUtils.Numputils import SparseArray
 
