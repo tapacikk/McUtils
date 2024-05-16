@@ -1241,6 +1241,8 @@ class ZacharyTests(TestCase):
             ndim=2
         )
 
+        print(d.terms)
+
         shift_poly = d.shift([0, 1]).as_dense()
 
         print(d.as_dense().coeffs)

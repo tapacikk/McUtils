@@ -3,13 +3,14 @@ Utilities for working with permutations and permutation indexing
 """
 
 import numpy as np, time, typing, gc, itertools
-# import collections, functools as ft
+import collections, functools as ft
 from ..Misc import jit, objmode, prange
 from ..Numputils import flatten_dtype, unflatten_dtype, difference as set_difference, unique, contained, group_by, split_by_regions, find, infer_int_dtype
 from ..Scaffolding import NullLogger
 
 __all__ = [
     "IntegerPartitioner",
+    "IntegerPartitioner2D",
     "UniquePermutations",
     "UniqueSubsets",
     "UniquePartitions",
@@ -1635,6 +1636,96 @@ class UniquePermutations:
                     break
 
             on_visit(tree_data[cur_dim, 0], permutation_indices, tree_data)
+
+
+class IntegerPartitioner2D:
+    """
+    Provides a tree-based approach to obtain the different integer partitions possible
+    when n balls are divided into different numbers of boxes
+    """
+
+    partition_data = {}
+    @classmethod
+    def _enumerate_subtrees(self, new_boxes, new_balls, step):
+        subtrees = []
+        m = len(new_balls)
+        perm = np.argsort(-new_balls)  # TODO: don't need a full argsort when just modifiying one spot...
+        new_balls = new_balls[perm]
+        inv = np.argsort(perm)
+        zero_pos = np.searchsorted(-new_balls, 0)
+        new_balls = new_balls[:zero_pos]
+        for subtree in self._get_tree(new_boxes, new_balls):
+            subtree = np.concatenate([
+                np.pad(subtree, [(0, 0), (0, m - subtree.shape[1])])[:, inv],
+                [step]
+            ],
+                axis=0
+            )
+            # subtree = [np.pad(s, (0, m - len(s)))[inv] for s in subtree] + [step]
+            subtrees.append(subtree)
+        return subtrees
+
+    @classmethod
+    def _get_tree(self, boxes, balls):
+        """
+        Assumes `boxes` and `balls` are reverse sorted
+        """
+        if len(boxes) == 1:
+            return [np.array([balls])]
+
+        key = (tuple(boxes), tuple(balls))
+        if key in self.partition_data:
+            return self.partition_data[key]
+
+        new_boxes = boxes[:-1]
+        m = len(balls)
+        elems = []
+        if boxes[-1] == 1: # common case, simple opt
+            for pos in range(m):
+                new_balls = balls.copy()
+                new_balls[pos] -= 1
+                step = np.zeros(m, dtype=int)
+                step[pos] = 1
+                elems.extend(self._enumerate_subtrees(new_boxes, new_balls, step))
+        else:
+            steps = IntegerPartitionPermutations(boxes[-1], dim=m).get_partition_permutations(flatten=True)
+            new_ball_sets = balls[np.newaxis] - steps
+            good_balls = np.all(new_ball_sets >= 0, axis=1)
+            new_ball_sets = new_ball_sets[good_balls]
+            steps = steps[good_balls]
+            for new_balls, step in zip(new_ball_sets, steps):
+                elems.extend(self._enumerate_subtrees(new_boxes, new_balls, step))
+
+        self.partition_data[key] = np.concatenate([elems], axis=0)
+        return self.partition_data[key]
+
+    @classmethod
+    def get_partitions(cls, boxes, balls):
+        boxes = np.asanyarray(boxes)
+        balls = np.asanyarray(balls)
+
+        if np.sum(boxes) != np.sum(balls):
+            raise ValueError("can't split {} balls into {} boxes".format(
+                np.sum(balls), np.sum(boxes)
+            ))
+
+        sort_1 = np.argsort(-boxes, kind='stable')
+        sort_2 = np.argsort(-balls, kind='stable')
+
+        boxes = boxes[sort_1]
+        balls = balls[sort_2]
+
+        tree = cls._get_tree(boxes, balls)
+        if np.any(sort_1 != np.arange(len(boxes))):
+            inv = np.argsort(sort_1)
+            tree = tree[:, inv]
+
+        if np.any(sort_2 != np.arange(len(balls))):
+            inv = np.argsort(sort_2)
+            tree = tree[:, :, inv]
+
+        return tree
+
 
 class UniquePartitions:
     """

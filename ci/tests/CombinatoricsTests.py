@@ -164,14 +164,33 @@ class CombinatoricsTests(TestCase):
         )
 
     @debugTest
-    def test_GenericPartitions(self):
-        raise Exception(
-            UniquePartitions([0, 1, 0, 0, 2, 0, 3]).partitions(
-                [2, 3, 2],
-                split=False,
-                take_unique=True
+    def test_Partitions2D(self):
+        # for p in IntegerPartitioner2D.get_partitions(
+        #         [3, 2, 1],
+        #         [2, 2, 1, 1]
+        #     ):
+        #     print(p)
+        print(
+            IntegerPartitioner2D.get_partitions(
+                [3, 2, 1],
+                [2, 2, 2]
             )
         )
+        raise Exception(...)
+
+    @inactiveTest
+    def test_GenericPartitions(self):
+        raise Exception(
+            UniquePartitions([3, 2, 1, 0, 0, 0]).partitions([3, 2, 1])
+        )
+
+        # raise Exception(
+        #     UniquePartitions([0, 1, 0, 0, 2, 0, 3]).partitions(
+        #         [2, 3, 2],
+        #         split=False,
+        #         take_unique=True
+        #     )
+        # )
 
     @validationTest
     def test_UniquePartitionPermutations(self):
@@ -270,13 +289,14 @@ class CombinatoricsTests(TestCase):
         perms = perm_builder.permutations_from_indices(test_inds)
         self.assertEquals(perms.tolist(), all_perms[test_inds].tolist())
 
-    @debugTest
+    @inactiveTest
     def test_UniquePartitionBlocks(self):
         """
         Tests the generation of unique permutations of partitions
         :return:
         :rtype:
         """
+        ...
 
 
 
