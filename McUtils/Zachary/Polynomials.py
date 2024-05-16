@@ -1,6 +1,6 @@
 import abc, numpy as np, scipy.signal
 import itertools as it
-from ..Combinatorics import UniquePermutations
+from ..Combinatorics import UniquePermutations, Binomial
 from ..Numputils import SparseArray, group_by
 
 __all__ = [
@@ -445,13 +445,13 @@ class DensePolynomial(AbstractPolynomial):
         shift_terms = shift_terms / rev_fac
 
         if not isinstance(poly_terms, np.ndarray):
-            poly_terms = poly_terms #type: SparseArray
-            raise Exception(
-                len(poly_terms.block_vals) / np.prod(poly_terms.shape)
-            )
+            # poly_terms = poly_terms #type: SparseArray
+            # raise Exception(
+            #     len(poly_terms.block_vals) / np.prod(poly_terms.shape)
+            # )
             poly_terms = poly_terms.asarray()
 
-        if isinstance(poly_coeffs, np.ndarray):
+        if isinstance(poly_terms, np.ndarray):
             if stack_dim > 0:
                 new = np.array([
                     scipy.signal.convolve(p, s)
@@ -515,7 +515,7 @@ class DensePolynomial(AbstractPolynomial):
                 fp_inds = bcast_idx + fp_inds
             tensors[order][fp_inds] = subvalue
     @classmethod
-    def extract_tensors(cls, coeffs, stack_dim=None, permute=True, rescale=True):
+    def extract_tensors(cls, coeffs, stack_dim=None, permute=True, rescale=True, cutoff=1e-15):
         if stack_dim is None:
             stack_dim = 0
             stack_shape = ()
@@ -523,7 +523,7 @@ class DensePolynomial(AbstractPolynomial):
             stack_shape = coeffs.shape[:stack_dim]
 
         if isinstance(coeffs, np.ndarray):
-            nz_pos = np.where(coeffs != 0)
+            nz_pos = np.where(np.abs(coeffs) > cutoff)
         else:
             nz_pos = coeffs.block_data[1]
 
@@ -552,7 +552,7 @@ class DensePolynomial(AbstractPolynomial):
 
         return tensors
     @classmethod
-    def condense_tensors(cls, tensors, rescale=True):
+    def condense_tensors(cls, tensors, rescale=True, allow_sparse=True):
         # we'll be a bit slower here in constructing so we can make sure
         # we get the smallest tensor
 
@@ -595,9 +595,25 @@ class DensePolynomial(AbstractPolynomial):
                         shape[n] = max(i + 1, shape[n])
 
         # raise Exception(shape)
-        condensed_tensor = np.zeros(list(stack_shape) + shape)
-        for idx,val in tensor_elems.items():
-            condensed_tensor[idx] = val
+        shp = stack_shape + tuple(shape)
+        if allow_sparse:
+            nv = len(tensor_elems)
+            density = nv / np.prod(shp)
+            allow_sparse = density < .5
+        if allow_sparse:
+            inds = tuple(np.array(list(tensor_elems.keys())).T)
+            vals = np.array(list(tensor_elems.values()))
+            condensed_tensor = SparseArray.from_data(
+                (
+                    vals,
+                    inds
+                ),
+                shape=shp
+            )
+        else:
+            condensed_tensor = np.zeros(shp)
+            for idx,val in tensor_elems.items():
+                condensed_tensor[idx] = val
         return condensed_tensor, stack_dim
 
     @property
@@ -785,9 +801,10 @@ class SparsePolynomial(AbstractPolynomial):
     A semi-symbolic representation of a polynomial of tensor
     coefficients
     """
-    def __init__(self, terms:dict, prefactor=1):
+    def __init__(self, terms:dict, prefactor=1, ndim=None):
         self.terms = terms
         self.prefactor = prefactor
+        self._ndim = ndim
         self._shape = None
 
     @property
@@ -860,11 +877,14 @@ class SparsePolynomial(AbstractPolynomial):
             return type(self)(new_terms)
 
     @classmethod
-    def _to_tensor_idx(cls, term, ndim):
-        base = [0]*ndim
+    def _to_tensor_idx(cls, term, ndim, tupleate=True):
+        base = np.zeros(ndim, dtype=int)
         for idx, cnt in zip(*np.unique(term, return_counts=True)): #TODO: kinda dumb to do this 2x but w/e
             base[idx] = cnt
-        return tuple(base)
+        if tupleate:
+            return tuple(base)
+        else:
+            return base
         # idx_terms = {}
         # m = 0
         # for t in idx:
@@ -878,7 +898,10 @@ class SparsePolynomial(AbstractPolynomial):
             for t in self.terms.keys():
                 for idx,cnt in zip(*np.unique(t, return_counts=True)): # can I assume sorted?
                     max_dims[idx] = max(max_dims.get(idx, 1), cnt + 1)
-            max_key = max(list(max_dims.keys()))
+            if self._ndim is None:
+                max_key = max(list(max_dims.keys()))
+            else:
+                max_key = self._ndim - 1
             self._shape = tuple(max_dims.get(k, 1) for k in range(max_key+1))
         return self._shape
     def as_dense(self)->DensePolynomial:
@@ -891,8 +914,62 @@ class SparsePolynomial(AbstractPolynomial):
             new_coeffs,
             prefactor=self.prefactor
         )
-    def shift(self, shift)->DensePolynomial:
-        return self.as_dense().shift(shift)
+
+    def _get_sparse_shift_terms(self, term_vector, shift_vector) -> dict:
+        """
+        Provides the set of terms corresponding to shifting a term of the form
+         `prod(x[i]**p[i])` (where `p` is the `term_vector`) by the corresponding `shift_vector`
+
+
+        :param term_vector:
+        :param shift_vector:
+        :return:
+        """
+
+        max_dim = np.max(term_vector)
+        if max_dim == 0:
+            return {():1}
+        bin_mat = Binomial(np.max(term_vector)+1)
+        inds = np.moveaxis(np.indices(term_vector+1), 0, -1).reshape(-1, term_vector.shape[0])
+        rp_binoms = bin_mat[term_vector[np.newaxis, :], inds]
+        term_diffs = term_vector[np.newaxis, :] - inds
+        rp_shifts = shift_vector[np.newaxis, :] ** term_diffs
+        # rp_binoms[:, term_vector == 0] = 0 # shift shouldn't contribute here
+
+        new_terms = {}
+        full_terms = np.prod(rp_shifts*rp_binoms, axis=-1)
+        for idx, t in zip(inds, full_terms):
+            key = sum(( (i,)*n for i,n in enumerate(idx) ), ())
+            new_terms[key] = t
+
+        return new_terms
+    def shift(self, shift)->'SparsePolynomial':
+        shift = np.asanyarray(shift)
+
+        new_terms = {}
+        ndim = len(self.shape)
+        for term,scaling in self.terms.items():
+            idx = self._to_tensor_idx(term, ndim, tupleate=False)
+            # print(ndim, idx, term)
+            subterms = self._get_sparse_shift_terms(idx, shift)
+            # print(scaling, subterms)
+            for s in subterms.keys() & new_terms.keys():
+                v = scaling*subterms[s]
+                v2 = new_terms[s]
+                new = v + v2
+                if new != 0:
+                    new_terms[s] = new
+            for o in subterms.keys() - new_terms.keys():
+                new_terms[o] = scaling*subterms[o]
+            for o in new_terms.keys() - subterms.keys():
+                new_terms[o] = new_terms[o]
+
+        return type(self)(
+            new_terms,
+            prefactor=self.scaling,
+            ndim=ndim
+        )
+
 
 class PureMonicPolynomial(SparsePolynomial):
     def __init__(self, terms: dict, prefactor=1, canonicalize=True):

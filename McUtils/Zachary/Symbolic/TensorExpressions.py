@@ -3,6 +3,7 @@ import abc, numpy as np, typing, weakref, hashlib
 import collections
 
 from ...Numputils import vec_outer, vec_tensordot
+from ...Combinatorics import IntegerPartitioner, UniquePermutations
 
 __all__ = [
     'TensorDerivativeConverter',
@@ -487,7 +488,10 @@ class TensorExpression:
                                                                                           ))
             clean_terms = [c[1] for c in clean_terms]
             # try:
-            s = sum(clean_terms[1:], clean_terms[0])
+            if len(clean_terms) > 0:
+                s = sum(clean_terms[1:], clean_terms[0])
+            else:
+                s = 0
             # except:
             #     raise Exception(clean_terms)
             # else:
@@ -1756,3 +1760,76 @@ class TensorDerivativeConverter:
             for a in arrays
         ]
         return arrays
+
+    @classmethod
+    def compute_partition_terms(cls, partition):
+        _, counts = np.unique(partition, return_counts=True)
+
+        # compute the reduced multinomial coefficient in stable (enough) form
+        multinomial_num = np.flip(np.arange(1, 1 + np.sum(partition)))
+        multinomial_denum = np.concatenate([
+            np.arange(1, 1 + j)
+            for j in partition
+        ])
+        multi_redux_terms = np.concatenate([
+            np.arange(1, 1 + j)
+            for j in counts
+        ])
+        full_denom = np.flip(np.sort(np.concatenate([multinomial_denum, multi_redux_terms])))
+        numl = len(multinomial_num)
+        denl = len(full_denom)
+        if numl > denl:
+            full_denom = np.concatenate([full_denom, np.ones(numl - denl, dtype=full_denom.dtype)])
+        elif denl > numl:
+            multinomial_num = np.concatenate([multinomial_num, np.ones(denl - numl, dtype=multinomial_num.dtype)])
+
+        return np.prod(multinomial_num / full_denom)
+
+    @classmethod
+    def convert_partition(cls, partition, derivs, vals, val_axis=-1):
+        if len(vals) < len(partition) - 1:
+            return 0
+        base_term = vals[len(partition) - 1]
+        if isinstance(base_term, (int, float, np.integer, np.floating)) and base_term == 0:
+            return 0
+        perm_counter = len(partition)
+        perm_idx = []  # to establish the set of necessary permutations to make things symmetric
+        for i in partition:
+            if len(derivs) < i - 1:
+                return 0
+
+            d = derivs[i - 1]
+            if isinstance(d, (int, float, np.integer, np.floating)) and d == 0:
+                return 0
+            base_term = np.tensordot(d, base_term, axes=[-1, val_axis])
+            if i > 1:
+                perm_idx.extend([perm_counter] * i)
+                perm_counter -= 1
+            else:
+                perm_idx.append(perm_counter)
+
+        # sometimes we overcount, so we factor that out here
+        nterms = cls.compute_partition_terms(partition)
+        perm_inds, _ = UniquePermutations(perm_idx).permutations(return_indices=True)
+
+        overcount = len(perm_inds) / nterms
+        base_term = base_term / overcount
+
+        # print(base_term.shape, perm_idx, _, perm_inds)
+
+        return sum(base_term.transpose(p) for p in perm_inds)
+
+    @classmethod
+    def convert_fast(cls, derivs, vals, val_axis=-1, order=None):
+        terms = []
+        if order is None:
+            order = len(vals)
+        for o in range(1, order+1):
+            term = sum(
+                cls.convert_partition(p, derivs, vals, val_axis=val_axis)
+                for parts in IntegerPartitioner.partitions(o)
+                for p in parts
+            )
+            terms.append(term)
+
+        return terms

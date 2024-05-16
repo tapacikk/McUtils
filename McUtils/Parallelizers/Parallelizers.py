@@ -95,7 +95,7 @@ class Parallelizer(metaclass=abc.ABCMeta):
         """
         return cls.lookup(None)
     @classmethod
-    def lookup(cls, key):
+    def lookup(cls, key) -> 'Parallelizer':
         """
         Checks in the registry to see if a given parallelizer is there
         otherwise returns a `SerialNonParallelizer`.

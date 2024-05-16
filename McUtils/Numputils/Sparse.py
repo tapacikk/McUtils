@@ -1671,8 +1671,8 @@ class ScipySparseArray(SparseArray):
             else:
                 flat, unflat = bi
                 self._block_inds = flat
-            # if len(shp) == 2:
-            #     self.data = self.data.reshape(shp) # turns out this can break shit...
+        if len(shp) == 2 and np.prod(shp) == np.prod(self.shape):
+            self.data = self.data.reshape(shp) # turns out this can break shit...
 
     def reshape(self, shp):
         """
@@ -2061,6 +2061,8 @@ class ScipySparseArray(SparseArray):
                     a.shape,
                     b.shape
                 ))
+            else:
+                raise
 
         if isinstance(woof, sp.spmatrix):
             return type(self)(a.dot(b))

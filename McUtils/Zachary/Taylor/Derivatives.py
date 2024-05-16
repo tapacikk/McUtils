@@ -514,12 +514,9 @@ class DerivativeGenerator:
             # tries to unravel the displacements into a form that
             # mimics the shape of the FD product grid
             cdim = len(config_shape)
-            # print("...?", displaced_coords.ndim, cdim)
-            roll = [cdim] + [a for a in np.arange(displaced_coords.ndim) if a != cdim]
-            dcoords = displaced_coords.transpose(roll)
+            dcoords = np.moveaxis(displaced_coords, cdim, 0)
             function_values = f(dcoords)
-            unroll = tuple(np.arange(cdim) + 1) + (0,) + tuple(np.arange(cdim+1, function_values.ndim))
-            function_values = function_values.transpose(unroll)
+            function_values = np.moveaxis(function_values, 0, cdim)
             disp, fvals = self.prep(spec, displacements, function_values)
 
             # TODO: handle stuff like dipoles where we have an x, y, z component each of which should be handled separately...

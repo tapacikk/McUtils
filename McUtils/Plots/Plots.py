@@ -837,7 +837,7 @@ class TensorPlot(GraphicsGrid):
                  nrows=None, ncols=None,
                  plot_style=None, colorbar=None,
                  figure=None, axes=None, subplot_kw=None,
-                 method='imshow',
+                 method='imshow', plot_class=None,
                  **opts
                  ):
         from operator import mul
@@ -865,14 +865,15 @@ class TensorPlot(GraphicsGrid):
                          )
 
         tensor = tensor.reshape((total_dim,) + tensor_shape[-2:])
+        if plot_class is None:
+            plot_class = lambda data,colorbar=colorbar,**opts:ArrayPlot(data, colorbar=colorbar,**opts)
         for i in range(nrows):
             for j in range(ncols):
                 graphics = self.axes[i][j]
-                self.axes[i][j] = ArrayPlot(
+                self.axes[i][j] = plot_class(
                     tensor[nrows * i + j],
                     figure=graphics,
                     plot_style=plot_style,
-                    colorbar=colorbar,
                     method=method,
                     **opts
                 )

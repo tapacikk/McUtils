@@ -112,7 +112,7 @@ class NumputilsTests(TestCase):
         #     ]
         # )
 
-    @validationTest
+    @debugTest
     def test_PtsDihedralsDeriv(self):
         # need some proper values to test this against...
         np.random.seed(0)
@@ -166,6 +166,41 @@ class NumputilsTests(TestCase):
         ))
 
         # raise Exception(fd2.flatten(), deriv_2.flatten())
+
+        coords = np.array([
+            [ 1,  0, 0],
+            [ 1, -1, 0],
+            [-1,  1, 0],
+            [-1,  0, 0],
+        ])
+
+        angs, derivs = dihed_deriv(coords, 0, 1, 2, 3, order=1)
+        ang = angs[0]
+        deriv = derivs
+        # deriv_2 = derivs_2[:, :, 0, :, :]
+        ang2 = pts_dihedrals(coords[0], coords[1], coords[2], coords[3])
+
+        self.assertTrue(np.allclose(np.abs(ang2), ang))
+
+        raise Exception(deriv)
+
+        fd = FiniteDifferenceDerivative(
+            lambda pt: pts_dihedrals(pt[..., 0, :], pt[..., 1, :], pt[..., 2, :], pt[..., 3, :]),
+            function_shape=((None, 4, 3), 0),
+            mesh_spacing=1.0e-5
+        )
+        # dihedDeriv_fd = FiniteDifferenceDerivative(
+        #     lambda pts: dihed_deriv(pts, 0, 1, 2, 3, order=1)[1].squeeze().transpose((1, 0, 2)),
+        #     function_shape=((None, 4, 3), (None, 4, 3)),
+        #     mesh_spacing=1.0e-5
+        # )
+
+        fd1 = fd(coords[(0, 1, 2, 3),]).derivative_tensor([1])[0]
+        # fd2_22 = dihedDeriv_fd(coords[(4, 5, 6, 7),]).derivative_tensor(1)
+
+        self.assertTrue(np.allclose(deriv.flatten(), fd1.flatten()), msg="{} and {} aren't close".format(
+            deriv.flatten(), fd1.flatten()
+        ))
 
     @validationTest
     def test_PtsAngleDeriv(self):
@@ -1233,7 +1268,7 @@ class NumputilsTests(TestCase):
             )
         )
 
-    @debugTest
+    @validationTest
     def test_SparseBroadcast(self):
 
         shape = (10, 100, 50)
@@ -1297,5 +1332,93 @@ class NumputilsTests(TestCase):
 
                 self.assertTrue(np.allclose(dense, sparse.asarray()))
 
+    @validationTest
+    def test_VecOuter(self):
+
+        a = np.random.rand(5, 10, 2, 3)
+        b = np.random.rand(5, 10, 4, 2, 3)
+
+        self.assertTrue(
+            np.allclose(
+                vec_outer(a, b, axes=[[], [2]]),
+                a[:, :, np.newaxis, :, :] * b
+            )
+        )
 
 
+        a = np.random.rand(5, 10, 9, 7)
+        b = np.random.rand(5, 10, 4, 2, 3)
+
+
+        # self.assertTrue(
+        #     np.allclose(
+        #         new_vec_outer(a, b, axes=[[2, 3], [2, 3, 4]]),
+        #         vec_outer(a, b, axes=[[2, 3], [2, 3, 4]])
+        #     )
+        # )
+
+    @validationTest
+    def test_VecDiag(self):
+
+        ugh = np.random.rand(3, 7, 5)
+        diag_vec = vec_tensordiag(ugh, extra_dims=2, axis=-1)
+        self.assertEquals(diag_vec.shape, (3, 7, 5, 5, 5))
+        self.assertEquals(
+            diag_vec[0, 2, 1, 1, 1],
+            ugh[0, 2, 1]
+        )
+        diag_mats = vec_tensordiag(ugh, extra_dims=2, axis=1)
+        self.assertEquals(diag_mats.shape, (3, 7, 7, 7, 5))
+        self.assertTrue(np.allclose(
+            diag_mats[0, 1, 1, 1],
+            ugh[0, 1]
+        ))
+
+    @inactiveTest
+    def test_MatrixProductDeriv(self):
+
+        # x_grid = np.linspace(-np.pi, np.pi)
+        # y_grid = np.linspace(-np.pi, np.pi)
+        x = np.pi / 6
+        y = np.pi / 3
+        import sympy
+        x, y = sympy.symbols('x y')
+
+        sx = sympy.sin(x); cx = sympy.cos(x)
+        sy = sympy.sin(y); cy = sympy.cos(y)
+
+        A = sympy.Array([
+            [sx * sy, sx * cy],
+            [cx * sy, cx * cy],
+        ])
+
+        B = sympy.Array([x**3, y**3])
+
+        AB = sympy.tensorproduct(A * B)
+        raise Exception(AB)
+
+
+        A_mat = np.array([
+            [ np.cos(x) * np.cos(y), np.cos(y) * np.sin(np.pi / 3)],
+            [-np.cos(x) * np.sin(y), np.sin(x) * np.sin(np.pi / 3)],
+        ])
+        sinx_cosx_expansion = ...
+        a = np.random.rand(5, 10, 2, 3)
+        b = np.random.rand(5, 10, 4, 2, 3)
+
+        self.assertTrue(
+            np.allclose(
+                new_vec_outer(a, b, axes=[[], [2]]),
+                a[:, :, np.newaxis, :, :] * b
+            )
+        )
+
+        a = np.random.rand(5, 10, 9, 7)
+        b = np.random.rand(5, 10, 4, 2, 3)
+
+        self.assertTrue(
+            np.allclose(
+                new_vec_outer(a, b, axes=[[2, 3], [2, 3, 4]]),
+                vec_outer(a, b, axes=[[2, 3], [2, 3, 4]])
+            )
+        )

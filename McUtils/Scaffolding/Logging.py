@@ -70,7 +70,8 @@ class LoggingBlock:
                  opener=None,
                  prompt=None,
                  closer=None,
-                 printoptions=None
+                 printoptions=None,
+                 **tag_vars
                  ):
         self.logger = logger
         if block_level_padding is None:
@@ -82,6 +83,8 @@ class LoggingBlock:
             settings = self.block_settings[block_level]
 
         self._tag = tag
+        self._og_tagvars = tag_vars
+        self._tagvars = tag_vars
 
         self._old_loglev = None
         self.log_level = log_level if log_level is not None else logger.verbosity
@@ -103,6 +106,9 @@ class LoggingBlock:
                 self._tag = self._tag()
             else:
                 self._tag = self._tag[0].format(**self._tag[1])
+        elif self._tagvars is not None:
+            self._tag = self._tag.format(**self._tagvars)
+            self._tagvars = None
 
         return self._tag
 

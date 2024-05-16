@@ -8,7 +8,7 @@ import itertools, typing, dataclasses
 
 import scipy.special as special
 
-from ..Numputils import vec_outer, vec_tensordot, unique as nput_unique
+from ..Numputils import vec_outer, vec_tensordot, unique as nput_unique, vec_tensordiag, tensordot_deriv, tensorprod_deriv
 from .Taylor import FunctionExpansion
 from .Symbolic import TensorExpression
 from ..Scaffolding import Logger
@@ -269,7 +269,10 @@ class NeighborBasedInterpolator(metaclass=abc.ABCMeta):
             # `KDTree` squeezes the output when neighbors=1.
             yindices = yindices[:, np.newaxis]
             distances = distances[:, np.newaxis]
-        # yindices = np.sort(yindices)
+        # if self.grid.shape[-1] == 3:
+        #     for p,idx,ddd in zip(pts, yindices, distances):
+        #         nss = self.grid[idx]
+        #         print(f"{p} --> {nss} ({ddd})")
 
         res = yindices
         if return_distances:
@@ -1845,20 +1848,91 @@ class DistanceWeightedInterpolator(NeighborBasedInterpolator):
 
 class InverseDistanceWeightedInterpolator(DistanceWeightedInterpolator):
 
-    def get_weights(self, pts, dists, inds, zero_tol=1e-8, power=2):
+    @classmethod
+    def weight_deriv(cls, disp, dists, norm, power, n, gammas_1=None):
+        prefactor = power + n + 1
+        if gammas_1 is None: # we can reuse this...
+            gammas_1 = dists ** -(power + 2*n) / norm[:, np.newaxis]
+        gammas_2 = dists ** -(power + 2*(n+1)) / norm[:, np.newaxis]
+        gouter = gammas_1[:, :, np.newaxis] * gammas_2[:, np.newaxis, :] # N x k x k
+        grad = prefactor * (disp - np.matmul(gouter, disp)).transpose(0, 2, 1) # disp is N x k x d
+        return gammas_2, grad
+
+    @classmethod
+    def idw_derivs(cls, deriv_order, disp, dists, norm, power, weights):
+        derivs = []
+        gammas = []
+        if deriv_order > 0:
+            gammas1, grad = cls.weight_deriv(disp, dists, norm, power, 0, weights)
+            gammas.append(gammas1)
+            derivs.append(grad)
+        if deriv_order > 1:
+            gammas1 = gammas[0]
+            grad = derivs[0]
+            gammas2, grad2 = cls.weight_deriv(disp, dists, norm, power, 1, gammas1)
+            gammas.append(gammas2)
+            prefactor = power + 2
+            g1_expansion = [gammas1, grad]
+            g2_expansion = [gammas2, grad2]
+            inner_term_expansion = [
+                vec_tensordiag(gammas1, axis=1) - vec_outer(gammas1, gammas2, axes=[-1, -1]),
+                vec_tensordiag(grad, axis=2) - tensorprod_deriv(g1_expansion, g2_expansion, [1], axes=[-1, -1])[0]
+            ]
+            base_eye = np.eye(disp.shape[-1])
+            disp_eye = np.broadcast_to(base_eye[np.newaxis], disp.shape[:2] + base_eye.shape)
+            disp_eye = np.moveaxis(disp_eye, 2, 1)
+            disp_expansion = [disp, disp_eye]
+            # print("???", [e.shape for e in inner_term_expansion], [d.shape for d in disp_expansion])
+            hess = prefactor * tensordot_deriv(inner_term_expansion, disp_expansion, [1],
+                                               axes=[2, 1], shared=1
+                                               )[0]
+            hess = np.moveaxis(hess, 2, -1)
+            derivs.append(hess)
+
+        if deriv_order > 2:
+            raise NotImplementedError('idw_derivs only up to 2nd order')
+        return derivs
+
+    @classmethod
+    def get_idw_weights(cls, pts, dists, disps=None, deriv_order=None, zero_tol=1e-6, power=2):
+        scaling = np.min(dists, axis=1)
         zero_pos = np.where(dists < zero_tol)
-        if len(zero_pos) > 0:
+        if len(zero_pos) > 0 and len(zero_pos[0]) > 0:
             weights = np.zeros_like(dists)
             zero_row, zero_idx = np.unique(zero_pos[0], return_index=True) # so annoying but have to be clean about degenerate abcissae
             zero_col = zero_pos[1][zero_idx]
             weights[zero_row, zero_col] = 1
             nonz_pos = np.setdiff1d(np.arange(len(pts)), zero_row)
-            sdists = np.power(dists[nonz_pos], -power)
-            weights[nonz_pos] = sdists / np.sum(sdists, axis=1)[:, np.newaxis]
+            if len(nonz_pos) > 0:
+                normed_dists = dists[nonz_pos] / scaling[nonz_pos, np.newaxis]
+                sdists = np.power(normed_dists, -power)
+                norm = np.sum(sdists, axis=1)
+                weights[nonz_pos] = sdists / norm[:, np.newaxis]
+                if deriv_order is not None:
+                    if disps is None: raise ValueError("displacements needed for derivatives")
+                    weight_derivs = cls.idw_derivs(deriv_order, disps[nonz_pos], normed_dists, norm,
+                                                   power, weights[nonz_pos])
+                    derivs = []
+                    for w in weight_derivs:
+                        full_d = np.zeros((len(dists),) + w.shape[1:])
+                        full_d[nonz_pos] = w
+                        derivs.append(full_d)
+                    weights = [weights] + derivs
+            elif deriv_order is not None:
+                weights = [weights]
         else:
-            sdists = np.power(dists, -power)
-            weights = sdists / np.sum(sdists, axis=1)[:, np.newaxis]
+            normed_dists = dists / scaling[:, np.newaxis]
+            sdists = np.power(normed_dists, -power)
+            norm = np.sum(sdists, axis=1)
+            weights = sdists / norm[:, np.newaxis]
+            if deriv_order is not None:
+                if disps is None: raise ValueError("displacements needed for derivatives")
+                weight_derivs = cls.idw_derivs(deriv_order, disps, normed_dists, norm, power, weights)
+                weights = [weights] + weight_derivs
+
         return weights
+    def get_weights(self, pts, dists, inds, zero_tol=1e-6, power=2):
+        return self.get_idw_weights(pts, dists, zero_tol=zero_tol, power=power)
 
     def eval(self,
              pts,
@@ -1882,6 +1956,8 @@ class InverseDistanceWeightedInterpolator(DistanceWeightedInterpolator):
              power=2,
              mode='fast'
              ):
+        if deriv_order is None:
+            deriv_order = 0
 
         if mode == 'fast':
             pts = np.asanyarray(pts)

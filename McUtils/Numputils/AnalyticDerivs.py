@@ -15,7 +15,13 @@ __all__ = [
     'dihed_deriv',
     'vec_norm_derivs',
     'vec_sin_cos_derivs',
-    'vec_angle_derivs'
+    'vec_angle_derivs',
+    'rock_deriv',
+    'rock_vec',
+    'dist_vec',
+    'angle_vec',
+    'dihed_vec',
+    'oop_vec'
 ]
 
 # felt too lazy to look up some elegant formula
@@ -411,7 +417,9 @@ def vec_norm_derivs(a, order=1, zero_thresh=None):
 
     return derivs
 
-def vec_sin_cos_derivs(a, b, order=1, check_derivatives=False, zero_thresh=None):
+def vec_sin_cos_derivs(a, b, order=1,
+                       up_vectors=None,
+                       check_derivatives=False, zero_thresh=None):
     """
     Derivative of `sin(a, b)` and `cos(a, b)` with respect to both vector components
 
@@ -439,7 +447,7 @@ def vec_sin_cos_derivs(a, b, order=1, check_derivatives=False, zero_thresh=None)
     b, n_b = vec_apply_zero_threshold(b, zero_thresh=zero_thresh)
 
     n = vec_crosses(a, b)
-    n, n_n = vec_apply_zero_threshold(n, zero_thresh=zero_thresh)
+    n, n_n, bad_ns = vec_apply_zero_threshold(n, zero_thresh=zero_thresh, return_zeros=True)
 
     adb = vec_dots(a, b)[..., np.newaxis]
 
@@ -453,158 +461,175 @@ def vec_sin_cos_derivs(a, b, order=1, check_derivatives=False, zero_thresh=None)
     sin_derivs.append(s)
     cos_derivs.append(c)
 
-    bxn_ = vec_crosses(b, n)
-    bxn, n_bxn = vec_apply_zero_threshold(bxn_, zero_thresh=zero_thresh)
-
-    nxa_ = vec_crosses(n, a)
-    nxa, n_nxa = vec_apply_zero_threshold(nxa_, zero_thresh=zero_thresh)
-
-    if order <= 1:
-        _, na_da = vec_norm_derivs(a, order=1)
-        _, nb_db = vec_norm_derivs(b, order=1)
-    else:
-        _, na_da, na_daa = vec_norm_derivs(a, order=2)
-        _, nb_db, nb_dbb = vec_norm_derivs(b, order=2)
-        _, nn_dn, nn_dnn = vec_norm_derivs(n, order=2)
-
-    if order >= 1:
-        s_da = (bxn / (n_b * n_n) - s * na_da) / n_a
-        s_db = (nxa / (n_n * n_a) - s * nb_db) / n_b
-
-        # now we build our derivs, but we also need to transpose so that the OG shape comes first
-        d1 = np.array([s_da, s_db])
-        d1_reshape = tuple(range(1, extra_dims+1)) + (0, extra_dims+1)
-        meh = d1.transpose(d1_reshape)
-
-        sin_derivs.append(meh)
-
-        # print(
-        #     nb_db.shape,
-        #     na_da.shape,
-        #     c.shape,
-        #     n_a.shape
-        # )
-
-        c_da = (nb_db - c * na_da) / n_a
-        c_db = (na_da - c * nb_db) / n_b
-
-        d1 = np.array([c_da, c_db])
-        meh = d1.transpose(d1_reshape)
-
-        cos_derivs.append(meh)
-
-    if order >= 2:
-
-        extra_dims = a.ndim - 1
-        extra_shape = a.shape[:-1]
-        if check_derivatives:
-            if extra_dims > 0:
-                bad_norms = n_n.flatten() <= zero_thresh
-                if bad_norms.any():
-                    raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
-                        a[bad_norms],
-                        b[bad_norms]
-                    ))
+    if order > 0:
+        if bad_ns.any():  # ill-defined sin components need an "up" vector and then point perpendicular to this
+            if up_vectors is None:
+                if n.ndim > 1:
+                    up_vectors = np.broadcast_to(
+                        np.array([0, 0, 1])[np.newaxis],
+                        a.shape[:-1] + (3,)
+                    )
+                else:
+                    up_vectors = np.array([0, 0, 1])
+            if n.ndim == 1:
+                n = vec_normalize(up_vectors)
+                n_n = 1
             else:
-                if n_n <= zero_thresh:
-                    raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
-                        a, b
-                    ))
+                n[bad_ns] = vec_normalize(up_vectors[bad_ns])
+                n_n[bad_ns] = 1
 
-        if extra_dims > 0:
-            e3 = np.broadcast_to(levi_cevita3,  extra_shape + (3, 3, 3))
-            td = np.tensordot
-            outer = vec_outer
-            vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=extra_dims, **kw)
+        bxn_ = vec_crosses(b, n)
+        bxn, n_bxn = vec_apply_zero_threshold(bxn_, zero_thresh=zero_thresh)
+
+        nxa_ = vec_crosses(n, a)
+        nxa, n_nxa = vec_apply_zero_threshold(nxa_, zero_thresh=zero_thresh)
+
+        if order <= 1:
+            _, na_da = vec_norm_derivs(a, order=1)
+            _, nb_db = vec_norm_derivs(b, order=1)
         else:
-            e3 = levi_cevita3
-            td = np.tensordot
-            vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=0, **kw)
-            outer = np.outer
-            a = a.squeeze()
-            b = b.squeeze()
-            nb_db = nb_db.squeeze(); na_da = na_da.squeeze(); nn_dn = nn_dn.squeeze()
-            na_daa = na_daa.squeeze(); nb_dbb = nb_dbb.squeeze(); nn_dnn = nn_dnn.squeeze()
+            _, na_da, na_daa = vec_norm_derivs(a, order=2)
+            _, nb_db, nb_dbb = vec_norm_derivs(b, order=2)
+            _, nn_dn, nn_dnn = vec_norm_derivs(n, order=2)
 
-        # print(na_da, s_da, s, na_daa, bxdna)
+        if order >= 1:
+            s_da = (bxn / (n_b * n_n) - s * na_da) / n_a
+            s_db = (nxa / (n_n * n_a) - s * nb_db) / n_b
 
-        # compute terms we'll need for various cross-products
-        e3b = vec_td(e3, b, axes=[-1, -1])
-        e3a = vec_td(e3, a, axes=[-1, -1])
-        # e3n = vec_td(e3, n, axes=[-1, -1])
+            # now we build our derivs, but we also need to transpose so that the OG shape comes first
+            d1 = np.array([s_da, s_db])
+            d1_reshape = tuple(range(1, extra_dims+1)) + (0, extra_dims+1)
+            meh = d1.transpose(d1_reshape)
 
-        e3nbdb = vec_td(e3, nb_db, axes=[-1, -1])
-        e3nada = vec_td(e3, na_da, axes=[-1, -1])
-        e3nndn = vec_td(e3, nn_dn, axes=[-1, -1])
+            sin_derivs.append(meh)
 
-        n_da = -vec_td(e3b,  nn_dnn, axes=[-1, -2])
-        bxdna = vec_td(n_da, e3nbdb, axes=[-1, -2])
+            # print(
+            #     nb_db.shape,
+            #     na_da.shape,
+            #     c.shape,
+            #     n_a.shape
+            # )
 
-        s_daa = - (
-            outer(na_da, s_da) + outer(s_da, na_da)
-            + s[..., np.newaxis] * na_daa
-            - bxdna
-        ) / n_a[..., np.newaxis]
+            c_da = (nb_db - c * na_da) / n_a
+            c_db = (na_da - c * nb_db) / n_b
 
-        ndaXnada = -vec_td(n_da, e3nada, axes=[-1, -2])
-        nndnXnadaa = vec_td(na_daa, e3nndn, axes=[-1, -2])
+            d1 = np.array([c_da, c_db])
+            meh = d1.transpose(d1_reshape)
 
-        s_dab = (
-                     ndaXnada + nndnXnadaa - outer(s_da, nb_db)
-        ) / n_b[..., np.newaxis]
+            cos_derivs.append(meh)
 
-        n_db = vec_td(e3a, nn_dnn, axes=[-1, -2])
+        if order >= 2:
 
-        nbdbXnda = vec_td(n_db, e3nbdb, axes=[-1, -2])
-        nbdbbXnndn = -vec_td(nb_dbb, e3nndn, axes=[-1, -2])
+            extra_dims = a.ndim - 1
+            extra_shape = a.shape[:-1]
+            if check_derivatives:
+                if extra_dims > 0:
+                    bad_norms = n_n.flatten() <= zero_thresh
+                    if bad_norms.any():
+                        raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
+                            a[bad_norms],
+                            b[bad_norms]
+                        ))
+                else:
+                    if n_n <= zero_thresh:
+                        raise ValueError("2nd derivative of sin not well defined when {} and {} are nearly colinear".format(
+                            a, b
+                        ))
 
-        s_dba = (
-                nbdbXnda + nbdbbXnndn - outer(s_db, na_da)
-        ) / n_a[..., np.newaxis]
+            if extra_dims > 0:
+                e3 = np.broadcast_to(levi_cevita3,  extra_shape + (3, 3, 3))
+                td = np.tensordot
+                outer = vec_outer
+                vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=extra_dims, **kw)
+            else:
+                e3 = levi_cevita3
+                td = np.tensordot
+                vec_td = lambda a, b, **kw: vec_tensordot(a, b, shared=0, **kw)
+                outer = np.outer
+                a = a.squeeze()
+                b = b.squeeze()
+                nb_db = nb_db.squeeze(); na_da = na_da.squeeze(); nn_dn = nn_dn.squeeze()
+                na_daa = na_daa.squeeze(); nb_dbb = nb_dbb.squeeze(); nn_dnn = nn_dnn.squeeze()
 
-        dnbxa = - vec_td(n_db, e3nada, axes=[-1, -2])
+            # print(na_da, s_da, s, na_daa, bxdna)
 
-        s_dbb = - (
-            outer(nb_db, s_db) + outer(s_db, nb_db) + s[..., np.newaxis] * nb_dbb - dnbxa
-        ) / n_b[..., np.newaxis]
+            # compute terms we'll need for various cross-products
+            e3b = vec_td(e3, b, axes=[-1, -1])
+            e3a = vec_td(e3, a, axes=[-1, -1])
+            # e3n = vec_td(e3, n, axes=[-1, -1])
 
-        s2 = np.array([
-            [s_daa, s_dab],
-            [s_dba, s_dbb]
-        ])
+            e3nbdb = vec_td(e3, nb_db, axes=[-1, -1])
+            e3nada = vec_td(e3, na_da, axes=[-1, -1])
+            e3nndn = vec_td(e3, nn_dn, axes=[-1, -1])
 
-        d2_reshape = tuple(range(2, extra_dims+2)) + (0, 1, extra_dims+2, extra_dims+3)
-        # raise Exception(s2.shape, d2_reshape)
-        s2 = s2.transpose(d2_reshape)
+            n_da = -vec_td(e3b,  nn_dnn, axes=[-1, -2])
+            bxdna = vec_td(n_da, e3nbdb, axes=[-1, -2])
 
-        sin_derivs.append(s2)
+            s_daa = - (
+                outer(na_da, s_da) + outer(s_da, na_da)
+                + s[..., np.newaxis] * na_daa
+                - bxdna
+            ) / n_a[..., np.newaxis]
 
-        c_daa = - (
-            outer(na_da, c_da) + outer(c_da, na_da) + c[..., np.newaxis] * na_daa
-        ) / n_a[..., np.newaxis]
+            ndaXnada = -vec_td(n_da, e3nada, axes=[-1, -2])
+            nndnXnadaa = vec_td(na_daa, e3nndn, axes=[-1, -2])
 
-        c_dab = ( na_daa - outer(c_da, nb_db) ) / n_b[..., np.newaxis]
+            s_dab = (
+                         ndaXnada + nndnXnadaa - outer(s_da, nb_db)
+            ) / n_b[..., np.newaxis]
 
-        c_dba = ( nb_dbb - outer(c_db, na_da) ) / n_a[..., np.newaxis]
+            n_db = vec_td(e3a, nn_dnn, axes=[-1, -2])
 
-        c_dbb = - (
-            outer(nb_db, c_db) + outer(c_db, nb_db) + c[..., np.newaxis] * nb_dbb
-        ) / n_b[..., np.newaxis]
+            nbdbXnda = vec_td(n_db, e3nbdb, axes=[-1, -2])
+            nbdbbXnndn = -vec_td(nb_dbb, e3nndn, axes=[-1, -2])
 
-        c2 = np.array([
-            [c_daa, c_dab],
-            [c_dba, c_dbb]
-        ])
+            s_dba = (
+                    nbdbXnda + nbdbbXnndn - outer(s_db, na_da)
+            ) / n_a[..., np.newaxis]
 
-        c2 = c2.transpose(d2_reshape)
+            dnbxa = - vec_td(n_db, e3nada, axes=[-1, -2])
 
-        # raise Exception(c2.shape)
+            s_dbb = - (
+                outer(nb_db, s_db) + outer(s_db, nb_db) + s[..., np.newaxis] * nb_dbb - dnbxa
+            ) / n_b[..., np.newaxis]
 
-        cos_derivs.append(c2)
+            s2 = np.array([
+                [s_daa, s_dab],
+                [s_dba, s_dbb]
+            ])
+
+            d2_reshape = tuple(range(2, extra_dims+2)) + (0, 1, extra_dims+2, extra_dims+3)
+            # raise Exception(s2.shape, d2_reshape)
+            s2 = s2.transpose(d2_reshape)
+
+            sin_derivs.append(s2)
+
+            c_daa = - (
+                outer(na_da, c_da) + outer(c_da, na_da) + c[..., np.newaxis] * na_daa
+            ) / n_a[..., np.newaxis]
+
+            c_dab = ( na_daa - outer(c_da, nb_db) ) / n_b[..., np.newaxis]
+
+            c_dba = ( nb_dbb - outer(c_db, na_da) ) / n_a[..., np.newaxis]
+
+            c_dbb = - (
+                outer(nb_db, c_db) + outer(c_db, nb_db) + c[..., np.newaxis] * nb_dbb
+            ) / n_b[..., np.newaxis]
+
+            c2 = np.array([
+                [c_daa, c_dab],
+                [c_dba, c_dbb]
+            ])
+
+            c2 = c2.transpose(d2_reshape)
+
+            # raise Exception(c2.shape)
+
+            cos_derivs.append(c2)
 
     return sin_derivs, cos_derivs
 
-def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
+def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None, return_comps=False):
     """
     Returns the derivatives of the angle between `a` and `b` with respect to their components
 
@@ -625,12 +650,20 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
 
     derivs = []
 
-    sin_derivs, cos_derivs = vec_sin_cos_derivs(a, b, order=order, zero_thresh=zero_thresh)
+    sin_derivs, cos_derivs = vec_sin_cos_derivs(a, b,
+                                                up_vectors=up_vectors,
+                                                order=order, zero_thresh=zero_thresh)
 
     s = sin_derivs[0]
     c = cos_derivs[0]
 
     q = np.arctan2(s, c)
+    # # force wrapping if near to pi
+    # if isinstance(q, np.ndarray):
+    #     sel = np.abs(q) > np.pi - 1e-10
+    #     q[sel] = np.abs(q[sel])
+    # elif np.abs(q) > np.pi - 1e-10:
+    #     q = np.abs(q)
 
     if up_vectors is not None:
         n = vec_crosses(a, b)
@@ -643,6 +676,11 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
         sign = np.sign(up)
     else:
         sign = np.ones(a.shape[:-1])
+
+    if isinstance(sign, np.ndarray):
+        sign[sign == 0] = 1.
+    elif sign == 0:
+        sign = np.array(1)
 
     derivs.append(sign*q)
 
@@ -724,7 +762,10 @@ def vec_angle_derivs(a, b, order=1, up_vectors=None, zero_thresh=None):
             d2.transpose(d2_reshape)
         )
 
-    return derivs
+    if return_comps:
+        return derivs, (sin_derivs, cos_derivs)
+    else:
+        return derivs
 
 def dist_deriv(coords, i, j, order=1, zero_thresh=None):
     """
@@ -743,7 +784,7 @@ def dist_deriv(coords, i, j, order=1, zero_thresh=None):
     if order > 2:
         raise NotImplementedError("derivatives currently only up to order {}".format(2))
 
-    a = coords[j] - coords[i]
+    a = coords[..., j, :] - coords[..., i, :]
     d = vec_norm_derivs(a, order=order, zero_thresh=zero_thresh)
 
     derivs = []
@@ -810,6 +851,52 @@ def angle_deriv(coords, i, j, k, order=1, zero_thresh=None):
 
     return derivs
 
+
+def rock_deriv(coords, i, j, k, order=1, zero_thresh=None):
+    """
+    Gives the derivative of the rocking motion (symmetric bend basically)
+
+    :param coords:
+    :type coords: np.ndarray
+    :param i: index of the central atom
+    :type i: int | Iterable[int]
+    :param j: index of one of the outside atoms
+    :type j: int | Iterable[int]
+    :param k: index of the other outside atom
+    :type k: int | Iterable[int]
+    :return: derivatives of the angle with respect to atoms i, j, and k
+    :rtype: np.ndarray
+    """
+
+    if order > 2:
+        raise NotImplementedError("derivatives currently only up to order {}".format(2))
+
+    a = coords[..., j, :] - coords[..., i, :]
+    b = coords[..., k, :] - coords[..., i, :]
+    d = vec_angle_derivs(a, b, order=order, zero_thresh=zero_thresh)
+
+    derivs = []
+
+    derivs.append(d[0])
+
+    if order >= 1:
+        da = d[1][..., 0, :]; db = d[1][..., 1, :]
+        derivs.append(np.array([-(da - db), da, -db]))
+
+    if order >= 2:
+        daa = d[2][..., 0, 0, :, :]; dab = d[2][..., 0, 1, :, :]
+        dba = d[2][..., 1, 0, :, :]; dbb = d[2][..., 1, 1, :, :]
+        # ii ij ik
+        # ji jj jk
+        # ki kj kk
+        derivs.append(np.array([
+            [daa + dba + dab + dbb, -(daa + dab), -(dba + dbb)],
+            [         -(daa + dba),          daa,   dba       ],
+            [         -(dab + dbb),          dab,   dbb       ]
+        ]))
+
+    return derivs
+
 def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_size=1.0e-4):
     """
     Gives the derivative of the dihedral between i, j, k, and l with respect to the Cartesians
@@ -837,7 +924,6 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_s
     b = coords[..., k, :] - coords[..., j, :]
     c = coords[..., l, :] - coords[..., k, :]
 
-
     n1 = vec_crosses(a, b)
     n2 = vec_crosses(b, c)
 
@@ -854,12 +940,15 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_s
 
     cnb = vec_crosses(n1, n2)
 
-    # cnb, n_cnb, bad_friends = vec_apply_zero_threshold(cnb, zero_thresh=zero_thresh, return_zeros=True)
+    cnb, n_cnb, bad_friends = vec_apply_zero_threshold(cnb, zero_thresh=zero_thresh, return_zeros=True)
+    bad_friends = bad_friends.reshape(cnb.shape[:-1])
     orient = vec_dots(b, cnb)
     # orient[np.abs(orient) < 1.0] = 0.
     sign = np.sign(orient)
 
-    d = vec_angle_derivs(n1, n2, order=order, zero_thresh=zero_thresh)
+    d, (sin_derivs, cos_derivs) = vec_angle_derivs(n1, n2, order=order,
+                                                   up_vectors=vec_normalize(b),
+                                                   zero_thresh=zero_thresh, return_comps=True)
 
     derivs = []
 
@@ -867,6 +956,21 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_s
 
     if order >= 1:
         dn1 = d[1][..., 0, :]; dn2 = d[1][..., 1, :]
+        if dn1.ndim == 1:
+            if bad_friends:
+                dn1 = sin_derivs[1][0]
+                dn2 = sin_derivs[1][1]
+                sign = np.array(1)
+        else:
+            dn1[bad_friends] = sin_derivs[1][bad_friends, 0, :] # TODO: clean up shapes I guess...
+            dn2[bad_friends] = sin_derivs[1][bad_friends, 1, :]
+            sign[bad_friends] = 1
+
+        # raise Exception(
+        #     dn1,
+        #     b,
+        #     vec_crosses(b, dn1)
+        # )
 
         di = vec_crosses(b, dn1)
         dj = vec_crosses(c, dn2) - vec_crosses(a+b, dn1)
@@ -979,119 +1083,103 @@ def dihed_deriv(coords, i, j, k, l, order=1, zero_thresh=None, zero_point_step_s
 
     return derivs
 
-# debug implementations
-# def dist_deriv(coords, i, j, order=1):
-#     """
-#     Gives the derivative of the distance between i and j with respect to coords i and coords j
-#     :param coords:
-#     :type coords: np.ndarray
-#     :param i: index of one of the atoms
-#     :type i: int | Iterable[int]
-#     :param j: index of the other atom
-#     :type j: int | Iterable[int]
-#     :return: derivatives of the distance with respect to atoms i, j, and k
-#     :rtype: np.ndarray
-#     """
-#     v = vec_normalize(coords[j]-coords[i])
-#
-#     return None, np.array([-v, v])
 
-# def angle_deriv(coords, i, j, k, order=1):
-#     """
-#     Gives the derivative of the angle between i, j, and k with respect to the Cartesians
-#     :param coords:
-#     :type coords: np.ndarray
-#     :param i: index of the central atom
-#     :type i: int | Iterable[int]
-#     :param j: index of one of the outside atoms
-#     :type j: int | Iterable[int]
-#     :param k: index of the other outside atom
-#     :type k: int | Iterable[int]
-#     :return: derivatives of the angle with respect to atoms i, j, and k
-#     :rtype: np.ndarray
-#     """
-#
-#     dot = vec_dots
-#     tdo = vec_tdot
-#     a = coords[j] - coords[i]
-#     b = coords[k] - coords[i]
-#     e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
-#     axb = vec_crosses(a, b)
-#     adb = vec_dots(a, b)
-#     naxb = vec_norms(axb); na = vec_norms(a); nb = vec_norms(b)
-#     axbu = axb/naxb[..., np.newaxis]
-#     c = (adb/(na*nb))[..., np.newaxis]; s = (naxb/(na*nb))[..., np.newaxis]
-#     na = na[..., np.newaxis]; nb = nb[..., np.newaxis]
-#     au = a / na; bu = b / nb
-#     dsa = c/na*(-tdo(tdo(e3, bu), axbu) - au*s)
-#     dca = s/na*(bu - au*c)
-#     dsb = c/nb*( tdo(tdo(e3, au), axbu) - bu*s)
-#     dcb = s/nb*(au - bu*c)
-#
-#     da = dsa-dca
-#     db = dsb-dcb
-#     return None, np.array([-(da+db), da, db])
-#
-# def dihed_deriv(coords, i, j, k, l, order=1):
-#     """
-#     Gives the derivative of the dihedral between i, j, k, and l with respect to the Cartesians
-#     Currently gives what are sometimes called the `psi` angles.
-#     Will be extended to also support more traditional `phi` angles
-#     :param coords:
-#     :type coords: np.ndarray
-#     :param i:
-#     :type i: int | Iterable[int]
-#     :param j:
-#     :type j: int | Iterable[int]
-#     :param k:
-#     :type k: int | Iterable[int]
-#     :param l:
-#     :type l: int | Iterable[int]
-#     :return: derivatives of the dihedral with respect to atoms i, j, k, and l
-#     :rtype: np.ndarray
-#     """
-#     # needs to be vectorized, still
-#
-#     a = coords[j] - coords[i]
-#     b = coords[k] - coords[j]
-#     c = coords[l] - coords[k]
-#
-#     i3 = np.broadcast_to(np.eye(3), (len(a), 3, 3))
-#     e3 = np.broadcast_to(levi_cevita3, (len(a), 3, 3, 3))
-#
-#     tdo = vec_tdot
-#
-#     # build all the necessary components for the derivatives
-#     axb = vec_crosses(a, b); bxc = vec_crosses(b, c)
-#     na = vec_norms(a); nb = vec_norms(b); nc = vec_norms(c)
-#     naxb = vec_norms(axb); nbxc = vec_norms(bxc)
-#     naxb = naxb[..., np.newaxis]
-#     nbxc = nbxc[..., np.newaxis]
-#     nb = nb[..., np.newaxis]
-#     n1 = axb / naxb
-#     n2 = bxc / nbxc
-#     bu = b / nb
-#     i3n1 = i3 - vec_outer(n1, n1); i3n2 = i3 - vec_outer(n2, n2)
-#     dn1a = -np.matmul(vec_tdot(e3, b), i3n1) / naxb[..., np.newaxis]
-#     dn1b = np.matmul(vec_tdot(e3, a), i3n1) / naxb[..., np.newaxis]
-#     dn2b = -np.matmul(vec_tdot(e3, c), i3n2) / nbxc[..., np.newaxis]
-#     dn2c = np.matmul(vec_tdot(e3, b), i3n2) / nbxc[..., np.newaxis]
-#     dbu = 1/nb[..., np.newaxis]*(i3 - vec_outer(bu, bu))
-#     n1xb = vec_crosses(bu, n1)
-#     n1dn2 = vec_dots(n1, n2)
-#     nxbdn2 = vec_dots(n1xb, n2)
-#
-#     # compute the actual derivs w/r/t the vectors
-#     n1dn2 = n1dn2[..., np.newaxis]
-#     nxbdn2 = nxbdn2[..., np.newaxis]
-#     dta_1 = tdo(tdo(dn1a, e3), bu)
-#     dta_2 = tdo(dta_1, n2)*n1dn2
-#     dta = dta_2 - tdo(dn1a, n2)*nxbdn2
-#     dtb = (
-#             ( tdo(tdo(tdo(dn1b, e3), bu)-tdo(tdo(dbu, e3), n1), n2)
-#               + tdo(dn2b, n1xb) ) * n1dn2
-#             - (tdo(dn1b, n2) + tdo(dn2b, n1)) * nxbdn2
-#     )
-#     dtc = tdo(dn2c, n1xb) * n1dn2 - tdo(dn2c, n1) * nxbdn2
-#
-#     return None, np.array([-dta, dta-dtb, dtb-dtc, dtc])
+def dist_vec(coords, i, j):
+    """
+    Returns the full vectors that define the linearized version of a bond displacement
+
+    :param coords:
+    :param i:
+    :param j:
+    :return:
+    """
+    bond_tf = dist_deriv(coords, i, j)[1]
+    bond_vectors = np.zeros(coords.shape)
+    bond_vectors[..., i, :] = bond_tf[0]
+    bond_vectors[..., j, :] = bond_tf[1]
+
+    return bond_vectors.reshape(
+        coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
+    )
+
+def angle_vec(coords, i, j, k):
+    """
+    Returns the full vectors that define the linearized version of an angle displacement
+
+    :param coords:
+    :param i:
+    :param j:
+    :return:
+    """
+
+    ang_tf = angle_deriv(coords, i, j, k)[1]
+    ang_vectors = np.zeros(coords.shape)
+    ang_vectors[..., i, :] = ang_tf[0]
+    ang_vectors[..., j, :] = ang_tf[1]
+    ang_vectors[..., k, :] = ang_tf[2]
+
+    return ang_vectors.reshape(
+        coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
+    )
+
+def rock_vec(coords, i, j, k):
+    """
+    Returns the full vectors that define the linearized version of an angle displacement
+
+    :param coords:
+    :param i:
+    :param j:
+    :return:
+    """
+
+    ang_tf = rock_deriv(coords, i, j, k)[1]
+    ang_vectors = np.zeros(coords.shape)
+    ang_vectors[..., i, :] = ang_tf[0]
+    ang_vectors[..., j, :] = ang_tf[1]
+    ang_vectors[..., k, :] = ang_tf[2]
+
+    return ang_vectors.reshape(
+        coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
+    )
+
+def dihed_vec(coords, i, j, k, l):
+    """
+    Returns the full vectors that define the linearized version of a dihedral displacement
+
+    :param coords:
+    :param i:
+    :param j:
+    :return:
+    """
+
+    dihed_tf = dihed_deriv(coords, i, j, k, l)[1]
+    dihed_vectors = np.zeros(coords.shape)
+    dihed_vectors[..., i, :] = dihed_tf[0]
+    dihed_vectors[..., j, :] = dihed_tf[1]
+    dihed_vectors[..., k, :] = dihed_tf[2]
+    dihed_vectors[..., l, :] = dihed_tf[3]
+
+    return dihed_vectors.reshape(
+        coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
+    )
+
+
+def oop_vec(coords, i, j, k):
+    """
+    Returns the full vectors that define the linearized version of an oop displacement
+
+    :param coords:
+    :param i:
+    :param j:
+    :return:
+    """
+
+    dihed_tf = dihed_deriv(coords, i, j, k, i)[1]
+    dihed_vectors = np.zeros(coords.shape)
+    dihed_vectors[..., i, :] = dihed_tf[0]
+    dihed_vectors[..., j, :] = dihed_tf[1]
+    dihed_vectors[..., k, :] = dihed_tf[2]
+
+    return dihed_vectors.reshape(
+        coords.shape[:-2] + (coords.shape[-2] * coords.shape[-1],)
+    )
