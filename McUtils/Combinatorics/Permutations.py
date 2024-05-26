@@ -1671,7 +1671,7 @@ class IntegerPartitioner2D:
         Assumes `boxes` and `balls` are reverse sorted
         """
         if len(boxes) == 1:
-            return [np.array([balls])]
+            return np.array([[balls]])
 
         key = (tuple(boxes), tuple(balls))
         if key in self.partition_data:
