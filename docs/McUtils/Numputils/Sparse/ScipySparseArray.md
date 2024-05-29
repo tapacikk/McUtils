@@ -583,8 +583,8 @@ dot(self, b, reverse=False):
 outer(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2070)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2070?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2072)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2072?message=Update%20Docs)]
 </div>
 
 
@@ -593,8 +593,8 @@ outer(self, other):
 __neg__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2087)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2087?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2089)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2089?message=Update%20Docs)]
 </div>
 
 
@@ -603,8 +603,8 @@ __neg__(self):
 __pos__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2089)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2089?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2091)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2091?message=Update%20Docs)]
 </div>
 
 
@@ -613,8 +613,8 @@ __pos__(self):
 __add__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2091)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2091?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2093)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2093?message=Update%20Docs)]
 </div>
 
 
@@ -623,8 +623,8 @@ __add__(self, other):
 __iadd__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2093)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2093?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2095)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2095?message=Update%20Docs)]
 </div>
 
 
@@ -633,8 +633,8 @@ __iadd__(self, other):
 __radd__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2095)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2095?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2097)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2097?message=Update%20Docs)]
 </div>
 
 
@@ -643,8 +643,8 @@ __radd__(self, other):
 plus(self, other, inplace=False): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2097)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2097?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2099)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2099?message=Update%20Docs)]
 </div>
 
 
@@ -653,8 +653,8 @@ plus(self, other, inplace=False):
 floopy_flop(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2136)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2136?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2138)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2138?message=Update%20Docs)]
 </div>
 
 
@@ -663,8 +663,8 @@ floopy_flop(self):
 __truediv__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2139)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2139?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2141)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2141?message=Update%20Docs)]
 </div>
 
 
@@ -673,8 +673,8 @@ __truediv__(self, other):
 __rtruediv__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2141)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2141?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2143)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2143?message=Update%20Docs)]
 </div>
 
 
@@ -683,8 +683,8 @@ __rtruediv__(self, other):
 __rmul__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2145)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2145?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2147)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2147?message=Update%20Docs)]
 </div>
 
 
@@ -693,8 +693,8 @@ __rmul__(self, other):
 __mul__(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2147)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2147?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2149)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2149?message=Update%20Docs)]
 </div>
 
 
@@ -703,8 +703,8 @@ __mul__(self, other):
 true_multiply(self, other): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2149)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2149?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2151)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2151?message=Update%20Docs)]
 </div>
 
 
@@ -713,8 +713,8 @@ true_multiply(self, other):
 copy(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2180)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2180?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2182)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2182?message=Update%20Docs)]
 </div>
 
 
@@ -723,8 +723,8 @@ copy(self):
 savez(self, file, compressed=True): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2487)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2487?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2489)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2489?message=Update%20Docs)]
 </div>
 Saves a SparseArray to a file (must have the npz extension)
   - `file`: `Any`
@@ -753,8 +753,8 @@ e
 loadz(file): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2526)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2526?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2528)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2528?message=Update%20Docs)]
 </div>
 Loads a SparseArray from an npz file
   - `file`: `Any`
@@ -768,8 +768,8 @@ Loads a SparseArray from an npz file
 __getitem__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2542)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2542?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2544)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2544?message=Update%20Docs)]
 </div>
 
 
@@ -778,8 +778,8 @@ __getitem__(self, item):
 __setitem__(self, item, val): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2544)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2544?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2546)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2546?message=Update%20Docs)]
 </div>
 
 
@@ -788,8 +788,8 @@ __setitem__(self, item, val):
 __delitem__(self, item): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2546)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2546?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2548)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2548?message=Update%20Docs)]
 </div>
 
 
@@ -798,8 +798,8 @@ __delitem__(self, item):
 __repr__(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2549)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2549?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/Sparse/ScipySparseArray.py#L2551)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/Sparse/ScipySparseArray.py#L2551?message=Update%20Docs)]
 </div>
  </div>
 </div>

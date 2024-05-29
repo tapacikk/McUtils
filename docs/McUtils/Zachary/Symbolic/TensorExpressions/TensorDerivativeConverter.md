@@ -1,8 +1,8 @@
 ## <a id="McUtils.Zachary.Symbolic.TensorExpressions.TensorDerivativeConverter">TensorDerivativeConverter</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Symbolic/TensorExpressions.py#L1687)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions.py#L1687?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Symbolic/TensorExpressions.py#L1691)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions.py#L1691?message=Update%20Docs)]
 </div>
 
 A class that makes it possible to convert expressions
@@ -27,8 +27,8 @@ TensorExpansionError: TensorExpansionError
 __init__(self, jacobians, derivatives=None, mixed_terms=None, jacobians_name='Q', values_name='V'): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1696)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1696?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1700)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1700?message=Update%20Docs)]
 </div>
 
   - `jacobians`: `Iterable[np.ndarray]`
@@ -44,8 +44,38 @@ __init__(self, jacobians, derivatives=None, mixed_terms=None, jacobians_name='Q'
 convert(self, order=None, print_transformations=False, check_arrays=False): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1735)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1735?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1739)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1739?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Zachary.Symbolic.TensorExpressions.TensorDerivativeConverter.compute_partition_terms" class="docs-object-method">&nbsp;</a> 
+```python
+compute_partition_terms(partition): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1764)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1764?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Zachary.Symbolic.TensorExpressions.TensorDerivativeConverter.convert_partition" class="docs-object-method">&nbsp;</a> 
+```python
+convert_partition(partition, derivs, vals, val_axis=-1): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1788)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1788?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Zachary.Symbolic.TensorExpressions.TensorDerivativeConverter.convert_fast" class="docs-object-method">&nbsp;</a> 
+```python
+convert_fast(derivs, vals, val_axis=-1, order=None): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1822)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.py#L1822?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -100,7 +130,7 @@ convert(self, order=None, print_transformations=False, check_arrays=False):
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Zachary/Symbolic/TensorExpressions/TensorDerivativeConverter.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions.py#L1687?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Symbolic/TensorExpressions.py#L1691?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

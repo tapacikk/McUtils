@@ -1,13 +1,13 @@
-# <a id="McUtils.Numputils.AnalyticDerivs.angle_deriv">angle_deriv</a>
+# <a id="McUtils.Numputils.AnalyticDerivs.rock_deriv">rock_deriv</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/AnalyticDerivs.py#L809)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L809?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/AnalyticDerivs.py#L855)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L855?message=Update%20Docs)]
 </div>
 
 ```python
-angle_deriv(coords, i, j, k, order=1, zero_thresh=None): 
+rock_deriv(coords, i, j, k, order=1, zero_thresh=None): 
 ```
-Gives the derivative of the angle between i, j, and k with respect to the Cartesians
+Gives the derivative of the rocking motion (symmetric bend basically)
   - `coords`: `np.ndarray`
     > 
   - `i`: `int | Iterable[int]`
@@ -119,13 +119,13 @@ k
 [Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Numputils/AnalyticDerivs/angle_deriv.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Numputils/AnalyticDerivs/angle_deriv.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Numputils/AnalyticDerivs/rock_deriv.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Numputils/AnalyticDerivs/rock_deriv.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/AnalyticDerivs/angle_deriv.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/AnalyticDerivs/angle_deriv.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/AnalyticDerivs/rock_deriv.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/AnalyticDerivs/rock_deriv.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L809?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L855?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

@@ -61,169 +61,213 @@ Any lowish-level numerical operations that need to be shared go here.
 [vec_tensordot](Numputils/VectorOps/vec_tensordot.md)   
 </div>
    <div class="col" markdown="1">
-[vec_tdot](Numputils/VectorOps/vec_tdot.md)   
+[vec_tensordiag](Numputils/VectorOps/vec_tensordiag.md)   
 </div>
 </div>
   <div class="row">
+   <div class="col" markdown="1">
+[vec_tdot](Numputils/VectorOps/vec_tdot.md)   
+</div>
    <div class="col" markdown="1">
 [vec_crosses](Numputils/VectorOps/vec_crosses.md)   
 </div>
    <div class="col" markdown="1">
 [vec_angles](Numputils/VectorOps/vec_angles.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [vec_sins](Numputils/VectorOps/vec_sins.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [vec_cos](Numputils/VectorOps/vec_cos.md)   
 </div>
    <div class="col" markdown="1">
 [vec_outer](Numputils/VectorOps/vec_outer.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [pts_norms](Numputils/VectorOps/pts_norms.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [pts_angles](Numputils/VectorOps/pts_angles.md)   
 </div>
    <div class="col" markdown="1">
 [pts_normals](Numputils/VectorOps/pts_normals.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [vec_dihedrals](Numputils/VectorOps/vec_dihedrals.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [pts_dihedrals](Numputils/VectorOps/pts_dihedrals.md)   
 </div>
    <div class="col" markdown="1">
 [mat_vec_muls](Numputils/VectorOps/mat_vec_muls.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [one_pad_vecs](Numputils/VectorOps/one_pad_vecs.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [affine_multiply](Numputils/VectorOps/affine_multiply.md)   
 </div>
    <div class="col" markdown="1">
 [cartesian_from_rad](Numputils/VectorOps/cartesian_from_rad.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [polar_to_cartesian](Numputils/VectorOps/polar_to_cartesian.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [apply_pointwise](Numputils/VectorOps/apply_pointwise.md)   
 </div>
    <div class="col" markdown="1">
 [rot_deriv](Numputils/AnalyticDerivs/rot_deriv.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [rot_deriv2](Numputils/AnalyticDerivs/rot_deriv2.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [cartesian_from_rad_derivatives](Numputils/AnalyticDerivs/cartesian_from_rad_derivatives.md)   
 </div>
    <div class="col" markdown="1">
 [dist_deriv](Numputils/AnalyticDerivs/dist_deriv.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [angle_deriv](Numputils/AnalyticDerivs/angle_deriv.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [dihed_deriv](Numputils/AnalyticDerivs/dihed_deriv.md)   
 </div>
    <div class="col" markdown="1">
 [vec_norm_derivs](Numputils/AnalyticDerivs/vec_norm_derivs.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [vec_sin_cos_derivs](Numputils/AnalyticDerivs/vec_sin_cos_derivs.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [vec_angle_derivs](Numputils/AnalyticDerivs/vec_angle_derivs.md)   
 </div>
    <div class="col" markdown="1">
-[SparseArray](Numputils/Sparse/SparseArray.md)   
-</div>
-   <div class="col" markdown="1">
-[ScipySparseArray](Numputils/Sparse/ScipySparseArray.md)   
+[rock_deriv](Numputils/AnalyticDerivs/rock_deriv.md)   
 </div>
 </div>
   <div class="row">
+   <div class="col" markdown="1">
+[rock_vec](Numputils/AnalyticDerivs/rock_vec.md)   
+</div>
+   <div class="col" markdown="1">
+[dist_vec](Numputils/AnalyticDerivs/dist_vec.md)   
+</div>
+   <div class="col" markdown="1">
+[angle_vec](Numputils/AnalyticDerivs/angle_vec.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[dihed_vec](Numputils/AnalyticDerivs/dihed_vec.md)   
+</div>
+   <div class="col" markdown="1">
+[oop_vec](Numputils/AnalyticDerivs/oop_vec.md)   
+</div>
+   <div class="col" markdown="1">
+[SparseArray](Numputils/Sparse/SparseArray.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[ScipySparseArray](Numputils/Sparse/ScipySparseArray.md)   
+</div>
    <div class="col" markdown="1">
 [TensorFlowSparseArray](Numputils/Sparse/TensorFlowSparseArray.md)   
 </div>
    <div class="col" markdown="1">
 [sparse_tensordot](Numputils/Sparse/sparse_tensordot.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [unique](Numputils/SetOps/unique.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [intersection](Numputils/SetOps/intersection.md)   
 </div>
    <div class="col" markdown="1">
 [contained](Numputils/SetOps/contained.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [difference](Numputils/SetOps/difference.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [find](Numputils/SetOps/find.md)   
 </div>
    <div class="col" markdown="1">
 [argsort](Numputils/SetOps/argsort.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [group_by](Numputils/SetOps/group_by.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [split_by_regions](Numputils/SetOps/split_by_regions.md)   
 </div>
    <div class="col" markdown="1">
 [infer_inds_dtype](Numputils/Misc/infer_inds_dtype.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [infer_int_dtype](Numputils/Misc/infer_int_dtype.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [flatten_dtype](Numputils/Misc/flatten_dtype.md)   
 </div>
    <div class="col" markdown="1">
 [unflatten_dtype](Numputils/Misc/unflatten_dtype.md)   
 </div>
+</div>
+  <div class="row">
    <div class="col" markdown="1">
 [recast_permutation](Numputils/Misc/recast_permutation.md)   
 </div>
-</div>
-  <div class="row">
    <div class="col" markdown="1">
 [recast_indices](Numputils/Misc/recast_indices.md)   
 </div>
    <div class="col" markdown="1">
 [downcast_index_array](Numputils/Misc/downcast_index_array.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+[nca_op_deriv](Numputils/TensorDerivatives/nca_op_deriv.md)   
+</div>
+   <div class="col" markdown="1">
+[tensordot_deriv](Numputils/TensorDerivatives/tensordot_deriv.md)   
+</div>
+   <div class="col" markdown="1">
+[tensorprod_deriv](Numputils/TensorDerivatives/tensorprod_deriv.md)   
+</div>
+</div>
+  <div class="row">
+   <div class="col" markdown="1">
+   
+</div>
+   <div class="col" markdown="1">
+   
 </div>
    <div class="col" markdown="1">
    

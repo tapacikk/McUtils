@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.ScatterPlot3D">ScatterPlot3D</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L1142)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L1142?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L1143)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L1143?message=Update%20Docs)]
 </div>
 
 Creates a ScatterPlot of 3D data
@@ -75,7 +75,7 @@ method: str
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Plots/Plots/ScatterPlot3D.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Plots/Plots/ScatterPlot3D.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L1142?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L1143?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

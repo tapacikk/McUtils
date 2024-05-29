@@ -1,11 +1,11 @@
 # <a id="McUtils.Numputils.AnalyticDerivs.vec_sin_cos_derivs">vec_sin_cos_derivs</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/AnalyticDerivs.py#L414)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L414?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/AnalyticDerivs.py#L420)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L420?message=Update%20Docs)]
 </div>
 
 ```python
-vec_sin_cos_derivs(a, b, order=1, check_derivatives=False, zero_thresh=None): 
+vec_sin_cos_derivs(a, b, order=1, up_vectors=None, check_derivatives=False, zero_thresh=None): 
 ```
 Derivative of `sin(a, b)` and `cos(a, b)` with respect to both vector components
   - `a`: `np.ndarray`
@@ -84,7 +84,7 @@ s
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/AnalyticDerivs/vec_sin_cos_derivs.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/AnalyticDerivs/vec_sin_cos_derivs.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L414?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L420?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

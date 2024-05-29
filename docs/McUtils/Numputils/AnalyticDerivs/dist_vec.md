@@ -1,18 +1,20 @@
-# <a id="McUtils.Numputils.VectorOps.pts_norms">pts_norms</a>
+# <a id="McUtils.Numputils.AnalyticDerivs.dist_vec">dist_vec</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/VectorOps.py#L602)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/VectorOps.py#L602?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/AnalyticDerivs.py#L1087)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L1087?message=Update%20Docs)]
 </div>
 
 ```python
-pts_norms(pts1, pts2): 
+dist_vec(coords, i, j): 
 ```
-Provides the distance between the points
-  - `pts1`: `np.ndarray`
+Returns the full vectors that define the linearized version of a bond displacement
+  - `coords`: `Any`
     > 
-  - `pts2`: `np.ndarray`
+  - `i`: `Any`
     > 
-  - `:returns`: `np.ndarray`
+  - `j`: `Any`
+    > 
+  - `:returns`: `_`
     > 
 
 
@@ -58,13 +60,13 @@ Provides the distance between the points
 [Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Numputils/VectorOps/pts_norms.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Numputils/VectorOps/pts_norms.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Numputils/AnalyticDerivs/dist_vec.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Numputils/AnalyticDerivs/dist_vec.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/VectorOps/pts_norms.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/VectorOps/pts_norms.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/AnalyticDerivs/dist_vec.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/AnalyticDerivs/dist_vec.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/VectorOps.py#L602?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/AnalyticDerivs.py#L1087?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

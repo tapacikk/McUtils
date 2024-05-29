@@ -52,8 +52,8 @@ Opens the passed `checkpoint_file` (if not already open)
 close_checkpoint_file(self, stream): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L421)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L421?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L423)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L423?message=Update%20Docs)]
 </div>
 Opens the passed `checkpoint_file` (if not already open)
   - `chk`: `Any`
@@ -67,8 +67,8 @@ Opens the passed `checkpoint_file` (if not already open)
 save_parameter(self, key, value): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L432)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L432?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L434)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L434?message=Update%20Docs)]
 </div>
 Saves a parameter to the checkpoint file
   - `key`: `Any`
@@ -84,8 +84,8 @@ Saves a parameter to the checkpoint file
 load_parameter(self, key): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L447)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L447?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L449)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L449?message=Update%20Docs)]
 </div>
 Loads a parameter from the checkpoint file
   - `key`: `Any`
@@ -99,8 +99,8 @@ Loads a parameter from the checkpoint file
 keys(self): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L457)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L457?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L459)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Scaffolding/Checkpointing/HDF5Checkpointer.py#L459?message=Update%20Docs)]
 </div>
  </div>
 </div>

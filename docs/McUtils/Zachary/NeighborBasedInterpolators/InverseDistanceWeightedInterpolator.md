@@ -1,8 +1,8 @@
 ## <a id="McUtils.Zachary.NeighborBasedInterpolators.InverseDistanceWeightedInterpolator">InverseDistanceWeightedInterpolator</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/NeighborBasedInterpolators.py#L1846)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators.py#L1846?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/NeighborBasedInterpolators.py#L1849)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators.py#L1849?message=Update%20Docs)]
 </div>
 
 
@@ -19,13 +19,43 @@
  </div>
  <div class="collapsible-section collapsible-section-body collapse show" id="methods" markdown="1">
  
-<a id="McUtils.Zachary.NeighborBasedInterpolators.InverseDistanceWeightedInterpolator.get_weights" class="docs-object-method">&nbsp;</a> 
+<a id="McUtils.Zachary.NeighborBasedInterpolators.InverseDistanceWeightedInterpolator.weight_deriv" class="docs-object-method">&nbsp;</a> 
 ```python
-get_weights(self, pts, dists, inds, zero_tol=1e-08, power=2): 
+weight_deriv(disp, dists, norm, power, n, gammas_1=None): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1848)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1848?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1851)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1851?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Zachary.NeighborBasedInterpolators.InverseDistanceWeightedInterpolator.idw_derivs" class="docs-object-method">&nbsp;</a> 
+```python
+idw_derivs(deriv_order, disp, dists, norm, power, weights): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1861)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1861?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Zachary.NeighborBasedInterpolators.InverseDistanceWeightedInterpolator.get_idw_weights" class="docs-object-method">&nbsp;</a> 
+```python
+get_idw_weights(pts, dists, disps=None, deriv_order=None, zero_tol=1e-06, power=2): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1896)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1896?message=Update%20Docs)]
+</div>
+
+
+<a id="McUtils.Zachary.NeighborBasedInterpolators.InverseDistanceWeightedInterpolator.get_weights" class="docs-object-method">&nbsp;</a> 
+```python
+get_weights(self, pts, dists, inds, zero_tol=1e-06, power=2): 
+```
+<div class="docs-source-link" markdown="1">
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1934)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1934?message=Update%20Docs)]
 </div>
 
 
@@ -34,8 +64,8 @@ get_weights(self, pts, dists, inds, zero_tol=1e-08, power=2):
 eval(self, pts, deriv_order=0, neighbors=None, merge_neighbors=None, reshape_derivatives=True, return_interpolation_data=False, check_in_sample=True, zero_tol=1e-08, return_error=False, use_cache=True, retries=None, max_distance=None, min_distance=None, neighborhood_clustering_radius=None, use_natural_neighbors=False, chunk_size=None, power=2, mode='fast'): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1863)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1863?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1937)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.py#L1937?message=Update%20Docs)]
 </div>
  </div>
 </div>
@@ -90,7 +120,7 @@ eval(self, pts, deriv_order=0, neighbors=None, merge_neighbors=None, reshape_der
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Zachary/NeighborBasedInterpolators/InverseDistanceWeightedInterpolator.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators.py#L1846?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/NeighborBasedInterpolators.py#L1849?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

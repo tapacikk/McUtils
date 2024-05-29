@@ -1,8 +1,8 @@
 ## <a id="McUtils.Plots.Plots.TriPlot">TriPlot</a> 
 
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L943)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L943?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Plots/Plots.py#L944)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L944?message=Update%20Docs)]
 </div>
 
 A Plot object that plots a triangulation bars
@@ -76,7 +76,7 @@ known_styles: set
 [Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Plots/Plots/TriPlot.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Plots/Plots/TriPlot.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L943?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Plots/Plots.py#L944?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

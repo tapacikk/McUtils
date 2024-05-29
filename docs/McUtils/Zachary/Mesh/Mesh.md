@@ -221,8 +221,8 @@ e
 RegularMesh(*mesh_specs): 
 ```
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L306)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L306?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Zachary/Mesh/Mesh.py#L305)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Zachary/Mesh/Mesh.py#L305?message=Update%20Docs)]
 </div>
 Builds a grid from multiple linspace arguments,
 basically insuring it's structured (if non-Empty)

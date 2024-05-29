@@ -1,19 +1,14 @@
-# <a id="McUtils.Numputils.VectorOps.pts_norms">pts_norms</a>
+# <a id="McUtils.Numputils.TensorDerivatives.tensorprod_deriv">tensorprod_deriv</a>
 <div class="docs-source-link" markdown="1">
-[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/VectorOps.py#L602)/
-[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/VectorOps.py#L602?message=Update%20Docs)]
+[[source](https://github.com/McCoyGroup/McUtils/blob/master/Numputils/TensorDerivatives.py#L130)/
+[edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TensorDerivatives.py#L130?message=Update%20Docs)]
 </div>
 
 ```python
-pts_norms(pts1, pts2): 
+tensorprod_deriv(A_expansion, B_expansion, order, axes=None): 
 ```
-Provides the distance between the points
-  - `pts1`: `np.ndarray`
-    > 
-  - `pts2`: `np.ndarray`
-    > 
-  - `:returns`: `np.ndarray`
-    > 
+
+
 
 
 
@@ -58,13 +53,13 @@ Provides the distance between the points
 [Bug](https://github.com/McCoyGroup/McUtils/issues/new?title=Documentation%20Improvement%20Needed)/[Request](https://github.com/McCoyGroup/McUtils/issues/new?title=Example%20Request)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Numputils/VectorOps/pts_norms.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Numputils/VectorOps/pts_norms.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/examples/McUtils/Numputils/TensorDerivatives/tensorprod_deriv.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/examples/McUtils/Numputils/TensorDerivatives/tensorprod_deriv.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/VectorOps/pts_norms.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/VectorOps/pts_norms.md)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/ci/docs/McUtils/Numputils/TensorDerivatives/tensorprod_deriv.md)/[New](https://github.com/McCoyGroup/McUtils/new/master/?filename=ci/docs/templates/McUtils/Numputils/TensorDerivatives/tensorprod_deriv.md)   
 </div>
    <div class="col" markdown="1">
-[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/VectorOps.py#L602?message=Update%20Docs)   
+[Edit](https://github.com/McCoyGroup/McUtils/edit/master/Numputils/TensorDerivatives.py#L130?message=Update%20Docs)   
 </div>
    <div class="col" markdown="1">
    

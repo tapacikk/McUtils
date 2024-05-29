@@ -78,7 +78,7 @@ For compat.
 
 <a id="McUtils.Parallelizers.Parallelizers.Parallelizer.lookup" class="docs-object-method">&nbsp;</a> 
 ```python
-lookup(key): 
+lookup(key) -> 'Parallelizer': 
 ```
 <div class="docs-source-link" markdown="1">
 [[source](https://github.com/McCoyGroup/McUtils/blob/master/Parallelizers/Parallelizers/Parallelizer.py#L97)/
