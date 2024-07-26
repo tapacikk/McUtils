@@ -6,7 +6,8 @@ McUtils is a set of utilities written by the McCoy group for the McCoy group to 
 #### TODO:
 - make the FChkDerivatives class figure out the number of atoms smarter (from
   force constants and not from the total num of derivs)
-- implement the smart insertion of zeroes
+- implement the smart insertion of zeroes into derivs
+- implement smart insertion of zeroes into dipoles
 - implement the selectanharmonicmodes option on the global level
 
 We're working on [documenting the package](https://mccoygroup.github.io/References/Documentation/McUtils.html), but writing good documentation takes more time than writing good code.
