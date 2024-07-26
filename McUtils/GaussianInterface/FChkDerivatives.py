@@ -58,9 +58,9 @@ class FchkForceConstants:
 
 class FchkForceDerivatives:
     """Holder class for force constant derivatives coming out of an fchk file"""
-    def __init__(self, derivs):
+    def __init__(self, derivs, n=None):
         self.derivs = derivs
-        self._n = None
+        self._n = n
 
     def __len__(self):
         return len(self.derivs)
@@ -184,20 +184,30 @@ class FchkDipoleHigherDerivatives:
     def __init__(self, derivs):
         self.derivs = derivs
         self._n = None
-    def _get_n(self):
-        """
-        :return:
-        :rtype: int
-        """
-        # numerical derivatives with respect to the 3n-6 normal modes of derivatives with respect to 3N Cartesians...
-        # Gaussian gives us stuff out like d^2mu/dQdx and d^3mu/dQ^2dx
-        if self._n is None:
-            l = len(self.derivs)
-            self._n = int(1 + np.sqrt(1 + l/54)) # solving 3n*(3n-6) == l/6
-        return self._n
+        self._select_anharmonic_modes = None
+
+    def set_select_anharmonic_modes(self, sam):
+        self._select_anharmonic_modes = sam
+
+    def set_n(self, n):
+        self._n = n
+
+    #def _get_n(self):
+    #    """
+    #    :return:
+    #    :rtype: int
+    #    """
+    #    # numerical derivatives with respect to the 3n-6 normal modes of derivatives with respect to 3N Cartesians...
+    #    # Gaussian gives us stuff out like d^2mu/dQdx and d^3mu/dQ^2dx
+    #    if self._n is None:
+    #        l = len(self.derivs)
+    #        self._n = int(1 + np.sqrt(1 + l/54)) # solving 3n*(3n-6) == l/6
+    #    return self._n
+    def set_n(self, n):
+        self._n = n
     @property
     def n(self):
-        return self._get_n()
+        return self._n
     @property
     def shape(self):
         return (3*self.n - 6, 3*self.n, 3)
