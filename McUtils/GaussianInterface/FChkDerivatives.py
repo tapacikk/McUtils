@@ -184,10 +184,30 @@ class FchkDipoleHigherDerivatives:
     def __init__(self, derivs):
         self.derivs = derivs
         self._n = None
-        self._select_anharmonic_modes = None
 
     def set_select_anharmonic_modes(self, sam):
+        """
+        Function that puts zeroes in the `derivs` for modes that were not computed
+        """
+        # overall num of derivs must be 2 * (3*self.n - 6, 3*self.n, 3)
         self._select_anharmonic_modes = sam
+        new_second_derivs, new_third_derivs = [], []
+        chunk_size = 3 * 3 * self.n 
+        chunk_of_zeroes = list([0 for _ in range(chunk_size)])
+        n_modes = 3 * self.n - 6
+        second_derivs = self.derivs[:len(self.derivs)//2]
+        third_derivs  = self.derivs[len(self.derivs)//2:]
+        i = 0
+        for mode in range(n_modes):
+            if mode not in self._select_anharmonic_modes:
+                new_second_derivs = np.append(new_second_derivs, chunk_of_zeroes)
+                new_third_derivs = np.append(new_third_derivs, chunk_of_zeroes)
+                continue
+            new_second_derivs = np.append(new_second_derivs, second_derivs[i: i+chunk_size])
+            new_third_derivs = np.append(new_third_derivs, third_derivs[i: i+chunk_size])
+            i += chunk_size
+        self.derivs = np.append(new_second_derivs, new_third_derivs)
+        return np.append(new_second_derivs, new_third_derivs)
 
     def set_n(self, n):
         self._n = n
@@ -233,6 +253,8 @@ class FchkDipoleNumDerivatives:
     def __init__(self, derivs):
         self.derivs = derivs
         self._n = None
+        print('len fchkdipolenumderivs:', len(self.derivs))
+
     def _get_n(self):
         """
         Returns the number of _modes_ in the system
@@ -243,15 +265,46 @@ class FchkDipoleNumDerivatives:
         if self._n is None:
             self._n = len(self.derivs)//6 # solving 2*3*n == l
         return self._n
+
+    def set_select_anharmonic_modes(self, sam):
+        """
+        Function that puts zeroes in the `derivs` for modes that were not computed
+        """
+        # overall num of derivs must be 2 * 3 * self.n 
+        self._select_anharmonic_modes = sam
+        new_second_derivs, new_third_derivs = [], []
+        chunk_size = 3
+        chunk_of_zeroes = list([0 for _ in range(chunk_size)])
+        n_modes = self.n
+        second_derivs = self.derivs[:len(self.derivs)//2]
+        third_derivs  = self.derivs[len(self.derivs)//2:]
+        i = 0
+        for mode in range(n_modes):
+            if mode not in self._select_anharmonic_modes:
+                new_second_derivs = np.append(new_second_derivs, chunk_of_zeroes)
+                new_third_derivs = np.append(new_third_derivs, chunk_of_zeroes)
+                continue
+            new_second_derivs = np.append(new_second_derivs, second_derivs[i: i+chunk_size])
+            new_third_derivs = np.append(new_third_derivs, third_derivs[i: i+chunk_size])
+            i += chunk_size
+        self.derivs = np.append(new_second_derivs, new_third_derivs)
+        return np.append(new_second_derivs, new_third_derivs)
+
+    def set_n(self, n):
+        self._n = 3*n - 6
+
     @property
     def n(self):
         return self._get_n()
+
     @property
     def shape(self):
         return (self.n, 3)
+
     @property
     def first_derivatives(self):
         return np.reshape(self.derivs[:len(self.derivs)//2], self.shape)
+
     @property
     def second_derivatives(self):
         return np.reshape(self.derivs[len(self.derivs)//2:], self.shape)
