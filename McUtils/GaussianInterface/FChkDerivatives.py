@@ -102,7 +102,6 @@ class FchkForceDerivatives:
                 new_third_derivs = np.append(new_third_derivs, third_derivs[i:i+num_force_constants])
                 i += num_force_constants
             third_derivs = new_third_derivs
-        print(third_derivs)
         return third_derivs
 
     def _get_fourth_derivs(self):
@@ -119,7 +118,6 @@ class FchkForceDerivatives:
                 new_fourth_derivs = np.append(new_fourth_derivs, fourth_derivs[i:i+num_force_constants])
                 i += num_force_constants
             fourth_derivs = new_fourth_derivs
-        print(fourth_derivs)
         return fourth_derivs
 
     @property
