@@ -61,6 +61,7 @@ class FchkForceDerivatives:
     def __init__(self, derivs, n=None):
         self.derivs = derivs
         self._n = n
+        self.select_anharmonic_modes = None
 
     def __len__(self):
         return len(self.derivs)
@@ -80,19 +81,46 @@ class FchkForceDerivatives:
             self._n = int(np.ceil(n)) # precision issues screw this up in python, but not in Mathematica (I think)
         return self._n
 
+    def set_n(self, n):
+        self._n = n
+
     @property
     def n(self):
         return self._get_n()
 
     def _get_third_derivs(self):
         # fourth and third derivs are same len
-        d = self.derivs
-        return d[:int(len(d)/2)]
+        third_derivs = self.derivs[:len(self.derivs)//2]
+        if self.select_anharmonic_modes:
+            n, new_third_derivs, i = self.n, [], 0
+            num_force_constants = int(3*n/2 * (3*n+1)) # arithmetic progression formula
+            chunk_of_zeroes = list([0 for _ in range(num_force_constants)])
+            for mode in range(3*n-6):
+                if mode not in self.select_anharmonic_modes:
+                    new_third_derivs = np.append(new_third_derivs, chunk_of_zeroes)
+                    continue
+                new_third_derivs = np.append(new_third_derivs, third_derivs[i:i+num_force_constants])
+                i += num_force_constants
+            third_derivs = new_third_derivs
+        print(third_derivs)
+        return third_derivs
 
     def _get_fourth_derivs(self):
         # fourth and third derivs are same len
-        d = self.derivs
-        return d[int(len(d)/2):]
+        fourth_derivs = self.derivs[len(self.derivs)//2:]
+        if self.select_anharmonic_modes:
+            n, new_fourth_derivs, i = self.n, [], 0
+            num_force_constants = int(3*n/2 * (3*n+1)) # arithmetic progression formula
+            chunk_of_zeroes = list([0 for _ in range(num_force_constants)])
+            for mode in range(3*n-6):
+                if mode not in self.select_anharmonic_modes:
+                    new_fourth_derivs = np.append(new_fourth_derivs, chunk_of_zeroes)
+                    continue
+                new_fourth_derivs = np.append(new_fourth_derivs, fourth_derivs[i:i+num_force_constants])
+                i += num_force_constants
+            fourth_derivs = new_fourth_derivs
+        print(fourth_derivs)
+        return fourth_derivs
 
     @property
     def third_derivs(self):
